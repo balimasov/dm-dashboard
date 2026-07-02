@@ -12,6 +12,7 @@ import {
   Resource,
   SpellSlotLevel,
 } from "@/lib/types";
+import { fetchAndParseDdbCharacter } from "@/lib/sync";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<
   [RecoveryType, string]
@@ -46,6 +47,21 @@ function EditCharacterForm({ character }: { character: Character }) {
   const router = useRouter();
   const { updateCharacter } = useCharacters();
   const [draft, setDraft] = useState<Character>(character);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const synced = await fetchAndParseDdbCharacter(draft);
+      setDraft(synced);
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Невідома помилка синхронізації.");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function set<K extends keyof Character>(key: K, value: Character[K]) {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
@@ -111,12 +127,31 @@ function EditCharacterForm({ character }: { character: Character }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold text-slate-50">Редагування персонажа</h1>
         <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
           ← До дашборда
         </Link>
       </div>
+
+      {draft.dndBeyondUrl && (
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={syncing}
+            className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+          >
+            {syncing ? "Синхронізація..." : "Синхронізувати з D&D Beyond"}
+          </button>
+          {draft.lastSyncedAt && (
+            <span className="text-xs text-slate-500">
+              Востаннє синхронізовано: {new Date(draft.lastSyncedAt).toLocaleString("uk-UA")}
+            </span>
+          )}
+        </div>
+      )}
+      {syncError && <p className="text-sm text-red-400 mb-6">{syncError}</p>}
 
       <form onSubmit={handleSave} className="space-y-8">
         {/* Basic info */}

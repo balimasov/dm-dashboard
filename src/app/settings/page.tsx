@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCharacters } from "@/hooks/useCharacters";
 import { extractDndBeyondCharacterId } from "@/lib/types";
+import { fetchAndParseDdbCharacter } from "@/lib/sync";
 
 export default function SettingsPage() {
-  const { characters, addFromUrl, removeCharacter } = useCharacters();
+  const { characters, addFromUrl, removeCharacter, updateCharacter } = useCharacters();
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) return;
@@ -27,9 +30,42 @@ export default function SettingsPage() {
       return;
     }
 
-    addFromUrl(trimmed);
-    setUrl("");
     setError(null);
+    setSyncError(null);
+    const character = addFromUrl(trimmed);
+    setUrl("");
+
+    setSyncingId(character.id);
+    try {
+      const synced = await fetchAndParseDdbCharacter(character);
+      updateCharacter(character.id, synced);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "невідома помилка";
+      setSyncError(
+        `Не вдалося синхронізувати "${character.name}": ${message} Дані можна заповнити вручну на сторінці редагування.`
+      );
+    } finally {
+      setSyncingId(null);
+    }
+  }
+
+  async function handleResync(id: string) {
+    const character = characters.find((c) => c.id === id);
+    if (!character) return;
+    setSyncError(null);
+    setSyncingId(id);
+    try {
+      const synced = await fetchAndParseDdbCharacter(character);
+      updateCharacter(id, synced);
+    } catch (err) {
+      setSyncError(
+        `Не вдалося синхронізувати "${character.name}": ${
+          err instanceof Error ? err.message : "невідома помилка"
+        }.`
+      );
+    } finally {
+      setSyncingId(null);
+    }
   }
 
   return (
@@ -55,11 +91,13 @@ export default function SettingsPage() {
         </button>
       </form>
       {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
+      {syncError && <p className="text-sm text-amber-400 mb-4">{syncError}</p>}
 
       <div className="rounded-lg border border-amber-900/50 bg-amber-950/20 px-3 py-2 text-xs text-amber-300 mb-8">
-        D&D Beyond не надає офіційний публічний API, тому автоматичне підтягування
-        характеристик поки не підтримується. Після додавання лінка заповніть дані
-        персонажа вручну на сторінці редагування.
+        При додаванні лінка застосунок автоматично намагається підтягнути дані з
+        D&D Beyond (стати, HP, AC, ресурси, spell slots). Це неофіційний API,
+        тому персонаж має бути публічним, а деякі поля (роль, нотатки, AC для
+        нестандартних білдів) варто перевірити й підправити вручну.
       </div>
 
       <h2 className="text-sm uppercase tracking-wide text-slate-500 mb-3">
@@ -88,8 +126,20 @@ export default function SettingsPage() {
                   {c.dndBeyondUrl}
                 </a>
               )}
+              {syncingId === c.id && (
+                <p className="text-xs text-sky-400">Синхронізація...</p>
+              )}
             </div>
             <div className="flex items-center gap-3 text-sm">
+              {c.dndBeyondUrl && (
+                <button
+                  onClick={() => handleResync(c.id)}
+                  disabled={syncingId === c.id}
+                  className="text-sky-400 hover:text-sky-300 disabled:opacity-50"
+                >
+                  Синхронізувати
+                </button>
+              )}
               <Link
                 href={`/characters/${c.id}/edit`}
                 className="text-slate-400 hover:text-slate-200"

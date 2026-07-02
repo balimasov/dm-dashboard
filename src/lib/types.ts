@@ -74,6 +74,7 @@ export interface Character {
   notes: string;
   dndBeyondUrl?: string;
   synced?: boolean;
+  lastSyncedAt?: string;
 }
 
 export function abilityModifier(score: number): number {
