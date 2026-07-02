@@ -111,8 +111,24 @@ function computeConditionsAndExhaustion(data: any): { conditions: string[]; exha
   return { conditions, exhaustion };
 }
 
-function computeHp(data: any) {
-  const max = data.overrideHitPoints ?? (data.baseHitPoints ?? 0) + (data.bonusHitPoints ?? 0);
+/**
+ * D&D Beyond's `baseHitPoints` only stores the sum of hit-die values rolled/taken
+ * at each level — it excludes the Constitution modifier entirely. The Con
+ * contribution (conMod * total level) has to be added back on top, along with
+ * any flat or per-level HP bonuses (e.g. the Tough feat), matching the formula
+ * used by MrPrimate/ddb-importer's character parser.
+ */
+function computeHp(data: any, mods: any[], conMod: number, totalLevel: number) {
+  const perLevelBonus = mods
+    .filter((m) => m.type === "bonus" && m.subType === "hit-points-per-level" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? 0) * totalLevel, 0);
+  const flatBonus = mods
+    .filter((m) => m.type === "bonus" && m.subType === "hit-points" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? 0), 0);
+
+  const computedMax =
+    conMod * totalLevel + (data.baseHitPoints ?? 0) + (data.bonusHitPoints ?? 0) + perLevelBonus + flatBonus;
+  const max = data.overrideHitPoints ?? computedMax;
   const hp = Math.max(0, max - (data.removedHitPoints ?? 0));
   return { hp, maxHp: max, tempHp: data.temporaryHitPoints ?? 0 };
 }
@@ -269,9 +285,10 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const abilities = computeAbilityScores(data, mods);
   const dexMod = abilityModifier(abilities.dex);
   const wisMod = abilityModifier(abilities.wis);
+  const conMod = abilityModifier(abilities.con);
   const { level, className, subclass } = computeClassSummary(data);
   const profBonus = proficiencyBonus(level);
-  const { hp, maxHp, tempHp } = computeHp(data);
+  const { hp, maxHp, tempHp } = computeHp(data, mods, conMod, level);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
 
   return {
