@@ -1,0 +1,75 @@
+import { Character } from "./types";
+
+export const demoCharacters: Character[] = [
+  {
+    id: "demo-alor",
+    name: "Alor",
+    race: "Drow",
+    className: "Fighter",
+    subclass: "Battle Master",
+    level: 5,
+    role: "Tactical striker / control",
+    heroicInspiration: true,
+    initiative: 3,
+    combat: {
+      hp: 42,
+      maxHp: 52,
+      tempHp: 0,
+      ac: 17,
+      speed: 30,
+      passivePerception: 14,
+      conditions: [],
+      exhaustion: 0,
+    },
+    stats: { str: 14, dex: 16, con: 14, int: 10, wis: 12, cha: 8 },
+    resources: [
+      { id: "r1", name: "Action Surge", current: 0, max: 1, recovery: "short-rest" },
+      { id: "r2", name: "Second Wind", current: 1, max: 2, recovery: "long-rest" },
+      { id: "r3", name: "Superiority Dice", current: 3, max: 4, recovery: "short-rest" },
+      {
+        id: "r4",
+        name: "Whisper of the Underdark Charges",
+        current: 2,
+        max: 3,
+        recovery: "dawn",
+      },
+    ],
+    spellSlots: [],
+    notes:
+      "Тактичний персонаж, добре працює через позиціонування та контроль. Має магічний меч Whisper of the Underdark. Варто давати ситуації, де його рішення на полі бою мають реальну ціну.",
+  },
+  {
+    id: "demo-lilith",
+    name: "Lilith",
+    race: "Drow",
+    className: "Paladin",
+    subclass: "Oath of Lathander",
+    level: 5,
+    role: "Frontline support / divine burst",
+    heroicInspiration: false,
+    initiative: 1,
+    combat: {
+      hp: 39,
+      maxHp: 47,
+      tempHp: 0,
+      ac: 18,
+      speed: 30,
+      passivePerception: 13,
+      conditions: [],
+      exhaustion: 0,
+      concentration: "Bless",
+    },
+    stats: { str: 16, dex: 12, con: 14, int: 10, wis: 13, cha: 16 },
+    resources: [
+      { id: "r1", name: "Lay on Hands", current: 15, max: 25, recovery: "long-rest" },
+      { id: "r2", name: "Channel Divinity", current: 1, max: 1, recovery: "long-rest" },
+      { id: "r3", name: "Heroic Inspiration", current: 0, max: 1, recovery: "manual" },
+    ],
+    spellSlots: [
+      { level: 1, current: 2, max: 4 },
+      { level: 2, current: 1, max: 2 },
+    ],
+    notes:
+      "Сильний зв'язок із Латандером, тема світла проти темряви. Добре працюють сцени морального вибору, захисту слабших або протистояння темним силам.",
+  },
+];
