@@ -93,6 +93,14 @@ export function formatModifier(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
+/** Formats an ISO timestamp using the viewer's own local timezone (not the server's). */
+export function formatSyncTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString("uk-UA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 export function extractDndBeyondCharacterId(url: string): string | null {
   try {
     const parsed = new URL(url.trim());

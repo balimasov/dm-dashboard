@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { Character } from "@/lib/types";
+import { SyncTimestamp } from "./SyncTimestamp";
 
 export function SortableCharacterRow({
   character,
@@ -56,6 +57,11 @@ export function SortableCharacterRow({
             </a>
           )}
           {syncing && <p className="text-xs text-sky-400">Синхронізація...</p>}
+          {!syncing && character.lastSyncedAt && (
+            <p className="text-xs text-slate-600">
+              Синхронізовано: <SyncTimestamp iso={character.lastSyncedAt} />
+            </p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-3 text-sm">

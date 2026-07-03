@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Character, abilityModifier, formatModifier } from "@/lib/types";
 import { ResourceMeter } from "./ResourceMeter";
+import { SyncTimestamp } from "./SyncTimestamp";
 
 const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
@@ -146,14 +147,21 @@ export function CharacterCard({
 
       <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
         {c.dndBeyondUrl ? (
-          <a
-            href={c.dndBeyondUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sky-400 hover:underline"
-          >
-            D&D Beyond ↗
-          </a>
+          <div>
+            <a
+              href={c.dndBeyondUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sky-400 hover:underline"
+            >
+              D&D Beyond ↗
+            </a>
+            {c.lastSyncedAt && (
+              <p className="text-slate-600">
+                Синхронізовано: <SyncTimestamp iso={c.lastSyncedAt} />
+              </p>
+            )}
+          </div>
         ) : (
           <span />
         )}

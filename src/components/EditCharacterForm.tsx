@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
+import { SyncTimestamp } from "./SyncTimestamp";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
 
@@ -133,7 +134,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
           </button>
           {draft.lastSyncedAt && (
             <span className="text-xs text-slate-500">
-              Востаннє синхронізовано: {new Date(draft.lastSyncedAt).toLocaleString("uk-UA")}
+              Востаннє синхронізовано: <SyncTimestamp iso={draft.lastSyncedAt} />
             </span>
           )}
         </div>
