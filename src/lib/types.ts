@@ -60,6 +60,7 @@ export interface CombatState {
 export interface Character {
   id: string;
   name: string;
+  avatarUrl?: string;
   race: string;
   className: string;
   subclass?: string;

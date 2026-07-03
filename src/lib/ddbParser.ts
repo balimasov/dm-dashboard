@@ -314,6 +314,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   return {
     ...existing,
     name: data.name || existing.name,
+    avatarUrl: data.decorations?.avatarUrl || data.race?.avatarUrl || existing.avatarUrl,
     race: data.race?.fullName || existing.race,
     className: className || existing.className,
     subclass,
