@@ -26,11 +26,12 @@ export function getConditionInfo(name: string): string | undefined {
 }
 
 /** Exhaustion is cumulative (1-6): -2×level to every d20 Test, speed -5ft×level, level 6 = death. */
-export function getExhaustionTooltip(level: number): string {
-  const base =
-    "Виснаження сумарне (1-6 рівнів). Кожен рівень: −2×рівень до всіх перевірок на d20 " +
-    "(характеристики, атаки, спасброски), швидкість −5 фт×рівень. Рівень 6 = смерть. " +
-    "Тривалий відпочинок знімає 1 рівень.";
-  if (level <= 0) return base;
-  return `${base} Зараз (рівень ${level}): −${level * 2} до d20-перевірок, швидкість −${level * 5} фт.`;
+export const EXHAUSTION_RULES_TEXT =
+  "Виснаження сумарне (1-6 рівнів). Кожен рівень: −2×рівень до всіх перевірок на d20 " +
+  "(характеристики, атаки, спасброски), швидкість −5 фт×рівень. Рівень 6 = смерть. " +
+  "Тривалий відпочинок знімає 1 рівень.";
+
+export function getExhaustionEffect(level: number): { d20Penalty: number; speedPenalty: number } | null {
+  if (level <= 0) return null;
+  return { d20Penalty: level * 2, speedPenalty: level * 5 };
 }

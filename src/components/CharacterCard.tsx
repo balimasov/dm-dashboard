@@ -4,7 +4,7 @@ import { ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { InfoTooltip } from "./InfoTooltip";
-import { getConditionInfo, getExhaustionTooltip } from "@/lib/conditionInfo";
+import { getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 
 const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
@@ -31,6 +31,20 @@ function HpBar({ hp, maxHp, tempHp }: { hp: number; maxHp: number; tempHp: numbe
       <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  );
+}
+
+function ExhaustionPanel({ level }: { level: number }) {
+  const effect = getExhaustionEffect(level);
+  return (
+    <div className="space-y-2">
+      <p>{EXHAUSTION_RULES_TEXT}</p>
+      {effect && (
+        <p className="border-t border-slate-700 pt-2 font-semibold text-amber-300">
+          Зараз (рівень {level}): −{effect.d20Penalty} до d20-перевірок, швидкість −{effect.speedPenalty} фт.
+        </p>
+      )}
     </div>
   );
 }
@@ -91,9 +105,9 @@ export function CharacterCard({
           <span>AC: {c.combat.ac}</span>
           <span>Speed: {c.combat.speed} ft</span>
           <span>Passive Perception: {c.combat.passivePerception}</span>
-          <span>Init: {formatModifier(c.initiative)}</span>
+          <span>Initiative: {formatModifier(c.initiative)}</span>
           <span className="col-span-2">
-            <InfoTooltip panel={getExhaustionTooltip(c.combat.exhaustion)}>
+            <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
               Exhaustion: {c.combat.exhaustion}
             </InfoTooltip>
           </span>
