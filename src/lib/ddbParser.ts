@@ -87,10 +87,17 @@ function computeAbilityScores(data: any, mods: any[]): AbilityScores {
       result[key] = override;
       continue;
     }
+    // D&D Beyond's `isGranted` flag is unreliable for ability-score bonuses that
+    // come from a choice with sub-options (e.g. a background ASI offering "+2 to
+    // one ability" or "+1 to two abilities") — both the chosen and unchosen
+    // branches can show isGranted:false even though the choice was made and one
+    // branch is genuinely active. A modifier tied to a *specific* ability
+    // (entityId set) is only ever present when that ability was actually part of
+    // some granted feature, so it's safe to sum unconditionally; only the
+    // free-choice "pick any ability" case (entityId null) can't be resolved this
+    // way and is intentionally left out.
     const flatBonus = mods
-      .filter(
-        (m) => m.type === "bonus" && m.subType === ABILITY_SUBTYPE[key] && m.isGranted && m.entityId === id
-      )
+      .filter((m) => m.type === "bonus" && m.subType === ABILITY_SUBTYPE[key] && m.entityId === id)
       .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
     result[key] = base + bonus + flatBonus;
   }
@@ -124,10 +131,11 @@ function computeConditionsAndExhaustion(data: any): { conditions: string[]; exha
  * gained at old levels under a different modifier, drifting the total in
  * either direction with no way to recover the real history from a snapshot.
  * So the computed value is only used to seed max HP the first time a
- * character is synced; every sync after that treats max HP as DM-owned and
- * only refreshes current HP against it using D&D Beyond's damage tracker
- * (`removedHitPoints`), which is safe to trust every time. An explicit
- * D&D Beyond HP override always wins outright.
+ * character is synced (or whenever `maxHpLocked` is off); every sync after
+ * that defaults to treating max HP as DM-owned and only refreshes current HP
+ * against it using D&D Beyond's damage tracker (`removedHitPoints`), which is
+ * safe to trust every time. An explicit D&D Beyond HP override always wins
+ * outright, regardless of the lock.
  */
 function computeHp(data: any, mods: any[], conMod: number, totalLevel: number, existing: Character) {
   const perLevelBonus = mods
@@ -139,9 +147,10 @@ function computeHp(data: any, mods: any[], conMod: number, totalLevel: number, e
 
   const computedMax =
     conMod * totalLevel + (data.baseHitPoints ?? 0) + (data.bonusHitPoints ?? 0) + perLevelBonus + flatBonus;
-  const maxHp = data.overrideHitPoints ?? (existing.synced ? existing.combat.maxHp : computedMax);
+  const shouldLockMax = existing.maxHpLocked ?? existing.synced ?? false;
+  const maxHp = data.overrideHitPoints ?? (shouldLockMax ? existing.combat.maxHp : computedMax);
   const hp = Math.max(0, maxHp - (data.removedHitPoints ?? 0));
-  return { hp, maxHp, tempHp: data.temporaryHitPoints ?? 0 };
+  return { hp, maxHp, tempHp: data.temporaryHitPoints ?? 0, maxHpLocked: true };
 }
 
 function computeClassSummary(data: any) {
@@ -299,7 +308,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const conMod = abilityModifier(abilities.con);
   const { level, className, subclass } = computeClassSummary(data);
   const profBonus = proficiencyBonus(level);
-  const { hp, maxHp, tempHp } = computeHp(data, mods, conMod, level, existing);
+  const { hp, maxHp, tempHp, maxHpLocked } = computeHp(data, mods, conMod, level, existing);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
 
   return {
@@ -311,6 +320,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     level: level || existing.level,
     heroicInspiration: Boolean(data.inspiration),
     initiative: computeInitiative(dexMod, mods),
+    maxHpLocked,
     combat: {
       hp,
       maxHp,

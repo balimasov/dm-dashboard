@@ -216,7 +216,14 @@ function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => setCombat("hp", Number(e.target.value))}
               />
             </Field>
-            <Field label="Max HP" hint="Не оновлюється автоматично при синхронізації — редагуйте вручну.">
+            <Field
+              label="Max HP"
+              hint={
+                draft.maxHpLocked
+                  ? "Зафіксовано — синхронізація не змінює це значення."
+                  : "Перерахується автоматично при наступній синхронізації."
+              }
+            >
               <input
                 type="number"
                 className={inputCls}
@@ -289,6 +296,14 @@ function EditCharacterForm({ character }: { character: Character }) {
               />
             </Field>
           </div>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={draft.maxHpLocked ?? false}
+              onChange={(e) => set("maxHpLocked", e.target.checked)}
+            />
+            Зафіксувати Max HP (ігнорувати автоматичний перерахунок при синхронізації)
+          </label>
         </section>
 
         {/* Stats */}
