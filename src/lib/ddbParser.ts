@@ -117,8 +117,19 @@ function computeConditionsAndExhaustion(data: any): { conditions: string[]; exha
  * contribution (conMod * total level) has to be added back on top, along with
  * any flat or per-level HP bonuses (e.g. the Tough feat), matching the formula
  * used by MrPrimate/ddb-importer's character parser.
+ *
+ * This retroactive formula only holds while a character's Constitution has
+ * never changed — if it's raised or lowered later (ASI, a curse, a DM
+ * ruling...), recomputing with the *current* modifier silently rewrites HP
+ * gained at old levels under a different modifier, drifting the total in
+ * either direction with no way to recover the real history from a snapshot.
+ * So the computed value is only used to seed max HP the first time a
+ * character is synced; every sync after that treats max HP as DM-owned and
+ * only refreshes current HP against it using D&D Beyond's damage tracker
+ * (`removedHitPoints`), which is safe to trust every time. An explicit
+ * D&D Beyond HP override always wins outright.
  */
-function computeHp(data: any, mods: any[], conMod: number, totalLevel: number) {
+function computeHp(data: any, mods: any[], conMod: number, totalLevel: number, existing: Character) {
   const perLevelBonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "hit-points-per-level" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0) * totalLevel, 0);
@@ -128,9 +139,9 @@ function computeHp(data: any, mods: any[], conMod: number, totalLevel: number) {
 
   const computedMax =
     conMod * totalLevel + (data.baseHitPoints ?? 0) + (data.bonusHitPoints ?? 0) + perLevelBonus + flatBonus;
-  const max = data.overrideHitPoints ?? computedMax;
-  const hp = Math.max(0, max - (data.removedHitPoints ?? 0));
-  return { hp, maxHp: max, tempHp: data.temporaryHitPoints ?? 0 };
+  const maxHp = data.overrideHitPoints ?? (existing.synced ? existing.combat.maxHp : computedMax);
+  const hp = Math.max(0, maxHp - (data.removedHitPoints ?? 0));
+  return { hp, maxHp, tempHp: data.temporaryHitPoints ?? 0 };
 }
 
 function computeClassSummary(data: any) {
@@ -288,7 +299,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const conMod = abilityModifier(abilities.con);
   const { level, className, subclass } = computeClassSummary(data);
   const profBonus = proficiencyBonus(level);
-  const { hp, maxHp, tempHp } = computeHp(data, mods, conMod, level);
+  const { hp, maxHp, tempHp } = computeHp(data, mods, conMod, level, existing);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
 
   return {

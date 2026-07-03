@@ -216,7 +216,7 @@ function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => setCombat("hp", Number(e.target.value))}
               />
             </Field>
-            <Field label="Max HP">
+            <Field label="Max HP" hint="Не оновлюється автоматично при синхронізації — редагуйте вручну.">
               <input
                 type="number"
                 className={inputCls}
@@ -432,11 +432,20 @@ const inputCls =
   "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 const addBtnCls = "text-xs text-sky-400 hover:underline";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1 text-xs text-slate-400">
       {label}
       {children}
+      {hint && <span className="text-[11px] text-slate-600">{hint}</span>}
     </label>
   );
 }
