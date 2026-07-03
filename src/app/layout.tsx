@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import packageJson from "../../package.json";
 
 export const metadata: Metadata = {
   title: "DM Character Dashboard",
   description: "Компактний дашборд персонажів партії для Данжеон Майстра",
 };
+
+const APP_VERSION = packageJson.version;
 
 export default function RootLayout({
   children,
@@ -31,6 +34,9 @@ export default function RootLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
+        <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
+          DM Character Dashboard · v{APP_VERSION}
+        </footer>
       </body>
     </html>
   );
