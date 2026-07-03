@@ -3,6 +3,8 @@ import { Character, abilityModifier, formatModifier, characterInfoLine } from "@
 import { ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterAvatar } from "./CharacterAvatar";
+import { InfoTooltip } from "./InfoTooltip";
+import { getConditionInfo, getExhaustionTooltip } from "@/lib/conditionInfo";
 
 const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
@@ -33,6 +35,22 @@ function HpBar({ hp, maxHp, tempHp }: { hp: number; maxHp: number; tempHp: numbe
   );
 }
 
+function ConditionsPanel({ conditions }: { conditions: string[] }) {
+  return (
+    <div className="space-y-1.5">
+      {conditions.map((condition) => {
+        const info = getConditionInfo(condition);
+        return (
+          <div key={condition}>
+            <p className="font-semibold text-slate-100">{condition}</p>
+            {info && <p>{info}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CharacterCard({
   character,
   onRemove,
@@ -51,17 +69,13 @@ export function CharacterCard({
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-lg font-semibold text-slate-50">{c.name}</h2>
           <p className="truncate text-sm text-slate-400">{characterInfoLine(c)}</p>
-          <p className="truncate text-xs text-slate-500 mt-0.5">Role: {c.role || "—"}</p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
-          <span
-            title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
-            className={`text-base leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
-          >
-            ★
-          </span>
-          <span className="text-slate-300">Init {formatModifier(c.initiative)}</span>
-        </div>
+        <span
+          title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
+          className={`shrink-0 text-base leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
+        >
+          ★
+        </span>
       </div>
 
       {!c.synced && c.dndBeyondUrl && (
@@ -77,10 +91,20 @@ export function CharacterCard({
           <span>AC: {c.combat.ac}</span>
           <span>Speed: {c.combat.speed} ft</span>
           <span>Passive Perception: {c.combat.passivePerception}</span>
-          <span>Exhaustion: {c.combat.exhaustion}</span>
-          <span className="col-span-2 truncate">
-            Conditions:{" "}
-            {c.combat.conditions.length > 0 ? c.combat.conditions.join(", ") : "none"}
+          <span>Init: {formatModifier(c.initiative)}</span>
+          <span className="col-span-2">
+            <InfoTooltip panel={getExhaustionTooltip(c.combat.exhaustion)}>
+              Exhaustion: {c.combat.exhaustion}
+            </InfoTooltip>
+          </span>
+          <span className="col-span-2">
+            {c.combat.conditions.length > 0 ? (
+              <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
+                Conditions: {c.combat.conditions.join(", ")}
+              </InfoTooltip>
+            ) : (
+              <span className="block truncate">Conditions: none</span>
+            )}
           </span>
           <span className="col-span-2 truncate text-violet-300">
             Concentration: {c.combat.concentration || "none"}
