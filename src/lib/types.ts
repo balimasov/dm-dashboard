@@ -94,6 +94,14 @@ export function formatModifier(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
+/** e.g. "Lvl 5 · Orc · Barbarian/Path of the Berserker" */
+export function characterInfoLine(character: Character): string {
+  const classPart = character.subclass
+    ? `${character.className}/${character.subclass}`
+    : character.className;
+  return [`Lvl ${character.level}`, character.race, classPart].filter(Boolean).join(" · ");
+}
+
 /** Formats an ISO timestamp using the viewer's own local timezone (not the server's). */
 export function formatSyncTimestamp(iso: string): string {
   return new Date(iso).toLocaleString("uk-UA", {

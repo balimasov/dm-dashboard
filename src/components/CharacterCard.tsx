@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Character, abilityModifier, formatModifier } from "@/lib/types";
+import { Character, abilityModifier, formatModifier, characterInfoLine } from "@/lib/types";
 import { ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
+import { CharacterAvatar } from "./CharacterAvatar";
 
 const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
@@ -45,21 +46,19 @@ export function CharacterCard({
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20 flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-50">{c.name}</h2>
-          <p className="text-sm text-slate-400">
-            {c.race} · {c.className}
-            {c.subclass ? ` ${c.subclass}` : ""} · Level {c.level}
-          </p>
-          {c.role && <p className="text-xs text-slate-500 mt-0.5">Role: {c.role}</p>}
+      <div className="flex items-start gap-3">
+        <CharacterAvatar character={c} size="md" />
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-lg font-semibold text-slate-50">{c.name}</h2>
+          <p className="truncate text-sm text-slate-400">{characterInfoLine(c)}</p>
+          <p className="truncate text-xs text-slate-500 mt-0.5">Role: {c.role || "—"}</p>
         </div>
-        <div className="flex flex-col items-end gap-1 text-xs">
+        <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
           <span
-            title="Heroic Inspiration"
-            className={c.heroicInspiration ? "text-amber-400" : "text-slate-600"}
+            title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
+            className={`text-base leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
           >
-            {c.heroicInspiration ? "Heroic ✅" : "Heroic ❌"}
+            ★
           </span>
           <span className="text-slate-300">Init {formatModifier(c.initiative)}</span>
         </div>
@@ -79,15 +78,13 @@ export function CharacterCard({
           <span>Speed: {c.combat.speed} ft</span>
           <span>Passive Perception: {c.combat.passivePerception}</span>
           <span>Exhaustion: {c.combat.exhaustion}</span>
-          <span className="col-span-2">
+          <span className="col-span-2 truncate">
             Conditions:{" "}
             {c.combat.conditions.length > 0 ? c.combat.conditions.join(", ") : "none"}
           </span>
-          {c.combat.concentration && (
-            <span className="col-span-2 text-violet-300">
-              Concentration: {c.combat.concentration}
-            </span>
-          )}
+          <span className="col-span-2 truncate text-violet-300">
+            Concentration: {c.combat.concentration || "none"}
+          </span>
           {isDown && c.combat.deathSaves && (
             <span className="col-span-2 text-red-400">
               Death Saves: ✅ {c.combat.deathSaves.successes}/3 · ❌{" "}

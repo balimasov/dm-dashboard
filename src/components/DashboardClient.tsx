@@ -51,23 +51,15 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
             Бойовий стан, ресурси та нотатки по кожному персонажу.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {linkedCharacters.length > 0 && (
-            <button
-              onClick={handleSyncAll}
-              disabled={syncingAll}
-              className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-            >
-              {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
-            </button>
-          )}
-          <Link
-            href="/settings"
-            className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700"
+        {linkedCharacters.length > 0 && (
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+            className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
           >
-            + Додати персонажа
-          </Link>
-        </div>
+            {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
+          </button>
+        )}
       </div>
 
       {syncSummary && <p className="text-sm text-amber-400 mb-4">{syncSummary}</p>}

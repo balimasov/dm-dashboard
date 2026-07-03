@@ -3,33 +3,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { Character } from "@/lib/types";
+import { Character, characterInfoLine } from "@/lib/types";
 import { SyncTimestamp } from "./SyncTimestamp";
-
-function CharacterAvatar({ character }: { character: Character }) {
-  if (character.avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable D&D Beyond CDN domain; not worth configuring remotePatterns for a 56px thumbnail
-      <img
-        src={character.avatarUrl}
-        alt=""
-        className="h-14 w-14 shrink-0 rounded-md border border-slate-800 object-cover"
-      />
-    );
-  }
-  return (
-    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-800 text-lg font-semibold text-slate-600">
-      {character.name.trim().charAt(0).toUpperCase() || "?"}
-    </div>
-  );
-}
-
-function characterInfoLine(character: Character): string {
-  const classPart = character.subclass
-    ? `${character.className}/${character.subclass}`
-    : character.className;
-  return [`Lvl ${character.level}`, character.race, classPart].filter(Boolean).join(" · ");
-}
+import { CharacterAvatar } from "./CharacterAvatar";
 
 export function SortableCharacterRow({
   character,
