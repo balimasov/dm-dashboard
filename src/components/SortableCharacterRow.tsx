@@ -74,20 +74,26 @@ export function SortableCharacterRow({
           <p className="truncate text-lg font-semibold text-slate-100">{character.name}</p>
           <p className="truncate text-xs text-slate-500">{characterInfoLine(character)}</p>
           {character.dndBeyondUrl && (
-            <a
-              href={character.dndBeyondUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block truncate text-xs text-sky-400 hover:underline"
-            >
-              {character.dndBeyondUrl}
-            </a>
-          )}
-          {syncing && <p className="text-xs text-sky-400">Синхронізація...</p>}
-          {!syncing && character.lastSyncedAt && (
-            <p className="text-xs text-slate-600">
-              Синхронізовано: <SyncTimestamp iso={character.lastSyncedAt} />
-            </p>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+              <a
+                href={character.dndBeyondUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 text-sky-400 hover:underline"
+              >
+                D&D Beyond ↗
+              </a>
+              <span className="text-slate-700">·</span>
+              {syncing ? (
+                <span className="text-sky-400">Синхронізація...</span>
+              ) : character.lastSyncedAt ? (
+                <span className="truncate text-slate-600">
+                  Синхронізовано <SyncTimestamp iso={character.lastSyncedAt} />
+                </span>
+              ) : (
+                <span className="truncate text-amber-500">Ще не синхронізовано</span>
+              )}
+            </div>
           )}
         </div>
       </div>

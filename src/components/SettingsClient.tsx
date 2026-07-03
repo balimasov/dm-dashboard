@@ -26,8 +26,13 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
     useCharacters(initialCharacters);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+
+  const trimmedUrl = url.trim();
+  const ddbId = extractDndBeyondCharacterId(trimmedUrl);
+  const canSubmit = ddbId !== null && !adding;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -36,39 +41,38 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = url.trim();
-    if (!trimmed) return;
-
-    const id = extractDndBeyondCharacterId(trimmed);
-    if (!id) {
+    if (!ddbId) {
       setError(
         "Не вдалося розпізнати лінк. Очікується формат: https://www.dndbeyond.com/characters/1234567"
       );
       return;
     }
-    if (characters.some((c) => c.dndBeyondUrl && extractDndBeyondCharacterId(c.dndBeyondUrl) === id)) {
+    if (characters.some((c) => c.dndBeyondUrl && extractDndBeyondCharacterId(c.dndBeyondUrl) === ddbId)) {
       setError("Цей персонаж вже додано.");
       return;
     }
 
     setError(null);
     setSyncError(null);
+    setAdding(true);
 
     let character;
     try {
-      character = await addFromUrl(trimmed);
+      character = await addFromUrl(trimmedUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не вдалося додати персонажа.");
+      setError(err instanceof Error ? err.message : "Не вдалося додати персонажа. Спробуйте ще раз.");
+      setAdding(false);
       return;
     }
     setUrl("");
+    setAdding(false);
 
     setSyncingId(character.id);
     try {
       const synced = await fetchAndParseDdbCharacter(character);
       await updateCharacter(character.id, synced);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "невідома помилка";
+      const message = err instanceof Error ? err.message : "Невідома помилка синхронізації.";
       setSyncError(
         `Не вдалося синхронізувати "${character.name}": ${message} Дані можна заповнити вручну на сторінці редагування.`
       );
@@ -86,11 +90,8 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
       const synced = await fetchAndParseDdbCharacter(character);
       await updateCharacter(id, synced);
     } catch (err) {
-      setSyncError(
-        `Не вдалося синхронізувати "${character.name}": ${
-          err instanceof Error ? err.message : "невідома помилка"
-        }.`
-      );
+      const message = err instanceof Error ? err.message : "Невідома помилка синхронізації.";
+      setSyncError(`Не вдалося синхронізувати "${character.name}": ${message}`);
     } finally {
       setSyncingId(null);
     }
@@ -115,29 +116,28 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
         Додайте лінки на персонажів D&D Beyond, щоб вони з&apos;явились на дашборді.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-2">
+      <form onSubmit={handleSubmit} className="flex gap-2 mb-1">
         <input
           type="url"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError(null);
+          }}
           placeholder="https://www.dndbeyond.com/characters/27964361"
           className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
         />
         <button
           type="submit"
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+          disabled={!canSubmit}
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
         >
-          Додати
+          {adding ? "Додавання..." : "Додати"}
         </button>
       </form>
-      {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
-      {syncError && <p className="text-sm text-amber-400 mb-4">{syncError}</p>}
-
-      <div className="rounded-lg border border-amber-900/50 bg-amber-950/20 px-3 py-2 text-xs text-amber-300 mb-8">
-        При додаванні лінка застосунок автоматично намагається підтягнути дані з
-        D&D Beyond (стати, HP, AC, ресурси, spell slots). Це неофіційний API,
-        тому персонаж має бути публічним, а деякі поля (роль, нотатки, AC для
-        нестандартних білдів) варто перевірити й підправити вручну.
+      <div className="mb-6 space-y-1">
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        {syncError && <p className="text-sm text-amber-400">{syncError}</p>}
       </div>
 
       <div className="flex items-center justify-between mb-3">

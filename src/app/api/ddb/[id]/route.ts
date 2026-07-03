@@ -20,11 +20,19 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
     );
   }
 
-  if (!upstream.ok) {
+  if (upstream.status === 403 || upstream.status === 404) {
     return NextResponse.json(
       {
-        error: `D&D Beyond повернув помилку ${upstream.status}. Переконайтесь, що персонаж має публічну видимість.`,
+        error:
+          "Персонаж не публічний або не існує. Відкрийте його на D&D Beyond → Manage → Privacy & Sharing → Public, і спробуйте ще раз.",
       },
+      { status: upstream.status }
+    );
+  }
+
+  if (!upstream.ok) {
+    return NextResponse.json(
+      { error: `D&D Beyond тимчасово недоступний (помилка ${upstream.status}). Спробуйте пізніше.` },
       { status: upstream.status }
     );
   }
@@ -32,7 +40,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
   const json = await upstream.json();
   if (!json?.success || !json?.data) {
     return NextResponse.json(
-      { error: "Персонажа не знайдено, або він приватний." },
+      { error: "Персонаж не публічний або не існує. Перевірте налаштування приватності на D&D Beyond." },
       { status: 404 }
     );
   }
