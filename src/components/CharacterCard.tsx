@@ -7,6 +7,7 @@ import {
   proficiencyBonus,
   savingThrowBonus,
   skillBonus,
+  SKILL_ABBR,
   SKILL_LABELS,
 } from "@/lib/types";
 import { DotMeter, ResourceMeter } from "./ResourceMeter";
@@ -259,6 +260,25 @@ export function CharacterCard({
         </div>
       </div>
 
+      {/* Senses */}
+      <div className="border-t border-slate-800 pt-3 space-y-1.5">
+        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Senses</h3>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Pill title="Passive Perception">{SKILL_ABBR.perception} {c.combat.passivePerception}</Pill>
+          <Pill title="Passive Investigation">{SKILL_ABBR.investigation} {c.combat.passiveInvestigation}</Pill>
+          <Pill title="Passive Insight">{SKILL_ABBR.insight} {c.combat.passiveInsight}</Pill>
+        </div>
+        {c.senses.length > 0 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
+            {c.senses.map((s) => (
+              <span key={s.name}>
+                {s.name} {s.range} ft
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Stats */}
       <div className="border-t border-slate-800 pt-3">
         <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Stats</h3>
@@ -305,33 +325,14 @@ export function CharacterCard({
         </div>
       )}
 
-      {/* Senses */}
-      <div className="border-t border-slate-800 pt-3 space-y-1.5">
-        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Senses</h3>
-        <div className="grid grid-cols-3 gap-1.5">
-          <Pill title="Passive Perception">Perc {c.combat.passivePerception}</Pill>
-          <Pill title="Passive Investigation">Inv {c.combat.passiveInvestigation}</Pill>
-          <Pill title="Passive Insight">Ins {c.combat.passiveInsight}</Pill>
-        </div>
-        {c.senses.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
-            {c.senses.map((s) => (
-              <span key={s.name}>
-                {s.name} {s.range} ft
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Skills */}
       {c.skillProficiencies.length > 0 && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
             {c.skillProficiencies.map((skill) => (
-              <Pill key={skill.name} color={skill.expertise ? "amber" : "sky"}>
-                {formatModifier(skillBonus(c, skill))} {SKILL_LABELS[skill.name]}
+              <Pill key={skill.name} title={SKILL_LABELS[skill.name]} color={skill.expertise ? "amber" : "sky"}>
+                {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
               </Pill>
             ))}
           </div>
@@ -356,7 +357,11 @@ export function CharacterCard({
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
             Spell Slots
           </h3>
-          <p className="mb-1.5 truncate text-sm text-violet-300">
+          <p
+            className={`mb-1.5 truncate text-sm ${
+              c.combat.concentration ? "text-violet-300" : "text-slate-500"
+            }`}
+          >
             Concentration: {c.combat.concentration || "none"}
           </p>
           <div className="space-y-1">

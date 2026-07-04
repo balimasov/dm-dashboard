@@ -24,8 +24,9 @@ import {
  *   fixed ability) aren't resolved — only fixed racial/item stat bonuses are.
  * - AC ignores special unarmored defense (Monk/Barbarian/Sorcerer), natural
  *   armor races, dragon hide and dual-wielding bonuses.
- * - Spell slot max is derived as available+used rather than the official
- *   multiclass slot table, since D&D Beyond doesn't expose a max field.
+ * - Third-caster subclasses (Eldritch Knight, Arcane Trickster) aren't
+ *   detected — only classes whose base `definition.canCastSpells` is true
+ *   contribute spell slots.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -374,12 +375,52 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
   return resources;
 }
 
+/**
+ * D&D Beyond's `spellSlots[].available` is NOT "slots remaining" — in every
+ * real export it's 0 regardless of how many slots are actually free, while
+ * `used` tracks consumption against the class's own slot table. The real
+ * per-level max comes from `class.definition.spellRules.levelSpellSlots`
+ * (indexed by that class's level), which D&D Beyond already computes
+ * correctly including the standard full/half/third-caster progression.
+ * Multiclass casters are combined via `multiClassSpellSlotDivisor` (1 for
+ * full casters, 2 for half, 3 for third) per the normal 5e multiclassing
+ * spellcasting rule, then looked up in the same shared table. Warlocks are
+ * excluded — their Pact Magic slots are handled separately as a resource.
+ */
 function computeSpellSlots(data: any): SpellSlotLevel[] {
-  const slots: SpellSlotLevel[] = [];
-  for (const slot of data.spellSlots ?? []) {
-    const max = (slot.available ?? 0) + (slot.used ?? 0);
-    if (max > 0) slots.push({ level: slot.level, current: slot.available ?? 0, max });
+  const casterClasses = (data.classes ?? []).filter(
+    (c: any) =>
+      c.definition?.canCastSpells &&
+      c.definition?.name !== "Warlock" &&
+      Array.isArray(c.definition?.spellRules?.levelSpellSlots)
+  );
+  if (casterClasses.length === 0) return [];
+
+  let combinedLevel = 0;
+  let table: number[][] = casterClasses[0].definition.spellRules.levelSpellSlots;
+  for (const c of casterClasses) {
+    const divisor = c.definition.spellRules.multiClassSpellSlotDivisor || 1;
+    combinedLevel += Math.floor((c.level ?? 0) / divisor);
+    if (c.definition.spellRules.levelSpellSlots.length > table.length) {
+      table = c.definition.spellRules.levelSpellSlots;
+    }
   }
+  combinedLevel = Math.min(combinedLevel, table.length - 1);
+  const maxes: number[] = table[combinedLevel] ?? [];
+
+  const usedByLevel: Record<number, number> = {};
+  for (const slot of data.spellSlots ?? []) {
+    usedByLevel[slot.level] = slot.used ?? 0;
+  }
+
+  const slots: SpellSlotLevel[] = [];
+  maxes.forEach((max, idx) => {
+    if (max > 0) {
+      const level = idx + 1;
+      const used = usedByLevel[level] ?? 0;
+      slots.push({ level, current: Math.max(0, max - used), max });
+    }
+  });
   return slots;
 }
 

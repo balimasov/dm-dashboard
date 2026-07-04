@@ -119,6 +119,28 @@ export const SKILL_LABELS: Record<SkillName, string> = {
   survival: "Survival",
 };
 
+/** Short form used anywhere space is tight (Senses pills, Skills pills) — full name still shows on hover. */
+export const SKILL_ABBR: Record<SkillName, string> = {
+  acrobatics: "Acro",
+  "animal-handling": "AnHa",
+  arcana: "Arca",
+  athletics: "Athl",
+  deception: "Dece",
+  history: "Hist",
+  insight: "Ins",
+  intimidation: "Inti",
+  investigation: "Inv",
+  medicine: "Medi",
+  nature: "Nat",
+  perception: "Perc",
+  performance: "Perf",
+  persuasion: "Pers",
+  religion: "Reli",
+  "sleight-of-hand": "SoH",
+  stealth: "Stea",
+  survival: "Surv",
+};
+
 export interface SkillProficiency {
   name: SkillName;
   expertise: boolean;
