@@ -9,6 +9,7 @@ import {
   RECOVERY_LABELS,
   RecoveryType,
   Resource,
+  Sense,
   SpellSlotLevel,
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -57,6 +58,40 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
   function setStat(key: keyof AbilityScores, value: number) {
     setDraft((d) => ({ ...d, stats: { ...d.stats, [key]: value } }));
+  }
+
+  function toggleSavingThrow(key: keyof AbilityScores, proficient: boolean) {
+    setDraft((d) => ({
+      ...d,
+      savingThrowProficiencies: proficient
+        ? [...d.savingThrowProficiencies, key]
+        : d.savingThrowProficiencies.filter((k) => k !== key),
+    }));
+  }
+
+  function setDamageList(field: "resistances" | "immunities" | "vulnerabilities", value: string) {
+    setDraft((d) => ({
+      ...d,
+      [field]: value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }));
+  }
+
+  function updateSense(index: number, updates: Partial<Sense>) {
+    setDraft((d) => ({
+      ...d,
+      senses: d.senses.map((s, i) => (i === index ? { ...s, ...updates } : s)),
+    }));
+  }
+
+  function addSense() {
+    setDraft((d) => ({ ...d, senses: [...d.senses, { name: "", range: 60 }] }));
+  }
+
+  function removeSense(index: number) {
+    setDraft((d) => ({ ...d, senses: d.senses.filter((_, i) => i !== index) }));
   }
 
   function updateResource(id: string, updates: Partial<Resource>) {
@@ -251,6 +286,22 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => setCombat("passivePerception", Number(e.target.value))}
               />
             </Field>
+            <Field label="Passive Investigation">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.combat.passiveInvestigation}
+                onChange={(e) => setCombat("passiveInvestigation", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Passive Insight">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.combat.passiveInsight}
+                onChange={(e) => setCombat("passiveInsight", Number(e.target.value))}
+              />
+            </Field>
             <Field label="Exhaustion">
               <input
                 type="number"
@@ -307,6 +358,89 @@ export function EditCharacterForm({ character }: { character: Character }) {
                   onChange={(e) => setStat(key, Number(e.target.value))}
                 />
               </Field>
+            ))}
+          </div>
+        </section>
+
+        {/* Saving throws */}
+        <section className="space-y-3">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Рятівні кидки (proficient)</h2>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
+              <label key={key} className="flex items-center gap-1.5 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={draft.savingThrowProficiencies.includes(key)}
+                  onChange={(e) => toggleSavingThrow(key, e.target.checked)}
+                />
+                {key.toUpperCase()}
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Resistances / Immunities / Vulnerabilities */}
+        <section className="space-y-3">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">
+            Резисти / Імунітети / Вразливості
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Field label="Resistances (через кому)">
+              <input
+                className={inputCls}
+                value={draft.resistances.join(", ")}
+                onChange={(e) => setDamageList("resistances", e.target.value)}
+              />
+            </Field>
+            <Field label="Immunities (через кому)">
+              <input
+                className={inputCls}
+                value={draft.immunities.join(", ")}
+                onChange={(e) => setDamageList("immunities", e.target.value)}
+              />
+            </Field>
+            <Field label="Vulnerabilities (через кому)">
+              <input
+                className={inputCls}
+                value={draft.vulnerabilities.join(", ")}
+                onChange={(e) => setDamageList("vulnerabilities", e.target.value)}
+              />
+            </Field>
+          </div>
+        </section>
+
+        {/* Senses */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm uppercase tracking-wide text-slate-500">Senses</h2>
+            <button type="button" onClick={addSense} className={addBtnCls}>
+              + Чуття
+            </button>
+          </div>
+          <div className="space-y-2">
+            {draft.senses.map((s, index) => (
+              <div key={index} className="flex flex-wrap items-center gap-2">
+                <input
+                  className={`${inputCls} flex-1 min-w-[140px]`}
+                  placeholder="Назва (напр. Darkvision)"
+                  value={s.name}
+                  onChange={(e) => updateSense(index, { name: e.target.value })}
+                />
+                <input
+                  type="number"
+                  className={`${inputCls} w-20`}
+                  value={s.range}
+                  onChange={(e) => updateSense(index, { range: Number(e.target.value) })}
+                />
+                <span className="text-slate-500">ft</span>
+                <button
+                  type="button"
+                  onClick={() => removeSense(index)}
+                  className="text-red-500/80 hover:text-red-400 text-sm"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
         </section>

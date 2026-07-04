@@ -47,8 +47,19 @@ export function SortableCharacterRow({
         </button>
         <CharacterAvatar character={character} />
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold text-slate-100">{character.name}</p>
-          <p className="truncate text-xs text-slate-500">{characterInfoLine(character)}</p>
+          <p
+            title={character.name}
+            className="truncate text-lg font-semibold text-slate-100 transition-colors hover:text-white"
+          >
+            {character.name}
+          </p>
+          <p
+            title={characterInfoLine(character)}
+            className="truncate text-xs text-slate-500 transition-colors hover:text-slate-300"
+          >
+            {characterInfoLine(character)}
+          </p>
+          <p className="text-xs text-slate-600">Lvl {character.level}</p>
           {character.dndBeyondUrl && (
             <div className="mt-1.5 flex items-center gap-1.5 text-xs">
               <a

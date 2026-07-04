@@ -1,4 +1,12 @@
-import { AbilityScores, Character, RecoveryType, Resource, SpellSlotLevel } from "./types";
+import {
+  AbilityScores,
+  Character,
+  proficiencyBonus,
+  RecoveryType,
+  Resource,
+  Sense,
+  SpellSlotLevel,
+} from "./types";
 
 /**
  * Parses the response of D&D Beyond's undocumented character JSON endpoint
@@ -67,8 +75,23 @@ function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
 }
 
-function proficiencyBonus(level: number): number {
-  return 2 + Math.floor((Math.max(level, 1) - 1) / 4);
+const SAVE_SUBTYPE: Record<keyof AbilityScores, string> = {
+  str: "strength-saving-throws",
+  dex: "dexterity-saving-throws",
+  con: "constitution-saving-throws",
+  int: "intelligence-saving-throws",
+  wis: "wisdom-saving-throws",
+  cha: "charisma-saving-throws",
+};
+
+const SENSE_SUBTYPES = ["darkvision", "blindsight", "tremorsense", "truesight"];
+
+function titleCase(kebab: string): string {
+  return kebab
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 function collectModifiers(data: any): any[] {
@@ -116,6 +139,52 @@ function computeConditionsAndExhaustion(data: any): { conditions: string[]; exha
     if (label) conditions.push(label);
   }
   return { conditions, exhaustion };
+}
+
+function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores> {
+  return (Object.keys(SAVE_SUBTYPE) as Array<keyof AbilityScores>).filter((key) =>
+    mods.some((m) => m.type === "proficiency" && m.subType === SAVE_SUBTYPE[key] && m.isGranted)
+  );
+}
+
+/**
+ * D&D Beyond doesn't reliably distinguish damage resistances from condition
+ * immunities in this endpoint (e.g. immunity to a *condition* like
+ * magical-sleep shows up under the same `type: "immunity"` as a damage-type
+ * immunity would) — both are surfaced here at face value, matching what the
+ * app's Resistances/Immunities/Vulnerabilities section is meant to list.
+ */
+function computeDamageModifiers(mods: any[]) {
+  function namesFor(type: string): string[] {
+    const names = mods
+      .filter((m) => m.type === type && m.isGranted && m.subType)
+      .map((m) => titleCase(m.subType));
+    return Array.from(new Set(names));
+  }
+  return {
+    resistances: namesFor("resistance"),
+    immunities: namesFor("immunity"),
+    vulnerabilities: namesFor("vulnerability"),
+  };
+}
+
+/**
+ * Additional senses (Darkvision, Blindsight, Tremorsense, Truesight) appear as
+ * modifiers keyed by `subType`, but the `type` field is inconsistent across
+ * real character exports (`"set-base"` in one sample, `"sense"` in another)
+ * — so both are accepted, keying only off the known `subType` names. When
+ * more than one source grants the same sense (e.g. race + an item), the
+ * larger range wins.
+ */
+function computeSenses(mods: any[]): Sense[] {
+  const senses: Sense[] = [];
+  for (const subType of SENSE_SUBTYPES) {
+    const range = mods
+      .filter((m) => (m.type === "sense" || m.type === "set-base") && m.subType === subType && m.isGranted)
+      .reduce((max, m) => Math.max(max, m.value ?? 0), 0);
+    if (range > 0) senses.push({ name: titleCase(subType), range });
+  }
+  return senses;
 }
 
 /**
@@ -198,16 +267,14 @@ function computeArmorClass(data: any, dexMod: number, mods: any[]): number {
   return base + dexContribution + shieldBonus + flatBonus;
 }
 
-function computePassivePerception(wisMod: number, profBonus: number, mods: any[]): number {
-  const proficient = mods.some(
-    (m) => m.type === "proficiency" && m.subType === "perception" && m.isGranted
-  );
-  const expert = mods.some((m) => m.type === "expertise" && m.subType === "perception" && m.isGranted);
+function computePassiveSkill(abilityMod: number, profBonus: number, skill: string, mods: any[]): number {
+  const proficient = mods.some((m) => m.type === "proficiency" && m.subType === skill && m.isGranted);
+  const expert = mods.some((m) => m.type === "expertise" && m.subType === skill && m.isGranted);
   const profMultiplier = expert ? 2 : proficient ? 1 : 0;
   const flatBonus = mods
-    .filter((m) => m.type === "bonus" && m.subType === "passive-perception" && m.isGranted)
+    .filter((m) => m.type === "bonus" && m.subType === `passive-${skill}` && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0), 0);
-  return 10 + wisMod + profBonus * profMultiplier + flatBonus;
+  return 10 + abilityMod + profBonus * profMultiplier + flatBonus;
 }
 
 function computeInitiative(dexMod: number, mods: any[]): number {
@@ -306,6 +373,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const dexMod = abilityModifier(abilities.dex);
   const wisMod = abilityModifier(abilities.wis);
   const conMod = abilityModifier(abilities.con);
+  const intMod = abilityModifier(abilities.int);
   const { level, className, subclass } = computeClassSummary(data);
   const profBonus = proficiencyBonus(level);
   const { hp, maxHp, tempHp, maxHpLocked } = computeHp(data, mods, conMod, level, existing);
@@ -328,7 +396,9 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
       tempHp,
       ac: computeArmorClass(data, dexMod, mods),
       speed: computeSpeed(data),
-      passivePerception: computePassivePerception(wisMod, profBonus, mods),
+      passivePerception: computePassiveSkill(wisMod, profBonus, "perception", mods),
+      passiveInvestigation: computePassiveSkill(intMod, profBonus, "investigation", mods),
+      passiveInsight: computePassiveSkill(wisMod, profBonus, "insight", mods),
       conditions,
       exhaustion,
       concentration: existing.combat.concentration,
@@ -343,6 +413,9 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     stats: abilities,
     resources: computeResources(data, abilities, profBonus),
     spellSlots: computeSpellSlots(data),
+    savingThrowProficiencies: computeSavingThrowProficiencies(mods),
+    ...computeDamageModifiers(mods),
+    senses: computeSenses(mods),
     synced: true,
     lastSyncedAt: new Date().toISOString(),
   };

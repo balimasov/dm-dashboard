@@ -41,6 +41,11 @@ export interface AbilityScores {
   cha: number;
 }
 
+export interface Sense {
+  name: string;
+  range: number;
+}
+
 export interface CombatState {
   hp: number;
   maxHp: number;
@@ -48,6 +53,8 @@ export interface CombatState {
   ac: number;
   speed: number;
   passivePerception: number;
+  passiveInvestigation: number;
+  passiveInsight: number;
   conditions: string[];
   exhaustion: number;
   concentration?: string;
@@ -72,6 +79,11 @@ export interface Character {
   stats: AbilityScores;
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
+  savingThrowProficiencies: Array<keyof AbilityScores>;
+  resistances: string[];
+  immunities: string[];
+  vulnerabilities: string[];
+  senses: Sense[];
   notes: string;
   dndBeyondUrl?: string;
   synced?: boolean;
@@ -94,12 +106,24 @@ export function formatModifier(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
-/** e.g. "Lvl 5 · Orc · Barbarian/Path of the Berserker" */
+export function proficiencyBonus(level: number): number {
+  return 2 + Math.floor((Math.max(level, 1) - 1) / 4);
+}
+
+/** Ability-mod + proficiency bonus if proficient in that save, else the plain ability mod. */
+export function savingThrowBonus(character: Character, ability: keyof AbilityScores): number {
+  const mod = abilityModifier(character.stats[ability]);
+  return character.savingThrowProficiencies.includes(ability)
+    ? mod + proficiencyBonus(character.level)
+    : mod;
+}
+
+/** e.g. "Orc · Barbarian/Path of the Berserker" (level shown separately) */
 export function characterInfoLine(character: Character): string {
   const classPart = character.subclass
     ? `${character.className}/${character.subclass}`
     : character.className;
-  return [`Lvl ${character.level}`, character.race, classPart].filter(Boolean).join(" · ");
+  return [character.race, classPart].filter(Boolean).join(" · ");
 }
 
 /** Formats an ISO timestamp using the viewer's own local timezone (not the server's). */
