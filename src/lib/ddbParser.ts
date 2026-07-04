@@ -1,7 +1,10 @@
 import {
   AbilityScores,
   Character,
+  Currency,
   formatModifier,
+  InventoryItem,
+  ItemRarity,
   proficiencyBonus,
   RecoveryType,
   Resource,
@@ -166,6 +169,35 @@ function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores
 /** Equipped armor/shields expose `stealthCheck: 2` when they impose disadvantage on Stealth (1 = normal). */
 function hasArmorStealthDisadvantage(data: any): boolean {
   return (data.inventory ?? []).some((i: any) => i.equipped && i.definition?.stealthCheck === 2);
+}
+
+const RARITY_MAP: Record<string, ItemRarity> = {
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  "very rare": "Very Rare",
+  legendary: "Legendary",
+  artifact: "Artifact",
+  varies: "Varies",
+};
+
+function computeInventory(data: any): InventoryItem[] {
+  return (data.inventory ?? []).map((item: any, idx: number) => ({
+    id: `item-${idx}`,
+    name: item.definition?.name || "Item",
+    rarity: RARITY_MAP[String(item.definition?.rarity ?? "").toLowerCase()] ?? "Unknown",
+    quantity: item.quantity ?? 1,
+  }));
+}
+
+function computeCurrency(data: any): Currency {
+  return {
+    cp: data.currencies?.cp ?? 0,
+    sp: data.currencies?.sp ?? 0,
+    ep: data.currencies?.ep ?? 0,
+    gp: data.currencies?.gp ?? 0,
+    pp: data.currencies?.pp ?? 0,
+  };
 }
 
 function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolean): SkillProficiency[] {
@@ -648,6 +680,8 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     ...computeDamageModifiers(mods),
     advantages: computeAdvantages(mods),
     senses: computeSenses(mods),
+    inventory: computeInventory(data),
+    currency: computeCurrency(data),
     synced: true,
     lastSyncedAt: new Date().toISOString(),
   };

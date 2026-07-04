@@ -6,6 +6,10 @@ import Link from "next/link";
 import {
   AbilityScores,
   Character,
+  Currency,
+  InventoryItem,
+  ItemRarity,
+  RARITY_ORDER,
   RECOVERY_LABELS,
   RecoveryType,
   Resource,
@@ -200,6 +204,28 @@ export function EditCharacterForm({ character }: { character: Character }) {
       ...d,
       spellcasting: { modifier: 0, attack: 0, saveDc: 0, ...d.spellcasting, [key]: value },
     }));
+  }
+
+  function updateItem(id: string, updates: Partial<InventoryItem>) {
+    setDraft((d) => ({
+      ...d,
+      inventory: d.inventory.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+    }));
+  }
+
+  function addItem() {
+    setDraft((d) => ({
+      ...d,
+      inventory: [...d.inventory, { id: nextId(), name: "", rarity: "Common", quantity: 1 }],
+    }));
+  }
+
+  function removeItem(id: string) {
+    setDraft((d) => ({ ...d, inventory: d.inventory.filter((i) => i.id !== id) }));
+  }
+
+  function setCurrency(key: keyof Currency, value: number) {
+    setDraft((d) => ({ ...d, currency: { ...d.currency, [key]: value } }));
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -679,6 +705,95 @@ export function EditCharacterForm({ character }: { character: Character }) {
                   </button>
                 </div>
               ))}
+          </div>
+        </section>
+
+        {/* Inventory */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm uppercase tracking-wide text-slate-500">Інвентар</h2>
+            <button type="button" onClick={addItem} className={addBtnCls}>
+              + Річ
+            </button>
+          </div>
+          <div className="space-y-2">
+            {draft.inventory.map((item) => (
+              <div key={item.id} className="flex flex-wrap items-center gap-2">
+                <input
+                  className={`${inputCls} flex-1 min-w-[140px]`}
+                  placeholder="Назва"
+                  value={item.name}
+                  onChange={(e) => updateItem(item.id, { name: e.target.value })}
+                />
+                <select
+                  className={inputCls}
+                  value={item.rarity}
+                  onChange={(e) => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
+                >
+                  {RARITY_ORDER.map((rarity) => (
+                    <option key={rarity} value={rarity}>
+                      {rarity}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  className={`${inputCls} w-20`}
+                  value={item.quantity}
+                  onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) })}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  className="text-red-500/80 hover:text-red-400 text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            <Field label="PP">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.currency.pp}
+                onChange={(e) => setCurrency("pp", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="GP">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.currency.gp}
+                onChange={(e) => setCurrency("gp", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="EP">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.currency.ep}
+                onChange={(e) => setCurrency("ep", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="SP">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.currency.sp}
+                onChange={(e) => setCurrency("sp", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="CP">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.currency.cp}
+                onChange={(e) => setCurrency("cp", Number(e.target.value))}
+              />
+            </Field>
           </div>
         </section>
 

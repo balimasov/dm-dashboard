@@ -69,6 +69,12 @@ export const demoCharacters: Character[] = [
     vulnerabilities: [],
     advantages: ["Advantage: Saving Throws — to avoid or end the Charmed condition (Fey Ancestry)"],
     senses: [{ name: "Darkvision", range: 120 }],
+    inventory: [
+      { id: "i1", name: "Longsword", rarity: "Common", quantity: 1 },
+      { id: "i2", name: "Chain Mail", rarity: "Common", quantity: 1 },
+      { id: "i3", name: "Whisper of the Underdark", rarity: "Rare", quantity: 1 },
+    ],
+    currency: { cp: 0, sp: 0, ep: 0, gp: 42, pp: 0 },
     notes:
       "Тактичний персонаж, добре працює через позиціонування та контроль. Має магічний меч Whisper of the Underdark. Варто давати ситуації, де його рішення на полі бою мають реальну ціну.",
   },
@@ -130,6 +136,12 @@ export const demoCharacters: Character[] = [
     vulnerabilities: [],
     advantages: ["Advantage: Saving Throws — to avoid or end the Charmed condition (Fey Ancestry)"],
     senses: [{ name: "Darkvision", range: 120 }],
+    inventory: [
+      { id: "i1", name: "Longsword", rarity: "Common", quantity: 1 },
+      { id: "i2", name: "Plate Armor", rarity: "Common", quantity: 1 },
+      { id: "i3", name: "Holy Symbol of Lathander", rarity: "Uncommon", quantity: 1 },
+    ],
+    currency: { cp: 0, sp: 0, ep: 0, gp: 118, pp: 2 },
     notes:
       "Сильний зв'язок із Латандером, тема світла проти темряви. Добре працюють сцени морального вибору, захисту слабших або протистояння темним силам.",
   },

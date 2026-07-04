@@ -149,6 +149,48 @@ export const SKILL_ABBR: Record<SkillName, string> = {
   survival: "Surv",
 };
 
+export type ItemRarity =
+  | "Common"
+  | "Uncommon"
+  | "Rare"
+  | "Very Rare"
+  | "Legendary"
+  | "Artifact"
+  | "Varies"
+  | "Unknown";
+
+/** Display order for grouping the party inventory (common items first). */
+export const RARITY_ORDER: ItemRarity[] = [
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Very Rare",
+  "Legendary",
+  "Artifact",
+  "Varies",
+  "Unknown",
+];
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  rarity: ItemRarity;
+  quantity: number;
+}
+
+export interface Currency {
+  cp: number;
+  sp: number;
+  ep: number;
+  gp: number;
+  pp: number;
+}
+
+/** Standard 5e coin conversion (10 cp = 1 sp, 10 sp = 1 gp, 2 gp = 1 ep... expressed directly in GP). */
+export function currencyToGp(currency: Currency): number {
+  return currency.pp * 10 + currency.gp + currency.ep * 0.5 + currency.sp * 0.1 + currency.cp * 0.01;
+}
+
 export interface SkillProficiency {
   name: SkillName;
   /** False for an entry that exists only to carry an advantage/disadvantage note without real training. */
@@ -200,6 +242,8 @@ export interface Character {
   vulnerabilities: string[];
   advantages: string[];
   senses: Sense[];
+  inventory: InventoryItem[];
+  currency: Currency;
   notes: string;
   dndBeyondUrl?: string;
   synced?: boolean;
