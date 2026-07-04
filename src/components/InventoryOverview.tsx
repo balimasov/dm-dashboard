@@ -69,31 +69,36 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
   return (
     <div className="space-y-6">
       {groups.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {groups.map((group) => (
-            <div
-              key={group.category}
-              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"
-            >
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {CATEGORY_LABELS[group.category]}
-              </h3>
-              <ul className="space-y-1.5 text-sm">
-                {group.items.map((item) => (
-                  <li key={item.name} className="flex items-center justify-between gap-3">
-                    <span className="min-w-0 flex-1">
-                      <ItemName item={item} />
-                    </span>
-                    <span className="shrink-0 text-xs text-slate-500">
-                      {item.holders
-                        .map((h) => (h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character))
-                        .join(", ")}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+          <div className="divide-y divide-slate-800">
+            {groups.map((group) => (
+              <div key={group.category} className="py-3 first:pt-0 last:pb-0">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {CATEGORY_LABELS[group.category]}
+                </h3>
+                <ul className="space-y-1.5 text-sm">
+                  {group.items.map((item) => {
+                    const holdersText = item.holders
+                      .map((h) => (h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character))
+                      .join(", ");
+                    return (
+                      <li key={item.name} className="flex items-center gap-3">
+                        <span className="min-w-0 flex-1">
+                          <ItemName item={item} />
+                        </span>
+                        <span
+                          title={holdersText}
+                          className="max-w-[45%] shrink-0 truncate text-right text-xs text-slate-500"
+                        >
+                          {holdersText}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

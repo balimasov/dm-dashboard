@@ -174,7 +174,8 @@ export const RARITY_ORDER: ItemRarity[] = [
 export type ItemCategory = "Weapon" | "Armor" | "Consumable" | "Magic Item" | "Gear";
 
 /** Display order for grouping the party inventory. */
-export const CATEGORY_ORDER: ItemCategory[] = ["Weapon", "Armor", "Consumable", "Magic Item", "Gear"];
+/** Alphabetical by label (Armor, Consumables, Gear, Magic Items, Weapons). */
+export const CATEGORY_ORDER: ItemCategory[] = ["Armor", "Consumable", "Gear", "Magic Item", "Weapon"];
 
 export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   Weapon: "Weapons",

@@ -111,7 +111,7 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-50 mb-1">Персонажі</h1>
+      <h1 className="text-2xl font-bold text-slate-50 mb-1">Налаштування</h1>
       <p className="text-sm text-slate-500 mb-6">
         Додайте лінки на персонажів D&D Beyond, щоб вони з&apos;явились на дашборді.
       </p>

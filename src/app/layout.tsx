@@ -24,14 +24,7 @@ export default function RootLayout({
             <Link href="/" className="font-semibold text-slate-100">
               DM Character Dashboard
             </Link>
-            <nav className="flex gap-4 text-sm text-slate-400">
-              <Link href="/" className="hover:text-slate-100">
-                Дашборд
-              </Link>
-              <Link href="/settings" className="hover:text-slate-100">
-                Персонажі
-              </Link>
-            </nav>
+            <div id="header-actions" className="flex items-center gap-2" />
           </div>
         </header>
         <main className="flex-1">{children}</main>

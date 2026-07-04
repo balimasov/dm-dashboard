@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCharacters } from "@/hooks/useCharacters";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
+import { HeaderPortal } from "@/components/HeaderPortal";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -48,22 +49,33 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       {linkedCharacters.length > 0 && (
-        <div className="mb-6 flex justify-end">
+        <HeaderPortal>
           <button
             onClick={handleSyncAll}
             disabled={syncingAll}
-            className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
           >
             {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
           </button>
-        </div>
+        </HeaderPortal>
       )}
 
       <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
         <InventoryOverview characters={characters} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={`Персонажі (${characters.length})`} storageKey="dm-dashboard-characters-open">
+      <CollapsibleSection
+        title={`Персонажі (${characters.length})`}
+        storageKey="dm-dashboard-characters-open"
+        actions={
+          <Link
+            href="/settings"
+            className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            Налаштування
+          </Link>
+        }
+      >
         <p className="mb-4 text-sm text-slate-500">
           Бойовий стан, ресурси та нотатки по кожному персонажу.
         </p>
