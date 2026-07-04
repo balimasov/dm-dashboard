@@ -619,7 +619,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
         {/* Spell slots */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide text-slate-500">Spell Slots</h2>
+            <h2 className="text-sm uppercase tracking-wide text-slate-500">Spells</h2>
             <button type="button" onClick={addSlot} className={addBtnCls}>
               + Рівень
             </button>

@@ -163,26 +163,36 @@ function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores
  * "choose 2 of 8" class skill list shows up here as exactly 2 entries, not
  * all 8 options), so presence in the array is itself the signal.
  */
-function computeSkillProficiencies(mods: any[]): SkillProficiency[] {
+/** Equipped armor/shields expose `stealthCheck: 2` when they impose disadvantage on Stealth (1 = normal). */
+function hasArmorStealthDisadvantage(data: any): boolean {
+  return (data.inventory ?? []).some((i: any) => i.equipped && i.definition?.stealthCheck === 2);
+}
+
+function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolean): SkillProficiency[] {
   const skills: SkillProficiency[] = [];
   for (const name of Object.keys(SKILL_ABILITY) as SkillName[]) {
     const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name);
     const expertise = mods.some((m) => m.type === "expertise" && m.subType === name);
     const advMod = mods.find((m) => m.type === "advantage" && m.subType === name && m.isGranted);
     const disadvMod = mods.find((m) => m.type === "disadvantage" && m.subType === name && m.isGranted);
-    if (!proficient && !expertise && !advMod && !disadvMod) continue;
+    const fromArmor = name === "stealth" && armorStealthDisadvantage;
+    if (!proficient && !expertise && !advMod && !disadvMod && !fromArmor) continue;
+
+    let advantage: "advantage" | "disadvantage" | undefined;
+    let advantageNote: string | undefined;
+    if (advMod || disadvMod) {
+      advantage = advMod ? "advantage" : "disadvantage";
+      advantageNote = (advMod ?? disadvMod).restriction?.trim() || undefined;
+    } else if (fromArmor) {
+      advantage = "disadvantage";
+      advantageNote = "Wearing armor that imposes disadvantage on Stealth checks.";
+    }
+
     skills.push({
       name,
       proficient,
       expertise,
-      ...(advMod || disadvMod
-        ? {
-            advantage: advMod ? "advantage" : "disadvantage",
-            ...((advMod ?? disadvMod)?.restriction?.trim()
-              ? { advantageNote: (advMod ?? disadvMod).restriction.trim() }
-              : {}),
-          }
-        : {}),
+      ...(advantage ? { advantage, ...(advantageNote ? { advantageNote } : {}) } : {}),
     });
   }
   return skills;
@@ -634,7 +644,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     spellSlots: computeSpellSlots(data),
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
-    skillProficiencies: computeSkillProficiencies(mods),
+    skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
     ...computeDamageModifiers(mods),
     advantages: computeAdvantages(mods),
     senses: computeSenses(mods),

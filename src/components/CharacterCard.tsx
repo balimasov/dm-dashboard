@@ -372,7 +372,7 @@ export function CharacterCard({
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-            Spell Slots
+            Spells
           </h3>
           {c.spellcasting && (
             <div className="mb-2 grid grid-cols-3 gap-1.5">
