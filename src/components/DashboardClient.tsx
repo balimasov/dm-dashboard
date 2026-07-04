@@ -43,7 +43,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-50">Партія</h1>
@@ -65,17 +65,21 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
       {syncSummary && <p className="text-sm text-amber-400 mb-4">{syncSummary}</p>}
 
       {characters.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-800 p-10 text-center text-slate-500">
-          Персонажів ще немає.{" "}
-          <Link href="/settings" className="text-sky-400 hover:underline">
-            Додайте перший лінк на D&D Beyond
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
+          <p>Персонажів ще немає.</p>
+          <Link
+            href="/settings"
+            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+          >
+            + Додати персонажа
           </Link>
-          .
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {characters.map((character) => (
-            <CharacterCard key={character.id} character={character} onRemove={removeCharacter} />
+            <div key={character.id} className="w-[300px] shrink-0">
+              <CharacterCard character={character} onRemove={removeCharacter} />
+            </div>
           ))}
         </div>
       )}

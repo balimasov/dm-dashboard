@@ -104,7 +104,7 @@ export function CharacterCard({
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
           <span>AC: {c.combat.ac}</span>
           <span>Speed: {c.combat.speed} ft</span>
-          <span>Passive Perception: {c.combat.passivePerception}</span>
+          <span title="Passive Perception">Perception: {c.combat.passivePerception}</span>
           <span>Initiative: {formatModifier(c.initiative)}</span>
           <span className="col-span-2">
             <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
