@@ -150,11 +150,22 @@ function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores
   );
 }
 
+/**
+ * Unlike saving throws (a fixed, automatic class grant), skill proficiencies
+ * come from a player choice (background/class "pick N skills") — and just
+ * like the ability-score choice bug above, D&D Beyond flags every skill
+ * proficiency/expertise modifier `isGranted: false` regardless of whether it
+ * was actually chosen. But unlike the ability-score case, there's no need to
+ * disambiguate: the modifiers array only ever contains the skills the
+ * character actually has (verified against real exports — a Fighter's
+ * "choose 2 of 8" class skill list shows up here as exactly 2 entries, not
+ * all 8 options), so presence in the array is itself the signal.
+ */
 function computeSkillProficiencies(mods: any[]): SkillProficiency[] {
   const skills: SkillProficiency[] = [];
   for (const name of Object.keys(SKILL_ABILITY) as SkillName[]) {
-    const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name && m.isGranted);
-    const expertise = mods.some((m) => m.type === "expertise" && m.subType === name && m.isGranted);
+    const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name);
+    const expertise = mods.some((m) => m.type === "expertise" && m.subType === name);
     if (proficient || expertise) skills.push({ name, expertise });
   }
   return skills;

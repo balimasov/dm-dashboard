@@ -17,6 +17,17 @@ export const RECOVERY_LABELS: Record<RecoveryType, string> = {
   manual: "Manual",
 };
 
+/** Abbreviated form used in the compact character card (full names stay in the edit form's dropdown). */
+export const RECOVERY_SHORT_LABELS: Record<RecoveryType, string> = {
+  "short-rest": "SR",
+  "long-rest": "LR",
+  dawn: "Dawn",
+  daily: "Daily",
+  encounter: "Enc",
+  custom: "Custom",
+  manual: "M",
+};
+
 export interface Resource {
   id: string;
   name: string;

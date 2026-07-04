@@ -234,15 +234,15 @@ export function CharacterCard({
           </span>
           <span className="flex items-center gap-1.5">
             <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            {c.combat.speed} ft
+            Speed {c.combat.speed}ft
           </span>
           <span className="flex items-center gap-1.5">
             <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            {formatModifier(c.initiative)}
+            Initiative {formatModifier(c.initiative)}
           </span>
           <span className="flex items-center gap-1.5" title="Proficiency Bonus">
             <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            {formatModifier(proficiencyBonus(c.level))} Prof
+            Prof {formatModifier(proficiencyBonus(c.level))}
           </span>
         </div>
         <div className="space-y-1 text-sm text-slate-300">
