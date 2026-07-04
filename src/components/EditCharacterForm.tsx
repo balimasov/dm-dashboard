@@ -89,6 +89,16 @@ export function EditCharacterForm({ character }: { character: Character }) {
     }));
   }
 
+  function setAdvantages(value: string) {
+    setDraft((d) => ({
+      ...d,
+      advantages: value
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }));
+  }
+
   function updateSense(index: number, updates: Partial<Sense>) {
     setDraft((d) => ({
       ...d,
@@ -337,13 +347,6 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 }
               />
             </Field>
-            <Field label="Concentration">
-              <input
-                className={inputCls}
-                value={draft.combat.concentration ?? ""}
-                onChange={(e) => setCombat("concentration", e.target.value)}
-              />
-            </Field>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-300">
             <input
@@ -442,6 +445,17 @@ export function EditCharacterForm({ character }: { character: Character }) {
               />
             </Field>
           </div>
+          <Field
+            label="Advantages (по одному в рядку)"
+            hint='Наприклад: "Advantage: Saving Throws — to avoid or end the Charmed condition"'
+          >
+            <textarea
+              className={`${inputCls} w-full`}
+              rows={2}
+              value={draft.advantages.join("\n")}
+              onChange={(e) => setAdvantages(e.target.value)}
+            />
+          </Field>
         </section>
 
         {/* Senses */}
@@ -490,44 +504,52 @@ export function EditCharacterForm({ character }: { character: Character }) {
           </div>
           <div className="space-y-2">
             {draft.resources.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-2">
+              <div key={r.id} className="space-y-1.5 rounded-md border border-slate-800 p-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className={`${inputCls} flex-1 min-w-[140px]`}
+                    placeholder="Назва"
+                    value={r.name}
+                    onChange={(e) => updateResource(r.id, { name: e.target.value })}
+                  />
+                  <input
+                    type="number"
+                    className={`${inputCls} w-20`}
+                    value={r.current}
+                    onChange={(e) => updateResource(r.id, { current: Number(e.target.value) })}
+                  />
+                  <span className="text-slate-500">/</span>
+                  <input
+                    type="number"
+                    className={`${inputCls} w-20`}
+                    value={r.max}
+                    onChange={(e) => updateResource(r.id, { max: Number(e.target.value) })}
+                  />
+                  <select
+                    className={inputCls}
+                    value={r.recovery}
+                    onChange={(e) => updateResource(r.id, { recovery: e.target.value as RecoveryType })}
+                  >
+                    {RECOVERY_OPTIONS.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeResource(r.id)}
+                    className="text-red-500/80 hover:text-red-400 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <input
-                  className={`${inputCls} flex-1 min-w-[140px]`}
-                  placeholder="Назва"
-                  value={r.name}
-                  onChange={(e) => updateResource(r.id, { name: e.target.value })}
+                  className={`${inputCls} w-full`}
+                  placeholder="Короткий опис (підказка при наведенні)"
+                  value={r.description ?? ""}
+                  onChange={(e) => updateResource(r.id, { description: e.target.value })}
                 />
-                <input
-                  type="number"
-                  className={`${inputCls} w-20`}
-                  value={r.current}
-                  onChange={(e) => updateResource(r.id, { current: Number(e.target.value) })}
-                />
-                <span className="text-slate-500">/</span>
-                <input
-                  type="number"
-                  className={`${inputCls} w-20`}
-                  value={r.max}
-                  onChange={(e) => updateResource(r.id, { max: Number(e.target.value) })}
-                />
-                <select
-                  className={inputCls}
-                  value={r.recovery}
-                  onChange={(e) => updateResource(r.id, { recovery: e.target.value as RecoveryType })}
-                >
-                  {RECOVERY_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => removeResource(r.id)}
-                  className="text-red-500/80 hover:text-red-400 text-sm"
-                >
-                  ✕
-                </button>
               </div>
             ))}
           </div>

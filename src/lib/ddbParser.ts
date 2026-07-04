@@ -194,6 +194,28 @@ function computeDamageModifiers(mods: any[]) {
 }
 
 /**
+ * Advantage/disadvantage grants (e.g. Fey Ancestry vs. Charmed, War Caster's
+ * advantage on Constitution saves to maintain Concentration, Danger Sense)
+ * are modeled as `type: "advantage"|"disadvantage"` modifiers whose
+ * `friendlySubtypeName` is the subject ("Constitution Saving Throws") and
+ * whose `restriction` is a trailing clause of the full rules sentence (often
+ * starting mid-sentence, e.g. "saving throws that you make to maintain
+ * Concentration."). Shown as raw fragments joined with a dash rather than
+ * reassembled into a single sentence, since restriction text isn't
+ * consistently a clean standalone clause.
+ */
+function computeAdvantages(mods: any[]): string[] {
+  const entries = mods.filter((m) => (m.type === "advantage" || m.type === "disadvantage") && m.isGranted);
+  const names = entries.map((m) => {
+    const prefix = m.type === "disadvantage" ? "Disadvantage" : "Advantage";
+    const subject = m.friendlySubtypeName || titleCase(m.subType ?? "");
+    const restriction = (m.restriction ?? "").trim();
+    return restriction ? `${prefix}: ${subject} — ${restriction}` : `${prefix}: ${subject}`;
+  });
+  return Array.from(new Set(names));
+}
+
+/**
  * Additional senses (Darkvision, Blindsight, Tremorsense, Truesight) appear as
  * modifiers keyed by `subType`, but the `type` field is inconsistent across
  * real character exports (`"set-base"` in one sample, `"sense"` in another)
@@ -309,7 +331,30 @@ function computeInitiative(dexMod: number, mods: any[]): number {
   return dexMod + flatBonus;
 }
 
-function computeResources(data: any, abilities: AbilityScores, profBonus: number): Resource[] {
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
+/** Prefers D&D Beyond's plain-text `snippet` over its HTML `description`, since snippet is already clean. */
+function shortDescription(snippet?: string | null, description?: string | null): string | undefined {
+  if (snippet && snippet.trim()) return snippet.trim();
+  if (description) {
+    const stripped = stripHtml(description);
+    if (stripped) return stripped;
+  }
+  return undefined;
+}
+
+/** Resolves the handful of D&D Beyond snippet template placeholders we can actually fill in from data we have. */
+function resolveSnippetTemplate(text: string, maxUses: number, level: number): string {
+  return text
+    .replace(/\{\{scalevalue\}\}/gi, String(maxUses))
+    .replace(/\{\{classlevel\}\}/gi, String(level))
+    .replace(/\{\{[^}]+\}\}/g, "")
+    .trim();
+}
+
+function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number): Resource[] {
   const abilityById: Record<number, number> = {
     1: abilities.str,
     2: abilities.dex,
@@ -319,7 +364,13 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     6: abilities.cha,
   };
 
-  function fromLimitedUse(name: string, lu: any, keyPrefix: string, idx: number): Resource | null {
+  function fromLimitedUse(
+    name: string,
+    lu: any,
+    keyPrefix: string,
+    idx: number,
+    rawDescription?: string
+  ): Resource | null {
     if (!lu || (!lu.maxUses && !lu.statModifierUsesId && !lu.useProficiencyBonus)) return null;
     let maxUses = lu.maxUses && lu.maxUses !== -1 ? lu.maxUses : 0;
     if (lu.statModifierUsesId) {
@@ -330,12 +381,14 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
       maxUses = lu.proficiencyBonusOperator === 2 ? maxUses * profBonus : maxUses + profBonus;
     }
     maxUses = Math.max(0, maxUses);
+    const description = rawDescription ? resolveSnippetTemplate(rawDescription, maxUses, level) : undefined;
     return {
       id: `${keyPrefix}-${idx}`,
       name: name || "Resource",
       current: Math.max(0, maxUses - (lu.numberUsed ?? 0)),
       max: maxUses,
       recovery: RESET_TYPE_MAP[lu.resetType] ?? "manual",
+      ...(description ? { description } : {}),
     };
   }
 
@@ -347,7 +400,13 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
   ];
   for (const [group, actions] of actionGroups) {
     actions.forEach((action: any, idx: number) => {
-      const resource = fromLimitedUse(action.name, action.limitedUse, `action-${group}`, idx);
+      const resource = fromLimitedUse(
+        action.name,
+        action.limitedUse,
+        `action-${group}`,
+        idx,
+        shortDescription(action.snippet, action.description)
+      );
       if (resource) resources.push(resource);
     });
   }
@@ -355,7 +414,13 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
   (data.inventory ?? [])
     .filter((item: any) => item.equipped && item.limitedUse)
     .forEach((item: any, idx: number) => {
-      const resource = fromLimitedUse(item.definition?.name, item.limitedUse, "item", idx);
+      const resource = fromLimitedUse(
+        item.definition?.name,
+        item.limitedUse,
+        "item",
+        idx,
+        shortDescription(item.definition?.snippet, item.definition?.description)
+      );
       if (resource) resources.push(resource);
     });
 
@@ -466,7 +531,6 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
       passiveInsight: computePassiveSkill(wisMod, profBonus, "insight", mods),
       conditions,
       exhaustion,
-      concentration: existing.combat.concentration,
       deathSaves:
         hp <= 0
           ? {
@@ -476,11 +540,12 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
           : undefined,
     },
     stats: abilities,
-    resources: computeResources(data, abilities, profBonus),
+    resources: computeResources(data, abilities, profBonus, level),
     spellSlots: computeSpellSlots(data),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods),
     ...computeDamageModifiers(mods),
+    advantages: computeAdvantages(mods),
     senses: computeSenses(mods),
     synced: true,
     lastSyncedAt: new Date().toISOString(),

@@ -35,6 +35,8 @@ export interface Resource {
   max: number;
   recovery: RecoveryType;
   note?: string;
+  /** Short rules blurb shown as a hover tooltip on the card (from D&D Beyond, or typed manually). */
+  description?: string;
 }
 
 export interface SpellSlotLevel {
@@ -157,7 +159,6 @@ export interface CombatState {
   passiveInsight: number;
   conditions: string[];
   exhaustion: number;
-  concentration?: string;
   deathSaves?: {
     successes: number;
     failures: number;
@@ -184,6 +185,7 @@ export interface Character {
   resistances: string[];
   immunities: string[];
   vulnerabilities: string[];
+  advantages: string[];
   senses: Sense[];
   notes: string;
   dndBeyondUrl?: string;

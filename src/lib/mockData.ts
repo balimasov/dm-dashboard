@@ -25,9 +25,30 @@ export const demoCharacters: Character[] = [
     },
     stats: { str: 14, dex: 16, con: 14, int: 10, wis: 12, cha: 8 },
     resources: [
-      { id: "r1", name: "Action Surge", current: 0, max: 1, recovery: "short-rest" },
-      { id: "r2", name: "Second Wind", current: 1, max: 2, recovery: "long-rest" },
-      { id: "r3", name: "Superiority Dice", current: 3, max: 4, recovery: "short-rest" },
+      {
+        id: "r1",
+        name: "Action Surge",
+        current: 0,
+        max: 1,
+        recovery: "short-rest",
+        description: "Take one additional action on your turn.",
+      },
+      {
+        id: "r2",
+        name: "Second Wind",
+        current: 1,
+        max: 2,
+        recovery: "long-rest",
+        description: "Bonus action to regain 1d10 + level HP.",
+      },
+      {
+        id: "r3",
+        name: "Superiority Dice",
+        current: 3,
+        max: 4,
+        recovery: "short-rest",
+        description: "Fuel Battle Master maneuvers that enhance an attack.",
+      },
       {
         id: "r4",
         name: "Whisper of the Underdark Charges",
@@ -46,6 +67,7 @@ export const demoCharacters: Character[] = [
     resistances: [],
     immunities: [],
     vulnerabilities: [],
+    advantages: ["Advantage: Saving Throws — to avoid or end the Charmed condition (Fey Ancestry)"],
     senses: [{ name: "Darkvision", range: 120 }],
     notes:
       "Тактичний персонаж, добре працює через позиціонування та контроль. Має магічний меч Whisper of the Underdark. Варто давати ситуації, де його рішення на полі бою мають реальну ціну.",
@@ -71,12 +93,25 @@ export const demoCharacters: Character[] = [
       passiveInsight: 11,
       conditions: [],
       exhaustion: 0,
-      concentration: "Bless",
     },
     stats: { str: 16, dex: 12, con: 14, int: 10, wis: 13, cha: 16 },
     resources: [
-      { id: "r1", name: "Lay on Hands", current: 15, max: 25, recovery: "long-rest" },
-      { id: "r2", name: "Channel Divinity", current: 1, max: 1, recovery: "long-rest" },
+      {
+        id: "r1",
+        name: "Lay on Hands",
+        current: 15,
+        max: 25,
+        recovery: "long-rest",
+        description: "Pool of HP to heal (touch) or 5 HP to cure a disease/poison.",
+      },
+      {
+        id: "r2",
+        name: "Channel Divinity",
+        current: 1,
+        max: 1,
+        recovery: "long-rest",
+        description: "Fuel your Sacred Oath's Channel Divinity options.",
+      },
       { id: "r3", name: "Heroic Inspiration", current: 0, max: 1, recovery: "manual" },
     ],
     spellSlots: [
@@ -92,6 +127,7 @@ export const demoCharacters: Character[] = [
     resistances: [],
     immunities: [],
     vulnerabilities: [],
+    advantages: ["Advantage: Saving Throws — to avoid or end the Charmed condition (Fey Ancestry)"],
     senses: [{ name: "Darkvision", range: 120 }],
     notes:
       "Сильний зв'язок із Латандером, тема світла проти темряви. Добре працюють сцени морального вибору, захисту слабших або протистояння темним силам.",

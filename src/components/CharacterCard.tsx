@@ -25,6 +25,13 @@ const STAT_ORDER: Array<keyof Character["stats"]> = [
   "cha",
 ];
 
+function ordinalLevel(level: number): string {
+  if (level % 10 === 1 && level % 100 !== 11) return `${level}st`;
+  if (level % 10 === 2 && level % 100 !== 12) return `${level}nd`;
+  if (level % 10 === 3 && level % 100 !== 13) return `${level}rd`;
+  return `${level}th`;
+}
+
 function ShieldIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
@@ -183,7 +190,8 @@ export function CharacterCard({
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
-  const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
+  const hasDamageInfo =
+    c.resistances.length + c.immunities.length + c.vulnerabilities.length + c.advantages.length > 0;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20 flex flex-col gap-4">
@@ -322,6 +330,9 @@ export function CharacterCard({
               <span className="text-slate-500">Vulnerable:</span> {c.vulnerabilities.join(", ")}
             </p>
           )}
+          {c.advantages.map((adv) => (
+            <p key={adv}>{adv}</p>
+          ))}
         </div>
       )}
 
@@ -357,20 +368,13 @@ export function CharacterCard({
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
             Spell Slots
           </h3>
-          <p
-            className={`mb-1.5 truncate text-sm ${
-              c.combat.concentration ? "text-violet-300" : "text-slate-500"
-            }`}
-          >
-            Concentration: {c.combat.concentration || "none"}
-          </p>
           <div className="space-y-1">
             {c.spellSlots
               .slice()
               .sort((a, b) => a.level - b.level)
               .map((s) => (
                 <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-slate-300">L{s.level}</span>
+                  <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
                   {s.max > 0 && s.max <= 6 ? (
                     <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
                   ) : (

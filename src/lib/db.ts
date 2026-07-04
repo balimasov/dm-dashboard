@@ -57,6 +57,7 @@ function rowToCharacter(row: { data: string }): Character {
     resistances: parsed.resistances ?? [],
     immunities: parsed.immunities ?? [],
     vulnerabilities: parsed.vulnerabilities ?? [],
+    advantages: parsed.advantages ?? [],
     senses: parsed.senses ?? [],
     combat: {
       ...parsed.combat,
@@ -111,6 +112,7 @@ export function createBlankCharacter(url: string): Character {
     resistances: [],
     immunities: [],
     vulnerabilities: [],
+    advantages: [],
     senses: [],
     notes: "",
     dndBeyondUrl: url,
