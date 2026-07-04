@@ -42,8 +42,27 @@ function getDb(): Database.Database {
   return global.__dmDashboardDb;
 }
 
+/**
+ * Rows saved before fields like senses/saving throws/passive skills existed
+ * won't have them in their stored JSON — backfill safe defaults on read so
+ * older characters don't crash the UI (which assumes these are always
+ * arrays/numbers, never undefined) instead of requiring a DB migration.
+ */
 function rowToCharacter(row: { data: string }): Character {
-  return JSON.parse(row.data) as Character;
+  const parsed = JSON.parse(row.data) as Character;
+  return {
+    ...parsed,
+    savingThrowProficiencies: parsed.savingThrowProficiencies ?? [],
+    resistances: parsed.resistances ?? [],
+    immunities: parsed.immunities ?? [],
+    vulnerabilities: parsed.vulnerabilities ?? [],
+    senses: parsed.senses ?? [],
+    combat: {
+      ...parsed.combat,
+      passiveInvestigation: parsed.combat?.passiveInvestigation ?? 10,
+      passiveInsight: parsed.combat?.passiveInsight ?? 10,
+    },
+  };
 }
 
 export function listCharacters(): Character[] {
