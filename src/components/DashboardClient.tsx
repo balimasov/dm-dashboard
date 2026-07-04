@@ -47,25 +47,23 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
+      {linkedCharacters.length > 0 && (
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+            className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+          >
+            {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
+          </button>
+        </div>
+      )}
+
       <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
         <InventoryOverview characters={characters} />
       </CollapsibleSection>
 
-      <CollapsibleSection
-        title="Персонажі"
-        storageKey="dm-dashboard-characters-open"
-        actions={
-          linkedCharacters.length > 0 ? (
-            <button
-              onClick={handleSyncAll}
-              disabled={syncingAll}
-              className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-            >
-              {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
-            </button>
-          ) : undefined
-        }
-      >
+      <CollapsibleSection title={`Персонажі (${characters.length})`} storageKey="dm-dashboard-characters-open">
         <p className="mb-4 text-sm text-slate-500">
           Бойовий стан, ресурси та нотатки по кожному персонажу.
         </p>

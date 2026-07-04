@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AbilityScores,
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
   Character,
   Currency,
   InventoryItem,
+  ItemCategory,
   ItemRarity,
   RARITY_ORDER,
   RECOVERY_LABELS,
@@ -216,7 +219,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
   function addItem() {
     setDraft((d) => ({
       ...d,
-      inventory: [...d.inventory, { id: nextId(), name: "", rarity: "Common", quantity: 1 }],
+      inventory: [...d.inventory, { id: nextId(), name: "", rarity: "Common", category: "Gear", quantity: 1 }],
     }));
   }
 
@@ -718,38 +721,57 @@ export function EditCharacterForm({ character }: { character: Character }) {
           </div>
           <div className="space-y-2">
             {draft.inventory.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center gap-2">
+              <div key={item.id} className="space-y-1.5 rounded-md border border-slate-800 p-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className={`${inputCls} flex-1 min-w-[140px]`}
+                    placeholder="Назва"
+                    value={item.name}
+                    onChange={(e) => updateItem(item.id, { name: e.target.value })}
+                  />
+                  <select
+                    className={inputCls}
+                    value={item.category}
+                    onChange={(e) => updateItem(item.id, { category: e.target.value as ItemCategory })}
+                  >
+                    {CATEGORY_ORDER.map((category) => (
+                      <option key={category} value={category}>
+                        {CATEGORY_LABELS[category]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className={inputCls}
+                    value={item.rarity}
+                    onChange={(e) => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
+                  >
+                    {RARITY_ORDER.map((rarity) => (
+                      <option key={rarity} value={rarity}>
+                        {rarity}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    className={`${inputCls} w-20`}
+                    value={item.quantity}
+                    onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="text-red-500/80 hover:text-red-400 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <input
-                  className={`${inputCls} flex-1 min-w-[140px]`}
-                  placeholder="Назва"
-                  value={item.name}
-                  onChange={(e) => updateItem(item.id, { name: e.target.value })}
+                  className={`${inputCls} w-full`}
+                  placeholder="Короткий опис (підказка при наведенні)"
+                  value={item.description ?? ""}
+                  onChange={(e) => updateItem(item.id, { description: e.target.value })}
                 />
-                <select
-                  className={inputCls}
-                  value={item.rarity}
-                  onChange={(e) => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
-                >
-                  {RARITY_ORDER.map((rarity) => (
-                    <option key={rarity} value={rarity}>
-                      {rarity}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  className={`${inputCls} w-20`}
-                  value={item.quantity}
-                  onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) })}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="text-red-500/80 hover:text-red-400 text-sm"
-                >
-                  ✕
-                </button>
               </div>
             ))}
           </div>

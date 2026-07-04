@@ -1,4 +1,6 @@
-import { Character, currencyToGp, ItemRarity, RARITY_ORDER } from "@/lib/types";
+import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
+import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
 
 const RARITY_COLOR: Record<ItemRarity, string> = {
   Common: "text-slate-300",
@@ -15,28 +17,48 @@ const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 
 interface ItemGroup {
   name: string;
+  rarity: ItemRarity;
+  description?: string;
   holders: Array<{ character: string; quantity: number }>;
 }
 
-function buildRarityGroups(characters: Character[]): Array<{ rarity: ItemRarity; items: ItemGroup[] }> {
-  const byRarity = new Map<ItemRarity, Map<string, ItemGroup>>();
+function buildCategoryGroups(characters: Character[]): Array<{ category: ItemCategory; items: ItemGroup[] }> {
+  const byCategory = new Map<ItemCategory, Map<string, ItemGroup>>();
   for (const c of characters) {
     for (const item of c.inventory) {
-      if (!byRarity.has(item.rarity)) byRarity.set(item.rarity, new Map());
-      const items = byRarity.get(item.rarity)!;
+      if (!byCategory.has(item.category)) byCategory.set(item.category, new Map());
+      const items = byCategory.get(item.category)!;
       const key = item.name.trim().toLowerCase();
-      if (!items.has(key)) items.set(key, { name: item.name, holders: [] });
+      if (!items.has(key)) {
+        items.set(key, { name: item.name, rarity: item.rarity, description: item.description, holders: [] });
+      }
       items.get(key)!.holders.push({ character: c.name, quantity: item.quantity });
     }
   }
-  return RARITY_ORDER.filter((r) => byRarity.has(r)).map((rarity) => ({
-    rarity,
-    items: Array.from(byRarity.get(rarity)!.values()).sort((a, b) => a.name.localeCompare(b.name)),
+  return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => ({
+    category,
+    items: Array.from(byCategory.get(category)!.values()).sort((a, b) => a.name.localeCompare(b.name)),
   }));
 }
 
+function ItemName({ item }: { item: ItemGroup }) {
+  const nameEl = <span className={RARITY_COLOR[item.rarity]}>{item.name}</span>;
+  if (!item.description) return nameEl;
+  return (
+    <InfoTooltip
+      panel={
+        <p>
+          <RichText text={item.description} />
+        </p>
+      }
+    >
+      {nameEl}
+    </InfoTooltip>
+  );
+}
+
 export function InventoryOverview({ characters }: { characters: Character[] }) {
-  const groups = buildRarityGroups(characters);
+  const groups = buildCategoryGroups(characters);
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
   const totalGp = characters.reduce((sum, c) => sum + currencyToGp(c.currency), 0);
 
@@ -50,18 +72,19 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {groups.map((group) => (
             <div
-              key={group.rarity}
+              key={group.category}
               className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"
             >
-              <h3 className={`mb-2 text-xs font-semibold uppercase tracking-wide ${RARITY_COLOR[group.rarity]}`}>
-                {group.rarity}
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {CATEGORY_LABELS[group.category]}
               </h3>
               <ul className="space-y-1.5 text-sm">
                 {group.items.map((item) => (
-                  <li key={item.name}>
-                    <span className="text-slate-100">{item.name}</span>
-                    <span className="text-slate-500">
-                      {" — "}
+                  <li key={item.name} className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 flex-1">
+                      <ItemName item={item} />
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-500">
                       {item.holders
                         .map((h) => (h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character))
                         .join(", ")}

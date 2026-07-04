@@ -159,7 +159,7 @@ export type ItemRarity =
   | "Varies"
   | "Unknown";
 
-/** Display order for grouping the party inventory (common items first). */
+/** Canonical rarity order, low to high (used for the edit-form dropdown and rarity text-color lookups). */
 export const RARITY_ORDER: ItemRarity[] = [
   "Common",
   "Uncommon",
@@ -171,11 +171,27 @@ export const RARITY_ORDER: ItemRarity[] = [
   "Unknown",
 ];
 
+export type ItemCategory = "Weapon" | "Armor" | "Consumable" | "Magic Item" | "Gear";
+
+/** Display order for grouping the party inventory. */
+export const CATEGORY_ORDER: ItemCategory[] = ["Weapon", "Armor", "Consumable", "Magic Item", "Gear"];
+
+export const CATEGORY_LABELS: Record<ItemCategory, string> = {
+  Weapon: "Weapons",
+  Armor: "Armor",
+  Consumable: "Consumables",
+  "Magic Item": "Magic Items",
+  Gear: "Gear",
+};
+
 export interface InventoryItem {
   id: string;
   name: string;
   rarity: ItemRarity;
+  category: ItemCategory;
   quantity: number;
+  /** Short rules blurb shown as a hover tooltip (from D&D Beyond, or typed manually). */
+  description?: string;
 }
 
 export interface Currency {

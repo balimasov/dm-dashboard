@@ -2,7 +2,7 @@ import "server-only";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import { Character, extractDndBeyondCharacterId } from "./types";
+import { Character, extractDndBeyondCharacterId, ItemCategory, ItemRarity } from "./types";
 import { demoCharacters } from "./mockData";
 
 const DB_DIR = path.join(process.cwd(), "data");
@@ -42,6 +42,11 @@ function getDb(): Database.Database {
   return global.__dmDashboardDb;
 }
 
+/** Legacy items (saved before ItemCategory existed) get a rarity-based guess instead of a DB migration. */
+function legacyItemCategory(rarity: ItemRarity): ItemCategory {
+  return rarity !== "Common" && rarity !== "Unknown" ? "Magic Item" : "Gear";
+}
+
 /**
  * Rows saved before fields like senses/saving throws/passive skills existed
  * won't have them in their stored JSON — backfill safe defaults on read so
@@ -59,7 +64,7 @@ function rowToCharacter(row: { data: string }): Character {
     vulnerabilities: parsed.vulnerabilities ?? [],
     advantages: parsed.advantages ?? [],
     senses: parsed.senses ?? [],
-    inventory: parsed.inventory ?? [],
+    inventory: (parsed.inventory ?? []).map((i) => ({ ...i, category: i.category ?? legacyItemCategory(i.rarity) })),
     currency: parsed.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
     combat: {
       ...parsed.combat,
