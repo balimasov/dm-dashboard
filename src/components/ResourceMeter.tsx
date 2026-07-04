@@ -1,5 +1,6 @@
 import { RECOVERY_LABELS, RECOVERY_SHORT_LABELS, Resource } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
 
 /** Fixed-size CSS circles instead of "●"/"○" glyphs — those render at different visual weights per font. */
 export function DotMeter({
@@ -31,7 +32,15 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="min-w-0 flex-1 text-slate-300">
         {resource.description ? (
-          <InfoTooltip panel={<p>{resource.description}</p>}>{resource.name}</InfoTooltip>
+          <InfoTooltip
+            panel={
+              <p>
+                <RichText text={resource.description} />
+              </p>
+            }
+          >
+            {resource.name}
+          </InfoTooltip>
         ) : (
           resource.name
         )}

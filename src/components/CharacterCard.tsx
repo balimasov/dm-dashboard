@@ -190,8 +190,8 @@ export function CharacterCard({
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
-  const hasDamageInfo =
-    c.resistances.length + c.immunities.length + c.vulnerabilities.length + c.advantages.length > 0;
+  // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
+  const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20 flex flex-col gap-4">
@@ -330,9 +330,6 @@ export function CharacterCard({
               <span className="text-slate-500">Vulnerable:</span> {c.vulnerabilities.join(", ")}
             </p>
           )}
-          {c.advantages.map((adv) => (
-            <p key={adv}>{adv}</p>
-          ))}
         </div>
       )}
 
@@ -341,11 +338,20 @@ export function CharacterCard({
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
-            {c.skillProficiencies.map((skill) => (
-              <Pill key={skill.name} title={SKILL_LABELS[skill.name]} color={skill.expertise ? "amber" : "sky"}>
-                {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
-              </Pill>
-            ))}
+            {c.skillProficiencies.map((skill) => {
+              const advantageLabel = skill.advantage === "advantage" ? "Advantage" : skill.advantage === "disadvantage" ? "Disadvantage" : null;
+              const title = [SKILL_LABELS[skill.name], advantageLabel && skill.advantageNote ? `${advantageLabel}: ${skill.advantageNote}` : advantageLabel]
+                .filter(Boolean)
+                .join(" — ");
+              const color = skill.expertise ? "amber" : skill.proficient ? "sky" : "slate";
+              return (
+                <Pill key={skill.name} title={title} color={color}>
+                  {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
+                  {skill.advantage === "advantage" && <span className="ml-0.5 text-emerald-400">▲</span>}
+                  {skill.advantage === "disadvantage" && <span className="ml-0.5 text-red-400">▼</span>}
+                </Pill>
+              );
+            })}
           </div>
         </div>
       )}
@@ -363,11 +369,18 @@ export function CharacterCard({
       )}
 
       {/* Spell slots */}
-      {c.spellSlots.length > 0 && (
+      {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
             Spell Slots
           </h3>
+          {c.spellcasting && (
+            <div className="mb-2 grid grid-cols-3 gap-1.5">
+              <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
+              <StatBox label="Spell Attack" value={formatModifier(c.spellcasting.attack)} />
+              <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
+            </div>
+          )}
           <div className="space-y-1">
             {c.spellSlots
               .slice()

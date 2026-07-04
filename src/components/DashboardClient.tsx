@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCharacters } from "@/hooks/useCharacters";
 import { CharacterCard } from "@/components/CharacterCard";
+import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { Character } from "@/lib/types";
 
@@ -62,7 +63,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
         )}
       </div>
 
-      {syncSummary && <p className="text-sm text-amber-400 mb-4">{syncSummary}</p>}
+      {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
       {characters.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">

@@ -12,6 +12,7 @@ import {
   Sense,
   SKILL_LABELS,
   SkillName,
+  SpellcastingStats,
   SpellSlotLevel,
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -71,11 +72,50 @@ export function EditCharacterForm({ character }: { character: Character }) {
     }));
   }
 
-  function setSkill(name: SkillName, state: "none" | "proficient" | "expertise") {
+  function setSkillProficiency(name: SkillName, state: "none" | "proficient" | "expertise") {
     setDraft((d) => {
+      const existing = d.skillProficiencies.find((s) => s.name === name);
       const withoutSkill = d.skillProficiencies.filter((s) => s.name !== name);
-      if (state === "none") return { ...d, skillProficiencies: withoutSkill };
-      return { ...d, skillProficiencies: [...withoutSkill, { name, expertise: state === "expertise" }] };
+      if (state === "none" && !existing?.advantage) return { ...d, skillProficiencies: withoutSkill };
+      return {
+        ...d,
+        skillProficiencies: [
+          ...withoutSkill,
+          {
+            name,
+            proficient: state !== "none",
+            expertise: state === "expertise",
+            ...(existing?.advantage
+              ? { advantage: existing.advantage, advantageNote: existing.advantageNote }
+              : {}),
+          },
+        ],
+      };
+    });
+  }
+
+  function setSkillAdvantage(name: SkillName, state: "none" | "advantage" | "disadvantage") {
+    setDraft((d) => {
+      const existing = d.skillProficiencies.find((s) => s.name === name);
+      const withoutSkill = d.skillProficiencies.filter((s) => s.name !== name);
+      const stillTrained = existing?.proficient || existing?.expertise;
+      if (state === "none") {
+        if (!stillTrained) return { ...d, skillProficiencies: withoutSkill };
+        return {
+          ...d,
+          skillProficiencies: [
+            ...withoutSkill,
+            { name, proficient: existing.proficient, expertise: existing.expertise },
+          ],
+        };
+      }
+      return {
+        ...d,
+        skillProficiencies: [
+          ...withoutSkill,
+          { name, proficient: existing?.proficient ?? false, expertise: existing?.expertise ?? false, advantage: state },
+        ],
+      };
     });
   }
 
@@ -153,6 +193,13 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
   function removeSlot(level: number) {
     setDraft((d) => ({ ...d, spellSlots: d.spellSlots.filter((s) => s.level !== level) }));
+  }
+
+  function setSpellcasting<K extends keyof SpellcastingStats>(key: K, value: number) {
+    setDraft((d) => ({
+      ...d,
+      spellcasting: { modifier: 0, attack: 0, saveDc: 0, ...d.spellcasting, [key]: value },
+    }));
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -398,20 +445,34 @@ export function EditCharacterForm({ character }: { character: Character }) {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {(Object.keys(SKILL_LABELS) as SkillName[]).map((name) => {
               const current = draft.skillProficiencies.find((s) => s.name === name);
-              const state = current ? (current.expertise ? "expertise" : "proficient") : "none";
+              const state = current?.expertise ? "expertise" : current?.proficient ? "proficient" : "none";
+              const advState = current?.advantage ?? "none";
               return (
-                <label key={name} className="flex items-center justify-between gap-2 text-sm text-slate-300">
-                  {SKILL_LABELS[name]}
+                <div key={name} className="flex items-center justify-between gap-2 text-sm text-slate-300">
+                  <span className="min-w-0 flex-1 truncate">{SKILL_LABELS[name]}</span>
                   <select
                     className={inputCls}
                     value={state}
-                    onChange={(e) => setSkill(name, e.target.value as "none" | "proficient" | "expertise")}
+                    onChange={(e) =>
+                      setSkillProficiency(name, e.target.value as "none" | "proficient" | "expertise")
+                    }
                   >
                     <option value="none">—</option>
                     <option value="proficient">Proficient</option>
                     <option value="expertise">Expertise</option>
                   </select>
-                </label>
+                  <select
+                    className={inputCls}
+                    value={advState}
+                    onChange={(e) =>
+                      setSkillAdvantage(name, e.target.value as "none" | "advantage" | "disadvantage")
+                    }
+                  >
+                    <option value="none">—</option>
+                    <option value="advantage">Adv</option>
+                    <option value="disadvantage">Disadv</option>
+                  </select>
+                </div>
               );
             })}
           </div>
@@ -562,6 +623,32 @@ export function EditCharacterForm({ character }: { character: Character }) {
             <button type="button" onClick={addSlot} className={addBtnCls}>
               + Рівень
             </button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Modifier">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.spellcasting?.modifier ?? 0}
+                onChange={(e) => setSpellcasting("modifier", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Spell Attack">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.spellcasting?.attack ?? 0}
+                onChange={(e) => setSpellcasting("attack", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Save DC">
+              <input
+                type="number"
+                className={inputCls}
+                value={draft.spellcasting?.saveDc ?? 0}
+                onChange={(e) => setSpellcasting("saveDc", Number(e.target.value))}
+              />
+            </Field>
           </div>
           <div className="space-y-2">
             {draft.spellSlots

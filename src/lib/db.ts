@@ -53,7 +53,7 @@ function rowToCharacter(row: { data: string }): Character {
   return {
     ...parsed,
     savingThrowProficiencies: parsed.savingThrowProficiencies ?? [],
-    skillProficiencies: parsed.skillProficiencies ?? [],
+    skillProficiencies: (parsed.skillProficiencies ?? []).map((s) => ({ ...s, proficient: s.proficient ?? true })),
     resistances: parsed.resistances ?? [],
     immunities: parsed.immunities ?? [],
     vulnerabilities: parsed.vulnerabilities ?? [],

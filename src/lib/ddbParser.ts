@@ -1,6 +1,7 @@
 import {
   AbilityScores,
   Character,
+  formatModifier,
   proficiencyBonus,
   RecoveryType,
   Resource,
@@ -167,7 +168,22 @@ function computeSkillProficiencies(mods: any[]): SkillProficiency[] {
   for (const name of Object.keys(SKILL_ABILITY) as SkillName[]) {
     const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name);
     const expertise = mods.some((m) => m.type === "expertise" && m.subType === name);
-    if (proficient || expertise) skills.push({ name, expertise });
+    const advMod = mods.find((m) => m.type === "advantage" && m.subType === name && m.isGranted);
+    const disadvMod = mods.find((m) => m.type === "disadvantage" && m.subType === name && m.isGranted);
+    if (!proficient && !expertise && !advMod && !disadvMod) continue;
+    skills.push({
+      name,
+      proficient,
+      expertise,
+      ...(advMod || disadvMod
+        ? {
+            advantage: advMod ? "advantage" : "disadvantage",
+            ...((advMod ?? disadvMod)?.restriction?.trim()
+              ? { advantageNote: (advMod ?? disadvMod).restriction.trim() }
+              : {}),
+          }
+        : {}),
+    });
   }
   return skills;
 }
@@ -331,26 +347,61 @@ function computeInitiative(dexMod: number, mods: any[]): number {
   return dexMod + flatBonus;
 }
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
+/**
+ * D&D Beyond's `snippet` is usually clean plain text but NOT always — some
+ * (e.g. a Circle Spell feature's Cube-count text) embed raw HTML tags
+ * unstripped, confirmed on a real export. So both `snippet` and the
+ * HTML `description` fallback go through the same cleaning pass rather
+ * than trusting snippet to already be safe.
+ *
+ * Bold/italic are preserved as markdown-lite `**bold**`/`*italic*` markers
+ * (rendered back into real <strong>/<em> by the UI) instead of being
+ * dropped like other tags, since D&D Beyond uses them to highlight the
+ * one number in a sentence a player actually needs (e.g. "regain **1d10**
+ * HP").
+ */
+function cleanRulesText(html: string): string {
+  return html
+    .replace(/&rsquo;/g, "’")
+    .replace(/&lsquo;/g, "‘")
+    .replace(/&rdquo;/g, "”")
+    .replace(/&ldquo;/g, "“")
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\[\/?(?:rules|skill|item|spell|condition)\]/gi, "")
+    .replace(/<\/(?:p|div|li)>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<(?:strong|b)>/gi, "**")
+    .replace(/<\/(?:strong|b)>/gi, "**")
+    .replace(/<(?:em|i)>/gi, "*")
+    .replace(/<\/(?:em|i)>/gi, "*")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/** Prefers D&D Beyond's plain-text `snippet` over its HTML `description`, since snippet is already clean. */
+/** Prefers D&D Beyond's `snippet` over its longer `description` (both get the same HTML cleanup). */
 function shortDescription(snippet?: string | null, description?: string | null): string | undefined {
-  if (snippet && snippet.trim()) return snippet.trim();
-  if (description) {
-    const stripped = stripHtml(description);
-    if (stripped) return stripped;
-  }
-  return undefined;
+  const raw = (snippet && snippet.trim()) || description;
+  if (!raw) return undefined;
+  const cleaned = cleanRulesText(raw);
+  return cleaned || undefined;
 }
 
-/** Resolves the handful of D&D Beyond snippet template placeholders we can actually fill in from data we have. */
-function resolveSnippetTemplate(text: string, maxUses: number, level: number): string {
+/** Resolves the D&D Beyond snippet template placeholders we can fill in from data we have. */
+function resolveSnippetTemplate(text: string, maxUses: number, level: number, abilities: AbilityScores): string {
   return text
     .replace(/\{\{scalevalue\}\}/gi, String(maxUses))
+    .replace(/\{\{limiteduse\}\}/gi, String(maxUses))
     .replace(/\{\{classlevel\}\}/gi, String(level))
+    .replace(/\{\{modifier:(\w+)(?:@min:(-?\d+))?#(signed|unsigned)\}\}/gi, (_match, abilityKey, min, sign) => {
+      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
+      let mod = abilityModifier(abilities[ability] ?? 10);
+      if (min !== undefined) mod = Math.max(mod, Number(min));
+      return sign === "signed" ? formatModifier(mod) : String(mod);
+    })
     .replace(/\{\{[^}]+\}\}/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -381,7 +432,9 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
       maxUses = lu.proficiencyBonusOperator === 2 ? maxUses * profBonus : maxUses + profBonus;
     }
     maxUses = Math.max(0, maxUses);
-    const description = rawDescription ? resolveSnippetTemplate(rawDescription, maxUses, level) : undefined;
+    const description = rawDescription
+      ? resolveSnippetTemplate(rawDescription, maxUses, level, abilities)
+      : undefined;
     return {
       id: `${keyPrefix}-${idx}`,
       name: name || "Resource",
@@ -437,7 +490,24 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     }
   });
 
-  return resources;
+  return dedupeResourcesByName(resources);
+}
+
+/**
+ * When a class feature is restated at a higher level (e.g. a Bard's
+ * "Bardic Inspiration" being upgraded by level 5's Font of Inspiration,
+ * which changes its recharge to Short or Long Rest), D&D Beyond doesn't
+ * remove the original lower-level action entry — both stay in the actions
+ * array, each independently flagged as limited-use, producing two resources
+ * with the same name (confirmed on a real level 5 Bard export). The later
+ * entry in the array reflects the character's current level, so it wins.
+ */
+function dedupeResourcesByName(resources: Resource[]): Resource[] {
+  const byName = new Map<string, Resource>();
+  for (const resource of resources) {
+    byName.set(resource.name.trim().toLowerCase(), resource);
+  }
+  return resources.filter((r) => byName.get(r.name.trim().toLowerCase()) === r);
 }
 
 /**
@@ -487,6 +557,26 @@ function computeSpellSlots(data: any): SpellSlotLevel[] {
     }
   });
   return slots;
+}
+
+/**
+ * Unlike computeSpellSlots, Warlocks are NOT excluded here — Spell Attack
+ * and Save DC apply to Pact Magic casters too, only the slot table differs.
+ * For multiclass casters with different spellcasting abilities per class,
+ * this picks the first caster class found (matching this codebase's existing
+ * "known limitations" pattern of not fully modeling multiclass edge cases).
+ */
+function computeSpellcastingStats(
+  data: any,
+  abilities: AbilityScores,
+  profBonus: number
+): { modifier: number; attack: number; saveDc: number } | undefined {
+  const casterClass = (data.classes ?? []).find((c: any) => c.definition?.canCastSpells && c.definition?.spellCastingAbilityId);
+  if (!casterClass) return undefined;
+  const ability = ABILITY_BY_ID[casterClass.definition.spellCastingAbilityId];
+  if (!ability) return undefined;
+  const modifier = abilityModifier(abilities[ability]);
+  return { modifier, attack: modifier + profBonus, saveDc: 8 + modifier + profBonus };
 }
 
 export class DdbParseError extends Error {}
@@ -542,6 +632,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     stats: abilities,
     resources: computeResources(data, abilities, profBonus, level),
     spellSlots: computeSpellSlots(data),
+    spellcasting: computeSpellcastingStats(data, abilities, profBonus),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods),
     ...computeDamageModifiers(mods),

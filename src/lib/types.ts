@@ -45,6 +45,12 @@ export interface SpellSlotLevel {
   max: number;
 }
 
+export interface SpellcastingStats {
+  modifier: number;
+  attack: number;
+  saveDc: number;
+}
+
 export interface AbilityScores {
   str: number;
   dex: number;
@@ -145,7 +151,13 @@ export const SKILL_ABBR: Record<SkillName, string> = {
 
 export interface SkillProficiency {
   name: SkillName;
+  /** False for an entry that exists only to carry an advantage/disadvantage note without real training. */
+  proficient: boolean;
   expertise: boolean;
+  /** Conditional advantage/disadvantage on this skill's checks (e.g. Dance Virtuoso's advantage on Performance while dancing). */
+  advantage?: "advantage" | "disadvantage";
+  /** The condition text, if any (e.g. "that involves you dancing"). */
+  advantageNote?: string;
 }
 
 export interface CombatState {
@@ -180,6 +192,7 @@ export interface Character {
   stats: AbilityScores;
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
+  spellcasting?: SpellcastingStats;
   savingThrowProficiencies: Array<keyof AbilityScores>;
   skillProficiencies: SkillProficiency[];
   resistances: string[];
@@ -221,9 +234,10 @@ export function savingThrowBonus(character: Character, ability: keyof AbilitySco
     : mod;
 }
 
-/** Ability-mod + proficiency bonus (doubled for expertise) for a given skill proficiency. */
+/** Ability-mod + proficiency bonus (doubled for expertise) — plain ability mod if not actually proficient. */
 export function skillBonus(character: Character, skill: SkillProficiency): number {
   const mod = abilityModifier(character.stats[SKILL_ABILITY[skill.name]]);
+  if (!skill.proficient && !skill.expertise) return mod;
   const multiplier = skill.expertise ? 2 : 1;
   return mod + proficiencyBonus(character.level) * multiplier;
 }
