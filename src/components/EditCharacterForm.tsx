@@ -10,6 +10,8 @@ import {
   RecoveryType,
   Resource,
   Sense,
+  SKILL_LABELS,
+  SkillName,
   SpellSlotLevel,
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -67,6 +69,14 @@ export function EditCharacterForm({ character }: { character: Character }) {
         ? [...d.savingThrowProficiencies, key]
         : d.savingThrowProficiencies.filter((k) => k !== key),
     }));
+  }
+
+  function setSkill(name: SkillName, state: "none" | "proficient" | "expertise") {
+    setDraft((d) => {
+      const withoutSkill = d.skillProficiencies.filter((s) => s.name !== name);
+      if (state === "none") return { ...d, skillProficiencies: withoutSkill };
+      return { ...d, skillProficiencies: [...withoutSkill, { name, expertise: state === "expertise" }] };
+    });
   }
 
   function setDamageList(field: "resistances" | "immunities" | "vulnerabilities", value: string) {
@@ -376,6 +386,31 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 {key.toUpperCase()}
               </label>
             ))}
+          </div>
+        </section>
+
+        {/* Skills */}
+        <section className="space-y-3">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Skills</h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {(Object.keys(SKILL_LABELS) as SkillName[]).map((name) => {
+              const current = draft.skillProficiencies.find((s) => s.name === name);
+              const state = current ? (current.expertise ? "expertise" : "proficient") : "none";
+              return (
+                <label key={name} className="flex items-center justify-between gap-2 text-sm text-slate-300">
+                  {SKILL_LABELS[name]}
+                  <select
+                    className={inputCls}
+                    value={state}
+                    onChange={(e) => setSkill(name, e.target.value as "none" | "proficient" | "expertise")}
+                  >
+                    <option value="none">—</option>
+                    <option value="proficient">Proficient</option>
+                    <option value="expertise">Expertise</option>
+                  </select>
+                </label>
+              );
+            })}
           </div>
         </section>
 

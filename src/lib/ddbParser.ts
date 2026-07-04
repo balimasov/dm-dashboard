@@ -5,6 +5,9 @@ import {
   RecoveryType,
   Resource,
   Sense,
+  SKILL_ABILITY,
+  SkillName,
+  SkillProficiency,
   SpellSlotLevel,
 } from "./types";
 
@@ -145,6 +148,16 @@ function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores
   return (Object.keys(SAVE_SUBTYPE) as Array<keyof AbilityScores>).filter((key) =>
     mods.some((m) => m.type === "proficiency" && m.subType === SAVE_SUBTYPE[key] && m.isGranted)
   );
+}
+
+function computeSkillProficiencies(mods: any[]): SkillProficiency[] {
+  const skills: SkillProficiency[] = [];
+  for (const name of Object.keys(SKILL_ABILITY) as SkillName[]) {
+    const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name && m.isGranted);
+    const expertise = mods.some((m) => m.type === "expertise" && m.subType === name && m.isGranted);
+    if (proficient || expertise) skills.push({ name, expertise });
+  }
+  return skills;
 }
 
 /**
@@ -414,6 +427,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     resources: computeResources(data, abilities, profBonus),
     spellSlots: computeSpellSlots(data),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
+    skillProficiencies: computeSkillProficiencies(mods),
     ...computeDamageModifiers(mods),
     senses: computeSenses(mods),
     synced: true,

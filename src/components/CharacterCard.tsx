@@ -4,9 +4,12 @@ import {
   abilityModifier,
   formatModifier,
   characterInfoLine,
+  proficiencyBonus,
   savingThrowBonus,
+  skillBonus,
+  SKILL_LABELS,
 } from "@/lib/types";
-import { ResourceMeter } from "./ResourceMeter";
+import { DotMeter, ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { InfoTooltip } from "./InfoTooltip";
@@ -20,6 +23,38 @@ const STAT_ORDER: Array<keyof Character["stats"]> = [
   "wis",
   "cha",
 ];
+
+function ShieldIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SpeedIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M3 12h13M12 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function InitiativeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M13 2L4.5 14h5.5l-1.5 8L18 10h-5.5L13 2z" />
+    </svg>
+  );
+}
+
+function ProficiencyIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 2z" />
+    </svg>
+  );
+}
 
 function HpBar({
   hp,
@@ -48,7 +83,7 @@ function HpBar({
           </span>
         ) : (
           <span className="font-medium text-slate-100">
-            <span className="text-lg font-bold">{hp}</span>
+            <span className="text-2xl font-bold">{hp}</span>
             <span className="text-slate-500"> / {maxHp}</span>
             {tempHp > 0 && <span className="text-sm text-sky-400"> (+{tempHp} temp)</span>}
           </span>
@@ -113,6 +148,31 @@ function StatBox({
   );
 }
 
+function Pill({
+  title,
+  color = "slate",
+  children,
+}: {
+  title?: string;
+  color?: "slate" | "sky" | "amber";
+  children: React.ReactNode;
+}) {
+  const colorCls =
+    color === "amber"
+      ? "border-amber-700 bg-amber-950/30 text-amber-300"
+      : color === "sky"
+        ? "border-sky-700 bg-sky-950/40 text-sky-300"
+        : "border-slate-800 bg-slate-800/40 text-slate-200";
+  return (
+    <span
+      title={title}
+      className={`block truncate rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function CharacterCard({
   character,
   onRemove,
@@ -168,21 +228,34 @@ export function CharacterCard({
           deathSaves={c.combat.deathSaves}
         />
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
-          <span>AC: {c.combat.ac}</span>
-          <span>Speed: {c.combat.speed} ft</span>
-          <span>Initiative: {formatModifier(c.initiative)}</span>
+          <span className="flex items-center gap-1.5">
+            <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            AC {c.combat.ac}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            {c.combat.speed} ft
+          </span>
+          <span className="flex items-center gap-1.5">
+            <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            {formatModifier(c.initiative)}
+          </span>
+          <span className="flex items-center gap-1.5" title="Proficiency Bonus">
+            <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            {formatModifier(proficiencyBonus(c.level))} Prof
+          </span>
+        </div>
+        <div className="space-y-1 text-sm text-slate-300">
           <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
             Exhaustion: {c.combat.exhaustion}
           </InfoTooltip>
-          <span className="col-span-2">
-            {c.combat.conditions.length > 0 ? (
-              <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
-                Conditions: {c.combat.conditions.join(", ")}
-              </InfoTooltip>
-            ) : (
-              <span className="block truncate">Conditions: none</span>
-            )}
-          </span>
+          {c.combat.conditions.length > 0 ? (
+            <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
+              Conditions: {c.combat.conditions.join(", ")}
+            </InfoTooltip>
+          ) : (
+            <span className="block truncate">Conditions: none</span>
+          )}
         </div>
       </div>
 
@@ -235,10 +308,10 @@ export function CharacterCard({
       {/* Senses */}
       <div className="border-t border-slate-800 pt-3 space-y-1.5">
         <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Senses</h3>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
-          <span title="Passive Perception">Perception {c.combat.passivePerception}</span>
-          <span title="Passive Investigation">Investigation {c.combat.passiveInvestigation}</span>
-          <span title="Passive Insight">Insight {c.combat.passiveInsight}</span>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Pill title="Passive Perception">Perc {c.combat.passivePerception}</Pill>
+          <Pill title="Passive Investigation">Inv {c.combat.passiveInvestigation}</Pill>
+          <Pill title="Passive Insight">Ins {c.combat.passiveInsight}</Pill>
         </div>
         {c.senses.length > 0 && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
@@ -250,6 +323,20 @@ export function CharacterCard({
           </div>
         )}
       </div>
+
+      {/* Skills */}
+      {c.skillProficiencies.length > 0 && (
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {c.skillProficiencies.map((skill) => (
+              <Pill key={skill.name} color={skill.expertise ? "amber" : "sky"}>
+                {formatModifier(skillBonus(c, skill))} {SKILL_LABELS[skill.name]}
+              </Pill>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Resources */}
       {c.resources.length > 0 && (
@@ -272,14 +359,21 @@ export function CharacterCard({
           <p className="mb-1.5 truncate text-sm text-violet-300">
             Concentration: {c.combat.concentration || "none"}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
+          <div className="space-y-1">
             {c.spellSlots
               .slice()
               .sort((a, b) => a.level - b.level)
               .map((s) => (
-                <span key={s.level}>
-                  L{s.level}: {s.current}/{s.max}
-                </span>
+                <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-slate-300">L{s.level}</span>
+                  {s.max > 0 && s.max <= 6 ? (
+                    <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
+                  ) : (
+                    <span className="font-medium text-slate-100">
+                      {s.current}/{s.max}
+                    </span>
+                  )}
+                </div>
               ))}
           </div>
         </div>

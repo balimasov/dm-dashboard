@@ -46,6 +46,73 @@ export interface Sense {
   range: number;
 }
 
+export type SkillName =
+  | "acrobatics"
+  | "animal-handling"
+  | "arcana"
+  | "athletics"
+  | "deception"
+  | "history"
+  | "insight"
+  | "intimidation"
+  | "investigation"
+  | "medicine"
+  | "nature"
+  | "perception"
+  | "performance"
+  | "persuasion"
+  | "religion"
+  | "sleight-of-hand"
+  | "stealth"
+  | "survival";
+
+export const SKILL_ABILITY: Record<SkillName, keyof AbilityScores> = {
+  acrobatics: "dex",
+  "animal-handling": "wis",
+  arcana: "int",
+  athletics: "str",
+  deception: "cha",
+  history: "int",
+  insight: "wis",
+  intimidation: "cha",
+  investigation: "int",
+  medicine: "wis",
+  nature: "int",
+  perception: "wis",
+  performance: "cha",
+  persuasion: "cha",
+  religion: "int",
+  "sleight-of-hand": "dex",
+  stealth: "dex",
+  survival: "wis",
+};
+
+export const SKILL_LABELS: Record<SkillName, string> = {
+  acrobatics: "Acrobatics",
+  "animal-handling": "Animal Handling",
+  arcana: "Arcana",
+  athletics: "Athletics",
+  deception: "Deception",
+  history: "History",
+  insight: "Insight",
+  intimidation: "Intimidation",
+  investigation: "Investigation",
+  medicine: "Medicine",
+  nature: "Nature",
+  perception: "Perception",
+  performance: "Performance",
+  persuasion: "Persuasion",
+  religion: "Religion",
+  "sleight-of-hand": "Sleight of Hand",
+  stealth: "Stealth",
+  survival: "Survival",
+};
+
+export interface SkillProficiency {
+  name: SkillName;
+  expertise: boolean;
+}
+
 export interface CombatState {
   hp: number;
   maxHp: number;
@@ -80,6 +147,7 @@ export interface Character {
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
   savingThrowProficiencies: Array<keyof AbilityScores>;
+  skillProficiencies: SkillProficiency[];
   resistances: string[];
   immunities: string[];
   vulnerabilities: string[];
@@ -116,6 +184,13 @@ export function savingThrowBonus(character: Character, ability: keyof AbilitySco
   return character.savingThrowProficiencies.includes(ability)
     ? mod + proficiencyBonus(character.level)
     : mod;
+}
+
+/** Ability-mod + proficiency bonus (doubled for expertise) for a given skill proficiency. */
+export function skillBonus(character: Character, skill: SkillProficiency): number {
+  const mod = abilityModifier(character.stats[SKILL_ABILITY[skill.name]]);
+  const multiplier = skill.expertise ? 2 : 1;
+  return mod + proficiencyBonus(character.level) * multiplier;
 }
 
 /** e.g. "Orc · Barbarian/Path of the Berserker" (level shown separately) */

@@ -38,6 +38,11 @@ export const demoCharacters: Character[] = [
     ],
     spellSlots: [],
     savingThrowProficiencies: ["str", "con"],
+    skillProficiencies: [
+      { name: "athletics", expertise: false },
+      { name: "perception", expertise: false },
+      { name: "intimidation", expertise: false },
+    ],
     resistances: [],
     immunities: [],
     vulnerabilities: [],
@@ -79,6 +84,11 @@ export const demoCharacters: Character[] = [
       { level: 2, current: 1, max: 2 },
     ],
     savingThrowProficiencies: ["wis", "cha"],
+    skillProficiencies: [
+      { name: "athletics", expertise: false },
+      { name: "persuasion", expertise: false },
+      { name: "religion", expertise: false },
+    ],
     resistances: [],
     immunities: [],
     vulnerabilities: [],

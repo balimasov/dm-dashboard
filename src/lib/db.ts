@@ -53,6 +53,7 @@ function rowToCharacter(row: { data: string }): Character {
   return {
     ...parsed,
     savingThrowProficiencies: parsed.savingThrowProficiencies ?? [],
+    skillProficiencies: parsed.skillProficiencies ?? [],
     resistances: parsed.resistances ?? [],
     immunities: parsed.immunities ?? [],
     vulnerabilities: parsed.vulnerabilities ?? [],
@@ -106,6 +107,7 @@ export function createBlankCharacter(url: string): Character {
     resources: [],
     spellSlots: [],
     savingThrowProficiencies: [],
+    skillProficiencies: [],
     resistances: [],
     immunities: [],
     vulnerabilities: [],
