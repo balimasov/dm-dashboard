@@ -266,14 +266,14 @@ export const demoCharacters: Character[] = [
         "name": "Frenzy",
         "source": "Path of the Berserker",
         "category": "subclass",
-        "description": "If you use Reckless Attack while Rage is active, you deal an additional **d6** damage (the same damage type as the weapon or Unarmed Strike used) to the first target you hit on your turn with a Strength-based attack."
+        "description": "If you use Reckless Attack while Rage is active, you deal an additional **2d6** damage (the same damage type as the weapon or Unarmed Strike used) to the first target you hit on your turn with a Strength-based attack."
       },
       {
         "id": "feature-8",
         "name": "Unarmored Defense",
         "source": "Barbarian",
         "category": "class",
-        "description": "While not wearing armor, your base AC equals + any Shield bonus."
+        "description": "While not wearing armor, your base AC equals 15 + any Shield bonus."
       },
       {
         "id": "feature-9",
@@ -414,7 +414,11 @@ export const demoCharacters: Character[] = [
     ],
     "notes": "A Berserker who trades caution for raw damage output — Frenzy and Reckless Attack turn every Rage into an all-in swing. Give him enemies worth hitting hard and consequences (exhaustion, no room to retreat) for going all-in every fight.",
     "quickNotes": [
-      { "id": "qn-ragnar-1", "text": "Owes 20gp to the blacksmith in Nightstone", "createdAt": "2026-07-05T10:00:00.000Z" }
+      {
+        "id": "qn-ragnar-1",
+        "text": "Owes 20gp to the blacksmith in Nightstone",
+        "createdAt": "2026-07-05T10:00:00.000Z"
+      }
     ],
     "subclass": "Path of the Berserker"
   },
@@ -455,7 +459,7 @@ export const demoCharacters: Character[] = [
         "max": 25,
         "recovery": "long-rest",
         "source": "Class",
-        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of HP."
+        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of 25 HP."
       },
       {
         "id": "action-class-4",
@@ -966,7 +970,7 @@ export const demoCharacters: Character[] = [
         "name": "Inspiring Smite",
         "source": "Oath of Glory",
         "category": "subclass",
-        "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8** Temporary HP to creatures of your choice within 30 ft., including yourself."
+        "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8**+5 Temporary HP to creatures of your choice within 30 ft., including yourself."
       },
       {
         "id": "feature-11",
@@ -995,7 +999,7 @@ export const demoCharacters: Character[] = [
         "name": "Lay On Hands",
         "source": "Paladin",
         "category": "class",
-        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature.",
+        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of 25 HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature.",
         "current": 10,
         "max": 25,
         "recovery": "long-rest"
@@ -1157,7 +1161,11 @@ export const demoCharacters: Character[] = [
     ],
     "notes": "An Oath of Glory paladin chasing legendary deeds — Inspiring Smite and Peerless Athlete reward big, showy moments. Scenes with an audience, a rival to outshine, or a feat of athletics/glory work well for her.",
     "quickNotes": [
-      { "id": "qn-lilith-1", "text": "Recognized the crest on the assassin's dagger", "createdAt": "2026-07-05T10:00:00.000Z" }
+      {
+        "id": "qn-lilith-1",
+        "text": "Recognized the crest on the assassin's dagger",
+        "createdAt": "2026-07-05T10:00:00.000Z"
+      }
     ],
     "subclass": "Oath of Glory",
     "spellcasting": {
@@ -1221,7 +1229,7 @@ export const demoCharacters: Character[] = [
         "max": 1,
         "recovery": "long-rest",
         "source": "Class",
-        "description": "When you finish a Short Rest, you can regain up to Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest."
+        "description": "When you finish a Short Rest, you can regain up to 2 Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest."
       },
       {
         "id": "item-0",
@@ -1695,7 +1703,7 @@ export const demoCharacters: Character[] = [
         "name": "Spellfire Burst",
         "source": "Spellfire Sorcery",
         "category": "subclass",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice. **Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP. **Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d** Fire or Radiant damage (your choice)."
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice. **Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP. **Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d4** Fire or Radiant damage (your choice)."
       },
       {
         "id": "feature-6",
@@ -1768,7 +1776,7 @@ export const demoCharacters: Character[] = [
         "name": "Sorcerous Restoration",
         "source": "Sorcerer",
         "category": "class",
-        "description": "When you finish a Short Rest, you can regain up to Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest.",
+        "description": "When you finish a Short Rest, you can regain up to 2 Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest.",
         "current": 0,
         "max": 1,
         "recovery": "long-rest"
@@ -1843,7 +1851,11 @@ export const demoCharacters: Character[] = [
     ],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",
     "quickNotes": [
-      { "id": "qn-yorun-1", "text": "Suspicious of the innkeeper's extra questions", "createdAt": "2026-07-05T10:00:00.000Z" }
+      {
+        "id": "qn-yorun-1",
+        "text": "Suspicious of the innkeeper's extra questions",
+        "createdAt": "2026-07-05T10:00:00.000Z"
+      }
     ],
     "subclass": "Spellfire Sorcery",
     "spellcasting": {
@@ -2288,7 +2300,7 @@ export const demoCharacters: Character[] = [
         "name": "Dazzling Footwork",
         "source": "College of Dance",
         "category": "subclass",
-        "description": "While you aren’t wearing armor or a Shield, you gain the following benefits:\n• You have Advantage on Charisma (Performance) checks that involves you dancing.\n• Your base AC is (10 + Dex. modifier + Cha. modifier).\n• When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action.\n• You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
+        "description": "While you aren’t wearing armor or a Shield, you gain the following benefits:\n• You have Advantage on Charisma (Performance) checks that involves you dancing.\n• Your base AC is 17 (10 + Dex. modifier + Cha. modifier).\n• When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action.\n• You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
       },
       {
         "id": "feature-5",
@@ -2329,7 +2341,7 @@ export const demoCharacters: Character[] = [
         "name": "Jack of All Trades",
         "source": "Bard",
         "category": "class",
-        "description": "You can add half your Proficiency Bonus () to ability checks you make that uses a skill proficiency you lack and that doesn’t otherwise use your Proficiency Bonus."
+        "description": "You can add half your Proficiency Bonus (1) to ability checks you make that uses a skill proficiency you lack and that doesn’t otherwise use your Proficiency Bonus."
       },
       {
         "id": "feature-10",
@@ -2396,7 +2408,11 @@ export const demoCharacters: Character[] = [
     ],
     "notes": "A College of Dance bard who fights unarmored and up close — Dazzling Footwork and Bardic Inspiration make her as much a battlefield conductor as a performer. Social scenes and chances to show off both work.",
     "quickNotes": [
-      { "id": "qn-esmeralda-1", "text": "Promised a song to the tavern owner's daughter", "createdAt": "2026-07-05T10:00:00.000Z" }
+      {
+        "id": "qn-esmeralda-1",
+        "text": "Promised a song to the tavern owner's daughter",
+        "createdAt": "2026-07-05T10:00:00.000Z"
+      }
     ],
     "subclass": "College of Dance",
     "spellcasting": {

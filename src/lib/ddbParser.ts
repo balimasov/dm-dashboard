@@ -553,22 +553,210 @@ function shortDescription(snippet?: string | null, description?: string | null):
   return cleaned || undefined;
 }
 
+/** Thrown for anything the placeholder evaluator below can't resolve — an unknown variable/modifier keyword, bad syntax, or `scalevalue`/`limiteduse` with no charge count available. Callers catch it and drop just that one placeholder. */
+class TemplateEvalError extends Error {}
+
+type TemplateMod =
+  | { op: "rounddown" | "roundup" | "signed" | "unsigned" }
+  | { op: "min" | "max"; value: number };
+
 /**
- * Resolves the D&D Beyond snippet template placeholders we can fill in from
- * data we have. Covers every simple, single-concept placeholder confirmed
- * across real Resource/Feature/Spell descriptions (`classlevel`, ability
- * `modifier`, `proficiency`, and the `savedc`/`spellattack` shorthands for
- * "8 + prof + mod" / "prof + mod"), plus `scalevalue`/`limiteduse` when a
- * charge count is available (only meaningful for a Resource, or a Feature/
- * Spell that turned out to have its own charge pool).
- *
- * Deliberately does NOT attempt the compound arithmetic expressions that
- * also show up in the wild (e.g. `{{(12+classlevel)/7#rounddown,min:2,
- * unsigned}}`, or the genuinely idiosyncratic `{{4+(classlevel-13)@min:0,
- * max:1*4}}`) — the syntax for those isn't fully reverse-engineered from the
- * handful of real examples seen so far, and a wrong guess would print a
- * confidently incorrect number, which is worse than the catch-all below
- * silently dropping it.
+ * D&D Beyond's rules-text placeholders aren't a fixed set of tags — they're a
+ * small expression language: variables (`classlevel`, `proficiency`,
+ * `modifier:cha`, `abilityscore:str`, `savedc:wis`, `spellattack:int`,
+ * `scalevalue`/`limiteduse`), arithmetic (`+ - * /`, parens), and postfix
+ * modifier lists that clamp/round/format a value — `@list` applied inline to
+ * the atom right before it (so the rest of the expression keeps computing
+ * with a plain number), `#list` applied once to the whole expression's final
+ * value (and, unlike `@`, allowed to include `signed`/`unsigned` to turn the
+ * number into display text). Confirmed by tracing real examples pulled from
+ * every sample export, e.g. `{{4+(classlevel-13)@min:0,max:1*4}}` (a level-13
+ * step-up: clamp `classlevel-13` to 0..1 *before* multiplying by 4, so
+ * `@` has to bind tighter than the surrounding `*`), and
+ * `{{(12+classlevel)/7#rounddown,min:2,unsigned}}` (round/clamp/format the
+ * *entire* division, not just the `7`). A hand-rolled recursive-descent
+ * parser with standard `* /` before `+ -` precedence reproduces both without
+ * special-casing either.
+ */
+function evaluateTemplatePlaceholder(
+  expr: string,
+  ctx: { level: number; abilities: AbilityScores; profBonus: number; maxUses?: number }
+): string {
+  let i = 0;
+  const n = expr.length;
+
+  const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+  const isIdentChar = (ch: string) => /[a-zA-Z]/.test(ch);
+  const skipWs = () => {
+    while (i < n && expr[i] === " ") i++;
+  };
+
+  function readIdent(): string {
+    const start = i;
+    while (i < n && isIdentChar(expr[i])) i++;
+    if (i === start) throw new TemplateEvalError(`expected identifier at ${i}`);
+    return expr.slice(start, i);
+  }
+
+  function readNumber(): number {
+    const start = i;
+    if (expr[i] === "-") i++;
+    while (i < n && (isDigit(expr[i]) || expr[i] === ".")) i++;
+    if (i === start || (i === start + 1 && expr[start] === "-")) throw new TemplateEvalError(`expected number at ${i}`);
+    return Number(expr.slice(start, i));
+  }
+
+  function readModList(): TemplateMod[] {
+    const mods: TemplateMod[] = [];
+    for (;;) {
+      skipWs();
+      const key = readIdent().toLowerCase();
+      if (key === "min" || key === "max") {
+        if (expr[i] !== ":") throw new TemplateEvalError(`expected ':' after "${key}"`);
+        i++;
+        mods.push({ op: key, value: readNumber() });
+      } else if (key === "rounddown" || key === "roundup" || key === "signed" || key === "unsigned") {
+        mods.push({ op: key });
+      } else {
+        throw new TemplateEvalError(`unknown modifier "${key}"`);
+      }
+      skipWs();
+      if (expr[i] === ",") {
+        i++;
+        continue;
+      }
+      break;
+    }
+    return mods;
+  }
+
+  function applyNumericMods(value: number, mods: TemplateMod[]): number {
+    for (const mod of mods) {
+      if (mod.op === "rounddown") value = Math.floor(value);
+      else if (mod.op === "roundup") value = Math.ceil(value);
+      else if (mod.op === "min") value = Math.max(value, mod.value);
+      else if (mod.op === "max") value = Math.min(value, mod.value);
+    }
+    return value;
+  }
+
+  function abilityKey(arg: string | undefined): keyof AbilityScores {
+    const key = (arg ?? "").toLowerCase();
+    if (key === "str" || key === "dex" || key === "con" || key === "int" || key === "wis" || key === "cha") return key;
+    throw new TemplateEvalError(`unknown ability "${arg}"`);
+  }
+
+  function resolveVariable(name: string, arg: string | undefined): number {
+    switch (name) {
+      case "classlevel":
+      case "characterlevel":
+        return ctx.level;
+      case "proficiency":
+        return ctx.profBonus;
+      case "scalevalue":
+      case "limiteduse":
+        if (ctx.maxUses === undefined) throw new TemplateEvalError("scalevalue unavailable");
+        return ctx.maxUses;
+      case "modifier":
+        return abilityModifier(ctx.abilities[abilityKey(arg)]);
+      case "abilityscore":
+        return ctx.abilities[abilityKey(arg)];
+      case "savedc":
+        return 8 + ctx.profBonus + abilityModifier(ctx.abilities[abilityKey(arg)]);
+      case "spellattack":
+        return ctx.profBonus + abilityModifier(ctx.abilities[abilityKey(arg)]);
+      default:
+        throw new TemplateEvalError(`unknown variable "${name}"`);
+    }
+  }
+
+  // Binds "@modlist" to the atom that directly precedes it (a number, a
+  // variable, or a fully parenthesized group) before that atom's value ever
+  // reaches a surrounding `*`/`/`/`+`/`-` — this is what makes
+  // `(classlevel-13)@min:0,max:1*4` clamp first and multiply second.
+  function parseAtom(): number {
+    skipWs();
+    let value: number;
+    if (expr[i] === "(") {
+      i++;
+      value = parseExpr();
+      skipWs();
+      if (expr[i] !== (")" as string)) throw new TemplateEvalError("expected ')'");
+      i++;
+    } else if (isDigit(expr[i]) || (expr[i] === "-" && isDigit(expr[i + 1]))) {
+      value = readNumber();
+    } else {
+      const name = readIdent().toLowerCase();
+      let arg: string | undefined;
+      if (expr[i] === ":") {
+        i++;
+        arg = readIdent();
+      }
+      value = resolveVariable(name, arg);
+    }
+    skipWs();
+    while (expr[i] === "@") {
+      i++;
+      value = applyNumericMods(value, readModList());
+      skipWs();
+    }
+    return value;
+  }
+
+  function parseTerm(): number {
+    let value = parseAtom();
+    skipWs();
+    while (expr[i] === "*" || expr[i] === "/") {
+      const op = expr[i];
+      i++;
+      const rhs = parseAtom();
+      value = op === "*" ? value * rhs : value / rhs;
+      skipWs();
+    }
+    return value;
+  }
+
+  function parseExpr(): number {
+    let value = parseTerm();
+    skipWs();
+    while (expr[i] === "+" || expr[i] === "-") {
+      const op = expr[i];
+      i++;
+      const rhs = parseTerm();
+      value = op === "+" ? value + rhs : value - rhs;
+      skipWs();
+    }
+    return value;
+  }
+
+  let value = parseExpr();
+  skipWs();
+  // "#modlist", if present, is a *final* wrapper applied once to the whole
+  // expression's result — the only place `signed`/`unsigned` can appear,
+  // since only here does the number turn into display text.
+  let finalMods: TemplateMod[] = [];
+  if (expr[i] === "#") {
+    i++;
+    finalMods = readModList();
+  }
+  skipWs();
+  if (i !== n) throw new TemplateEvalError(`unexpected trailing input at ${i}`);
+
+  value = applyNumericMods(
+    value,
+    finalMods.filter((m) => m.op !== "signed" && m.op !== "unsigned")
+  );
+  return finalMods.some((m) => m.op === "signed") ? formatModifier(value) : String(value);
+}
+
+/**
+ * Resolves every `{{...}}` placeholder in a D&D Beyond snippet/description
+ * via `evaluateTemplatePlaceholder`. A placeholder that fails to evaluate
+ * (unknown future syntax, or `scalevalue`/`limiteduse` with no charge count
+ * available) is dropped silently rather than left as a raw `{{...}}` tag or a
+ * guessed number — same graceful-degradation behavior as before, now just
+ * covering far fewer cases since the evaluator understands the actual
+ * expression grammar instead of a fixed list of tags.
  */
 function resolveSnippetTemplate(
   text: string,
@@ -578,26 +766,13 @@ function resolveSnippetTemplate(
   maxUses?: number
 ): string {
   return text
-    .replace(/\{\{(?:scalevalue|limiteduse)\}\}/gi, () => (maxUses !== undefined ? String(maxUses) : ""))
-    .replace(/\{\{classlevel\}\}/gi, String(level))
-    .replace(/\{\{proficiency(?:#(signed|unsigned))?\}\}/gi, (_match, sign) =>
-      sign === "signed" ? formatModifier(profBonus) : String(profBonus)
-    )
-    .replace(/\{\{savedc:(\w+)\}\}/gi, (_match, abilityKey) => {
-      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
-      return String(8 + profBonus + abilityModifier(abilities[ability] ?? 10));
+    .replace(/\{\{([^}]+)\}\}/g, (_match, expr) => {
+      try {
+        return evaluateTemplatePlaceholder(String(expr).trim(), { level, abilities, profBonus, maxUses });
+      } catch {
+        return "";
+      }
     })
-    .replace(/\{\{spellattack:(\w+)\}\}/gi, (_match, abilityKey) => {
-      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
-      return String(profBonus + abilityModifier(abilities[ability] ?? 10));
-    })
-    .replace(/\{\{modifier:(\w+)(?:@min:(-?\d+))?#(signed|unsigned)\}\}/gi, (_match, abilityKey, min, sign) => {
-      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
-      let mod = abilityModifier(abilities[ability] ?? 10);
-      if (min !== undefined) mod = Math.max(mod, Number(min));
-      return sign === "signed" ? formatModifier(mod) : String(mod);
-    })
-    .replace(/\{\{[^}]+\}\}/g, "")
     // Collapse horizontal whitespace only — a "\n• " line break inserted by
     // cleanRulesText's bullet-list handling must survive this step, or every
     // bullet point collapses back into one run-on line.
