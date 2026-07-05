@@ -405,6 +405,20 @@ function computeUnarmoredAbilityBonus(mods: any[], abilities: AbilityScores): nu
   return bonus;
 }
 
+/**
+ * `characterValues` holds the misc-bonus text boxes a player can type a flat
+ * number into directly on the D&D Beyond sheet (separate from computed
+ * modifiers) — `typeId: 2` is the Armor Class box. Confirmed on a real
+ * Sorcerer export: her AC of 14 (10 + 1 Dex, no armor) only resolves once
+ * this +3 sheet value is added on top; every `modifiers` group was empty of
+ * any armor-class entry, so this is D&D Beyond's only record of that bonus.
+ */
+function computeCustomAcBonus(data: any): number {
+  return (data.characterValues ?? [])
+    .filter((v: any) => v.typeId === 2 && typeof v.value === "number")
+    .reduce((sum: number, v: any) => sum + v.value, 0);
+}
+
 function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): number {
   const dexMod = abilityModifier(abilities.dex);
   const inventory = data.inventory ?? [];
@@ -420,10 +434,11 @@ function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): nu
     (sum: number, i: any) => sum + (i.definition?.armorClass ?? 0),
     0
   );
+  const customBonus = computeCustomAcBonus(data);
 
   if (equippedArmor.length === 0) {
     const unarmoredBonus = computeUnarmoredAbilityBonus(mods, abilities);
-    return 10 + dexMod + unarmoredBonus + shieldBonus + flatBonus;
+    return 10 + dexMod + unarmoredBonus + shieldBonus + flatBonus + customBonus;
   }
 
   const armor = equippedArmor[0];
@@ -433,7 +448,7 @@ function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): nu
   if (type === "Medium Armor") dexContribution = Math.min(dexMod, 2);
   else if (type === "Heavy Armor") dexContribution = 0;
 
-  return base + dexContribution + shieldBonus + flatBonus;
+  return base + dexContribution + shieldBonus + flatBonus + customBonus;
 }
 
 function computePassiveSkill(abilityMod: number, profBonus: number, skill: string, mods: any[]): number {
