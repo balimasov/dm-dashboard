@@ -76,13 +76,13 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {CATEGORY_LABELS[group.category]}
                 </h3>
-                <ul className="space-y-1.5 text-sm">
+                <ul className="columns-1 gap-x-6 space-y-1.5 text-sm sm:columns-2">
                   {group.items.map((item) => {
                     const holdersText = item.holders
                       .map((h) => (h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character))
                       .join(", ");
                     return (
-                      <li key={item.name} className="flex items-center gap-3">
+                      <li key={item.name} className="flex items-center gap-3 break-inside-avoid">
                         <span className="min-w-0 flex-1">
                           <ItemName item={item} />
                         </span>
@@ -105,9 +105,9 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Гроші</h3>
-          <div className="space-y-1 text-sm text-slate-300">
+          <div className="columns-1 gap-x-6 space-y-1 text-sm text-slate-300 sm:columns-2">
             {charactersWithCurrency.map((c) => (
-              <p key={c.id}>
+              <p key={c.id} className="break-inside-avoid">
                 <span className="text-slate-100">{c.name}:</span>{" "}
                 {COIN_ORDER.filter((k) => c.currency[k] > 0)
                   .map((k) => `${c.currency[k]} ${k.toUpperCase()}`)
