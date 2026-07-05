@@ -139,6 +139,28 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
   );
 }
 
+function CurrencyConversionPanel() {
+  const rows: Array<[string, string]> = [
+    ["1 PP", "10 GP"],
+    ["1 EP", "0.5 GP"],
+    ["1 SP", "0.1 GP"],
+    ["1 CP", "0.01 GP"],
+  ];
+  return (
+    <div>
+      <p className="mb-1.5 font-medium text-slate-200">Курс конвертації в GP:</p>
+      <ul className="space-y-1">
+        {rows.map(([coin, gp]) => (
+          <li key={coin} className="flex items-baseline justify-between gap-3">
+            <span>{coin}</span>
+            <span className="text-slate-400">= {gp}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function CurrencyLine({ character }: { character: Character }) {
   return (
     <p>
@@ -199,7 +221,9 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
 
       {charactersWithCurrency.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Гроші</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <InfoTooltip panel={<CurrencyConversionPanel />}>Гроші</InfoTooltip>
+          </h3>
           {rightCurrency.length > 0 ? (
             <div className="grid grid-cols-1 text-sm text-slate-300 sm:grid-cols-2 sm:divide-x sm:divide-slate-800">
               <div className="space-y-1 sm:pr-6">
