@@ -98,7 +98,7 @@ const ORIGIN_LABELS: Record<Feature["originType"], string> = {
   background: "Background Feature",
 };
 
-const ORIGIN_ORDER: Feature["originType"][] = ["species", "class", "feat", "background"];
+const ORIGIN_ORDER: Feature["originType"][] = ["feat", "class", "background", "species"];
 
 /** Same idea as `groupFeaturesByGroup`, one level down — only used for the "Other" bucket, which mirrors D&D Beyond's separate Features & Traits tab (grouped by where a feature comes from) rather than the Actions-tab-style groups above. Action/Bonus Action/Reaction/Special stay flat since those lists are already short. */
 function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"], Feature[]]> {

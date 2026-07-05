@@ -12,6 +12,12 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.41.2] - 2026-07-05
+
+### Changed
+- Порядок підсекцій в Other змінено на Feat Features → Class Features →
+  Background Feature → Species Traits.
+
 ## [0.41.1] - 2026-07-05
 
 ### Fixed
