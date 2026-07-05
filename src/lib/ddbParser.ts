@@ -29,8 +29,11 @@ import {
  * Known limitations (left for manual correction on the edit page):
  * - Free-choice ability score increases ("choose-an-ability-score" with no
  *   fixed ability) aren't resolved — only fixed racial/item stat bonuses are.
- * - AC ignores special unarmored defense (Monk/Barbarian/Sorcerer), natural
- *   armor races, dragon hide and dual-wielding bonuses.
+ * - AC handles Barbarian/Monk-style Unarmored Defense (10 + Dex + another
+ *   ability while unarmored), but not variants that set a different flat
+ *   base (e.g. Draconic Sorcery's 13 + Dex) — those aren't modeled the same
+ *   way by D&D Beyond and would need separate handling. Natural armor races,
+ *   dragon hide, and dual-wielding AC bonuses also aren't accounted for.
  * - Third-caster subclasses (Eldritch Knight, Arcane Trickster) aren't
  *   detected — only classes whose base `definition.canCastSpells` is true
  *   contribute spell slots.
@@ -380,7 +383,30 @@ function computeSpeed(data: any): number {
   return data.race?.weightSpeeds?.normal?.walk ?? 30;
 }
 
-function computeArmorClass(data: any, dexMod: number, mods: any[]): number {
+/**
+ * Barbarian's/Monk's Unarmored Defense (10 + Dex + another ability, only
+ * while wearing no armor) is modeled by D&D Beyond as a `type: "set",
+ * subType: "unarmored-armor-class"` modifier whose `statId` names the extra
+ * ability (3 = Con for Barbarian, 5 = Wis for Monk) — confirmed on a real
+ * Barbarian export, where omitting this was undercounting AC by exactly the
+ * Con modifier. A shield can still be worn under Unarmored Defense, so
+ * `shieldBonus` still applies on top.
+ */
+function computeUnarmoredAbilityBonus(mods: any[], abilities: AbilityScores): number {
+  const seen = new Set<number>();
+  let bonus = 0;
+  for (const m of mods) {
+    if (m.type !== "set" || m.subType !== "unarmored-armor-class" || !m.isGranted || !m.statId) continue;
+    if (seen.has(m.statId)) continue;
+    seen.add(m.statId);
+    const key = ABILITY_BY_ID[m.statId];
+    if (key) bonus += abilityModifier(abilities[key]);
+  }
+  return bonus;
+}
+
+function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): number {
+  const dexMod = abilityModifier(abilities.dex);
   const inventory = data.inventory ?? [];
   const equippedArmor = inventory.filter(
     (i: any) => i.equipped && i.definition?.filterType === "Armor" && i.definition?.armorTypeId !== 4
@@ -396,7 +422,8 @@ function computeArmorClass(data: any, dexMod: number, mods: any[]): number {
   );
 
   if (equippedArmor.length === 0) {
-    return 10 + dexMod + shieldBonus + flatBonus;
+    const unarmoredBonus = computeUnarmoredAbilityBonus(mods, abilities);
+    return 10 + dexMod + unarmoredBonus + shieldBonus + flatBonus;
   }
 
   const armor = equippedArmor[0];
@@ -803,7 +830,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
       hp,
       maxHp,
       tempHp,
-      ac: computeArmorClass(data, dexMod, mods),
+      ac: computeArmorClass(data, abilities, mods),
       speed: computeSpeed(data),
       passivePerception: computePassiveSkill(wisMod, profBonus, "perception", mods),
       passiveInvestigation: computePassiveSkill(intMod, profBonus, "investigation", mods),
