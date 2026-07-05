@@ -43,7 +43,7 @@ export default function RootLayout({
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
-          DM Dashboard · v{APP_VERSION}
+          DM Dashboard · v{APP_VERSION} · dwarfbalin
         </footer>
         <FeedbackFab />
       </body>
