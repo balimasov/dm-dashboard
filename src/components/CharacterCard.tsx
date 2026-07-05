@@ -256,7 +256,7 @@ export function CharacterCard({
       )}
 
       {/* Combat state */}
-      <div className="space-y-1">
+      <div>
         <HpBar
           hp={c.combat.hp}
           maxHp={c.combat.maxHp}
@@ -264,7 +264,7 @@ export function CharacterCard({
           isDown={isDown}
           deathSaves={c.combat.deathSaves}
         />
-        <div className="grid grid-cols-2 gap-1.5 text-sm text-slate-300">
+        <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
           <span className="flex items-center gap-1.5">
             <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             AC {c.combat.ac}
@@ -290,7 +290,7 @@ export function CharacterCard({
             </span>
           </span>
         </div>
-        <div className="space-y-1 text-sm text-slate-300">
+        <div className="mt-1 space-y-1 text-sm text-slate-300">
           <span className="flex items-center gap-1.5">
             <ExhaustionIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="min-w-0 flex-1">
@@ -329,10 +329,10 @@ export function CharacterCard({
           </Pill>
         </div>
         {c.senses.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
             {c.senses.map((s) => (
               <span key={s.name}>
-                {s.name} {s.range} ft
+                <span className="text-slate-500">{s.name}:</span> {s.range} ft
               </span>
             ))}
           </div>
@@ -350,7 +350,7 @@ export function CharacterCard({
       </div>
 
       {/* Saving throws */}
-      <div className="border-t border-slate-800 pt-3">
+      <div>
         <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Saving Throws</h3>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
@@ -366,7 +366,7 @@ export function CharacterCard({
 
       {/* Resistances / Immunities / Vulnerabilities */}
       {hasDamageInfo && (
-        <div className="border-t border-slate-800 pt-3 space-y-1 text-xs text-slate-300">
+        <div className="space-y-1 text-sm text-slate-300">
           {c.resistances.length > 0 && (
             <p>
               <span className="text-slate-500">Resist:</span> {c.resistances.join(", ")}

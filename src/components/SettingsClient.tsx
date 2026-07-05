@@ -43,12 +43,12 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
     e.preventDefault();
     if (!ddbId) {
       setError(
-        "Не вдалося розпізнати лінк. Очікується формат: https://www.dndbeyond.com/characters/1234567"
+        "Couldn't recognize the link. Expected format: https://www.dndbeyond.com/characters/1234567"
       );
       return;
     }
     if (characters.some((c) => c.dndBeyondUrl && extractDndBeyondCharacterId(c.dndBeyondUrl) === ddbId)) {
-      setError("Цей персонаж вже додано.");
+      setError("This character has already been added.");
       return;
     }
 
@@ -60,7 +60,7 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
     try {
       character = await addFromUrl(trimmedUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не вдалося додати персонажа. Спробуйте ще раз.");
+      setError(err instanceof Error ? err.message : "Failed to add character. Please try again.");
       setAdding(false);
       return;
     }
@@ -72,9 +72,9 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
       const synced = await fetchAndParseDdbCharacter(character);
       await updateCharacter(character.id, synced);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Невідома помилка синхронізації.";
+      const message = err instanceof Error ? err.message : "Unknown sync error.";
       setSyncError(
-        `Не вдалося синхронізувати "${character.name}": ${message} Дані можна заповнити вручну на сторінці редагування.`
+        `Failed to sync "${character.name}": ${message} You can fill in the data manually on the edit page.`
       );
     } finally {
       setSyncingId(null);
@@ -90,8 +90,8 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
       const synced = await fetchAndParseDdbCharacter(character);
       await updateCharacter(id, synced);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Невідома помилка синхронізації.";
-      setSyncError(`Не вдалося синхронізувати "${character.name}": ${message}`);
+      const message = err instanceof Error ? err.message : "Unknown sync error.";
+      setSyncError(`Failed to sync "${character.name}": ${message}`);
     } finally {
       setSyncingId(null);
     }
@@ -111,9 +111,9 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-50 mb-1">Налаштування</h1>
+      <h1 className="text-2xl font-bold text-slate-50 mb-1">Settings</h1>
       <p className="text-sm text-slate-500 mb-6">
-        Додайте лінки на персонажів D&D Beyond, щоб вони з&apos;явились на дашборді.
+        Add D&D Beyond character links to have them show up on the dashboard.
       </p>
 
       <form onSubmit={handleSubmit} className="flex gap-2 mb-1">
@@ -132,7 +132,7 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
           disabled={!canSubmit}
           className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
         >
-          {adding ? "Додавання..." : "Додати"}
+          {adding ? "Adding..." : "Add"}
         </button>
       </form>
       <div className="mb-6 space-y-1">
@@ -142,14 +142,14 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm uppercase tracking-wide text-slate-500">
-          Додані персонажі ({characters.length})
+          Added Characters ({characters.length})
         </h2>
         {characters.length > 1 && (
-          <p className="text-xs text-slate-600">Перетягуйте ⠿, щоб змінити порядок на дашборді</p>
+          <p className="text-xs text-slate-600">Drag ⠿ to reorder on the dashboard</p>
         )}
       </div>
 
-      {characters.length === 0 && <p className="text-sm text-slate-600">Список порожній.</p>}
+      {characters.length === 0 && <p className="text-sm text-slate-600">The list is empty.</p>}
 
       <DndContext
         id="characters-dnd"

@@ -662,7 +662,7 @@ export class DdbParseError extends Error {}
 export function parseDdbCharacter(rawResponse: any, existing: Character): Character {
   const data = rawResponse?.data;
   if (!rawResponse?.success || !data) {
-    throw new DdbParseError("Неочікуваний формат відповіді D&D Beyond.");
+    throw new DdbParseError("Unexpected D&D Beyond response format.");
   }
 
   const mods = collectModifiers(data);

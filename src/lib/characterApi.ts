@@ -14,5 +14,5 @@ export async function patchCharacter(id: string, updates: Partial<Character>): P
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-  return (await parseJsonOrThrow(res, "Не вдалося зберегти персонажа.")) as Character;
+  return (await parseJsonOrThrow(res, "Failed to save character.")) as Character;
 }

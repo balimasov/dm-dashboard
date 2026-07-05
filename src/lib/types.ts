@@ -313,12 +313,12 @@ export function characterInfoLine(character: Character): string {
 
 /**
  * Formats an ISO timestamp using the viewer's own local timezone (not the
- * server's). Omits the year (e.g. "5 лип., 14:32") — this is always a recent
+ * server's). Omits the year (e.g. "5 Jul, 14:32") — this is always a recent
  * sync, so the year is dead weight that's a common culprit for text overflow
  * next to the header's sync button on narrow mobile viewports.
  */
 export function formatSyncTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString("uk-UA", {
+  return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

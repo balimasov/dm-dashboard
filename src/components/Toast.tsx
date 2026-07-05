@@ -21,7 +21,7 @@ export function Toast({
       <span>{message}</span>
       <button
         onClick={onDismiss}
-        aria-label="Закрити"
+        aria-label="Close"
         className="shrink-0 text-slate-500 hover:text-slate-300"
       >
         ✕

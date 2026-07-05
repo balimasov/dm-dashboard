@@ -27,9 +27,9 @@ export function FeedbackFab() {
       className="group fixed bottom-5 right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg shadow-black/40 ring-1 ring-slate-700 transition hover:scale-105"
     >
       <GoogleSheetsIcon className="h-7 w-7" />
-      <span className="sr-only">Список побажань і доопрацювань (Google Таблиці)</span>
+      <span className="sr-only">Feedback and improvement ideas (Google Sheet)</span>
       <span className="pointer-events-none absolute bottom-full right-0 mb-2 hidden w-56 rounded-md border border-slate-700 bg-slate-950 p-2 text-xs leading-snug text-slate-300 shadow-xl group-hover:block">
-        Мої побажання й ідеї для доопрацювання — відкрити Google Таблицю
+        My feedback and improvement ideas — open the Google Sheet
       </span>
     </a>
   );

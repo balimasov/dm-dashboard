@@ -6,7 +6,7 @@ import { FeedbackFab } from "@/components/FeedbackFab";
 
 export const metadata: Metadata = {
   title: "DM Dashboard",
-  description: "Компактний дашборд персонажів партії для Данжеон Майстра",
+  description: "A compact party character dashboard for the Dungeon Master",
 };
 
 const APP_VERSION = packageJson.version;
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uk" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
           <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">

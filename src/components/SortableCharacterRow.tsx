@@ -41,7 +41,7 @@ export function SortableCharacterRow({
           {...attributes}
           {...listeners}
           className="cursor-grab touch-none px-1 text-slate-600 hover:text-slate-300 active:cursor-grabbing"
-          aria-label="Перетягнути для зміни порядку"
+          aria-label="Drag to reorder"
         >
           ⠿
         </button>
@@ -72,13 +72,13 @@ export function SortableCharacterRow({
               </a>
               <span className="text-slate-700">·</span>
               {syncing ? (
-                <span className="text-sky-400">Синхронізація...</span>
+                <span className="text-sky-400">Syncing...</span>
               ) : character.lastSyncedAt ? (
                 <span className="truncate text-slate-600">
-                  Синхронізовано <SyncTimestamp iso={character.lastSyncedAt} />
+                  Synced <SyncTimestamp iso={character.lastSyncedAt} />
                 </span>
               ) : (
-                <span className="truncate text-amber-500">Ще не синхронізовано</span>
+                <span className="truncate text-amber-500">Not synced yet</span>
               )}
             </div>
           )}
@@ -91,14 +91,14 @@ export function SortableCharacterRow({
             disabled={syncing}
             className="text-sky-400 hover:text-sky-300 disabled:opacity-50"
           >
-            Синхронізувати
+            Sync
           </button>
         )}
         <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
-          Редагувати
+          Edit
         </Link>
         <button onClick={() => onRemove(character.id)} className="text-red-500/80 hover:text-red-400">
-          Видалити
+          Remove
         </button>
       </div>
     </li>

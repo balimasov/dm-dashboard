@@ -91,7 +91,7 @@ export const demoCharacters: Character[] = [
     ],
     currency: { cp: 0, sp: 0, ep: 0, gp: 42, pp: 0 },
     notes:
-      "Тактичний персонаж, добре працює через позиціонування та контроль. Має магічний меч Whisper of the Underdark. Варто давати ситуації, де його рішення на полі бою мають реальну ціну.",
+      "A tactical character who works best through positioning and control. Wields the magic sword Whisper of the Underdark. Give him situations where his battlefield decisions carry real weight.",
   },
   {
     id: "demo-lilith",
@@ -172,6 +172,6 @@ export const demoCharacters: Character[] = [
     ],
     currency: { cp: 0, sp: 0, ep: 0, gp: 118, pp: 2 },
     notes:
-      "Сильний зв'язок із Латандером, тема світла проти темряви. Добре працюють сцени морального вибору, захисту слабших або протистояння темним силам.",
+      "A strong bond with Lathander, a theme of light versus darkness. Scenes of moral choice, protecting the weak, or standing against dark forces work well for her.",
   },
 ];

@@ -49,7 +49,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
       const synced = await fetchAndParseDdbCharacter(draft);
       setDraft(synced);
     } catch (err) {
-      setSyncError(err instanceof Error ? err.message : "Невідома помилка синхронізації.");
+      setSyncError(err instanceof Error ? err.message : "Unknown sync error.");
     } finally {
       setSyncing(false);
     }
@@ -239,7 +239,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
       await patchCharacter(draft.id, { ...draft, synced: true });
       router.push("/");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Не вдалося зберегти персонажа.");
+      setSaveError(err instanceof Error ? err.message : "Failed to save character.");
       setSaving(false);
     }
   }
@@ -247,9 +247,9 @@ export function EditCharacterForm({ character }: { character: Character }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold text-slate-50">Редагування персонажа</h1>
+        <h1 className="text-2xl font-bold text-slate-50">Edit Character</h1>
         <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
-          ← До дашборда
+          ← Back to dashboard
         </Link>
       </div>
 
@@ -261,11 +261,11 @@ export function EditCharacterForm({ character }: { character: Character }) {
             disabled={syncing}
             className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
           >
-            {syncing ? "Синхронізація..." : "Синхронізувати з D&D Beyond"}
+            {syncing ? "Syncing..." : "Sync with D&D Beyond"}
           </button>
           {draft.lastSyncedAt && (
             <span className="text-xs text-slate-500">
-              Востаннє синхронізовано: <SyncTimestamp iso={draft.lastSyncedAt} />
+              Last synced: <SyncTimestamp iso={draft.lastSyncedAt} />
             </span>
           )}
         </div>
@@ -275,25 +275,25 @@ export function EditCharacterForm({ character }: { character: Character }) {
       <form onSubmit={handleSave} className="space-y-8">
         {/* Basic info */}
         <section className="space-y-3">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">Основне</h2>
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Basic Info</h2>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Ім'я">
+            <Field label="Name">
               <input className={inputCls} value={draft.name} onChange={(e) => set("name", e.target.value)} />
             </Field>
-            <Field label="Раса">
+            <Field label="Race">
               <input className={inputCls} value={draft.race} onChange={(e) => set("race", e.target.value)} />
             </Field>
-            <Field label="Клас">
+            <Field label="Class">
               <input className={inputCls} value={draft.className} onChange={(e) => set("className", e.target.value)} />
             </Field>
-            <Field label="Сабклас">
+            <Field label="Subclass">
               <input
                 className={inputCls}
                 value={draft.subclass ?? ""}
                 onChange={(e) => set("subclass", e.target.value)}
               />
             </Field>
-            <Field label="Рівень">
+            <Field label="Level">
               <input
                 type="number"
                 className={inputCls}
@@ -301,7 +301,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => set("level", Number(e.target.value))}
               />
             </Field>
-            <Field label="Ініціатива (бонус)">
+            <Field label="Initiative (bonus)">
               <input
                 type="number"
                 className={inputCls}
@@ -309,7 +309,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => set("initiative", Number(e.target.value))}
               />
             </Field>
-            <Field label="Роль у партії">
+            <Field label="Party Role">
               <input className={inputCls} value={draft.role} onChange={(e) => set("role", e.target.value)} />
             </Field>
             <label className="flex items-center gap-2 text-sm text-slate-300 mt-6">
@@ -325,7 +325,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
         {/* Combat state */}
         <section className="space-y-3">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">Бойовий стан</h2>
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Combat State</h2>
           <div className="grid grid-cols-3 gap-3">
             <Field label="HP">
               <input
@@ -339,8 +339,8 @@ export function EditCharacterForm({ character }: { character: Character }) {
               label="Max HP"
               hint={
                 draft.maxHpLocked
-                  ? "Зафіксовано — синхронізація не змінює це значення."
-                  : "Перерахується автоматично при наступній синхронізації."
+                  ? "Locked — sync won't change this value."
+                  : "Recalculated automatically on the next sync."
               }
             >
               <input
@@ -408,7 +408,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 onChange={(e) => setCombat("exhaustion", Number(e.target.value))}
               />
             </Field>
-            <Field label="Conditions (через кому)">
+            <Field label="Conditions (comma-separated)">
               <input
                 className={inputCls}
                 value={draft.combat.conditions.join(", ")}
@@ -430,13 +430,13 @@ export function EditCharacterForm({ character }: { character: Character }) {
               checked={draft.maxHpLocked ?? false}
               onChange={(e) => set("maxHpLocked", e.target.checked)}
             />
-            Зафіксувати Max HP (ігнорувати автоматичний перерахунок при синхронізації)
+            Lock Max HP (ignore automatic recalculation on sync)
           </label>
         </section>
 
         {/* Stats */}
         <section className="space-y-3">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">Стати</h2>
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Stats</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
               <Field key={key} label={key.toUpperCase()}>
@@ -453,7 +453,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
         {/* Saving throws */}
         <section className="space-y-3">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">Рятівні кидки (proficient)</h2>
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Saving Throws (proficient)</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
               <label key={key} className="flex items-center gap-1.5 text-sm text-slate-300">
@@ -510,24 +510,24 @@ export function EditCharacterForm({ character }: { character: Character }) {
         {/* Resistances / Immunities / Vulnerabilities */}
         <section className="space-y-3">
           <h2 className="text-sm uppercase tracking-wide text-slate-500">
-            Резисти / Імунітети / Вразливості
+            Resistances / Immunities / Vulnerabilities
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label="Resistances (через кому)">
+            <Field label="Resistances (comma-separated)">
               <input
                 className={inputCls}
                 value={draft.resistances.join(", ")}
                 onChange={(e) => setDamageList("resistances", e.target.value)}
               />
             </Field>
-            <Field label="Immunities (через кому)">
+            <Field label="Immunities (comma-separated)">
               <input
                 className={inputCls}
                 value={draft.immunities.join(", ")}
                 onChange={(e) => setDamageList("immunities", e.target.value)}
               />
             </Field>
-            <Field label="Vulnerabilities (через кому)">
+            <Field label="Vulnerabilities (comma-separated)">
               <input
                 className={inputCls}
                 value={draft.vulnerabilities.join(", ")}
@@ -536,8 +536,8 @@ export function EditCharacterForm({ character }: { character: Character }) {
             </Field>
           </div>
           <Field
-            label="Advantages (по одному в рядку)"
-            hint='Наприклад: "Advantage: Saving Throws — to avoid or end the Charmed condition"'
+            label="Advantages (one per line)"
+            hint='e.g. "Advantage: Saving Throws — to avoid or end the Charmed condition"'
           >
             <textarea
               className={`${inputCls} w-full`}
@@ -553,7 +553,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
           <div className="flex items-center justify-between">
             <h2 className="text-sm uppercase tracking-wide text-slate-500">Senses</h2>
             <button type="button" onClick={addSense} className={addBtnCls}>
-              + Чуття
+              + Sense
             </button>
           </div>
           <div className="space-y-2">
@@ -561,7 +561,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
               <div key={index} className="flex flex-wrap items-center gap-2">
                 <input
                   className={`${inputCls} flex-1 min-w-[140px]`}
-                  placeholder="Назва (напр. Darkvision)"
+                  placeholder="Name (e.g. Darkvision)"
                   value={s.name}
                   onChange={(e) => updateSense(index, { name: e.target.value })}
                 />
@@ -587,9 +587,9 @@ export function EditCharacterForm({ character }: { character: Character }) {
         {/* Resources */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide text-slate-500">Ресурси</h2>
+            <h2 className="text-sm uppercase tracking-wide text-slate-500">Resources</h2>
             <button type="button" onClick={addResource} className={addBtnCls}>
-              + Ресурс
+              + Resource
             </button>
           </div>
           <div className="space-y-2">
@@ -598,7 +598,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <input
                     className={`${inputCls} flex-1 min-w-[140px]`}
-                    placeholder="Назва"
+                    placeholder="Name"
                     value={r.name}
                     onChange={(e) => updateResource(r.id, { name: e.target.value })}
                   />
@@ -636,7 +636,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 </div>
                 <input
                   className={`${inputCls} w-full`}
-                  placeholder="Короткий опис (підказка при наведенні)"
+                  placeholder="Short description (hover hint)"
                   value={r.description ?? ""}
                   onChange={(e) => updateResource(r.id, { description: e.target.value })}
                 />
@@ -650,7 +650,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
           <div className="flex items-center justify-between">
             <h2 className="text-sm uppercase tracking-wide text-slate-500">Spells</h2>
             <button type="button" onClick={addSlot} className={addBtnCls}>
-              + Рівень
+              + Level
             </button>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -714,9 +714,9 @@ export function EditCharacterForm({ character }: { character: Character }) {
         {/* Inventory */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide text-slate-500">Інвентар</h2>
+            <h2 className="text-sm uppercase tracking-wide text-slate-500">Inventory</h2>
             <button type="button" onClick={addItem} className={addBtnCls}>
-              + Річ
+              + Item
             </button>
           </div>
           <div className="space-y-2">
@@ -725,7 +725,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <input
                     className={`${inputCls} flex-1 min-w-[140px]`}
-                    placeholder="Назва"
+                    placeholder="Name"
                     value={item.name}
                     onChange={(e) => updateItem(item.id, { name: e.target.value })}
                   />
@@ -768,7 +768,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                 </div>
                 <input
                   className={`${inputCls} w-full`}
-                  placeholder="Короткий опис (підказка при наведенні)"
+                  placeholder="Short description (hover hint)"
                   value={item.description ?? ""}
                   onChange={(e) => updateItem(item.id, { description: e.target.value })}
                 />
@@ -834,14 +834,14 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
         <div className="flex justify-end gap-3 pt-2">
           <Link href="/" className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
-            Скасувати
+            Cancel
           </Link>
           <button
             type="submit"
             disabled={saving}
             className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
           >
-            {saving ? "Збереження..." : "Зберегти"}
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </form>

@@ -13,9 +13,9 @@ export default async function EditCharacterPage({
   if (!character) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10 text-slate-500">
-        Персонажа не знайдено.{" "}
+        Character not found.{" "}
         <Link href="/" className="text-sky-400 hover:underline">
-          До дашборда
+          Back to dashboard
         </Link>
       </div>
     );

@@ -43,9 +43,9 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
 
     setSyncSummary(
       failed.length === 0
-        ? `Синхронізовано ${succeededCount} з ${linkedCharacters.length}.`
-        : `Синхронізовано ${succeededCount} з ${linkedCharacters.length}. Не вдалося: ${failed
-            .map((f) => `${f.name} (${f.reason instanceof Error ? f.reason.message : "помилка"})`)
+        ? `Synced ${succeededCount} of ${linkedCharacters.length}.`
+        : `Synced ${succeededCount} of ${linkedCharacters.length}. Failed: ${failed
+            .map((f) => `${f.name} (${f.reason instanceof Error ? f.reason.message : "error"})`)
             .join(", ")}`
     );
     setSyncingAll(false);
@@ -58,7 +58,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {lastSyncedAt && (
               <span className="whitespace-nowrap text-xs text-slate-500">
-                Синхронізовано: <SyncTimestamp iso={lastSyncedAt} />
+                Synced: <SyncTimestamp iso={lastSyncedAt} />
               </span>
             )}
             <button
@@ -66,38 +66,38 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
               disabled={syncingAll}
               className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
             >
-              {syncingAll ? "Синхронізація..." : "Синхронізувати все"}
+              {syncingAll ? "Syncing..." : "Sync All"}
             </button>
           </div>
         </HeaderPortal>
       )}
 
       <CollapsibleSection
-        title={`Персонажі (${characters.length})`}
+        title={`Party (${characters.length})`}
         storageKey="dm-dashboard-characters-open"
         actions={
           <Link
             href="/settings"
             className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
           >
-            Налаштування
+            Settings
           </Link>
         }
       >
         <p className="mb-4 text-sm text-slate-500">
-          Бойовий стан, ресурси та нотатки по кожному персонажу.
+          Combat state, resources, and notes for every character.
         </p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
         {characters.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
-            <p>Персонажів ще немає.</p>
+            <p>No characters yet.</p>
             <Link
               href="/settings"
               className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
             >
-              + Додати персонажа
+              + Add character
             </Link>
           </div>
         ) : (
@@ -111,8 +111,8 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
-        <p className="mb-4 text-sm text-slate-500">Речі та гроші всіх персонажів партії.</p>
+      <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open">
+        <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
         <InventoryOverview characters={characters} />
       </CollapsibleSection>
     </div>

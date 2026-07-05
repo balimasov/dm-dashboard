@@ -21,7 +21,7 @@ export function useCharacters(initialCharacters: Character[]) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
     });
-    const character = (await parseJsonOrThrow(res, "Не вдалося додати персонажа.")) as Character;
+    const character = (await parseJsonOrThrow(res, "Failed to add character.")) as Character;
     setCharacters((prev) => [...prev, character]);
     return character;
   }, []);

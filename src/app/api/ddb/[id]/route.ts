@@ -4,7 +4,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
   const { id } = await ctx.params;
 
   if (!/^\d+$/.test(id)) {
-    return NextResponse.json({ error: "Невірний ID персонажа." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid character ID." }, { status: 400 });
   }
 
   let upstream: Response;
@@ -15,7 +15,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
     });
   } catch {
     return NextResponse.json(
-      { error: "Не вдалося з'єднатися з D&D Beyond. Перевірте інтернет-з'єднання." },
+      { error: "Couldn't connect to D&D Beyond. Check your internet connection." },
       { status: 502 }
     );
   }
@@ -24,7 +24,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
     return NextResponse.json(
       {
         error:
-          "Персонаж не публічний або не існує. Відкрийте його на D&D Beyond → Manage → Privacy & Sharing → Public, і спробуйте ще раз.",
+          "Character isn't public or doesn't exist. Open it on D&D Beyond → Manage → Privacy & Sharing → Public, then try again.",
       },
       { status: upstream.status }
     );
@@ -32,7 +32,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
 
   if (!upstream.ok) {
     return NextResponse.json(
-      { error: `D&D Beyond тимчасово недоступний (помилка ${upstream.status}). Спробуйте пізніше.` },
+      { error: `D&D Beyond is temporarily unavailable (error ${upstream.status}). Try again later.` },
       { status: upstream.status }
     );
   }
@@ -40,7 +40,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/ddb/[id]">) {
   const json = await upstream.json();
   if (!json?.success || !json?.data) {
     return NextResponse.json(
-      { error: "Персонаж не публічний або не існує. Перевірте налаштування приватності на D&D Beyond." },
+      { error: "Character isn't public or doesn't exist. Check the privacy settings on D&D Beyond." },
       { status: 404 }
     );
   }

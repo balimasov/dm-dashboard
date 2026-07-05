@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   if (!url || !extractDndBeyondCharacterId(url)) {
     return NextResponse.json(
-      { error: "Невірний лінк на D&D Beyond." },
+      { error: "Invalid D&D Beyond link." },
       { status: 400 }
     );
   }
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     (c) => c.dndBeyondUrl && extractDndBeyondCharacterId(c.dndBeyondUrl) === ddbId
   );
   if (existing) {
-    return NextResponse.json({ error: "Цей персонаж вже додано." }, { status: 409 });
+    return NextResponse.json({ error: "This character has already been added." }, { status: 409 });
   }
 
   const character = addCharacterFromUrl(url);

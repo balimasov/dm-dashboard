@@ -128,7 +128,7 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
               }`}
             >
               {CATEGORY_LABELS[row.category]}
-              {row.continued && <span className="ml-1 normal-case text-slate-600">(продовження)</span>}
+              {row.continued && <span className="ml-1 normal-case text-slate-600">(continued)</span>}
             </h3>
           );
         }
@@ -160,7 +160,7 @@ function CurrencyConversionPanel() {
   ];
   return (
     <div>
-      <p className="mb-1.5 font-medium text-slate-200">Курс конвертації в GP:</p>
+      <p className="mb-1.5 font-medium text-slate-200">Conversion rate to GP:</p>
       <ul className="space-y-1">
         {rows.map(([coin, gp]) => (
           <li key={coin} className="flex items-baseline justify-between gap-3">
@@ -220,7 +220,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
   const [leftCurrency, rightCurrency] = splitIntoColumns(charactersWithCurrency, () => 1);
 
   if (groups.length === 0 && charactersWithCurrency.length === 0) {
-    return <p className="text-sm text-slate-500">Немає предметів чи грошей у жодного персонажа.</p>;
+    return <p className="text-sm text-slate-500">No items or gold on any character.</p>;
   }
 
   return (
@@ -245,7 +245,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <InfoTooltip panel={<CurrencyConversionPanel />}>Гроші</InfoTooltip>
+            <InfoTooltip panel={<CurrencyConversionPanel />}>Coins</InfoTooltip>
           </h3>
           {rightCurrency.length > 0 ? (
             <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
@@ -268,7 +268,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
             </div>
           )}
           <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
-            <span className="text-sm font-medium text-slate-100">Загалом по партії</span>
+            <span className="text-sm font-medium text-slate-100">Party total</span>
             <CoinChip
               code="GP"
               value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
