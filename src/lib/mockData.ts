@@ -205,8 +205,8 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-0",
         "name": "Adrenaline Rush",
-        "source": "Race",
-        "category": "race",
+        "source": "Adrenaline Rush",
+        "group": "bonusAction",
         "description": "As a Bonus Action, you can take the Dash action. When you do, you gain 3 Temporary HP. You can use this trait 3 times, and you regain all uses after a Short or Long Rest.",
         "current": 3,
         "max": 3,
@@ -214,202 +214,236 @@ export const demoCharacters: Character[] = [
       },
       {
         "id": "feature-1",
-        "name": "Darkvision",
-        "source": "Race",
-        "category": "race",
-        "description": "You have Darkvision with a range of 120 ft."
-      },
-      {
-        "id": "feature-2",
         "name": "Relentless Endurance",
-        "source": "Race",
-        "category": "race",
+        "source": "Relentless Endurance",
+        "group": "special",
         "description": "Once per Long Rest, when you’re reduced to 0 HP but not killed outright, you can drop to 1 HP instead.",
         "current": 1,
         "max": 1,
         "recovery": "long-rest"
       },
       {
+        "id": "feature-2",
+        "name": "Rage (Enter)",
+        "source": "Rage",
+        "group": "bonusAction",
+        "description": "You can enter Rage if you aren’t wearing Heavy Armor. You can use Rage 3 times per Long Rest, and regain one expended use when you finish a Short Rest.",
+        "current": 3,
+        "max": 3,
+        "recovery": "long-rest"
+      },
+      {
         "id": "feature-3",
-        "name": "Creature Type",
-        "source": "Race",
-        "category": "race",
-        "description": "You're a Humanoid.",
-        "filteredReason": "boilerplate"
+        "name": "Hew",
+        "source": "Great Weapon Master",
+        "group": "bonusAction",
+        "description": "Immediately after you score a Critical Hit with a Melee weapon or reduce a creature to 0 Hit Points with one, you can make one attack with the same weapon as a Bonus Action."
       },
       {
         "id": "feature-4",
-        "name": "Size",
-        "source": "Race",
-        "category": "race",
-        "description": "Your Size is Medium.",
-        "filteredReason": "boilerplate"
+        "name": "Heavy Weapon Mastery",
+        "source": "Great Weapon Master",
+        "group": "action",
+        "description": "When you hit a creature with a weapon that has the Heavy property as part of the Attack action on your turn, you can cause the weapon to deal extra 3 damage to the target."
       },
       {
         "id": "feature-5",
-        "name": "Speed",
-        "source": "Race",
-        "category": "race",
-        "description": "Your Speed is 30 ft.",
-        "filteredReason": "boilerplate"
+        "name": "Vex (Handaxe)",
+        "source": "Weapon Mastery",
+        "group": "action",
+        "description": "**Vex.** If you hit a creature with a Handaxe and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
         "id": "feature-6",
-        "name": "Ability Score Increases",
-        "source": "Race",
-        "category": "race",
-        "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1.",
-        "filteredReason": "ability-score"
+        "name": "Cleave (Greataxe)",
+        "source": "Weapon Mastery",
+        "group": "action",
+        "description": "**Cleave.** Once per turn, if you hit a creature with a melee attack using a Greataxe, you can make another melee attack with it against a second creature within 5 ft. of the first that’s within your reach. On a hit, the second creature takes the Greataxe’s damage, but without your ability modifier (unless the modifier is negative)."
       },
       {
         "id": "feature-7",
-        "name": "Frenzy",
-        "source": "Path of the Berserker",
-        "category": "subclass",
-        "description": "If you use Reckless Attack while Rage is active, you deal an additional **2d6** damage (the same damage type as the weapon or Unarmed Strike used) to the first target you hit on your turn with a Strength-based attack."
+        "name": "Push (Pike)",
+        "source": "4: Weapon Mastery",
+        "group": "action",
+        "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
       },
       {
         "id": "feature-8",
-        "name": "Unarmored Defense",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "While not wearing armor, your base AC equals 15 + any Shield bonus."
+        "name": "Darkvision",
+        "source": "Race",
+        "group": "other",
+        "description": "You have Darkvision with a range of 120 ft."
       },
       {
         "id": "feature-9",
-        "name": "Weapon Mastery",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "You are able to use the mastery properties of kinds of Simple or Martial Melee weapons of your choice. Whenever you finish a Long Rest, you can change one of those weapon choices.",
-        "filteredReason": "boilerplate"
+        "name": "Creature Type",
+        "source": "Race",
+        "group": "other",
+        "description": "You're a Humanoid."
       },
       {
         "id": "feature-10",
-        "name": "Danger Sense",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "You have Advantage on Dex. saving throws unless you have the Incapacitated condition."
+        "name": "Size",
+        "source": "Race",
+        "group": "other",
+        "description": "Your Size is Medium."
       },
       {
         "id": "feature-11",
-        "name": "Reckless Attack",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "When you make your first attack roll on your turn, you can decide to attack recklessly, giving you Advantage on attack rolls using Str. until the start of your next turn, but attacks against you have Advantage during that time."
+        "name": "Speed",
+        "source": "Race",
+        "group": "other",
+        "description": "Your Speed is 30 ft."
       },
       {
         "id": "feature-12",
-        "name": "Barbarian Subclass",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "You gain a Barbarian subclass of your choice. A subclass is a specialization that grants you features at certain Barbarian levels. For the rest of your career, you gain each of your subclass’s features that are of your Barbarian level or lower.",
-        "filteredReason": "subclass-announcement"
+        "name": "Ability Score Increases",
+        "source": "Race",
+        "group": "other",
+        "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1."
       },
       {
         "id": "feature-13",
-        "name": "Primal Knowledge",
-        "source": "Barbarian",
-        "category": "class",
-        "description": "You gain proficiency in another Barbarian skill of your choice. While Raging, whenever you make an ability check using one of the following skills, you can make it as a Str. check even if it normally uses a different ability: Acrobatics, Intimidation, Perception, Stealth, or Survival."
+        "name": "Frenzy",
+        "source": "Path of the Berserker",
+        "group": "other",
+        "description": "If you use Reckless Attack while Rage is active, you deal an additional **2d6** damage (the same damage type as the weapon or Unarmed Strike used) to the first target you hit on your turn with a Strength-based attack."
       },
       {
         "id": "feature-14",
-        "name": "Ability Score Improvement",
+        "name": "Unarmored Defense",
         "source": "Barbarian",
-        "category": "class",
-        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Barbarian levels 8, 12, and 16.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "While not wearing armor, your base AC equals 15 + any Shield bonus."
       },
       {
         "id": "feature-15",
-        "name": "Extra Attack",
+        "name": "Weapon Mastery",
         "source": "Barbarian",
-        "category": "class",
-        "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+        "group": "other",
+        "description": "You are able to use the mastery properties of kinds of Simple or Martial Melee weapons of your choice. Whenever you finish a Long Rest, you can change one of those weapon choices."
       },
       {
         "id": "feature-16",
-        "name": "Fast Movement",
+        "name": "Danger Sense",
         "source": "Barbarian",
-        "category": "class",
-        "description": "Your speed increases by 10 ft. while you aren’t wearing Heavy armor."
+        "group": "other",
+        "description": "You have Advantage on Dex. saving throws unless you have the Incapacitated condition."
       },
       {
         "id": "feature-17",
-        "name": "Core Barbarian Traits",
+        "name": "Reckless Attack",
         "source": "Barbarian",
-        "category": "class",
-        "description": "As a Level 1 Character: Gain all the traits in the Core Barbarian Traits table. Gain the Barbarian’s level 1 features. Core Barbarian Traits Primary Ability Strength Hit Point Die D12 per Barbarian level Saving Throw Proficiencies Strength and Constitution Skill Proficiencies *Choose 2:* Animal Handling, Athletics, Intimidation, Nature, Perception, or Survival Weapon Proficiencies Simple and Martial weapons Armor Training Light and Medium armor and Shields Starting Equipment *Choose A or B:* (A) Greataxe, 4 Handaxes, Explorer’s Pack, and 15 GP; or (B) 75 GP",
-        "filteredReason": "core-traits"
+        "group": "other",
+        "description": "When you make your first attack roll on your turn, you can decide to attack recklessly, giving you Advantage on attack rolls using Str. until the start of your next turn, but attacks against you have Advantage during that time."
       },
       {
         "id": "feature-18",
+        "name": "Barbarian Subclass",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "You gain a Barbarian subclass of your choice. A subclass is a specialization that grants you features at certain Barbarian levels. For the rest of your career, you gain each of your subclass’s features that are of your Barbarian level or lower."
+      },
+      {
+        "id": "feature-19",
+        "name": "Primal Knowledge",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "You gain proficiency in another Barbarian skill of your choice. While Raging, whenever you make an ability check using one of the following skills, you can make it as a Str. check even if it normally uses a different ability: Acrobatics, Intimidation, Perception, Stealth, or Survival."
+      },
+      {
+        "id": "feature-20",
+        "name": "Ability Score Improvement",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Barbarian levels 8, 12, and 16."
+      },
+      {
+        "id": "feature-21",
+        "name": "Extra Attack",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+      },
+      {
+        "id": "feature-22",
+        "name": "Fast Movement",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "Your speed increases by 10 ft. while you aren’t wearing Heavy armor."
+      },
+      {
+        "id": "feature-23",
+        "name": "Core Barbarian Traits",
+        "source": "Barbarian",
+        "group": "other",
+        "description": "As a Level 1 Character: Gain all the traits in the Core Barbarian Traits table. Gain the Barbarian’s level 1 features. Core Barbarian Traits Primary Ability Strength Hit Point Die D12 per Barbarian level Saving Throw Proficiencies Strength and Constitution Skill Proficiencies *Choose 2:* Animal Handling, Athletics, Intimidation, Nature, Perception, or Survival Weapon Proficiencies Simple and Martial weapons Armor Training Light and Medium armor and Shields Starting Equipment *Choose A or B:* (A) Greataxe, 4 Handaxes, Explorer’s Pack, and 15 GP; or (B) 75 GP"
+      },
+      {
+        "id": "feature-24",
         "name": "Rage",
         "source": "Barbarian",
-        "category": "class",
+        "group": "other",
         "description": "You can take a Bonus action to enter Rage if you aren’t wearing Heavy Armor. You can use Rage 3 times per Long Rest, and regain one expended use when you finish a Short Rest. *Activate Rage by clicking on this feature and selecting the drop down called Activate Rage. Deselect it to stop Raging.*",
         "current": 3,
         "max": 3,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-19",
+        "id": "feature-25",
         "name": "4: Weapon Mastery",
         "source": "Barbarian",
-        "category": "class",
-        "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-20",
-        "name": "Great Weapon Master",
-        "source": "Feat",
-        "category": "feat",
-        "description": "**Ability Score Increase.** * Your Str. is increased by 1. *** Heavy Weapon Mastery.** When you hit a creature with a weapon that has the Heavy property as part of the Attack action on your turn, you can cause the weapon to deal an extra 3 damage to the target. ** Hew.** Immediately after you score a Critical Hit with a Melee weapon or reduce a creature to 0 HP with one, you can make one attack with the same weapon as a Bonus Action."
-      },
-      {
-        "id": "feature-21",
-        "name": "Savage Attacker",
-        "source": "Feat",
-        "category": "feat",
-        "description": "Once per turn when you hit a target with a weapon, you can roll the weapon’s damage dice twice and use either roll against the target."
-      },
-      {
-        "id": "feature-22",
-        "name": "Soldier Ability Score Improvements",
-        "source": "Feat",
-        "category": "feat",
-        "description": "The Soldier Background allows you to choose between Strength, Dexterity, and Constitution. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20.",
-        "filteredReason": "ability-score"
-      },
-      {
-        "id": "feature-23",
-        "name": "Handaxe (Vex)",
-        "source": "Weapon Mastery",
-        "category": "feat",
-        "description": "**Vex.** If you hit a creature with a Handaxe and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
-      },
-      {
-        "id": "feature-24",
-        "name": "Greataxe (Cleave)",
-        "source": "Weapon Mastery",
-        "category": "feat",
-        "description": "**Cleave.** Once per turn, if you hit a creature with a melee attack using a Greataxe, you can make another melee attack with it against a second creature within 5 ft. of the first that’s within your reach. On a hit, the second creature takes the Greataxe’s damage, but without your ability modifier (unless the modifier is negative)."
-      },
-      {
-        "id": "feature-25",
-        "name": "Pike (Push)",
-        "source": "4: Weapon Mastery",
-        "category": "feat",
-        "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
+        "group": "other",
+        "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table."
       },
       {
         "id": "feature-26",
+        "name": "Great Weapon Master",
+        "source": "Feat",
+        "group": "other",
+        "description": "**Ability Score Increase.** * Your Str. is increased by 1. *** Heavy Weapon Mastery.** When you hit a creature with a weapon that has the Heavy property as part of the Attack action on your turn, you can cause the weapon to deal an extra 3 damage to the target. ** Hew.** Immediately after you score a Critical Hit with a Melee weapon or reduce a creature to 0 HP with one, you can make one attack with the same weapon as a Bonus Action."
+      },
+      {
+        "id": "feature-27",
+        "name": "Savage Attacker",
+        "source": "Feat",
+        "group": "other",
+        "description": "Once per turn when you hit a target with a weapon, you can roll the weapon’s damage dice twice and use either roll against the target."
+      },
+      {
+        "id": "feature-28",
+        "name": "Soldier Ability Score Improvements",
+        "source": "Feat",
+        "group": "other",
+        "description": "The Soldier Background allows you to choose between Strength, Dexterity, and Constitution. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
+      },
+      {
+        "id": "feature-29",
+        "name": "Handaxe (Vex)",
+        "source": "Weapon Mastery",
+        "group": "other",
+        "description": "**Vex.** If you hit a creature with a Handaxe and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
+      },
+      {
+        "id": "feature-30",
+        "name": "Greataxe (Cleave)",
+        "source": "Weapon Mastery",
+        "group": "other",
+        "description": "**Cleave.** Once per turn, if you hit a creature with a melee attack using a Greataxe, you can make another melee attack with it against a second creature within 5 ft. of the first that’s within your reach. On a hit, the second creature takes the Greataxe’s damage, but without your ability modifier (unless the modifier is negative)."
+      },
+      {
+        "id": "feature-31",
+        "name": "Pike (Push)",
+        "source": "4: Weapon Mastery",
+        "group": "other",
+        "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
+      },
+      {
+        "id": "feature-32",
         "name": "Increase two scores (+2 / +1)",
         "source": "Soldier Ability Score Improvements",
-        "category": "feat",
-        "description": "Increase one of these scores by 2 and a different score by 1.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
     "notes": "A Berserker who trades caution for raw damage output — Frenzy and Reckless Attack turn every Rage into an all-in swing. Give him enemies worth hitting hard and consequences (exhaustion, no room to retreat) for going all-in every fight.",
@@ -420,7 +454,10 @@ export const demoCharacters: Character[] = [
         "createdAt": "2026-07-05T10:00:00.000Z"
       }
     ],
-    "subclass": "Path of the Berserker"
+    "subclass": "Path of the Berserker",
+    "avatarUrl": "https://www.dndbeyond.com/avatars/17/208/636377840332911633.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
+    "maxHpLocked": true,
+    "synced": false
   },
   {
     "id": "demo-lilith",
@@ -891,271 +928,367 @@ export const demoCharacters: Character[] = [
     "features": [
       {
         "id": "feature-0",
-        "name": "Creature Type",
-        "source": "Race",
-        "category": "race",
-        "description": "You are a Humanoid.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-1",
-        "name": "Size",
-        "source": "Race",
-        "category": "race",
-        "description": "You are Medium.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-2",
-        "name": "Speed",
-        "source": "Race",
-        "category": "race",
-        "description": "Your speed is 30 ft.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-3",
-        "name": "Darkvision",
-        "source": "Race",
-        "category": "race",
-        "description": "You have Darkvision with a range of 60 ft."
-      },
-      {
-        "id": "feature-4",
-        "name": "Elven Lineage",
-        "source": "Race",
-        "category": "race",
-        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-5",
-        "name": "Fey Ancestry",
-        "source": "Race",
-        "category": "race",
-        "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
-      },
-      {
-        "id": "feature-6",
-        "name": "Keen Senses",
-        "source": "Race",
-        "category": "race",
-        "description": "You have proficiency in the Insight, Perception, or Survival skill.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-7",
-        "name": "Trance",
-        "source": "Race",
-        "category": "race",
-        "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
-      },
-      {
-        "id": "feature-8",
-        "name": "Elven Lineage Spells",
-        "source": "Race",
-        "category": "race",
-        "description": "When you choose your Elven Lineage, and at character levels 3 and 5, you learn a spell as shown on the table. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have of the appropriate level. Intelligence, Wisdom, or Charisma is your spellcasting ability for the spells you cast with this trait (choose the ability when you select the lineage)."
-      },
-      {
-        "id": "feature-9",
-        "name": "Ability Score Increases",
-        "source": "Race",
-        "category": "race",
-        "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1.",
-        "filteredReason": "ability-score"
-      },
-      {
-        "id": "feature-10",
-        "name": "Inspiring Smite",
-        "source": "Oath of Glory",
-        "category": "subclass",
-        "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8**+5 Temporary HP to creatures of your choice within 30 ft., including yourself."
-      },
-      {
-        "id": "feature-11",
-        "name": "Oath of Glory Spells",
-        "source": "Oath of Glory",
-        "category": "subclass",
-        "description": "When you reach a Paladin level specified in the Oath of Glory Spells table, you thereafter always have the listed spells prepared."
-      },
-      {
-        "id": "feature-12",
-        "name": "Peerless Athlete",
-        "source": "Oath of Glory",
-        "category": "subclass",
-        "description": "As a Bonus Action, you can expend one use of Channel Divinity to augment your athleticism. For 1 hour, you have Advantage on Strength (Athletics) and Dexterity (Acrobatics) checks, and the distance of your Long and High Jumps increases by 10 ft. (this extra distance costs movement as normal)."
-      },
-      {
-        "id": "feature-13",
-        "name": "Core Paladin Traits",
-        "source": "Paladin",
-        "category": "class",
-        "description": "As a Level 1 Character: Gain all the traits in the Core Paladin Traits table. Gain the Paladin’s level 1 features, which are listed in the Paladin Features table. Core Paladin Traits Primary Ability Strength and Charisma Hit Point Die D10 per Paladin level Saving Throw Proficiencies Wisdom and Charisma Skill Proficiencies *Choose 2:* Athletics, Insight, Intimidation, Medicine, Persuasion, or Religion Weapon Proficiencies Simple and Martial weapons Armor Training Light, Medium, and Heavy armor and Shields Starting Equipment *Choose A or B:* (A) Chain Mail, Shield, Longsword, 6 Javelins, Holy Symbol, Priest’s Pack, and 9 GP; or (B) 150 GP",
-        "filteredReason": "core-traits"
-      },
-      {
-        "id": "feature-14",
-        "name": "Lay On Hands",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of 25 HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature.",
+        "name": "Lay On Hands: Healing Pool",
+        "source": "Lay On Hands",
+        "group": "bonusAction",
+        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of 25 HP.",
         "current": 10,
         "max": 25,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-15",
-        "name": "Spellcasting",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You have learned to cast spells through prayer and meditation. **Spell Slots.** The Paladin Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+**. You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Paladin spells. The number of spells on your list increases as you gain Paladin levels, as shown in the Prepared Spells column of the Paladin Features table. Whenever that number increases, choose additional Paladin spells until the number of spells on your list matches the number in the Paladin Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 5 Paladin, your list of prepared spells can include six Paladin spells of level 1 or 2 in any combination. If another Paladin feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Paladin spells for you. **Changing Your Prepared Spells.** Whenever you finish a Long Rest, you can replace one spell on your list with another Paladin spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Paladin spells. **Spellcasting Focus.** You can use a Holy Symbol as a Spellcasting Focus for your Paladin spells.",
-        "filteredReason": "boilerplate"
+        "id": "feature-1",
+        "name": "Lay On Hands: Heal",
+        "source": "Lay On Hands",
+        "group": "bonusAction",
+        "description": "As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool."
       },
       {
-        "id": "feature-16",
-        "name": "Weapon Mastery",
-        "source": "Paladin",
-        "category": "class",
-        "description": "Your training with weapons allows you to use the mastery properties of two kinds of weapons of your choice with which you have proficiency, such as Longswords and Javelins. Whenever you finish a Long Rest, you can change the kinds of weapons you chose. For example, you could switch to using the mastery properties of Halberds and Flails.",
-        "filteredReason": "boilerplate"
+        "id": "feature-2",
+        "name": "Lay On Hands: Purify Poison",
+        "source": "Lay On Hands",
+        "group": "bonusAction",
+        "description": "You can expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature."
       },
       {
-        "id": "feature-17",
-        "name": "Fighting Style",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You gain a Fighting Style feat of your choice. Instead of choosing one of those feats, you can choose the option below."
+        "id": "feature-3",
+        "name": "Channel Divinity: Divine Sense",
+        "source": "Channel Divinity",
+        "group": "bonusAction",
+        "description": "For the next 10 min. or until you have the Incapacitated condition, you know the location of any Celestials, Fiends, and Undead within 60 ft., and you know its creature type. In the same radius, you also detect the presence of any place/object that has been consecrated or desecrated, as with the *Hallow* spell."
       },
       {
-        "id": "feature-18",
-        "name": "Paladin’s Smite",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You always have *Divine Smite* prepared and cast it without expending a spell slot once per Long Rest."
-      },
-      {
-        "id": "feature-19",
+        "id": "feature-4",
         "name": "Channel Divinity",
-        "source": "Paladin",
-        "category": "class",
+        "source": "Channel Divinity",
+        "group": "action",
         "description": "You can channel energy directly from the Outer Planes to fuel magical effects. Each time you use this class’s Channel Divinity, you can choose which effect to create. You can use this class’s Channel Divinity 2 times per Long Rest, but can regain one expended use after finishing a Short Rest. If your Channel Divinity requires a saving throw, the DC equals your Paladin spell save DC (DC 14).",
         "current": 1,
         "max": 2,
         "recovery": "long-rest"
       },
       {
+        "id": "feature-5",
+        "name": "Inspiring Smite",
+        "source": "Inspiring Smite",
+        "group": "special",
+        "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8**+5 Temporary HP to creatures of your choice within 30 ft., including yourself."
+      },
+      {
+        "id": "feature-6",
+        "name": "Initiate a Circle Spell",
+        "source": "Class",
+        "group": "action",
+        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
+      },
+      {
+        "id": "feature-7",
+        "name": "Circle Spell: Augment",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
+      },
+      {
+        "id": "feature-8",
+        "name": "Circle Spell: Distribute",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
+      },
+      {
+        "id": "feature-9",
+        "name": "Circle Spell: Expand",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
+      },
+      {
+        "id": "feature-10",
+        "name": "Circle Spell: Prolong",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
+      },
+      {
+        "id": "feature-11",
+        "name": "Circle Spell: Safeguard",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **3 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
+      },
+      {
+        "id": "feature-12",
+        "name": "Circle Spell: Supplant",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
+      },
+      {
+        "id": "feature-13",
+        "name": "Luck Points",
+        "source": "Lucky",
+        "group": "special",
+        "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
+        "current": 3,
+        "max": 3,
+        "recovery": "long-rest"
+      },
+      {
+        "id": "feature-14",
+        "name": "Bolstering Performance",
+        "source": "Inspiring Leader",
+        "group": "action",
+        "description": "After a Short or Long Rest, give a performance. When you do, up to six allies (which can include yourself) within 30 ft. of yourself gain 6 Temporary HP."
+      },
+      {
+        "id": "feature-15",
+        "name": "Vex (Shortsword)",
+        "source": "Weapon Mastery",
+        "group": "action",
+        "description": "**Vex.** If you hit a creature with a Shortsword and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
+      },
+      {
+        "id": "feature-16",
+        "name": "Nick (Scimitar)",
+        "source": "Weapon Mastery",
+        "group": "action",
+        "description": "**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. This extra attack can only be made once per turn."
+      },
+      {
+        "id": "feature-17",
+        "name": "Creature Type",
+        "source": "Race",
+        "group": "other",
+        "description": "You are a Humanoid."
+      },
+      {
+        "id": "feature-18",
+        "name": "Size",
+        "source": "Race",
+        "group": "other",
+        "description": "You are Medium."
+      },
+      {
+        "id": "feature-19",
+        "name": "Speed",
+        "source": "Race",
+        "group": "other",
+        "description": "Your speed is 30 ft."
+      },
+      {
         "id": "feature-20",
-        "name": "Paladin Subclass",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You gain a Paladin subclass of your choice. A subclass is a specialization that grants you features at certain Paladin levels. For the rest of your career, you gain each of your subclass’s features that are of your Paladin level or lower.",
-        "filteredReason": "subclass-announcement"
+        "name": "Darkvision",
+        "source": "Race",
+        "group": "other",
+        "description": "You have Darkvision with a range of 60 ft."
       },
       {
         "id": "feature-21",
-        "name": "Ability Score Improvement",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Paladin levels 8, 12, and 16.",
-        "filteredReason": "ability-score"
+        "name": "Elven Lineage",
+        "source": "Race",
+        "group": "other",
+        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
       },
       {
         "id": "feature-22",
-        "name": "Extra Attack",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+        "name": "Fey Ancestry",
+        "source": "Race",
+        "group": "other",
+        "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
       },
       {
         "id": "feature-23",
-        "name": "Faithful Steed",
-        "source": "Paladin",
-        "category": "class",
-        "description": "You always have *Find Steed* prepared, and can cast it once per Long Rest without expending a spell slot."
+        "name": "Keen Senses",
+        "source": "Race",
+        "group": "other",
+        "description": "You have proficiency in the Insight, Perception, or Survival skill."
       },
       {
         "id": "feature-24",
-        "name": "Inspiring Leader",
-        "source": "Feat",
-        "category": "feat",
-        "description": "**Ability Score Increase.** Wisdom or Charisma increased by 1. ** Bolstering Performance.** After a Short or Long Rest, give a performance. When you do, up to six allies (which can include yourself) within 30 ft. of yourself gain Temporary HP equal to your character level plus the modifier of the ability you increased with this feat."
+        "name": "Trance",
+        "source": "Race",
+        "group": "other",
+        "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
       },
       {
         "id": "feature-25",
+        "name": "Elven Lineage Spells",
+        "source": "Race",
+        "group": "other",
+        "description": "When you choose your Elven Lineage, and at character levels 3 and 5, you learn a spell as shown on the table. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have of the appropriate level. Intelligence, Wisdom, or Charisma is your spellcasting ability for the spells you cast with this trait (choose the ability when you select the lineage)."
+      },
+      {
+        "id": "feature-26",
+        "name": "Ability Score Increases",
+        "source": "Race",
+        "group": "other",
+        "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1."
+      },
+      {
+        "id": "feature-27",
+        "name": "Oath of Glory Spells",
+        "source": "Oath of Glory",
+        "group": "other",
+        "description": "When you reach a Paladin level specified in the Oath of Glory Spells table, you thereafter always have the listed spells prepared."
+      },
+      {
+        "id": "feature-28",
+        "name": "Peerless Athlete",
+        "source": "Oath of Glory",
+        "group": "other",
+        "description": "As a Bonus Action, you can expend one use of Channel Divinity to augment your athleticism. For 1 hour, you have Advantage on Strength (Athletics) and Dexterity (Acrobatics) checks, and the distance of your Long and High Jumps increases by 10 ft. (this extra distance costs movement as normal)."
+      },
+      {
+        "id": "feature-29",
+        "name": "Core Paladin Traits",
+        "source": "Paladin",
+        "group": "other",
+        "description": "As a Level 1 Character: Gain all the traits in the Core Paladin Traits table. Gain the Paladin’s level 1 features, which are listed in the Paladin Features table. Core Paladin Traits Primary Ability Strength and Charisma Hit Point Die D10 per Paladin level Saving Throw Proficiencies Wisdom and Charisma Skill Proficiencies *Choose 2:* Athletics, Insight, Intimidation, Medicine, Persuasion, or Religion Weapon Proficiencies Simple and Martial weapons Armor Training Light, Medium, and Heavy armor and Shields Starting Equipment *Choose A or B:* (A) Chain Mail, Shield, Longsword, 6 Javelins, Holy Symbol, Priest’s Pack, and 9 GP; or (B) 150 GP"
+      },
+      {
+        "id": "feature-30",
+        "name": "Lay On Hands",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of 25 HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature.",
+        "current": 10,
+        "max": 25,
+        "recovery": "long-rest"
+      },
+      {
+        "id": "feature-31",
+        "name": "Spellcasting",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You have learned to cast spells through prayer and meditation. **Spell Slots.** The Paladin Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+**. You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Paladin spells. The number of spells on your list increases as you gain Paladin levels, as shown in the Prepared Spells column of the Paladin Features table. Whenever that number increases, choose additional Paladin spells until the number of spells on your list matches the number in the Paladin Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 5 Paladin, your list of prepared spells can include six Paladin spells of level 1 or 2 in any combination. If another Paladin feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Paladin spells for you. **Changing Your Prepared Spells.** Whenever you finish a Long Rest, you can replace one spell on your list with another Paladin spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Paladin spells. **Spellcasting Focus.** You can use a Holy Symbol as a Spellcasting Focus for your Paladin spells."
+      },
+      {
+        "id": "feature-32",
+        "name": "Weapon Mastery",
+        "source": "Paladin",
+        "group": "other",
+        "description": "Your training with weapons allows you to use the mastery properties of two kinds of weapons of your choice with which you have proficiency, such as Longswords and Javelins. Whenever you finish a Long Rest, you can change the kinds of weapons you chose. For example, you could switch to using the mastery properties of Halberds and Flails."
+      },
+      {
+        "id": "feature-33",
+        "name": "Fighting Style",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You gain a Fighting Style feat of your choice. Instead of choosing one of those feats, you can choose the option below."
+      },
+      {
+        "id": "feature-34",
+        "name": "Paladin’s Smite",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You always have *Divine Smite* prepared and cast it without expending a spell slot once per Long Rest."
+      },
+      {
+        "id": "feature-35",
+        "name": "Paladin Subclass",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You gain a Paladin subclass of your choice. A subclass is a specialization that grants you features at certain Paladin levels. For the rest of your career, you gain each of your subclass’s features that are of your Paladin level or lower."
+      },
+      {
+        "id": "feature-36",
+        "name": "Ability Score Improvement",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Paladin levels 8, 12, and 16."
+      },
+      {
+        "id": "feature-37",
+        "name": "Extra Attack",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+      },
+      {
+        "id": "feature-38",
+        "name": "Faithful Steed",
+        "source": "Paladin",
+        "group": "other",
+        "description": "You always have *Find Steed* prepared, and can cast it once per Long Rest without expending a spell slot."
+      },
+      {
+        "id": "feature-39",
+        "name": "Inspiring Leader",
+        "source": "Feat",
+        "group": "other",
+        "description": "**Ability Score Increase.** Wisdom or Charisma increased by 1. ** Bolstering Performance.** After a Short or Long Rest, give a performance. When you do, up to six allies (which can include yourself) within 30 ft. of yourself gain Temporary HP equal to your character level plus the modifier of the ability you increased with this feat."
+      },
+      {
+        "id": "feature-40",
         "name": "Lucky",
         "source": "Feat",
-        "category": "feat",
+        "group": "other",
         "description": "**Luck Points.** You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
         "current": 3,
         "max": 3,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-26",
+        "id": "feature-41",
         "name": "Two-Weapon Fighting",
         "source": "Feat",
-        "category": "feat",
+        "group": "other",
         "description": "When you make an extra attack as a result of using a weapon that has the Light property, you can add your ability modifier to the damage of that attack if you aren’t already adding it to the damage."
       },
       {
-        "id": "feature-27",
+        "id": "feature-42",
         "name": "Wayfarer Ability Score Improvements",
         "source": "Feat",
-        "category": "feat",
-        "description": "The Wayfarer Background allows you to choose between Dexterity, Wisdom, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "The Wayfarer Background allows you to choose between Dexterity, Wisdom, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
       },
       {
-        "id": "feature-28",
+        "id": "feature-43",
         "name": "Drow Lineage",
         "source": "Elven Lineage",
-        "category": "race",
+        "group": "other",
         "description": "The range of your Darkvision increases to 120 ft. and you gain the spells outlined in the Elven Lineages table."
       },
       {
-        "id": "feature-29",
+        "id": "feature-44",
         "name": "Drow Lineage - Charisma",
         "source": "Elven Lineage Spells",
-        "category": "race",
-        "description": "Your Drow Lineage spells use Charisma.",
-        "filteredReason": "boilerplate"
+        "group": "other",
+        "description": "Your Drow Lineage spells use Charisma."
       },
       {
-        "id": "feature-30",
+        "id": "feature-45",
         "name": "Fighting Style feat",
         "source": "Fighting Style",
-        "category": "class",
+        "group": "other",
         "description": "You gain a Fighting Style feat of your choice."
       },
       {
-        "id": "feature-31",
+        "id": "feature-46",
         "name": "Wisdom",
         "source": "Inspiring Leader",
-        "category": "feat",
-        "description": "Wisdom is your ability score increased by this feat and used in Bolstering Performance.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "Wisdom is your ability score increased by this feat and used in Bolstering Performance."
       },
       {
-        "id": "feature-32",
+        "id": "feature-47",
         "name": "Increase two scores (+2 / +1)",
         "source": "Wayfarer Ability Score Improvements",
-        "category": "feat",
-        "description": "Increase one of these scores by 2 and a different score by 1.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "Increase one of these scores by 2 and a different score by 1."
       },
       {
-        "id": "feature-33",
+        "id": "feature-48",
         "name": "Shortsword (Vex)",
         "source": "Weapon Mastery",
-        "category": "feat",
+        "group": "other",
         "description": "**Vex.** If you hit a creature with a Shortsword and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
-        "id": "feature-34",
+        "id": "feature-49",
         "name": "Scimitar (Nick)",
         "source": "Weapon Mastery",
-        "category": "feat",
+        "group": "other",
         "description": "**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. This extra attack can only be made once per turn."
       }
     ],
@@ -1172,7 +1305,10 @@ export const demoCharacters: Character[] = [
       "modifier": 3,
       "attack": 6,
       "saveDc": 14
-    }
+    },
+    "avatarUrl": "https://www.dndbeyond.com/avatars/56275/822/1581111423-139992128.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
+    "maxHpLocked": true,
+    "synced": false
   },
   {
     "id": "demo-yorun",
@@ -1663,192 +1799,309 @@ export const demoCharacters: Character[] = [
     "features": [
       {
         "id": "feature-0",
-        "name": "Darkvision",
-        "source": "Race",
-        "category": "race",
-        "description": "You have Darkvision with a range of 60 ft."
-      },
-      {
-        "id": "feature-1",
-        "name": "Elven Lineage",
-        "source": "Race",
-        "category": "race",
-        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-2",
-        "name": "Fey Ancestry",
-        "source": "Race",
-        "category": "race",
-        "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
-      },
-      {
-        "id": "feature-3",
-        "name": "Keen Senses",
-        "source": "Race",
-        "category": "race",
-        "description": "You have proficiency in the Insight, Perception, or Survival skill.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-4",
-        "name": "Trance",
-        "source": "Race",
-        "category": "race",
-        "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
-      },
-      {
-        "id": "feature-5",
-        "name": "Spellfire Burst",
-        "source": "Spellfire Sorcery",
-        "category": "subclass",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice. **Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP. **Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d4** Fire or Radiant damage (your choice)."
-      },
-      {
-        "id": "feature-6",
-        "name": "Spellfire Spells",
-        "source": "Spellfire Sorcery",
-        "category": "subclass",
-        "description": "When you reach a Sorcerer level specified in the Spellfire Spells table, you thereafter always have the listed spells prepared."
-      },
-      {
-        "id": "feature-7",
-        "name": "Core Sorcerer Traits",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "As a Level 1 Character: Gain all the traits in the Core Sorcerer Traits table. Gain the Sorcerer’s level 1 features. Core Sorcerer Traits Primary Ability Charisma Hit Point Die D6 per Sorcerer level Saving Throw Proficiencies Constitution and Charisma Skill Proficiencies *Choose 2:* Arcana, Deception, Insight, Intimidation, Persuasion, or Religion Weapon Proficiencies Simple weapons Armor Training None Starting Equipment *Choose A or B:* (A) Spear, 2 Daggers, Arcane Focus (crystal), Dungeoneer’s Pack, and 28 GP; or (B) 50 GP",
-        "filteredReason": "core-traits"
-      },
-      {
-        "id": "feature-8",
-        "name": "Spellcasting",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "Drawing from your innate magic, you can cast spells. **Cantrips.** You know four Sorcerer cantrips of your choice. Whenever you gain a Sorcerer level, you can replace one of your cantrips from this feature with another Sorcerer cantrip of your choice. When you reach Sorcerer levels 4 and 10, you learn another Sorcerer cantrip of your choice, as shown in the Cantrips column of the Sorcerer Features table. **Spell Slots.** The Sorcerer Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+.** You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Sorcerer spells. The number of spells on your list increases as you gain Sorcerer levels, as shown in the Prepared Spells column of the Sorcerer Features table. Whenever that number increases, choose additional Sorcerer spells until the number of spells on your list matches the number in the Sorcerer Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 3 Sorcerer, your list of prepared spells can include six Sorcerer spells of level 1 or 2 in any combination. If another Sorcerer feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Sorcerer spells for you. **Changing Your Prepared Spells.** Whenever you gain a Sorcerer level, you can replace one spell on your list with another Sorcerer spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Sorcerer spells. **Spellcasting Focus.** You can use an Arcane Focus as a Spellcasting Focus for your Sorcerer spells.",
-        "filteredReason": "boilerplate"
-      },
-      {
-        "id": "feature-9",
         "name": "Innate Sorcery",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "Twice per Long Rest, you can take a Bonus Action to unleash the simmering magic within you for 1 minute. *Activate this effect by clicking on this feature and selecting Activate Innate Sorcery. Deselect it to stop this effect.*",
+        "source": "Innate Sorcery",
+        "group": "bonusAction",
+        "description": "Twice per Long Rest, you can take a Bonus Action to unleash the simmering magic within you for 1 minute.",
         "current": 1,
         "max": 2,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-10",
-        "name": "Font of Magic",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required). **Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5",
+        "id": "feature-1",
+        "name": "Font of Magic: Sorcery Points",
+        "source": "Font of Magic",
+        "group": "special",
+        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). Sorcery Points fuel various magical effects. You have 5 SP and regain all expended points when you finish a Long Rest.",
         "current": 4,
         "max": 5,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-11",
-        "name": "Metamagic",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "You can alter spells to suit your needs; you know Metamagic options which can be used to temporarily modify spells you cast.",
-        "filteredReason": "boilerplate"
+        "id": "feature-2",
+        "name": "Font of Magic: Convert Spell Slots",
+        "source": "Font of Magic",
+        "group": "action",
+        "description": "You can expend a spell slot to gain a number of Sorcery Points equal to the slot’s level (no action required)."
       },
       {
-        "id": "feature-12",
-        "name": "Sorcerer Subclass",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "You gain a Sorcerer subclass of your choice. A subclass is a specialization that grants you features at certain Sorcerer levels. For the rest of your career, you gain each of your subclass’s features that are of your Sorcerer level or lower.",
-        "filteredReason": "subclass-announcement"
+        "id": "feature-3",
+        "name": "Font of Magic: Create Spell Slot Level 1",
+        "source": "Font of Magic",
+        "group": "bonusAction",
+        "description": "You can transform 2 unexpended Sorcery Points into a level 1 spell slot, which vanishes when you finish a Long Rest."
       },
       {
-        "id": "feature-13",
-        "name": "Ability Score Improvement",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Sorcerer levels 8, 12, and 16.",
-        "filteredReason": "ability-score"
+        "id": "feature-4",
+        "name": "Font of Magic: Create Spell Slot Level 2",
+        "source": "Font of Magic",
+        "group": "bonusAction",
+        "description": "You can transform 3 unexpended Sorcery Points into a level 2 spell slot, which vanishes when you finish a Long Rest."
       },
       {
-        "id": "feature-14",
+        "id": "feature-5",
+        "name": "Font of Magic: Create Spell Slot Level 3",
+        "source": "Font of Magic",
+        "group": "bonusAction",
+        "description": "You can transform 5 unexpended Sorcery Points into a level 3 spell slot, which vanishes when you finish a Long Rest."
+      },
+      {
+        "id": "feature-6",
         "name": "Sorcerous Restoration",
-        "source": "Sorcerer",
-        "category": "class",
+        "source": "Sorcerous Restoration",
+        "group": "special",
         "description": "When you finish a Short Rest, you can regain up to 2 Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest.",
         "current": 0,
         "max": 1,
         "recovery": "long-rest"
       },
       {
-        "id": "feature-15",
-        "name": "Metamagic Options",
-        "source": "Sorcerer",
-        "category": "class",
-        "description": "The following options are available to your Metamagic feature. The options are presented in alphabetical order.",
-        "filteredReason": "boilerplate"
+        "id": "feature-7",
+        "name": "Initiate a Circle Spell",
+        "source": "Class",
+        "group": "action",
+        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
       },
       {
-        "id": "feature-16",
-        "name": "Noble Ability Score Improvements",
-        "source": "Feat",
-        "category": "feat",
-        "description": "The Noble Background allows you to choose between Strength, Intelligence, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20.",
-        "filteredReason": "ability-score"
+        "id": "feature-8",
+        "name": "Circle Spell: Augment",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
       },
       {
-        "id": "feature-17",
-        "name": "Skilled",
-        "source": "Feat",
-        "category": "feat",
-        "description": "You gain proficiency in any combination of three skills or tools of your choice. **Repeatable.** You can take this feat more than once.",
-        "filteredReason": "boilerplate"
+        "id": "feature-9",
+        "name": "Circle Spell: Distribute",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
       },
       {
-        "id": "feature-18",
-        "name": "War Caster",
-        "source": "Feat",
-        "category": "feat",
-        "description": "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1. **Concentration.** You have Advantage on Con. saving throws to maintain Concentration. **Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature. **Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands."
+        "id": "feature-10",
+        "name": "Circle Spell: Expand",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
-        "id": "feature-19",
-        "name": "High Elf Lineage",
-        "source": "Elven Lineage",
-        "category": "race",
-        "description": "You gain the spells outlined in the Elven Lineages table, and whenever you finish a Long Rest, you can replace the cantrip at level 1 with a different cantrip from the Wizard spell list."
+        "id": "feature-11",
+        "name": "Circle Spell: Prolong",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
-        "id": "feature-20",
-        "name": "High Elf - Intelligence",
-        "source": "Elven Lineage Spells",
-        "category": "race",
-        "description": "Your High Elf Lineage spells use Intelligence.",
-        "filteredReason": "boilerplate"
+        "id": "feature-12",
+        "name": "Circle Spell: Safeguard",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **3 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
       },
       {
-        "id": "feature-21",
-        "name": "Careful Spell",
-        "source": "Metamagic Options",
-        "category": "class",
+        "id": "feature-13",
+        "name": "Circle Spell: Supplant",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
+      },
+      {
+        "id": "feature-14",
+        "name": "Metamagic: Careful Spell",
+        "source": "Class",
+        "group": "special",
         "description": "When you cast a spell that forces other creatures to make a saving throw, you can spend 1 Sorcery Point and choose up to 3 creatures to automatically succeed on its saving throw, and it takes no damage if it would normally take half damage on a success."
       },
       {
-        "id": "feature-22",
-        "name": "Seeking Spell",
-        "source": "Metamagic Options",
-        "category": "class",
+        "id": "feature-15",
+        "name": "Metamagic: Seeking Spell",
+        "source": "Class",
+        "group": "special",
         "description": "If you make an attack roll for a spell and miss, you can spend 1 Sorcery Point to reroll the d20, and you must use the new roll. You can use Seeking Spell, even if you’ve already used a different Metamagic option."
       },
       {
+        "id": "feature-16",
+        "name": "Spellfire Burst: Bolstering Flames",
+        "source": "Spellfire Burst",
+        "group": "special",
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP."
+      },
+      {
+        "id": "feature-17",
+        "name": "Spellfire Burst: Radiant Fire (Fire)",
+        "source": "Spellfire Burst",
+        "group": "special",
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Fire damage."
+      },
+      {
+        "id": "feature-18",
+        "name": "Spellfire Burst: Radiant Fire (Radiant)",
+        "source": "Spellfire Burst",
+        "group": "special",
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Radiant damage."
+      },
+      {
+        "id": "feature-19",
+        "name": "Reactive Spell",
+        "source": "War Caster",
+        "group": "reaction",
+        "description": "When a creature provokes an Opportunity Attack from you, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. The spell must have a casting time of one action and must target only that creature."
+      },
+      {
+        "id": "feature-20",
+        "name": "Darkvision",
+        "source": "Race",
+        "group": "other",
+        "description": "You have Darkvision with a range of 60 ft."
+      },
+      {
+        "id": "feature-21",
+        "name": "Elven Lineage",
+        "source": "Race",
+        "group": "other",
+        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
+      },
+      {
+        "id": "feature-22",
+        "name": "Fey Ancestry",
+        "source": "Race",
+        "group": "other",
+        "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
+      },
+      {
         "id": "feature-23",
+        "name": "Keen Senses",
+        "source": "Race",
+        "group": "other",
+        "description": "You have proficiency in the Insight, Perception, or Survival skill."
+      },
+      {
+        "id": "feature-24",
+        "name": "Trance",
+        "source": "Race",
+        "group": "other",
+        "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
+      },
+      {
+        "id": "feature-25",
+        "name": "Spellfire Burst",
+        "source": "Spellfire Sorcery",
+        "group": "other",
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice. **Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP. **Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d4** Fire or Radiant damage (your choice)."
+      },
+      {
+        "id": "feature-26",
+        "name": "Spellfire Spells",
+        "source": "Spellfire Sorcery",
+        "group": "other",
+        "description": "When you reach a Sorcerer level specified in the Spellfire Spells table, you thereafter always have the listed spells prepared."
+      },
+      {
+        "id": "feature-27",
+        "name": "Core Sorcerer Traits",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "As a Level 1 Character: Gain all the traits in the Core Sorcerer Traits table. Gain the Sorcerer’s level 1 features. Core Sorcerer Traits Primary Ability Charisma Hit Point Die D6 per Sorcerer level Saving Throw Proficiencies Constitution and Charisma Skill Proficiencies *Choose 2:* Arcana, Deception, Insight, Intimidation, Persuasion, or Religion Weapon Proficiencies Simple weapons Armor Training None Starting Equipment *Choose A or B:* (A) Spear, 2 Daggers, Arcane Focus (crystal), Dungeoneer’s Pack, and 28 GP; or (B) 50 GP"
+      },
+      {
+        "id": "feature-28",
+        "name": "Spellcasting",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "Drawing from your innate magic, you can cast spells. **Cantrips.** You know four Sorcerer cantrips of your choice. Whenever you gain a Sorcerer level, you can replace one of your cantrips from this feature with another Sorcerer cantrip of your choice. When you reach Sorcerer levels 4 and 10, you learn another Sorcerer cantrip of your choice, as shown in the Cantrips column of the Sorcerer Features table. **Spell Slots.** The Sorcerer Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+.** You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Sorcerer spells. The number of spells on your list increases as you gain Sorcerer levels, as shown in the Prepared Spells column of the Sorcerer Features table. Whenever that number increases, choose additional Sorcerer spells until the number of spells on your list matches the number in the Sorcerer Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 3 Sorcerer, your list of prepared spells can include six Sorcerer spells of level 1 or 2 in any combination. If another Sorcerer feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Sorcerer spells for you. **Changing Your Prepared Spells.** Whenever you gain a Sorcerer level, you can replace one spell on your list with another Sorcerer spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Sorcerer spells. **Spellcasting Focus.** You can use an Arcane Focus as a Spellcasting Focus for your Sorcerer spells."
+      },
+      {
+        "id": "feature-29",
+        "name": "Font of Magic",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required). **Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5",
+        "current": 4,
+        "max": 5,
+        "recovery": "long-rest"
+      },
+      {
+        "id": "feature-30",
+        "name": "Metamagic",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "You can alter spells to suit your needs; you know Metamagic options which can be used to temporarily modify spells you cast."
+      },
+      {
+        "id": "feature-31",
+        "name": "Sorcerer Subclass",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "You gain a Sorcerer subclass of your choice. A subclass is a specialization that grants you features at certain Sorcerer levels. For the rest of your career, you gain each of your subclass’s features that are of your Sorcerer level or lower."
+      },
+      {
+        "id": "feature-32",
+        "name": "Ability Score Improvement",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Sorcerer levels 8, 12, and 16."
+      },
+      {
+        "id": "feature-33",
+        "name": "Metamagic Options",
+        "source": "Sorcerer",
+        "group": "other",
+        "description": "The following options are available to your Metamagic feature. The options are presented in alphabetical order."
+      },
+      {
+        "id": "feature-34",
+        "name": "Noble Ability Score Improvements",
+        "source": "Feat",
+        "group": "other",
+        "description": "The Noble Background allows you to choose between Strength, Intelligence, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
+      },
+      {
+        "id": "feature-35",
+        "name": "Skilled",
+        "source": "Feat",
+        "group": "other",
+        "description": "You gain proficiency in any combination of three skills or tools of your choice. **Repeatable.** You can take this feat more than once."
+      },
+      {
+        "id": "feature-36",
+        "name": "War Caster",
+        "source": "Feat",
+        "group": "other",
+        "description": "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1. **Concentration.** You have Advantage on Con. saving throws to maintain Concentration. **Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature. **Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands."
+      },
+      {
+        "id": "feature-37",
+        "name": "High Elf Lineage",
+        "source": "Elven Lineage",
+        "group": "other",
+        "description": "You gain the spells outlined in the Elven Lineages table, and whenever you finish a Long Rest, you can replace the cantrip at level 1 with a different cantrip from the Wizard spell list."
+      },
+      {
+        "id": "feature-38",
+        "name": "High Elf - Intelligence",
+        "source": "Elven Lineage Spells",
+        "group": "other",
+        "description": "Your High Elf Lineage spells use Intelligence."
+      },
+      {
+        "id": "feature-39",
+        "name": "Careful Spell",
+        "source": "Metamagic Options",
+        "group": "other",
+        "description": "When you cast a spell that forces other creatures to make a saving throw, you can spend 1 Sorcery Point and choose up to 3 creatures to automatically succeed on its saving throw, and it takes no damage if it would normally take half damage on a success."
+      },
+      {
+        "id": "feature-40",
+        "name": "Seeking Spell",
+        "source": "Metamagic Options",
+        "group": "other",
+        "description": "If you make an attack roll for a spell and miss, you can spend 1 Sorcery Point to reroll the d20, and you must use the new roll. You can use Seeking Spell, even if you’ve already used a different Metamagic option."
+      },
+      {
+        "id": "feature-41",
         "name": "Increase two scores (+2 / +1)",
         "source": "Noble Ability Score Improvements",
-        "category": "feat",
-        "description": "Increase one of these scores by 2 and a different score by 1.",
-        "filteredReason": "ability-score"
+        "group": "other",
+        "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",
@@ -1864,7 +2117,10 @@ export const demoCharacters: Character[] = [
       "modifier": 3,
       "attack": 6,
       "saveDc": 14
-    }
+    },
+    "avatarUrl": "https://www.dndbeyond.com/avatars/54062/147/1581111423-158958304.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
+    "maxHpLocked": true,
+    "synced": false
   },
   {
     "id": "demo-esmeralda",
@@ -2270,141 +2526,204 @@ export const demoCharacters: Character[] = [
     "features": [
       {
         "id": "feature-0",
-        "name": "Darkvision",
-        "source": "Race",
-        "category": "race",
-        "description": "You can see in darkness (shades of gray) up to 60 ft."
-      },
-      {
-        "id": "feature-1",
-        "name": "Hellish Resistance",
-        "source": "Race",
-        "category": "race",
-        "description": "You have resistance to fire damage."
-      },
-      {
-        "id": "feature-2",
-        "name": "Infernal Legacy",
-        "source": "Race",
-        "category": "race",
-        "description": "You know the thaumaturgy cantrip. [3rd] You can cast hellish rebuke (2nd) once per long rest. [5th] You can cast darkness once per long rest. CHA is your spellcasting ability."
-      },
-      {
-        "id": "feature-3",
-        "name": "Ability Score Increase",
-        "source": "Race",
-        "category": "race",
-        "description": "Your Intelligence score increases by 1, and your Charisma score increases by 2.",
-        "filteredReason": "ability-score"
-      },
-      {
-        "id": "feature-4",
-        "name": "Dazzling Footwork",
-        "source": "College of Dance",
-        "category": "subclass",
-        "description": "While you aren’t wearing armor or a Shield, you gain the following benefits:\n• You have Advantage on Charisma (Performance) checks that involves you dancing.\n• Your base AC is 17 (10 + Dex. modifier + Cha. modifier).\n• When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action.\n• You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
-      },
-      {
-        "id": "feature-5",
         "name": "Bardic Inspiration",
-        "source": "Bard",
-        "category": "class",
+        "source": "Bardic Inspiration",
+        "group": "bonusAction",
         "description": "As a Bonus Action, you can inspire another creature within 60 ft. that can see or hear you. That creature gains one of your Bardic Inspiration dice (5). Once within the next hour, when the creature fails a D20 Test, the creature can roll the Bardic Inspiration die and add the number rolled to the total, potentially turning the failure into a success. You can confer your Bardic Inspiration die 5 times per Long Rest.",
         "current": 3,
         "max": 5,
         "recovery": "short-rest"
       },
       {
+        "id": "feature-1",
+        "name": "Regain Bardic Inspiration",
+        "source": "Font of Inspiration",
+        "group": "special",
+        "description": "You can expend a spell slot (no action required) to regain one expended use of Bardic Inspiration."
+      },
+      {
+        "id": "feature-2",
+        "name": "Bardic Damage",
+        "source": "Dazzling Footwork",
+        "group": "action",
+        "description": "You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
+      },
+      {
+        "id": "feature-3",
+        "name": "Bardic Inspiration: Agile Strikes",
+        "source": "Dazzling Footwork",
+        "group": "bonusAction",
+        "description": "When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action."
+      },
+      {
+        "id": "feature-4",
+        "name": "Initiate a Circle Spell",
+        "source": "Class",
+        "group": "action",
+        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
+      },
+      {
+        "id": "feature-5",
+        "name": "Circle Spell: Augment",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
+      },
+      {
         "id": "feature-6",
-        "name": "Core Bard Traits",
-        "source": "Bard",
-        "category": "class",
-        "description": "As a Level 1 Character you gain: Gain all the traits in the Core Bard Traits table. Gain the Bard’s level 1 features. Core Bard Traits Primary Ability Charisma Hit Point Die D8 per Bard level Saving Throw Proficiencies Dexterity and Charisma Skill Proficiencies *Choose any 3 skills* (see chapter 1 of the *Player’s Handbook*) Weapon Proficiencies Simple weapons Tool Proficiencies *Choose 3 Musical Instruments* (see chapter 6 of the *Player’s Handbook*) Armor Training Light armor Starting Equipment *Choose A or B:* (A) Leather Armor, 2 Daggers, Musical Instrument of your choice, Entertainer’s Pack, and 19 GP; or (B) 90 GP",
-        "filteredReason": "core-traits"
+        "name": "Circle Spell: Distribute",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
       },
       {
         "id": "feature-7",
-        "name": "Spellcasting",
-        "source": "Bard",
-        "category": "class",
-        "description": "You can cast spells through your bardic arts. Charisma is your spellcasting ability for your Bard spells (Spell DC 16, Spell Attack 8). You can use a Musical Instrument as a Spellcasting Focus for your Bard spells.",
-        "filteredReason": "boilerplate"
+        "name": "Circle Spell: Expand",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
         "id": "feature-8",
-        "name": "Expertise",
-        "source": "Bard",
-        "category": "class",
-        "description": "You gain Expertise in two skill proficiencies of your choice.",
-        "filteredReason": "boilerplate"
+        "name": "Circle Spell: Prolong",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
         "id": "feature-9",
-        "name": "Jack of All Trades",
-        "source": "Bard",
-        "category": "class",
-        "description": "You can add half your Proficiency Bonus (1) to ability checks you make that uses a skill proficiency you lack and that doesn’t otherwise use your Proficiency Bonus."
+        "name": "Circle Spell: Safeguard",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **5 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
       },
       {
         "id": "feature-10",
-        "name": "Bard Subclass",
-        "source": "Bard",
-        "category": "class",
-        "description": "You gain a Bard subclass of your choice. A subclass is a specialization that grants you features at certain Bard levels. For the rest of your career, you gain each of your subclass’s features that are of your Bard level or lower.",
-        "filteredReason": "subclass-announcement"
+        "name": "Circle Spell: Supplant",
+        "source": "Class",
+        "group": "special",
+        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
         "id": "feature-11",
-        "name": "Ability Score Improvement",
-        "source": "Bard",
-        "category": "class",
-        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Bard levels 8, 12, and 16.",
-        "filteredReason": "ability-score"
-      },
-      {
-        "id": "feature-12",
-        "name": "Font of Inspiration",
-        "source": "Bard",
-        "category": "class",
-        "description": "You now regain all expended uses of Bardic Inspiration when you finish a Short or Long Rest. In addition, you can expend a spell slot (no action required) to regain one expended use of Bardic Inspiration."
-      },
-      {
-        "id": "feature-13",
         "name": "Lucky",
-        "source": "Feat",
-        "category": "feat",
+        "source": "Lucky",
+        "group": "action",
         "description": "You have 3 luck points per long rest. Whenever you make an attack roll, an ability check, or a saving throw (or when an attack roll is made against you), you can spend one to roll an additional d20 and you choose which die to use. You can choose to spend luck points after you roll the die, but before the outcome is determined.",
         "current": 2,
         "max": 3,
         "recovery": "long-rest"
       },
       {
+        "id": "feature-12",
+        "name": "Darkvision",
+        "source": "Race",
+        "group": "other",
+        "description": "You can see in darkness (shades of gray) up to 60 ft."
+      },
+      {
+        "id": "feature-13",
+        "name": "Hellish Resistance",
+        "source": "Race",
+        "group": "other",
+        "description": "You have resistance to fire damage."
+      },
+      {
         "id": "feature-14",
-        "name": "Grappler",
-        "source": "Feat",
-        "category": "feat",
-        "description": "**Ability Score Increase.** Increase your Str. or Dex. by 1. **Punch and Grab.** On your turn, when you hit a creature with an Unarmed Strike you can use both the Damage and the Grapple option. You can use this benefit only once per turn. **Attack Advantage.** You have Advantage on attack rolls against a creature Grappled by you. **Fast Wrestler.** You don't have to spend extra movement to move a creature Grappled by you if the creature is your size or smaller."
+        "name": "Infernal Legacy",
+        "source": "Race",
+        "group": "other",
+        "description": "You know the thaumaturgy cantrip. [3rd] You can cast hellish rebuke (2nd) once per long rest. [5th] You can cast darkness once per long rest. CHA is your spellcasting ability."
       },
       {
         "id": "feature-15",
-        "name": "Vampire Touched",
-        "source": "Feat",
-        "category": "feat",
-        "description": "**Ability Score Increase.** Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20. **Vampire Magic.** Choose one level 1 spell from the Enchantment or Illusion school of magic. You always have that spell and the Spider Climb spell prepared. You can cast each of these spells without expending a spell slot, but when you cast Spider Climb this way, you must target yourself, and you must finish a Long Rest before you can cast each spell in this way again. You can also cast either spell using spell slots you have of the appropriate level. Your spellcasting ability for the spells is the ability increased by this feat."
+        "name": "Ability Score Increase",
+        "source": "Race",
+        "group": "other",
+        "description": "Your Intelligence score increases by 1, and your Charisma score increases by 2."
       },
       {
         "id": "feature-16",
-        "name": "Charisma",
-        "source": "Vampire Touched",
-        "category": "feat",
-        "description": "Charisma is the ability score you use for this feat.",
-        "filteredReason": "ability-score"
+        "name": "Dazzling Footwork",
+        "source": "College of Dance",
+        "group": "other",
+        "description": "While you aren’t wearing armor or a Shield, you gain the following benefits:\n• You have Advantage on Charisma (Performance) checks that involves you dancing.\n• Your base AC is 17 (10 + Dex. modifier + Cha. modifier).\n• When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action.\n• You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
       },
       {
         "id": "feature-17",
+        "name": "Core Bard Traits",
+        "source": "Bard",
+        "group": "other",
+        "description": "As a Level 1 Character you gain: Gain all the traits in the Core Bard Traits table. Gain the Bard’s level 1 features. Core Bard Traits Primary Ability Charisma Hit Point Die D8 per Bard level Saving Throw Proficiencies Dexterity and Charisma Skill Proficiencies *Choose any 3 skills* (see chapter 1 of the *Player’s Handbook*) Weapon Proficiencies Simple weapons Tool Proficiencies *Choose 3 Musical Instruments* (see chapter 6 of the *Player’s Handbook*) Armor Training Light armor Starting Equipment *Choose A or B:* (A) Leather Armor, 2 Daggers, Musical Instrument of your choice, Entertainer’s Pack, and 19 GP; or (B) 90 GP"
+      },
+      {
+        "id": "feature-18",
+        "name": "Spellcasting",
+        "source": "Bard",
+        "group": "other",
+        "description": "You can cast spells through your bardic arts. Charisma is your spellcasting ability for your Bard spells (Spell DC 16, Spell Attack 8). You can use a Musical Instrument as a Spellcasting Focus for your Bard spells."
+      },
+      {
+        "id": "feature-19",
+        "name": "Expertise",
+        "source": "Bard",
+        "group": "other",
+        "description": "You gain Expertise in two skill proficiencies of your choice."
+      },
+      {
+        "id": "feature-20",
+        "name": "Jack of All Trades",
+        "source": "Bard",
+        "group": "other",
+        "description": "You can add half your Proficiency Bonus (1) to ability checks you make that uses a skill proficiency you lack and that doesn’t otherwise use your Proficiency Bonus."
+      },
+      {
+        "id": "feature-21",
+        "name": "Bard Subclass",
+        "source": "Bard",
+        "group": "other",
+        "description": "You gain a Bard subclass of your choice. A subclass is a specialization that grants you features at certain Bard levels. For the rest of your career, you gain each of your subclass’s features that are of your Bard level or lower."
+      },
+      {
+        "id": "feature-22",
+        "name": "Ability Score Improvement",
+        "source": "Bard",
+        "group": "other",
+        "description": "You gain the Ability Score Improvement feat or another feat of your choice for which you qualify. You gain this feature again at Bard levels 8, 12, and 16."
+      },
+      {
+        "id": "feature-23",
+        "name": "Font of Inspiration",
+        "source": "Bard",
+        "group": "other",
+        "description": "You now regain all expended uses of Bardic Inspiration when you finish a Short or Long Rest. In addition, you can expend a spell slot (no action required) to regain one expended use of Bardic Inspiration."
+      },
+      {
+        "id": "feature-24",
+        "name": "Grappler",
+        "source": "Feat",
+        "group": "other",
+        "description": "**Ability Score Increase.** Increase your Str. or Dex. by 1. **Punch and Grab.** On your turn, when you hit a creature with an Unarmed Strike you can use both the Damage and the Grapple option. You can use this benefit only once per turn. **Attack Advantage.** You have Advantage on attack rolls against a creature Grappled by you. **Fast Wrestler.** You don't have to spend extra movement to move a creature Grappled by you if the creature is your size or smaller."
+      },
+      {
+        "id": "feature-25",
+        "name": "Vampire Touched",
+        "source": "Feat",
+        "group": "other",
+        "description": "**Ability Score Increase.** Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20. **Vampire Magic.** Choose one level 1 spell from the Enchantment or Illusion school of magic. You always have that spell and the Spider Climb spell prepared. You can cast each of these spells without expending a spell slot, but when you cast Spider Climb this way, you must target yourself, and you must finish a Long Rest before you can cast each spell in this way again. You can also cast either spell using spell slots you have of the appropriate level. Your spellcasting ability for the spells is the ability increased by this feat."
+      },
+      {
+        "id": "feature-26",
+        "name": "Charisma",
+        "source": "Vampire Touched",
+        "group": "other",
+        "description": "Charisma is the ability score you use for this feat."
+      },
+      {
+        "id": "feature-27",
         "name": "Criminal Contact",
         "source": "Background",
-        "category": "background",
+        "group": "other",
         "description": "You have a reliable and trustworthy contact who acts as your liaison to a network of other criminals. You know how to get messages to and from your contact, even over great distances; specifically, you know the local messengers, corrupt caravan masters, and seedy sailors who can deliver messages for you."
       }
     ],
@@ -2421,6 +2740,9 @@ export const demoCharacters: Character[] = [
       "modifier": 5,
       "attack": 8,
       "saveDc": 16
-    }
+    },
+    "avatarUrl": "https://www.dndbeyond.com/avatars/46249/732/1581111423-138454566.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
+    "maxHpLocked": true,
+    "synced": false
   }
 ];

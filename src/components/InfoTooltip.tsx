@@ -19,10 +19,16 @@ const EDGE_MARGIN = 8;
  * The panel defaults to appearing below and left-aligned with the trigger,
  * which overflows off-screen for a trigger near the right edge or bottom of
  * the viewport (confirmed on a real phone — clipped on both edges for a hint
- * near the corner of a long list). Once opened via tap/click, its actual
- * size is measured and the position is clamped/flipped to stay fully
- * on-screen; the hover-only path (desktop) keeps the plain CSS default,
- * since it doesn't have a "just opened" moment to measure from.
+ * near the corner of a long list). Its actual size is measured and the
+ * position clamped/flipped to stay fully on-screen — done on tap/click *and*
+ * on mouse enter/focus, not just the tap-driven `open` state: the panel is
+ * also shown by plain CSS on `:hover`/`:focus` (see the className below) for
+ * desktop mouse users, and that path doesn't touch React state at all. Only
+ * repositioning on `open` left the hover path stuck on the unclamped CSS
+ * default (confirmed overflowing badly once a narrower container made more
+ * triggers sit close to an edge), and since clicking a hovered trigger then
+ * *does* snap it to the corrected position, the two together looked exactly
+ * like a jumping tooltip.
  */
 export function InfoTooltip({
   children,
@@ -35,21 +41,10 @@ export function InfoTooltip({
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLSpanElement>(null);
 
-  useLayoutEffect(() => {
+  function positionPanel() {
     const panelEl = panelRef.current;
-    if (!panelEl) return;
-
-    if (!open) {
-      panelEl.style.left = "";
-      panelEl.style.top = "";
-      panelEl.style.bottom = "";
-      panelEl.style.marginTop = "";
-      panelEl.style.marginBottom = "";
-      return;
-    }
-
     const wrapper = wrapperRef.current;
-    if (!wrapper) return;
+    if (!panelEl || !wrapper) return;
 
     panelEl.style.left = "0px";
     const wrapperRect = wrapper.getBoundingClientRect();
@@ -78,6 +73,20 @@ export function InfoTooltip({
       panelEl.style.marginTop = "0";
       panelEl.style.marginBottom = "4px";
     }
+  }
+
+  useLayoutEffect(() => {
+    if (open) {
+      positionPanel();
+    } else {
+      const panelEl = panelRef.current;
+      if (!panelEl) return;
+      panelEl.style.left = "";
+      panelEl.style.top = "";
+      panelEl.style.bottom = "";
+      panelEl.style.marginTop = "";
+      panelEl.style.marginBottom = "";
+    }
   }, [open]);
 
   useLayoutEffect(() => {
@@ -97,6 +106,8 @@ export function InfoTooltip({
         e.stopPropagation();
         setOpen((v) => !v);
       }}
+      onMouseEnter={positionPanel}
+      onFocus={positionPanel}
     >
       <span className="block truncate underline decoration-dotted decoration-slate-600 underline-offset-2">
         {children}

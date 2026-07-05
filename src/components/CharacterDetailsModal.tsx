@@ -67,27 +67,27 @@ function TypeTag({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
-const CATEGORY_LABELS: Record<Feature["category"], string> = {
-  race: "Race",
-  class: "Class",
-  subclass: "Subclass",
-  feat: "Feat",
-  background: "Background",
+const GROUP_LABELS: Record<Feature["group"], string> = {
+  action: "Action",
+  bonusAction: "Bonus Action",
+  reaction: "Reaction",
+  special: "Special",
+  other: "Other",
 };
 
-const CATEGORY_ORDER: Feature["category"][] = ["race", "class", "subclass", "feat", "background"];
+const GROUP_ORDER: Feature["group"][] = ["action", "bonusAction", "reaction", "special", "other"];
 
-/** Buckets a Feature list into Race/Class/Subclass/Feat/Background sub-sections (only non-empty ones, in that order), each sorted alphabetically by name. */
-function groupFeaturesByCategory(features: Feature[]): Array<[Feature["category"], Feature[]]> {
-  const byCategory = new Map<Feature["category"], Feature[]>();
+/** Buckets a Feature list into Action/Bonus Action/Reaction/Special/Other sub-sections (only non-empty ones, in that order), each sorted alphabetically by name — mirrors D&D Beyond's own Actions tab grouping instead of a custom "is this useful" heuristic. */
+function groupFeaturesByGroup(features: Feature[]): Array<[Feature["group"], Feature[]]> {
+  const byGroup = new Map<Feature["group"], Feature[]>();
   for (const feature of features) {
-    const group = byCategory.get(feature.category) ?? [];
-    group.push(feature);
-    byCategory.set(feature.category, group);
+    const list = byGroup.get(feature.group) ?? [];
+    list.push(feature);
+    byGroup.set(feature.group, list);
   }
-  return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => [
-    category,
-    byCategory.get(category)!.sort((a, b) => a.name.localeCompare(b.name)),
+  return GROUP_ORDER.filter((group) => byGroup.has(group)).map((group) => [
+    group,
+    byGroup.get(group)!.sort((a, b) => a.name.localeCompare(b.name)),
   ]);
 }
 
@@ -166,8 +166,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   }
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
-  const groupedVisibleFeatures = groupFeaturesByCategory(c.features.filter((f) => !f.filteredReason));
-  const groupedReviewFeatures = groupFeaturesByCategory(c.features.filter((f) => f.filteredReason));
+  const groupedFeatures = groupFeaturesByGroup(c.features);
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
 
@@ -411,12 +410,9 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
             {currentTab === "features" && (
               <div className="space-y-3">
-                {groupedVisibleFeatures.length === 0 && (
-                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Features and Traits</h3>
-                )}
-                {groupedVisibleFeatures.map(([category, features]) => (
-                  <div key={category} className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
+                {groupedFeatures.map(([group, features]) => (
+                  <div key={group} className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
                     {features.map((feature) => (
                       <div key={feature.id} className="flex items-center gap-2 text-sm">
                         <span className="min-w-0 flex-1 text-slate-300">
@@ -429,31 +425,6 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                     ))}
                   </div>
                 ))}
-
-                {/* Temporary review area: not a permanent UI, just surfacing the new filter heuristics
-                    (ability-score bumps, subclass-choice announcements, rulebook boilerplate, Sense
-                    duplicates) separately so they can be checked against real characters before those
-                    heuristics start dropping entries outright. */}
-                {groupedReviewFeatures.length > 0 && (
-                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2">
-                    <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-600">
-                      Filtered out for review (not shown on the main card)
-                    </p>
-                    {groupedReviewFeatures.map(([category, features]) => (
-                      <div key={category} className="space-y-1">
-                        <p className="text-[10px] uppercase tracking-wide text-slate-700">{CATEGORY_LABELS[category]}</p>
-                        {features.map((feature) => (
-                          <div key={feature.id} className="flex items-center gap-2 text-xs text-slate-600">
-                            <span className="min-w-0 flex-1">
-                              <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                            </span>
-                            <span className="whitespace-nowrap italic">{feature.filteredReason}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 

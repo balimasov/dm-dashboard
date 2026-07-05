@@ -80,8 +80,16 @@ export interface Feature {
    * Options", rather than just "Class"), shown in the hover hint.
    */
   source: string;
-  /** Broad grouping behind `source` — used to bucket the Features and Traits list into Race/Class/Subclass/Feat/Background sub-sections, since `source` itself can be almost anything (e.g. "Maneuvers"). */
-  category: "race" | "class" | "subclass" | "feat" | "background";
+  /**
+   * Groups the Features and Traits list the same way D&D Beyond's own Actions
+   * tab does: entries that are genuinely usable via an Action/Bonus Action/
+   * Reaction/Special activation (sourced from D&D Beyond's `actions.*` data,
+   * which carries that activation type) land in their matching group;
+   * everything else — passive traits, proficiency grants, ability-score
+   * bumps, subclass-choice announcements, rulebook boilerplate — falls into
+   * "other" rather than being filtered out by a custom heuristic.
+   */
+  group: "action" | "bonusAction" | "reaction" | "special" | "other";
   description?: string;
   /**
    * Present when this feature is also tracked as a Resource elsewhere on the
@@ -92,15 +100,6 @@ export interface Feature {
   current?: number;
   max?: number;
   recovery?: RecoveryType;
-  /**
-   * Set when this entry matches one of the "not really an actionable
-   * ability" heuristics (ability score bumps, subclass-choice announcements,
-   * or generic rulebook boilerplate) — still returned (never dropped) so the
-   * UI can display it in a separate, clearly-marked review area instead of
-   * silently hiding it, until the heuristics are confirmed against enough
-   * real characters.
-   */
-  filteredReason?: "ability-score" | "subclass-announcement" | "core-traits" | "boilerplate";
 }
 
 export interface SpellcastingStats {

@@ -928,65 +928,19 @@ function dedupeResourcesByName(resources: Resource[]): Resource[] {
  * has `hideInSheet: false`). Class features are further filtered by
  * `requiredLevel` because D&D Beyond lists a class's *entire* feature table up
  * to level 20 regardless of the character's actual level. These are hard
- * excludes (never returned at all) — D&D Beyond's own flags, not a heuristic,
- * and not something worth a DM reviewing.
+ * excludes (never returned at all) — D&D Beyond's own flags, not a heuristic.
  *
- * Beyond that, real exports still surface plenty of entries that are
- * technically "features" but aren't actionable abilities — organizational
- * boilerplate (a class's "Core X Traits" grant-everything wrapper, a
- * "{Class} Subclass"/"Martial Archetype" subclass-choice announcement,
- * "Ability Score Improvement") or flat rulebook reference dumps
- * ("Proficiencies", "Hit Points", "Languages") that `hideOnDetailsPage`
- * doesn't reliably catch (confirmed inconsistent between two real exports —
- * one Race correctly hides "Creature Type"/"Size"/"Speed", another leaves
- * them all visible). Unlike the hard excludes above, these are *heuristics*
- * being validated against real characters, so instead of dropping them they
- * get tagged with `filteredReason` and stay in the returned array — the UI
- * decides whether to show them in a separate review area.
+ * Everything else used to go through a custom "is this actually useful"
+ * heuristic (boilerplate/ability-score/subclass-announcement name matching).
+ * That's gone now in favor of mirroring D&D Beyond's own Actions tab instead:
+ * `data.actions.*` already carries an `activation.activationType` for every
+ * genuinely-usable ability, which is a strictly better signal than guessing
+ * from feature names/text — see `activationGroup` below. Anything not present
+ * there (passive traits, proficiency grants, ability-score bumps, subclass
+ * announcements, rulebook boilerplate) simply lands in the "other" group.
  */
-const LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES = new Set([
-  "martial archetype",
-  "divine domain",
-  "sacred oath",
-  "otherworldly patron",
-  "primal path",
-  "roguish archetype",
-  "monastic tradition",
-  "arcane tradition",
-  "divine order",
-]);
 
-const BOILERPLATE_FEATURE_NAMES = new Set([
-  "proficiencies",
-  "hit points",
-  "languages",
-  "creature type",
-  "size",
-  "speed",
-  // Generic wrapper features that exist on nearly every class/feat but whose
-  // real content is already shown elsewhere with more specific detail —
-  // "Spellcasting" duplicates the whole Spells section, "Expertise" duplicates
-  // the amber Skills pills, "Skilled" (an origin feat) duplicates whichever
-  // skills the player picked, already visible as ordinary skill proficiencies.
-  "spellcasting",
-  "expertise",
-  "skilled",
-  // Announces that a lineage choice exists ("Choose a lineage from the Elven
-  // Lineages table...") without saying which one — the specific lineage
-  // picked (e.g. "High Elf Lineage", "Drow Lineage") is already its own
-  // Feature entry via `options.race`.
-  "elven lineage",
-  // "Metamagic" only announces that the Sorcerer mechanic exists ("...you
-  // know Metamagic options which can be used to..."), and "Metamagic
-  // Options" only announces that a list follows ("The following options are
-  // available..., presented in alphabetical order.") — neither has any
-  // content beyond that. The specific options actually known (e.g. "Careful
-  // Spell") are already their own Feature entries via `options.class`.
-  "metamagic",
-  "metamagic options",
-]);
-
-/** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name. */
+/** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name — used only for that cross-reference, never for de-duplication (two distinctly-suffixed actions like "Radiant Fire (Fire)"/"Radiant Fire (Radiant)" must not collide). */
 function normalizeFeatureName(name: string): string {
   return name
     .trim()
@@ -995,43 +949,28 @@ function normalizeFeatureName(name: string): string {
 }
 
 /**
- * Beyond name-based rules, some `data.options.*` entries (see computeFeatures
- * below) are themselves just a trivial sub-note about a choice already made
- * elsewhere — e.g. a feat's "which ability score does this use" pointer
- * ("Charisma is the ability score you use for this feat") or a racial
- * lineage's "which ability powers these spells" note ("Your High Elf Lineage
- * spells use Intelligence") — confirmed verbatim on real Sorcerer/Bard
- * exports. Neither describes an action; both are already implied by the
- * parent feature/spell they modify.
+ * D&D Beyond's own `activationType` codes (confirmed against real exports):
+ * 1/2/5 are all "action" variants, 3 is bonus action, 4 is reaction, 8 is
+ * "special" (no action cost, e.g. a triggered passive-ish ability like a
+ * racial "Relentless Endurance"). 0/6/7/missing (none, minute-, hour-long
+ * activations) don't fit any of those and fall back to "other" alongside
+ * everything that isn't in `actions.*` at all.
  */
-function classifyFeatureFilter(name: string, rawDescription?: string): Feature["filteredReason"] {
-  const n = normalizeFeatureName(name);
-  if (/ability score (improvement|increase)s?\b/.test(n)) return "ability-score";
-  if (/^increase (one|two|a) scores?\b/.test(n)) return "ability-score";
-  if (/subclass$/.test(n) || LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES.has(n)) return "subclass-announcement";
-  if (/^core .+ traits$/.test(n)) return "core-traits";
-  if (BOILERPLATE_FEATURE_NAMES.has(n)) return "boilerplate";
-  // "Weapon Mastery" (and its later re-announcements, e.g. "4: Weapon
-  // Mastery", "10: Weapon Mastery") only describes that mastery properties
-  // exist — the specific properties a player actually chose (e.g. "Handaxe
-  // (Vex)") are already shown as their own Feature entries via `options`.
-  if (/^(\d+:\s*)?weapon mastery$/.test(n)) return "boilerplate";
-  const d = rawDescription?.trim();
-  if (d) {
-    // Covers both "Charisma is the ability score you use for this feat" and
-    // "Wisdom is your ability score increased by this feat..." / "Charisma is
-    // your spellcasting ability for..." — all just a one-line pointer to an
-    // ability score already implied by the feature/spell they modify.
-    if (/^(strength|dexterity|constitution|intelligence|wisdom|charisma) is (?:the|your) (?:ability score|spellcasting ability)\b/i.test(d))
-      return "ability-score";
-    if (/^your .+ uses? \w+\.?$/i.test(d)) return "boilerplate";
-    // A trait/feat whose entire effect is granting proficiency with some
-    // armor/weapon/tool/skill (e.g. "You gain proficiency with one type of
-    // artisan's tools.") isn't an actionable ability on its own — confirmed on
-    // real exports (Fighter's "Student of War", Elf's "Keen Senses").
-    if (/^you (?:(?:have|gain) proficiency|are proficient) (?:with|in) [^.]+\.?$/i.test(d)) return "boilerplate";
+function activationGroup(activationType: number | null | undefined): Feature["group"] {
+  switch (activationType) {
+    case 1:
+    case 2:
+    case 5:
+      return "action";
+    case 3:
+      return "bonusAction";
+    case 4:
+      return "reaction";
+    case 8:
+      return "special";
+    default:
+      return "other";
   }
-  return undefined;
 }
 
 function computeFeatures(
@@ -1056,23 +995,20 @@ function computeFeatures(
   // choices share it with "Metamagic Options", a *different* class feature
   // from the "Metamagic" one that's otherwise shown). Built from the raw,
   // unfiltered definitions so a hidden/filtered parent still resolves.
-  const parentInfoById = new Map<number, { name: string; category: Feature["category"] }>();
+  const parentNameById = new Map<number, string>();
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition;
-    if (df?.id != null && df?.name) parentInfoById.set(df.id, { name: df.name, category: "race" });
+    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
   }
   for (const cls of data.classes ?? []) {
-    const subclassId = cls.subclassDefinition?.id;
     for (const cf of cls.classFeatures ?? []) {
       const df = cf.definition;
-      if (df?.id == null || !df?.name) continue;
-      const category: Feature["category"] = subclassId != null && df.classId === subclassId ? "subclass" : "class";
-      parentInfoById.set(df.id, { name: df.name, category });
+      if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
     }
   }
   for (const feat of data.feats ?? []) {
     const df = feat.definition;
-    if (df?.id != null && df?.name) parentInfoById.set(df.id, { name: df.name, category: "feat" });
+    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
   }
 
   // A charge pool's D&D Beyond `action` entry is very often named
@@ -1096,35 +1032,65 @@ function computeFeatures(
     name: string | undefined,
     rawDescription: string | undefined,
     source: string,
-    category: Feature["category"],
-    definitionId?: number
+    group: Feature["group"],
+    explicitCharges?: { current: number; max: number; recovery: RecoveryType }
   ) {
-    const key = normalizeFeatureName(name || "");
-    if (!key || seen.has(key)) return;
-    seen.add(key);
+    const trimmedName = (name || "").trim();
+    // The exact (non-normalized) name is the de-dupe key — normalizing away a
+    // trailing parenthetical here would collide two *distinct* abilities that
+    // happen to share a base name (e.g. "Radiant Fire (Fire)" vs "Radiant
+    // Fire (Radiant)"), silently dropping one. `normalizeFeatureName` is only
+    // for the resource cross-reference below, where that's the point (e.g.
+    // matching the classFeature "Rage" against the action "Rage (Enter)").
+    const dedupeKey = trimmedName.toLowerCase();
+    if (!dedupeKey || seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
 
-    const filteredReason = classifyFeatureFilter(name!, rawDescription);
-    const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
-    const charges = (definitionId != null ? actionChargesById.get(definitionId) : undefined) ?? matchedResource;
+    const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === normalizeFeatureName(trimmedName));
+    const charges = explicitCharges ?? matchedResource;
     const description = rawDescription
       ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
       : undefined;
 
     features.push({
       id: `feature-${features.length}`,
-      name: name!.trim(),
+      name: trimmedName,
       source,
-      category,
+      group,
       ...(description ? { description } : {}),
-      ...(filteredReason ? { filteredReason } : {}),
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
     });
+  }
+
+  // D&D Beyond's own Actions tab entries — anything genuinely usable via an
+  // Action/Bonus Action/Reaction/Special activation. Processed first so these
+  // win the de-dupe against the more generic classFeature/racialTrait/option
+  // entry describing the same umbrella ability (e.g. the "Rage" classFeature
+  // vs. the "Rage (Enter)" action) when their names coincide exactly.
+  const actionFallbackSource: Record<"race" | "class" | "feat", string> = {
+    race: "Race",
+    class: "Class",
+    feat: "Feat",
+  };
+  for (const group of ["race", "class", "feat"] as const) {
+    for (const action of data.actions?.[group] ?? []) {
+      if (!action.name) continue;
+      const source = parentNameById.get(action.componentId) || actionFallbackSource[group];
+      const charges = action.limitedUse ? computeLimitedUseCharges(action.limitedUse, abilities, profBonus) ?? undefined : undefined;
+      add(
+        action.name,
+        shortDescription(action.snippet, action.description),
+        source,
+        activationGroup(action.activation?.activationType),
+        charges
+      );
+    }
   }
 
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition ?? {};
     if (df.hideOnDetailsPage || df.hideInSheet) continue;
-    add(df.name, shortDescription(df.snippet, df.description), "Race", "race", df.id);
+    add(df.name, shortDescription(df.snippet, df.description), "Race", "other", actionChargesById.get(df.id));
   }
 
   for (const cls of data.classes ?? []) {
@@ -1140,15 +1106,15 @@ function computeFeatures(
         df.name,
         shortDescription(df.snippet, df.description),
         isSubclassFeature ? subclassName : className,
-        isSubclassFeature ? "subclass" : "class",
-        df.id
+        "other",
+        actionChargesById.get(df.id)
       );
     }
   }
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    add(df.name, shortDescription(df.snippet, df.description), "Feat", "feat", df.id);
+    add(df.name, shortDescription(df.snippet, df.description), "Feat", "other", actionChargesById.get(df.id));
   }
 
   // The *specific* choices a player made for a feature that offers options —
@@ -1166,15 +1132,14 @@ function computeFeatures(
   for (const [group, fallbackSource] of optionGroups) {
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
-      const parentInfo = parentInfoById.get(opt.componentId);
-      const source = parentInfo?.name || fallbackSource;
-      add(df.name, shortDescription(df.snippet, df.description), source, parentInfo?.category ?? group, df.id);
+      const source = parentNameById.get(opt.componentId) || fallbackSource;
+      add(df.name, shortDescription(df.snippet, df.description), source, "other", actionChargesById.get(df.id));
     }
   }
 
   const bg = data.background?.definition;
   if (bg?.featureName && bg?.featureDescription && !bg?.featureIsFeat) {
-    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background", "background");
+    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background", "other");
   }
 
   return features;
