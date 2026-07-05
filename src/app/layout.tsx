@@ -26,7 +26,7 @@ export default async function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-          <div className="mx-auto max-w-[1800px] px-4 py-3">
+          <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
               <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
                 <circle cx="16" cy="16" r="16" fill="#dc2626" />
@@ -44,14 +44,15 @@ export default async function RootLayout({
               </svg>
               DM Dashboard
             </Link>
-            {/* Logo gets its own row; sync/settings actions and logout share
-                this one so the logout icon sits level with the Sync All
-                button instead of floating up next to the logo. Only rendered
-                when authenticated, since header-actions is otherwise always
-                empty too (you can't reach any portaling page unauthenticated) —
-                so there's never an empty row to collapse away. */}
+            {/* Sync/settings actions and logout are one flex item together, so
+                they wrap onto their own line as a whole on narrow screens
+                instead of splitting from each other — but stay on the same
+                row as the logo whenever there's room (e.g. desktop). Only
+                rendered when authenticated, since header-actions is otherwise
+                always empty too (you can't reach any portaling page
+                unauthenticated) — so there's never an empty slot to collapse. */}
             {authenticated && (
-              <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div id="header-actions" className="flex flex-wrap items-center gap-2 empty:hidden" />
                 <form action={logout}>
                   <button
