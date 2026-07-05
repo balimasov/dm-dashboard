@@ -80,8 +80,8 @@ export interface Feature {
    * Options", rather than just "Class"), shown in the hover hint.
    */
   source: string;
-  /** Broad grouping behind `source`, only used to color-code the row (race/class/feat/background always map to the same few colors, unlike `source` which can be almost anything). */
-  category: "race" | "class" | "feat" | "background";
+  /** Broad grouping behind `source` — used to bucket the Features and Traits list into Race/Class/Subclass/Feat/Background sub-sections, since `source` itself can be almost anything (e.g. "Maneuvers"). */
+  category: "race" | "class" | "subclass" | "feat" | "background";
   description?: string;
   /**
    * Present when this feature is also tracked as a Resource elsewhere on the

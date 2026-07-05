@@ -821,8 +821,18 @@ function classifyFeatureFilter(name: string, rawDescription?: string): Feature["
   if (BOILERPLATE_FEATURE_NAMES.has(n)) return "boilerplate";
   const d = rawDescription?.trim();
   if (d) {
-    if (/is the ability score you (use|increase)/i.test(d)) return "ability-score";
+    // Covers both "Charisma is the ability score you use for this feat" and
+    // "Wisdom is your ability score increased by this feat..." / "Charisma is
+    // your spellcasting ability for..." — all just a one-line pointer to an
+    // ability score already implied by the feature/spell they modify.
+    if (/^(strength|dexterity|constitution|intelligence|wisdom|charisma) is (?:the|your) (?:ability score|spellcasting ability)\b/i.test(d))
+      return "ability-score";
     if (/^your .+ uses? \w+\.?$/i.test(d)) return "boilerplate";
+    // A trait/feat whose entire effect is granting proficiency with some
+    // armor/weapon/tool/skill (e.g. "You gain proficiency with one type of
+    // artisan's tools.") isn't an actionable ability on its own — confirmed on
+    // real exports (Fighter's "Student of War", Elf's "Keen Senses").
+    if (/^you (?:(?:have|gain) proficiency|are proficient) (?:with|in) [^.]+\.?$/i.test(d)) return "boilerplate";
   }
   return undefined;
 }
@@ -840,27 +850,32 @@ function computeFeatures(
 
   // Lets an `options.*` entry (see below) report the *specific* feature that
   // granted the choice — e.g. "Maneuvers" or "Metamagic Options" — instead of
-  // just the broad group it came from. Confirmed on real exports: an option's
-  // `componentId` matches the `definition.id` of its parent racial
+  // just the broad group it came from, and inherit that parent's exact
+  // category (a Battle Master's maneuvers should land in the Subclass
+  // sub-section, not the generic Class one). Confirmed on real exports: an
+  // option's `componentId` matches the `definition.id` of its parent racial
   // trait/class feature/feat (a Battle Master's chosen maneuvers all share
   // `componentId` with the "Maneuvers" class feature; a Sorcerer's Metamagic
   // choices share it with "Metamagic Options", a *different* class feature
   // from the "Metamagic" one that's otherwise shown). Built from the raw,
   // unfiltered definitions so a hidden/filtered parent still resolves.
-  const parentNameById = new Map<number, string>();
+  const parentInfoById = new Map<number, { name: string; category: Feature["category"] }>();
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition;
-    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+    if (df?.id != null && df?.name) parentInfoById.set(df.id, { name: df.name, category: "race" });
   }
   for (const cls of data.classes ?? []) {
+    const subclassId = cls.subclassDefinition?.id;
     for (const cf of cls.classFeatures ?? []) {
       const df = cf.definition;
-      if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+      if (df?.id == null || !df?.name) continue;
+      const category: Feature["category"] = subclassId != null && df.classId === subclassId ? "subclass" : "class";
+      parentInfoById.set(df.id, { name: df.name, category });
     }
   }
   for (const feat of data.feats ?? []) {
     const df = feat.definition;
-    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+    if (df?.id != null && df?.name) parentInfoById.set(df.id, { name: df.name, category: "feat" });
   }
 
   function add(
@@ -902,12 +917,20 @@ function computeFeatures(
   }
 
   for (const cls of data.classes ?? []) {
-    const source = cls.definition?.name || "Class";
+    const subclassId = cls.subclassDefinition?.id;
+    const className = cls.definition?.name || "Class";
+    const subclassName = cls.subclassDefinition?.name || className;
     for (const cf of cls.classFeatures ?? []) {
       const df = cf.definition ?? {};
       if (df.hideInSheet) continue;
       if (df.requiredLevel != null && df.requiredLevel > (cls.level ?? 0)) continue;
-      add(df.name, shortDescription(df.snippet, df.description), source, "class");
+      const isSubclassFeature = subclassId != null && df.classId === subclassId;
+      add(
+        df.name,
+        shortDescription(df.snippet, df.description),
+        isSubclassFeature ? subclassName : className,
+        isSubclassFeature ? "subclass" : "class"
+      );
     }
   }
 
@@ -931,8 +954,9 @@ function computeFeatures(
   for (const [group, fallbackSource] of optionGroups) {
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
-      const source = parentNameById.get(opt.componentId) || fallbackSource;
-      add(df.name, shortDescription(df.snippet, df.description), source, group);
+      const parentInfo = parentInfoById.get(opt.componentId);
+      const source = parentInfo?.name || fallbackSource;
+      add(df.name, shortDescription(df.snippet, df.description), source, parentInfo?.category ?? group);
     }
   }
 

@@ -48,23 +48,28 @@ function TypeTag({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
-const CATEGORY_DOT_COLOR: Record<Feature["category"], string> = {
-  race: "bg-sky-400",
-  class: "bg-violet-400",
-  feat: "bg-teal-400",
-  background: "bg-rose-400",
+const CATEGORY_LABELS: Record<Feature["category"], string> = {
+  race: "Race",
+  class: "Class",
+  subclass: "Subclass",
+  feat: "Feat",
+  background: "Background",
 };
 
-/**
- * A Feature row's origin (Race/Class/Feat/Background — now often a much more
- * specific label, like "Maneuvers", once resolved from its parent) no longer
- * fits in the row itself now that the far right is reserved for the charge
- * badge. A small color-coded dot before the name gives an at-a-glance
- * category without competing for that space; the exact label is still one
- * hover away via the tooltip.
- */
-function CategoryDot({ category }: { category: Feature["category"] }) {
-  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${CATEGORY_DOT_COLOR[category]}`} />;
+const CATEGORY_ORDER: Feature["category"][] = ["race", "class", "subclass", "feat", "background"];
+
+/** Buckets a Feature list into Race/Class/Subclass/Feat/Background sub-sections (only non-empty ones, in that order), each sorted alphabetically by name. */
+function groupFeaturesByCategory(features: Feature[]): Array<[Feature["category"], Feature[]]> {
+  const byCategory = new Map<Feature["category"], Feature[]>();
+  for (const feature of features) {
+    const group = byCategory.get(feature.category) ?? [];
+    group.push(feature);
+    byCategory.set(feature.category, group);
+  }
+  return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => [
+    category,
+    byCategory.get(category)!.sort((a, b) => a.name.localeCompare(b.name)),
+  ]);
 }
 
 function SpellPanel({ spell }: { spell: KnownSpell }) {
@@ -137,11 +142,10 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   }
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
-  const sortedFeatures = c.features.slice().sort((a, b) => a.name.localeCompare(b.name));
-  const visibleFeatures = sortedFeatures.filter((f) => !f.filteredReason);
-  const reviewFeatures = sortedFeatures.filter((f) => f.filteredReason);
+  const groupedVisibleFeatures = groupFeaturesByCategory(c.features.filter((f) => !f.filteredReason));
+  const groupedReviewFeatures = groupFeaturesByCategory(c.features.filter((f) => f.filteredReason));
   const hasSpells = spellLevels.length > 0;
-  const hasFeatures = sortedFeatures.length > 0;
+  const hasFeatures = c.features.length > 0;
 
   return (
     <div
@@ -269,17 +273,21 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
             )}
 
             {hasFeatures && (
-              <div className="border-t border-slate-800 pt-3 space-y-1.5">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
-                {visibleFeatures.map((feature) => (
-                  <div key={feature.id} className="flex items-center gap-2 text-sm">
-                    <CategoryDot category={feature.category} />
-                    <span className="min-w-0 flex-1 text-slate-300">
-                      <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                    </span>
-                    {feature.max !== undefined && (
-                      <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
-                    )}
+              <div className="border-t border-slate-800 pt-3 space-y-3">
+                <h3 className="text-xs uppercase tracking-wide text-slate-500 -mb-1.5">Features and Traits</h3>
+                {groupedVisibleFeatures.map(([category, features]) => (
+                  <div key={category} className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
+                    {features.map((feature) => (
+                      <div key={feature.id} className="flex items-center gap-2 text-sm">
+                        <span className="min-w-0 flex-1 text-slate-300">
+                          <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                        </span>
+                        {feature.max !== undefined && (
+                          <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ))}
 
@@ -287,22 +295,24 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                     (ability-score bumps, subclass-choice announcements, rulebook boilerplate, Sense
                     duplicates) separately so they can be checked against real characters before those
                     heuristics start dropping entries outright. */}
-                {reviewFeatures.length > 0 && (
-                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2">
+                {groupedReviewFeatures.length > 0 && (
+                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2">
                     <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-600">
                       Filtered out for review (not shown on the main card)
                     </p>
-                    <div className="space-y-1">
-                      {reviewFeatures.map((feature) => (
-                        <div key={feature.id} className="flex items-center gap-2 text-xs text-slate-600">
-                          <CategoryDot category={feature.category} />
-                          <span className="min-w-0 flex-1">
-                            <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                          </span>
-                          <span className="whitespace-nowrap italic">{feature.filteredReason}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {groupedReviewFeatures.map(([category, features]) => (
+                      <div key={category} className="space-y-1">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-700">{CATEGORY_LABELS[category]}</p>
+                        {features.map((feature) => (
+                          <div key={feature.id} className="flex items-center gap-2 text-xs text-slate-600">
+                            <span className="min-w-0 flex-1">
+                              <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                            </span>
+                            <span className="whitespace-nowrap italic">{feature.filteredReason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

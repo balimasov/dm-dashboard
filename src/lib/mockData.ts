@@ -162,7 +162,7 @@ export const demoCharacters: Character[] = [
     features: [
       { id: "f1", name: "Divine Smite", source: "Class", category: "class", description: "Expend a spell slot to deal extra radiant damage on a melee weapon hit." },
       { id: "f2", name: "Lay on Hands", source: "Class", category: "class", description: "A pool of healing power you can draw from to restore HP or cure ailments." },
-      { id: "f3", name: "Radiant Strikes", source: "Subclass", category: "class", description: "Your weapon attacks deal extra radiant damage." },
+      { id: "f3", name: "Radiant Strikes", source: "Oath of Lathander", category: "subclass", description: "Your weapon attacks deal extra radiant damage." },
       { id: "f4", name: "Fey Ancestry", source: "Race", category: "race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
     ],
     savingThrowProficiencies: ["wis", "cha"],
