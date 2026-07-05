@@ -15,12 +15,12 @@ const RARITY_COLOR: Record<ItemRarity, string> = {
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 
-const COIN_COLOR: Record<(typeof COIN_ORDER)[number], string> = {
-  pp: "text-slate-200",
-  gp: "text-amber-400",
-  ep: "text-teal-300",
-  sp: "text-slate-400",
-  cp: "text-orange-400",
+const COIN_CHIP_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
+  pp: "border-violet-500/40 bg-violet-500/10",
+  gp: "border-amber-500/40 bg-amber-500/10",
+  ep: "border-teal-500/40 bg-teal-500/10",
+  sp: "border-slate-400/40 bg-slate-400/10",
+  cp: "border-orange-500/40 bg-orange-500/10",
 };
 
 interface ItemGroup {
@@ -169,11 +169,11 @@ function CurrencyConversionPanel() {
   );
 }
 
-function CoinChip({ code, value, colorClass }: { code: string; value: number | string; colorClass: string }) {
+function CoinChip({ code, value, chipClass }: { code: string; value: number | string; chipClass: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-slate-800 bg-slate-800/40 px-2 py-0.5 text-xs font-medium">
-      <span className={colorClass}>{value}</span>
-      <span className="text-slate-500">{code}</span>
+    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${chipClass}`}>
+      <span className="text-slate-100">{value}</span>
+      <span className="text-slate-400">{code}</span>
     </span>
   );
 }
@@ -184,7 +184,7 @@ function CurrencyRow({ character }: { character: Character }) {
       <span className="text-sm font-medium text-slate-100">{character.name}</span>
       <div className="flex flex-wrap gap-1.5">
         {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
-          <CoinChip key={k} code={k.toUpperCase()} value={character.currency[k]} colorClass={COIN_COLOR[k]} />
+          <CoinChip key={k} code={k.toUpperCase()} value={character.currency[k]} chipClass={COIN_CHIP_CLASS[k]} />
         ))}
       </div>
     </div>
@@ -265,7 +265,11 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
           )}
           <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
             <span className="text-sm font-medium text-slate-100">Загалом по партії</span>
-            <CoinChip code="GP" value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)} colorClass="text-amber-400" />
+            <CoinChip
+              code="GP"
+              value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
+              chipClass={COIN_CHIP_CLASS.gp}
+            />
           </div>
         </div>
       )}
