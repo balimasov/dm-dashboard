@@ -35,6 +35,8 @@ export interface Resource {
   max: number;
   recovery: RecoveryType;
   note?: string;
+  /** Where this resource comes from (e.g. "Race", "Class", "Feat", "Item", "Pact Magic") — shown as the first line of the hover tooltip, above the description. */
+  source?: string;
   /** Short rules blurb shown as a hover tooltip on the card (from D&D Beyond, or typed manually). */
   description?: string;
 }
@@ -147,6 +149,28 @@ export const SKILL_ABBR: Record<SkillName, string> = {
   "sleight-of-hand": "SoH",
   stealth: "Stea",
   survival: "Surv",
+};
+
+/** One-line DM reminder of what each skill covers, shown in the Skills pill hover tooltip. */
+export const SKILL_DESCRIPTIONS: Record<SkillName, string> = {
+  acrobatics: "Balance, tumble, or escape a grapple with agility.",
+  "animal-handling": "Calm, control, or read the intentions of an animal.",
+  arcana: "Recall lore about spells, magic items, and planes.",
+  athletics: "Climb, jump, swim, grapple, or shove.",
+  deception: "Convincingly hide the truth.",
+  history: "Recall lore about past events, people, and civilizations.",
+  insight: "Read intentions, detect lies, and predict behavior.",
+  intimidation: "Influence through threats or a hostile presence.",
+  investigation: "Deduce clues, find hidden details, or analyze evidence.",
+  medicine: "Diagnose illness, stabilize the dying, or treat wounds.",
+  nature: "Recall lore about terrain, plants, animals, and weather.",
+  perception: "Spot, hear, or otherwise notice something.",
+  performance: "Entertain an audience with music, dance, or acting.",
+  persuasion: "Influence someone with tact and good faith.",
+  religion: "Recall lore about deities, rites, and religious symbols.",
+  "sleight-of-hand": "Pick a pocket, plant an item, or perform manual trickery.",
+  stealth: "Avoid notice by hiding, sneaking, or moving quietly.",
+  survival: "Track, forage, navigate, or endure the wilderness.",
 };
 
 export type ItemRarity =

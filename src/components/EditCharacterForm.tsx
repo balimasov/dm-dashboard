@@ -634,12 +634,20 @@ export function EditCharacterForm({ character }: { character: Character }) {
                     ✕
                   </button>
                 </div>
-                <input
-                  className={`${inputCls} w-full`}
-                  placeholder="Short description (hover hint)"
-                  value={r.description ?? ""}
-                  onChange={(e) => updateResource(r.id, { description: e.target.value })}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className={`${inputCls} w-32`}
+                    placeholder="Source (e.g. Class)"
+                    value={r.source ?? ""}
+                    onChange={(e) => updateResource(r.id, { source: e.target.value })}
+                  />
+                  <input
+                    className={`${inputCls} flex-1 min-w-[140px]`}
+                    placeholder="Short description (hover hint)"
+                    value={r.description ?? ""}
+                    onChange={(e) => updateResource(r.id, { description: e.target.value })}
+                  />
+                </div>
               </div>
             ))}
           </div>

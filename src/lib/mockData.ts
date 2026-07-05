@@ -31,6 +31,7 @@ export const demoCharacters: Character[] = [
         current: 0,
         max: 1,
         recovery: "short-rest",
+        source: "Class",
         description: "Take one additional action on your turn.",
       },
       {
@@ -39,6 +40,7 @@ export const demoCharacters: Character[] = [
         current: 1,
         max: 2,
         recovery: "long-rest",
+        source: "Class",
         description: "Bonus action to regain 1d10 + level HP.",
       },
       {
@@ -47,6 +49,7 @@ export const demoCharacters: Character[] = [
         current: 3,
         max: 4,
         recovery: "short-rest",
+        source: "Class",
         description: "Fuel Battle Master maneuvers that enhance an attack.",
       },
       {
@@ -55,6 +58,7 @@ export const demoCharacters: Character[] = [
         current: 2,
         max: 3,
         recovery: "dawn",
+        source: "Item",
       },
     ],
     spellSlots: [],
@@ -123,6 +127,7 @@ export const demoCharacters: Character[] = [
         current: 15,
         max: 25,
         recovery: "long-rest",
+        source: "Class",
         description: "Pool of HP to heal (touch) or 5 HP to cure a disease/poison.",
       },
       {
@@ -131,6 +136,7 @@ export const demoCharacters: Character[] = [
         current: 1,
         max: 1,
         recovery: "long-rest",
+        source: "Class",
         description: "Fuel your Sacred Oath's Channel Divinity options.",
       },
       { id: "r3", name: "Heroic Inspiration", current: 0, max: 1, recovery: "manual" },

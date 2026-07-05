@@ -497,7 +497,8 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     lu: any,
     keyPrefix: string,
     idx: number,
-    rawDescription?: string
+    rawDescription: string | undefined,
+    source: string
   ): Resource | null {
     if (!lu || (!lu.maxUses && !lu.statModifierUsesId && !lu.useProficiencyBonus)) return null;
     let maxUses = lu.maxUses && lu.maxUses !== -1 ? lu.maxUses : 0;
@@ -518,24 +519,26 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
       current: Math.max(0, maxUses - (lu.numberUsed ?? 0)),
       max: maxUses,
       recovery: RESET_TYPE_MAP[lu.resetType] ?? "manual",
+      source,
       ...(description ? { description } : {}),
     };
   }
 
   const resources: Resource[] = [];
-  const actionGroups: Array<[string, any[]]> = [
-    ["race", data.actions?.race ?? []],
-    ["class", data.actions?.class ?? []],
-    ["feat", data.actions?.feat ?? []],
+  const actionGroups: Array<[string, string, any[]]> = [
+    ["race", "Race", data.actions?.race ?? []],
+    ["class", "Class", data.actions?.class ?? []],
+    ["feat", "Feat", data.actions?.feat ?? []],
   ];
-  for (const [group, actions] of actionGroups) {
+  for (const [group, source, actions] of actionGroups) {
     actions.forEach((action: any, idx: number) => {
       const resource = fromLimitedUse(
         action.name,
         action.limitedUse,
         `action-${group}`,
         idx,
-        shortDescription(action.snippet, action.description)
+        shortDescription(action.snippet, action.description),
+        source
       );
       if (resource) resources.push(resource);
     });
@@ -549,7 +552,8 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
         item.limitedUse,
         "item",
         idx,
-        shortDescription(item.definition?.snippet, item.definition?.description)
+        shortDescription(item.definition?.snippet, item.definition?.description),
+        "Item"
       );
       if (resource) resources.push(resource);
     });
@@ -562,6 +566,7 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
         name: `Pact Magic Slot L${pact.level}`,
         current: pact.available ?? 0,
         max,
+        source: "Pact Magic",
         recovery: "short-rest",
       });
     }

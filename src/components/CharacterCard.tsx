@@ -8,7 +8,10 @@ import {
   savingThrowBonus,
   skillBonus,
   SKILL_ABBR,
+  SKILL_ABILITY,
+  SKILL_DESCRIPTIONS,
   SKILL_LABELS,
+  SkillProficiency,
 } from "@/lib/types";
 import { DotMeter, ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
@@ -155,6 +158,25 @@ function ConditionsPanel({ conditions }: { conditions: string[] }) {
   );
 }
 
+function SkillPanel({ skill }: { skill: SkillProficiency }) {
+  const advantageLabel =
+    skill.advantage === "advantage" ? "Advantage" : skill.advantage === "disadvantage" ? "Disadvantage" : null;
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">
+        {SKILL_LABELS[skill.name]} <span className="text-slate-500">({SKILL_ABILITY[skill.name].toUpperCase()})</span>
+      </p>
+      <p>{SKILL_DESCRIPTIONS[skill.name]}</p>
+      {advantageLabel && (
+        <p className={advantageLabel === "Advantage" ? "text-emerald-400" : "text-red-400"}>
+          {advantageLabel}
+          {skill.advantageNote ? `: ${skill.advantageNote}` : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function StatBox({
   label,
   value,
@@ -292,16 +314,20 @@ export function CharacterCard({
         </div>
         <div className="mt-1 space-y-1 text-sm text-slate-300">
           <span className="flex items-center gap-1.5">
-            <ExhaustionIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
+            <ExhaustionIcon
+              className={`h-3.5 w-3.5 shrink-0 ${c.combat.exhaustion > 0 ? "text-amber-500" : "text-slate-500"}`}
+            />
+            <span className={`min-w-0 flex-1 ${c.combat.exhaustion > 0 ? "text-amber-300" : ""}`}>
               <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
                 Exhaustion: {c.combat.exhaustion}
               </InfoTooltip>
             </span>
           </span>
           <span className="flex items-center gap-1.5">
-            <ConditionsIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
+            <ConditionsIcon
+              className={`h-3.5 w-3.5 shrink-0 ${c.combat.conditions.length > 0 ? "text-amber-500" : "text-slate-500"}`}
+            />
+            <span className={`min-w-0 flex-1 ${c.combat.conditions.length > 0 ? "text-amber-300" : ""}`}>
               {c.combat.conditions.length > 0 ? (
                 <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
                   Conditions: {c.combat.conditions.join(", ")}
@@ -391,13 +417,9 @@ export function CharacterCard({
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
             {c.skillProficiencies.map((skill) => {
-              const advantageLabel = skill.advantage === "advantage" ? "Advantage" : skill.advantage === "disadvantage" ? "Disadvantage" : null;
-              const title = [SKILL_LABELS[skill.name], advantageLabel && skill.advantageNote ? `${advantageLabel}: ${skill.advantageNote}` : advantageLabel]
-                .filter(Boolean)
-                .join(" — ");
               const color = skill.expertise ? "amber" : skill.proficient ? "sky" : "slate";
               return (
-                <Pill key={skill.name} panel={<p>{title}</p>} color={color}>
+                <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
                   {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
                   {skill.advantage === "advantage" && <span className="ml-0.5 text-emerald-400">▲</span>}
                   {skill.advantage === "disadvantage" && <span className="ml-0.5 text-red-400">▼</span>}
@@ -412,9 +434,12 @@ export function CharacterCard({
       {c.resources.length > 0 && (
         <div className="border-t border-slate-800 pt-3 space-y-1.5">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Resources</h3>
-          {c.resources.map((r) => (
-            <ResourceMeter key={r.id} resource={r} />
-          ))}
+          {c.resources
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((r) => (
+              <ResourceMeter key={r.id} resource={r} />
+            ))}
         </div>
       )}
 

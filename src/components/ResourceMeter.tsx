@@ -28,15 +28,23 @@ export function DotMeter({
 
 export function ResourceMeter({ resource }: { resource: Resource }) {
   const showDots = resource.max > 0 && resource.max <= 6;
+  const hasHint = Boolean(resource.source || resource.description);
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="min-w-0 flex-1 text-slate-300">
-        {resource.description ? (
+        {hasHint ? (
           <InfoTooltip
             panel={
-              <p>
-                <RichText text={resource.description} />
-              </p>
+              <div className="space-y-1">
+                {resource.source && (
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{resource.source}</p>
+                )}
+                {resource.description && (
+                  <p>
+                    <RichText text={resource.description} />
+                  </p>
+                )}
+              </div>
             }
           >
             {resource.name}
