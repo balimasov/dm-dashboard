@@ -187,7 +187,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
       // alignment always keeps the start of the content reachable at
       // scrollTop 0, at the cost of short modals sitting near the top
       // instead of dead center.
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
+      className="scrollbar-themed fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
       onClick={onClose}
     >
       <div
