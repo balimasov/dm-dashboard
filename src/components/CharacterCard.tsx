@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
   Character,
@@ -17,6 +20,7 @@ import { DotMeter, ResourceMeter } from "./ResourceMeter";
 import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { InfoTooltip } from "./InfoTooltip";
+import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 
 const STAT_ORDER: Array<keyof Character["stats"]> = [
@@ -28,7 +32,7 @@ const STAT_ORDER: Array<keyof Character["stats"]> = [
   "cha",
 ];
 
-function ordinalLevel(level: number): string {
+export function ordinalLevel(level: number): string {
   if (level % 10 === 1 && level % 100 !== 11) return `${level}st`;
   if (level % 10 === 2 && level % 100 !== 12) return `${level}nd`;
   if (level % 10 === 3 && level % 100 !== 13) return `${level}rd`;
@@ -158,7 +162,7 @@ function ConditionsPanel({ conditions }: { conditions: string[] }) {
   );
 }
 
-function SkillPanel({ skill }: { skill: SkillProficiency }) {
+export function SkillPanel({ skill }: { skill: SkillProficiency }) {
   const advantageLabel =
     skill.advantage === "advantage" ? "Advantage" : skill.advantage === "disadvantage" ? "Disadvantage" : null;
   return (
@@ -177,7 +181,7 @@ function SkillPanel({ skill }: { skill: SkillProficiency }) {
   );
 }
 
-function StatBox({
+export function StatBox({
   label,
   value,
   highlight,
@@ -205,7 +209,7 @@ function StatBox({
  * under another truncating ancestor is the clipping bug this codebase hit
  * more than once), so truncation only applies in the no-panel fallback.
  */
-function Pill({
+export function Pill({
   panel,
   color = "slate",
   children,
@@ -231,6 +235,57 @@ function Pill({
   );
 }
 
+/**
+ * Shared between the compact card and the Character Details modal (clicking
+ * this header is what opens that modal) so both stay visually identical by
+ * construction rather than by copy-pasted markup drifting apart over time.
+ */
+export function CharacterHeader({
+  character,
+  onClick,
+}: {
+  character: Character;
+  onClick?: () => void;
+}) {
+  const c = character;
+  const content = (
+    <>
+      <CharacterAvatar character={c} size="md" />
+      <div className="min-w-0 flex-1">
+        <h2
+          title={c.name}
+          className="truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white"
+        >
+          {c.name}
+        </h2>
+        <p
+          title={characterInfoLine(c)}
+          className="truncate text-sm text-slate-400 transition-colors group-hover:text-slate-200"
+        >
+          {characterInfoLine(c)}
+        </p>
+        <p className="text-xs text-slate-500">Lvl {c.level}</p>
+      </div>
+      <span
+        title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
+        className={`shrink-0 text-3xl leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
+      >
+        ★
+      </span>
+    </>
+  );
+
+  if (!onClick) {
+    return <div className="flex items-start gap-3">{content}</div>;
+  }
+
+  return (
+    <button type="button" onClick={onClick} className="group flex w-full items-start gap-3 text-left">
+      {content}
+    </button>
+  );
+}
+
 export function CharacterCard({
   character,
   onRemove,
@@ -240,36 +295,14 @@ export function CharacterCard({
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
+  const [detailsOpen, setDetailsOpen] = useState(false);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
   const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20 flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <CharacterAvatar character={c} size="md" />
-        <div className="min-w-0 flex-1">
-          <h2
-            title={c.name}
-            className="truncate text-lg font-semibold text-slate-50 transition-colors hover:text-white"
-          >
-            {c.name}
-          </h2>
-          <p
-            title={characterInfoLine(c)}
-            className="truncate text-sm text-slate-400 transition-colors hover:text-slate-200"
-          >
-            {characterInfoLine(c)}
-          </p>
-          <p className="text-xs text-slate-500">Lvl {c.level}</p>
-        </div>
-        <span
-          title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
-          className={`shrink-0 text-3xl leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
-        >
-          ★
-        </span>
-      </div>
+      <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
 
       {!c.synced && c.dndBeyondUrl && (
         <div className="rounded-md bg-amber-950/40 border border-amber-900 px-2 py-1 text-xs text-amber-300">
@@ -516,6 +549,8 @@ export function CharacterCard({
           )}
         </div>
       </div>
+
+      {detailsOpen && <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} />}
     </div>
   );
 }

@@ -2,10 +2,12 @@ import {
   AbilityScores,
   Character,
   Currency,
+  Feature,
   formatModifier,
   InventoryItem,
   ItemCategory,
   ItemRarity,
+  KnownSpell,
   proficiencyBonus,
   RecoveryType,
   Resource,
@@ -593,6 +595,111 @@ function dedupeResourcesByName(resources: Resource[]): Resource[] {
 }
 
 /**
+ * Race, class, and feat data each carry D&D Beyond's own "don't show this on
+ * the details/sheet page" flags (`hideOnDetailsPage`/`hideInSheet`) — used to
+ * drop entries that are just restating stats already shown elsewhere (e.g. a
+ * racial trait literally named "Speed") or a level-gated feature's
+ * lower-level, now-superseded restatement (both copies share a name; only one
+ * has `hideInSheet: false`). Class features are further filtered by
+ * `requiredLevel` because D&D Beyond lists a class's *entire* feature table up
+ * to level 20 regardless of the character's actual level.
+ */
+function computeFeatures(data: any): Feature[] {
+  const features: Feature[] = [];
+  const seen = new Set<string>();
+
+  function add(name: string | undefined, description: string | undefined, source: string) {
+    const key = (name || "").trim().toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    features.push({ id: `feature-${features.length}`, name: name!.trim(), source, ...(description ? { description } : {}) });
+  }
+
+  for (const trait of data.race?.racialTraits ?? []) {
+    const df = trait.definition ?? {};
+    if (df.hideOnDetailsPage || df.hideInSheet) continue;
+    add(df.name, shortDescription(df.snippet, df.description), "Race");
+  }
+
+  for (const cls of data.classes ?? []) {
+    const source = cls.definition?.name || "Class";
+    for (const cf of cls.classFeatures ?? []) {
+      const df = cf.definition ?? {};
+      if (df.hideInSheet) continue;
+      if (df.requiredLevel != null && df.requiredLevel > (cls.level ?? 0)) continue;
+      add(df.name, shortDescription(df.snippet, df.description), source);
+    }
+  }
+
+  for (const feat of data.feats ?? []) {
+    const df = feat.definition ?? {};
+    if (/ability score improvement/i.test(df.name ?? "")) continue;
+    add(df.name, shortDescription(df.snippet, df.description), "Feat");
+  }
+
+  const bg = data.background?.definition;
+  if (bg?.featureName && bg?.featureDescription && !bg?.featureIsFeat) {
+    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background");
+  }
+
+  return features;
+}
+
+/**
+ * A character's full known-spell list is split across two independent
+ * sources that must be merged, not chosen between: `classSpells` (this
+ * class's spell list — `countsAsKnownSpell`/`alwaysPrepared` mark the ones
+ * actually known rather than just eligible) and `spells.{race,class,
+ * background,item,feat}` (bonus spells granted outside the class list, e.g.
+ * a subclass's bonus spells — confirmed on a real export to contain spells
+ * entirely absent from `classSpells`). Within `spells.*`, `countsAsKnownSpell`
+ * is uniformly false even for genuinely-granted spells, so presence there is
+ * itself taken as the inclusion signal; the same group can also list the same
+ * spell twice differing only in `limitedUse` (an at-will/charges casting mode
+ * vs. a spell-slot mode), so results are deduped by name across all sources.
+ */
+function computeSpells(data: any): KnownSpell[] {
+  const spells: KnownSpell[] = [];
+  const seen = new Set<string>();
+
+  function add(entry: any, source: string) {
+    const df = entry?.definition;
+    const key = (df?.name || "").trim().toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    spells.push({
+      id: `spell-${spells.length}`,
+      name: df.name.trim(),
+      level: df.level ?? 0,
+      school: df.school || undefined,
+      description: shortDescription(df.snippet, df.description),
+      source,
+    });
+  }
+
+  for (const group of data.classSpells ?? []) {
+    for (const entry of group.spells ?? []) {
+      if (entry.countsAsKnownSpell || entry.alwaysPrepared) add(entry, "Class");
+    }
+  }
+
+  const bonusGroups: Array<[string, string]> = [
+    ["race", "Race"],
+    ["class", "Class"],
+    ["background", "Background"],
+    ["item", "Item"],
+    ["feat", "Feat"],
+  ];
+  for (const [key, source] of bonusGroups) {
+    for (const entry of data.spells?.[key] ?? []) {
+      add(entry, source);
+    }
+  }
+
+  return spells;
+}
+
+/**
  * D&D Beyond's `spellSlots[].available` is NOT "slots remaining" — in every
  * real export it's 0 regardless of how many slots are actually free, while
  * `used` tracks consumption against the class's own slot table. The real
@@ -715,6 +822,8 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     resources: computeResources(data, abilities, profBonus, level),
     spellSlots: computeSpellSlots(data),
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
+    knownSpells: computeSpells(data),
+    features: computeFeatures(data),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
     ...computeDamageModifiers(mods),

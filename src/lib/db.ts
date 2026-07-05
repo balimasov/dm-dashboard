@@ -66,6 +66,8 @@ function rowToCharacter(row: { data: string }): Character {
     senses: parsed.senses ?? [],
     inventory: (parsed.inventory ?? []).map((i) => ({ ...i, category: i.category ?? legacyItemCategory(i.rarity) })),
     currency: parsed.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+    knownSpells: parsed.knownSpells ?? [],
+    features: parsed.features ?? [],
     combat: {
       ...parsed.combat,
       passiveInvestigation: parsed.combat?.passiveInvestigation ?? 10,
@@ -123,6 +125,8 @@ export function createBlankCharacter(url: string): Character {
     senses: [],
     inventory: [],
     currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+    knownSpells: [],
+    features: [],
     notes: "",
     dndBeyondUrl: url,
     synced: false,

@@ -47,6 +47,26 @@ export interface SpellSlotLevel {
   max: number;
 }
 
+export interface KnownSpell {
+  id: string;
+  name: string;
+  /** 0 = cantrip. */
+  level: number;
+  school?: string;
+  /** Short rules blurb shown as a hover tooltip (from D&D Beyond, or typed manually). */
+  description?: string;
+  /** Where this spell comes from (e.g. "Class", "Race", "Item"). */
+  source: string;
+}
+
+export interface Feature {
+  id: string;
+  name: string;
+  /** Where this feature comes from (e.g. "Race", "Class", "Subclass", "Feat"). */
+  source: string;
+  description?: string;
+}
+
 export interface SpellcastingStats {
   modifier: number;
   attack: number;
@@ -276,6 +296,8 @@ export interface Character {
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
   spellcasting?: SpellcastingStats;
+  knownSpells: KnownSpell[];
+  features: Feature[];
   savingThrowProficiencies: Array<keyof AbilityScores>;
   skillProficiencies: SkillProficiency[];
   resistances: string[];

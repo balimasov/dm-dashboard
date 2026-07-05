@@ -62,6 +62,13 @@ export const demoCharacters: Character[] = [
       },
     ],
     spellSlots: [],
+    knownSpells: [],
+    features: [
+      { id: "f1", name: "Fighting Style: Dueling", source: "Class", description: "+2 damage with a one-handed melee weapon and no other weapon in the other hand." },
+      { id: "f2", name: "Extra Attack", source: "Class", description: "Attack twice, instead of once, whenever you take the Attack action." },
+      { id: "f3", name: "Fey Ancestry", source: "Race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
+      { id: "f4", name: "Darkvision", source: "Race", description: "See in dim light within 120 feet as if bright light, and in darkness as if dim light." },
+    ],
     savingThrowProficiencies: ["str", "con"],
     skillProficiencies: [
       { name: "athletics", proficient: true, expertise: false },
@@ -146,6 +153,18 @@ export const demoCharacters: Character[] = [
       { level: 2, current: 1, max: 2 },
     ],
     spellcasting: { modifier: 3, attack: 6, saveDc: 14 },
+    knownSpells: [
+      { id: "s1", name: "Bless", level: 1, school: "Enchantment", source: "Class", description: "Up to three creatures you choose add 1d4 to attack rolls and saving throws." },
+      { id: "s2", name: "Cure Wounds", level: 1, school: "Evocation", source: "Class", description: "A creature you touch regains 1d8 + your spellcasting modifier HP." },
+      { id: "s3", name: "Find Steed", level: 2, school: "Conjuration", source: "Class", description: "Summon a spirit that assumes the form of a loyal mount." },
+      { id: "s4", name: "Zone of Truth", level: 2, school: "Enchantment", source: "Class", description: "Creatures in the zone can't speak deliberate lies while inside." },
+    ],
+    features: [
+      { id: "f1", name: "Divine Smite", source: "Class", description: "Expend a spell slot to deal extra radiant damage on a melee weapon hit." },
+      { id: "f2", name: "Lay on Hands", source: "Class", description: "A pool of healing power you can draw from to restore HP or cure ailments." },
+      { id: "f3", name: "Radiant Strikes", source: "Subclass", description: "Your weapon attacks deal extra radiant damage." },
+      { id: "f4", name: "Fey Ancestry", source: "Race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
+    ],
     savingThrowProficiencies: ["wis", "cha"],
     skillProficiencies: [
       { name: "athletics", proficient: true, expertise: false },
