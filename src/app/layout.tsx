@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import "./globals.css";
 import packageJson from "../../package.json";
 import { FeedbackFab } from "@/components/FeedbackFab";
+import { AUTH_COOKIE_NAME, isValidSessionToken } from "@/lib/auth";
+import { logout } from "@/app/login/actions";
 
 export const metadata: Metadata = {
   title: "DM Dashboard",
@@ -11,11 +14,14 @@ export const metadata: Metadata = {
 
 const APP_VERSION = packageJson.version;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const authenticated = isValidSessionToken(cookieStore.get(AUTH_COOKIE_NAME)?.value);
+
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
@@ -39,6 +45,13 @@ export default function RootLayout({
               DM Dashboard
             </Link>
             <div id="header-actions" className="flex flex-1 flex-wrap items-center justify-end gap-2" />
+            {authenticated && (
+              <form action={logout}>
+                <button type="submit" className="shrink-0 text-sm text-slate-400 hover:text-slate-200">
+                  Log out
+                </button>
+              </form>
+            )}
           </div>
         </header>
         <main className="flex-1">{children}</main>

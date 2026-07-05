@@ -5,7 +5,12 @@ import Database from "better-sqlite3";
 import { Character, extractDndBeyondCharacterId, ItemCategory, ItemRarity } from "./types";
 import { demoCharacters } from "./mockData";
 
-const DB_DIR = path.join(process.cwd(), "data");
+// `DATA_DIR` lets a Railway (or any host's) persistent volume live at
+// whatever path it was actually mounted at — without it, the sqlite file
+// always lands in `<working dir>/data`, which is fine for local dev but
+// silently writes to the container's ephemeral filesystem in production if
+// the volume was mounted somewhere else, losing all data on every redeploy.
+const DB_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "dm-dashboard.sqlite");
 
 function openDb(): Database.Database {
