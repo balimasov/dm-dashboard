@@ -532,7 +532,16 @@ function cleanRulesText(html: string): string {
     .replace(/<(?:em|i)>/gi, "*")
     .replace(/<\/(?:em|i)>/gi, "*")
     .replace(/<[^>]*>/g, "")
+    // D&D Beyond's `snippet` field is often plain text rather than HTML, and
+    // formats sub-points as a real newline + indentation + "•" (confirmed on
+    // a real Bard's Dazzling Footwork) instead of proper list markup — mark
+    // each with a placeholder *before* the general whitespace collapse below
+    // (which would otherwise flatten the newlines into a single run-on
+    // paragraph with bare "•" characters stranded mid-sentence), then restore
+    // them as real line breaks afterward.
+    .replace(/\s*(?:\r?\n\s*)+•\s*/g, "@@BULLET@@")
     .replace(/\s+/g, " ")
+    .replace(/@@BULLET@@/g, "\n• ")
     .trim();
 }
 
@@ -589,7 +598,11 @@ function resolveSnippetTemplate(
       return sign === "signed" ? formatModifier(mod) : String(mod);
     })
     .replace(/\{\{[^}]+\}\}/g, "")
-    .replace(/\s+/g, " ")
+    // Collapse horizontal whitespace only — a "\n• " line break inserted by
+    // cleanRulesText's bullet-list handling must survive this step, or every
+    // bullet point collapses back into one run-on line.
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
     .trim();
 }
 
