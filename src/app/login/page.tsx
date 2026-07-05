@@ -23,9 +23,23 @@ export default function LoginPage() {
           <input
             id="password"
             name="password"
-            type="password"
+            // `type="text"` + `-webkit-text-security` (not `type="password"`)
+            // deliberately — mobile Chrome/WebView flags any page with a real
+            // password input as "sensitive" and blocks screenshots/screen
+            // recording system-wide for it (Android's anti-phishing autofill
+            // heuristic), which broke this page's screenshots even after
+            // navigating away. This masks the input the same way visually
+            // without tripping that flag; it's a single shared low-stakes
+            // password, not a per-user credential, so skipping the OS-level
+            // password-manager integration this would otherwise get is fine.
+            type="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             required
             autoFocus
+            style={{ WebkitTextSecurity: "disc" } as React.CSSProperties}
             className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-600"
           />
         </div>

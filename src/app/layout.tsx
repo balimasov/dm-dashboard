@@ -26,32 +26,40 @@ export default async function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-          <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
-            <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
-              <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
-                <circle cx="16" cy="16" r="16" fill="#dc2626" />
-                <text
-                  x="16"
-                  y="23"
-                  fontFamily="Georgia, 'Times New Roman', serif"
-                  fontSize="20"
-                  fontWeight="700"
-                  fill="white"
-                  textAnchor="middle"
-                >
-                  &amp;
-                </text>
-              </svg>
-              DM Dashboard
-            </Link>
-            <div id="header-actions" className="flex flex-1 flex-wrap items-center justify-end gap-2" />
-            {authenticated && (
-              <form action={logout}>
-                <button type="submit" className="shrink-0 text-sm text-slate-400 hover:text-slate-200">
-                  Log out
-                </button>
-              </form>
-            )}
+          <div className="mx-auto max-w-[1800px] px-4 py-3">
+            {/* Always exactly two items on this row (logo, logout) so it never
+                wraps on narrow screens — the sync/settings actions below have
+                their own row instead of competing with these for space. */}
+            <div className="flex items-center justify-between gap-3">
+              <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
+                <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
+                  <circle cx="16" cy="16" r="16" fill="#dc2626" />
+                  <text
+                    x="16"
+                    y="23"
+                    fontFamily="Georgia, 'Times New Roman', serif"
+                    fontSize="20"
+                    fontWeight="700"
+                    fill="white"
+                    textAnchor="middle"
+                  >
+                    &amp;
+                  </text>
+                </svg>
+                DM Dashboard
+              </Link>
+              {authenticated && (
+                <form action={logout}>
+                  <button type="submit" className="shrink-0 text-sm text-slate-400 hover:text-slate-200">
+                    Log out
+                  </button>
+                </form>
+              )}
+            </div>
+            {/* Empty when a page hasn't portaled anything into it (e.g. no
+                D&D Beyond-linked characters yet, or non-dashboard pages) —
+                `empty:mt-0` drops the row's margin so it takes up no space. */}
+            <div id="header-actions" className="mt-2 flex flex-wrap items-center justify-end gap-2 empty:mt-0" />
           </div>
         </header>
         <main className="flex-1">{children}</main>
