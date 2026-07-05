@@ -562,7 +562,7 @@ type TemplateMod =
 
 /**
  * D&D Beyond's rules-text placeholders aren't a fixed set of tags — they're a
- * small expression language: variables (`classlevel`, `proficiency`,
+ * small expression language: variables (`classlevel`, `proficiency`, `speed`,
  * `modifier:cha`, `abilityscore:str`, `savedc:wis`, `spellattack:int`,
  * `scalevalue`/`limiteduse`), arithmetic (`+ - * /`, parens), and postfix
  * modifier lists that clamp/round/format a value — `@list` applied inline to
@@ -580,7 +580,7 @@ type TemplateMod =
  */
 function evaluateTemplatePlaceholder(
   expr: string,
-  ctx: { level: number; abilities: AbilityScores; profBonus: number; maxUses?: number }
+  ctx: { level: number; abilities: AbilityScores; profBonus: number; maxUses?: number; speed?: number }
 ): string {
   let i = 0;
   const n = expr.length;
@@ -657,6 +657,9 @@ function evaluateTemplatePlaceholder(
       case "limiteduse":
         if (ctx.maxUses === undefined) throw new TemplateEvalError("scalevalue unavailable");
         return ctx.maxUses;
+      case "speed":
+        if (ctx.speed === undefined) throw new TemplateEvalError("speed unavailable");
+        return ctx.speed;
       case "modifier":
         return abilityModifier(ctx.abilities[abilityKey(arg)]);
       case "abilityscore":
@@ -763,12 +766,13 @@ function resolveSnippetTemplate(
   level: number,
   abilities: AbilityScores,
   profBonus: number,
-  maxUses?: number
+  maxUses?: number,
+  speed?: number
 ): string {
   return text
     .replace(/\{\{([^}]+)\}\}/g, (_match, expr) => {
       try {
-        return evaluateTemplatePlaceholder(String(expr).trim(), { level, abilities, profBonus, maxUses });
+        return evaluateTemplatePlaceholder(String(expr).trim(), { level, abilities, profBonus, maxUses, speed });
       } catch {
         return "";
       }
@@ -822,7 +826,7 @@ function computeLimitedUseCharges(
   };
 }
 
-function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number): Resource[] {
+function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
   function fromLimitedUse(
     name: string,
     lu: any,
@@ -834,7 +838,7 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     const charges = computeLimitedUseCharges(lu, abilities, profBonus);
     if (!charges) return null;
     const description = rawDescription
-      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges.max)
+      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges.max, speed)
       : undefined;
     return {
       id: `${keyPrefix}-${idx}`,
@@ -1027,7 +1031,8 @@ function computeFeatures(
   resources: Resource[],
   abilities: AbilityScores,
   profBonus: number,
-  level: number
+  level: number,
+  speed: number
 ): Feature[] {
   const features: Feature[] = [];
   const seen = new Set<string>();
@@ -1094,7 +1099,7 @@ function computeFeatures(
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
     const charges = (definitionId != null ? actionChargesById.get(definitionId) : undefined) ?? matchedResource;
     const description = rawDescription
-      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max)
+      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
       : undefined;
 
     features.push({
@@ -1185,7 +1190,7 @@ function computeFeatures(
  */
 const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
-function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number): KnownSpell[] {
+function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): KnownSpell[] {
   const spells: KnownSpell[] = [];
   const byName = new Map<string, KnownSpell>();
 
@@ -1209,7 +1214,7 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
       level: df.level ?? 0,
       school: df.school || undefined,
       description: rawDescription
-        ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max)
+        ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
         : undefined,
       source,
       ...(components.length > 0
@@ -1332,7 +1337,8 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const profBonus = proficiencyBonus(level);
   const { hp, maxHp, tempHp, maxHpLocked } = computeHp(data, mods, conMod, level, existing);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
-  const resources = computeResources(data, abilities, profBonus, level);
+  const speed = computeSpeed(data);
+  const resources = computeResources(data, abilities, profBonus, level, speed);
   const senses = computeSenses(mods);
 
   return {
@@ -1351,7 +1357,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
       maxHp,
       tempHp,
       ac: computeArmorClass(data, abilities, mods),
-      speed: computeSpeed(data),
+      speed,
       passivePerception: computePassiveSkill(wisMod, profBonus, "perception", mods),
       passiveInvestigation: computePassiveSkill(intMod, profBonus, "investigation", mods),
       passiveInsight: computePassiveSkill(wisMod, profBonus, "insight", mods),
@@ -1369,8 +1375,8 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     resources,
     spellSlots: computeSpellSlots(data),
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
-    knownSpells: computeSpells(data, abilities, profBonus, level),
-    features: computeFeatures(data, resources, abilities, profBonus, level),
+    knownSpells: computeSpells(data, abilities, profBonus, level, speed),
+    features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
     ...computeDamageModifiers(mods),
