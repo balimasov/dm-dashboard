@@ -1753,7 +1753,8 @@ export const demoCharacters: Character[] = [
         "name": "Metamagic",
         "source": "Sorcerer",
         "category": "class",
-        "description": "You can alter spells to suit your needs; you know Metamagic options which can be used to temporarily modify spells you cast."
+        "description": "You can alter spells to suit your needs; you know Metamagic options which can be used to temporarily modify spells you cast.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-12",
@@ -1786,7 +1787,8 @@ export const demoCharacters: Character[] = [
         "name": "Metamagic Options",
         "source": "Sorcerer",
         "category": "class",
-        "description": "The following options are available to your Metamagic feature. The options are presented in alphabetical order."
+        "description": "The following options are available to your Metamagic feature. The options are presented in alphabetical order.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-16",

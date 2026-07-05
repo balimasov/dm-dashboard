@@ -976,6 +976,14 @@ const BOILERPLATE_FEATURE_NAMES = new Set([
   // picked (e.g. "High Elf Lineage", "Drow Lineage") is already its own
   // Feature entry via `options.race`.
   "elven lineage",
+  // "Metamagic" only announces that the Sorcerer mechanic exists ("...you
+  // know Metamagic options which can be used to..."), and "Metamagic
+  // Options" only announces that a list follows ("The following options are
+  // available..., presented in alphabetical order.") — neither has any
+  // content beyond that. The specific options actually known (e.g. "Careful
+  // Spell") are already their own Feature entries via `options.class`.
+  "metamagic",
+  "metamagic options",
 ]);
 
 /** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name. */
