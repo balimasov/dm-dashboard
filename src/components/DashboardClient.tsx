@@ -7,6 +7,7 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HeaderPortal } from "@/components/HeaderPortal";
 import { InventoryOverview } from "@/components/InventoryOverview";
+import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { Character } from "@/lib/types";
@@ -17,6 +18,10 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
+  const lastSyncedAt = linkedCharacters.reduce<string | undefined>((latest, c) => {
+    if (!c.lastSyncedAt) return latest;
+    return !latest || c.lastSyncedAt > latest ? c.lastSyncedAt : latest;
+  }, undefined);
 
   async function handleSyncAll() {
     if (linkedCharacters.length === 0) return;
@@ -50,13 +55,20 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       {linkedCharacters.length > 0 && (
         <HeaderPortal>
-          <button
-            onClick={handleSyncAll}
-            disabled={syncingAll}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
-          >
-            {syncingAll ? "Синхронізація..." : "Синхронізувати всіх"}
-          </button>
+          <div className="flex items-center gap-3">
+            {lastSyncedAt && (
+              <span className="text-xs text-slate-500">
+                Синхронізовано: <SyncTimestamp iso={lastSyncedAt} />
+              </span>
+            )}
+            <button
+              onClick={handleSyncAll}
+              disabled={syncingAll}
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+            >
+              {syncingAll ? "Синхронізація..." : "Синхронізувати все"}
+            </button>
+          </div>
         </HeaderPortal>
       )}
 
