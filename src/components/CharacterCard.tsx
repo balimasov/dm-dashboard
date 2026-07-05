@@ -269,7 +269,7 @@ export function CharacterCard({
             <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             AC {c.combat.ac}
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 pl-2">
             <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             Speed {c.combat.speed}ft
           </span>
@@ -277,7 +277,7 @@ export function CharacterCard({
             <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             Initiative {formatModifier(c.initiative)}
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 pl-2">
             <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <span className="min-w-0 flex-1">
               <InfoTooltip
