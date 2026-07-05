@@ -819,6 +819,11 @@ function classifyFeatureFilter(name: string, rawDescription?: string): Feature["
   if (/subclass$/.test(n) || LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES.has(n)) return "subclass-announcement";
   if (/^core .+ traits$/.test(n)) return "core-traits";
   if (BOILERPLATE_FEATURE_NAMES.has(n)) return "boilerplate";
+  // "Weapon Mastery" (and its later re-announcements, e.g. "4: Weapon
+  // Mastery", "10: Weapon Mastery") only describes that mastery properties
+  // exist — the specific properties a player actually chose (e.g. "Handaxe
+  // (Vex)") are already shown as their own Feature entries via `options`.
+  if (/^(\d+:\s*)?weapon mastery$/.test(n)) return "boilerplate";
   const d = rawDescription?.trim();
   if (d) {
     // Covers both "Charisma is the ability score you use for this feat" and

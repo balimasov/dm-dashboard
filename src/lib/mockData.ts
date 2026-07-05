@@ -281,7 +281,8 @@ export const demoCharacters: Character[] = [
         "name": "Weapon Mastery",
         "source": "Barbarian",
         "category": "class",
-        "description": "You are able to use the mastery properties of kinds of Simple or Martial Melee weapons of your choice. Whenever you finish a Long Rest, you can change one of those weapon choices."
+        "description": "You are able to use the mastery properties of kinds of Simple or Martial Melee weapons of your choice. Whenever you finish a Long Rest, you can change one of those weapon choices.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-10",
@@ -357,7 +358,8 @@ export const demoCharacters: Character[] = [
         "name": "4: Weapon Mastery",
         "source": "Barbarian",
         "category": "class",
-        "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table."
+        "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-20",
@@ -1006,7 +1008,8 @@ export const demoCharacters: Character[] = [
         "name": "Weapon Mastery",
         "source": "Paladin",
         "category": "class",
-        "description": "Your training with weapons allows you to use the mastery properties of two kinds of weapons of your choice with which you have proficiency, such as Longswords and Javelins. Whenever you finish a Long Rest, you can change the kinds of weapons you chose. For example, you could switch to using the mastery properties of Halberds and Flails."
+        "description": "Your training with weapons allows you to use the mastery properties of two kinds of weapons of your choice with which you have proficiency, such as Longswords and Javelins. Whenever you finish a Long Rest, you can change the kinds of weapons you chose. For example, you could switch to using the mastery properties of Halberds and Flails.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-17",

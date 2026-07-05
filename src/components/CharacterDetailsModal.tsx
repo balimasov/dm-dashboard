@@ -274,7 +274,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
             {hasFeatures && (
               <div className="border-t border-slate-800 pt-3 space-y-3">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 -mb-1.5">Features and Traits</h3>
+                <h3 className="text-xs uppercase tracking-wide text-slate-500">Features and Traits</h3>
                 {groupedVisibleFeatures.map(([category, features]) => (
                   <div key={category} className="space-y-1">
                     <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
