@@ -413,6 +413,9 @@ export const demoCharacters: Character[] = [
       }
     ],
     "notes": "A Berserker who trades caution for raw damage output — Frenzy and Reckless Attack turn every Rage into an all-in swing. Give him enemies worth hitting hard and consequences (exhaustion, no room to retreat) for going all-in every fight.",
+    "quickNotes": [
+      { "id": "qn-ragnar-1", "text": "Owes 20gp to the blacksmith in Nightstone", "createdAt": "2026-07-05T10:00:00.000Z" }
+    ],
     "subclass": "Path of the Berserker"
   },
   {
@@ -1153,6 +1156,9 @@ export const demoCharacters: Character[] = [
       }
     ],
     "notes": "An Oath of Glory paladin chasing legendary deeds — Inspiring Smite and Peerless Athlete reward big, showy moments. Scenes with an audience, a rival to outshine, or a feat of athletics/glory work well for her.",
+    "quickNotes": [
+      { "id": "qn-lilith-1", "text": "Recognized the crest on the assassin's dagger", "createdAt": "2026-07-05T10:00:00.000Z" }
+    ],
     "subclass": "Oath of Glory",
     "spellcasting": {
       "modifier": 3,
@@ -1836,6 +1842,9 @@ export const demoCharacters: Character[] = [
       }
     ],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",
+    "quickNotes": [
+      { "id": "qn-yorun-1", "text": "Suspicious of the innkeeper's extra questions", "createdAt": "2026-07-05T10:00:00.000Z" }
+    ],
     "subclass": "Spellfire Sorcery",
     "spellcasting": {
       "modifier": 3,
@@ -2386,6 +2395,9 @@ export const demoCharacters: Character[] = [
       }
     ],
     "notes": "A College of Dance bard who fights unarmored and up close — Dazzling Footwork and Bardic Inspiration make her as much a battlefield conductor as a performer. Social scenes and chances to show off both work.",
+    "quickNotes": [
+      { "id": "qn-esmeralda-1", "text": "Promised a song to the tavern owner's daughter", "createdAt": "2026-07-05T10:00:00.000Z" }
+    ],
     "subclass": "College of Dance",
     "spellcasting": {
       "modifier": 5,

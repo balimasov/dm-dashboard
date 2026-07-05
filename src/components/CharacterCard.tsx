@@ -8,6 +8,7 @@ import {
   formatModifier,
   characterInfoLine,
   proficiencyBonus,
+  QuickNote,
   savingThrowBonus,
   skillBonus,
   SKILL_ABBR,
@@ -87,6 +88,22 @@ function ConditionsIcon({ className }: { className?: string }) {
       <circle cx="12" cy="12" r="9" />
       <path d="M12 8v5" strokeLinecap="round" />
       <circle cx="12" cy="16.2" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -288,12 +305,168 @@ export function CharacterHeader({
   );
 }
 
+/** A single quick note row — click the text to edit it inline, "×" removes it. Delete stays visible (not hover-only) since this card is used on touch devices too. */
+function QuickNoteRow({
+  note,
+  onSave,
+  onDelete,
+}: {
+  note: QuickNote;
+  onSave: (text: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.text);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const trimmed = draft.trim();
+            if (trimmed) onSave(trimmed);
+            setEditing(false);
+          } else if (e.key === "Escape") {
+            setDraft(note.text);
+            setEditing(false);
+          }
+        }}
+        onBlur={() => {
+          setDraft(note.text);
+          setEditing(false);
+        }}
+        className="w-full rounded-md border border-sky-700 bg-slate-800 px-1.5 py-0.5 text-sm text-slate-100 outline-none"
+      />
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-1.5 text-sm text-slate-300">
+      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+      <button
+        type="button"
+        onClick={() => {
+          setDraft(note.text);
+          setEditing(true);
+        }}
+        className="min-w-0 flex-1 break-words text-left hover:text-slate-100"
+      >
+        {note.text}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label="Delete note"
+        className="shrink-0 text-slate-600 hover:text-red-400"
+      >
+        <TrashIcon className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Short, dashboard-added reminders — separate from the single long-form
+ * `notes` field (edited only on the character's edit page) so a DM can jot
+ * something down and clear it again without leaving the dashboard. Always
+ * shows its header (with the add button) so the section itself never shifts
+ * the rest of the card when notes are added/removed.
+ */
+function QuickNotesSection({
+  character,
+  onUpdate,
+}: {
+  character: Character;
+  onUpdate?: (id: string, updates: Partial<Character>) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const notes = character.quickNotes ?? [];
+  const sorted = notes.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  function commitAdd() {
+    const text = draft.trim();
+    if (!text) return;
+    const note: QuickNote = {
+      id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    onUpdate?.(character.id, { quickNotes: [note, ...notes] });
+    setDraft("");
+  }
+
+  function saveNote(id: string, text: string) {
+    onUpdate?.(character.id, { quickNotes: notes.map((n) => (n.id === id ? { ...n, text } : n)) });
+  }
+
+  function deleteNote(id: string) {
+    onUpdate?.(character.id, { quickNotes: notes.filter((n) => n.id !== id) });
+  }
+
+  return (
+    <div className="border-t border-slate-800 pt-3">
+      <div className="mb-1.5 flex items-center justify-between">
+        <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
+        {onUpdate && (
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            aria-label="Add a quick note"
+            title="Add a quick note"
+            className="rounded p-0.5 text-slate-500 hover:text-sky-400"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {adding && (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitAdd();
+            } else if (e.key === "Escape") {
+              setDraft("");
+              setAdding(false);
+            }
+          }}
+          placeholder="Type a note, press Enter..."
+          className="mb-1.5 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-600"
+        />
+      )}
+      {sorted.length > 0 ? (
+        <div className="space-y-1">
+          {sorted.map((note) => (
+            <QuickNoteRow
+              key={note.id}
+              note={note}
+              onSave={(text) => saveNote(note.id, text)}
+              onDelete={() => deleteNote(note.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        !adding && <p className="text-sm italic text-slate-600">No notes yet.</p>
+      )}
+    </div>
+  );
+}
+
 export function CharacterCard({
   character,
   onRemove,
+  onUpdate,
 }: {
   character: Character;
   onRemove?: (id: string) => void;
+  onUpdate?: (id: string, updates: Partial<Character>) => void;
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
@@ -522,6 +695,8 @@ export function CharacterCard({
           <p className="text-sm text-slate-400 leading-snug">{c.notes}</p>
         </div>
       )}
+
+      <QuickNotesSection character={c} onUpdate={onUpdate} />
 
       <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
         {c.dndBeyondUrl ? (

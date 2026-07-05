@@ -323,6 +323,13 @@ export interface CombatState {
   };
 }
 
+/** A short, freeform reminder a DM jots down mid-session (e.g. "Owes 20gp to the blacksmith") — added, edited, and removed straight from the dashboard card. */
+export interface QuickNote {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -351,6 +358,14 @@ export interface Character {
   inventory: InventoryItem[];
   currency: Currency;
   notes: string;
+  /**
+   * Short, dashboard-added reminders (a sentence or two) — separate from the
+   * single long-form `notes` field above, which is only edited on the
+   * character's edit page. Meant to be jotted down and cleared quickly
+   * mid-session, so each is its own entry rather than one shared block of
+   * text.
+   */
+  quickNotes: QuickNote[];
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;

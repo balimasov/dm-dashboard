@@ -104,7 +104,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
           <div className="flex gap-4 overflow-x-auto pb-2">
             {characters.map((character) => (
               <div key={character.id} className="w-[300px] shrink-0">
-                <CharacterCard character={character} onRemove={removeCharacter} />
+                <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
               </div>
             ))}
           </div>

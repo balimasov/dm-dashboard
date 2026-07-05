@@ -68,6 +68,7 @@ function rowToCharacter(row: { data: string }): Character {
     currency: parsed.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
     knownSpells: parsed.knownSpells ?? [],
     features: (parsed.features ?? []).map((f) => ({ ...f, category: f.category ?? "class" })),
+    quickNotes: parsed.quickNotes ?? [],
     combat: {
       ...parsed.combat,
       passiveInvestigation: parsed.combat?.passiveInvestigation ?? 10,
@@ -128,6 +129,7 @@ export function createBlankCharacter(url: string): Character {
     knownSpells: [],
     features: [],
     notes: "",
+    quickNotes: [],
     dndBeyondUrl: url,
     synced: false,
   };
