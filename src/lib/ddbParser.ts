@@ -996,37 +996,74 @@ function computeFeatures(
   // wins over the generic "other" one describing the same thing).
   const seenDescriptions = new Set<string>();
 
-  // Lets an `options.*` entry (see below) report the *specific* feature that
-  // granted the choice — e.g. "Maneuvers" or "Metamagic Options" — instead of
-  // just the broad group it came from, and inherit that parent's exact
-  // category (a Battle Master's maneuvers should land in the Subclass
-  // sub-section, not the generic Class one). Confirmed on real exports: an
-  // option's `componentId` matches the `definition.id` of its parent racial
-  // trait/class feature/feat (a Battle Master's chosen maneuvers all share
+  // Lets an `options.*`/`actions.*` entry (see below) report the *specific*
+  // feature that granted the choice — e.g. "Maneuvers" or "Metamagic
+  // Options" — instead of just the broad group it came from, and inherit
+  // that parent's real origin type. Confirmed on real exports: an option's
+  // `componentId` matches the `definition.id` of its parent racial trait/
+  // class feature/feat (a Battle Master's chosen maneuvers all share
   // `componentId` with the "Maneuvers" class feature; a Sorcerer's Metamagic
   // choices share it with "Metamagic Options", a *different* class feature
-  // from the "Metamagic" one that's otherwise shown). Built from the raw,
-  // unfiltered definitions so a hidden/filtered parent still resolves.
-  const parentNameById = new Map<number, string>();
+  // from the "Metamagic" one that's otherwise shown).
+  //
+  // But `componentId` doesn't always point at a definition's own `id` —
+  // D&D Beyond implements *any* feature/trait/feat's internal "choose one of
+  // these" mechanism via a generic, reusable `grantedFeats[].featIds[]` link
+  // to an entity that's typed as a "feat" internally regardless of what
+  // actually grants it, and that *same* entity is *also* separately listed as
+  // its own entry in `data.feats[]` (confirmed on a real Fighter/Barbarian
+  // export: the *class feature* "Weapon Mastery" has `grantedFeats:
+  // [{featIds: [X]}]`, and `data.feats[]` independently contains its own
+  // entry with `definition.id === X` and the *same* name "Weapon Mastery" —
+  // a technical placeholder, not a real chosen feat). So a direct id/name
+  // match in `data.feats[]` is *not* reliable ground truth here — the
+  // `grantedFeats` link is, since it's the actual feature declaring "I own
+  // this choice". Indirect (`grantedFeats`) registrations therefore win: they
+  // run first, and the direct definition-id pass below only fills in ids
+  // that indirect registration didn't already claim.
+  const parentInfoById = new Map<number, { name: string; originType: Feature["originType"] }>();
+
+  function registerGrantedFeatLinks(definition: any, name: string | undefined, originType: Feature["originType"]) {
+    if (!name) return;
+    for (const grant of definition?.grantedFeats ?? []) {
+      for (const featId of grant.featIds ?? []) {
+        parentInfoById.set(featId, { name, originType });
+      }
+    }
+  }
+
   for (const trait of data.race?.racialTraits ?? []) {
-    const df = trait.definition;
-    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+    registerGrantedFeatLinks(trait.definition, trait.definition?.name, "species");
   }
   for (const cls of data.classes ?? []) {
     for (const cf of cls.classFeatures ?? []) {
-      const df = cf.definition;
-      if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+      registerGrantedFeatLinks(cf.definition, cf.definition?.name, "class");
     }
   }
   for (const feat of data.feats ?? []) {
-    const df = feat.definition;
-    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+    registerGrantedFeatLinks(feat.definition, feat.definition?.name, "feat");
+  }
+  registerGrantedFeatLinks(data.background?.definition, data.background?.definition?.featureName, "background");
+
+  function registerDirect(id: number | null | undefined, name: string | undefined, originType: Feature["originType"]) {
+    if (id != null && name && !parentInfoById.has(id)) parentInfoById.set(id, { name, originType });
+  }
+
+  for (const trait of data.race?.racialTraits ?? []) {
+    registerDirect(trait.definition?.id, trait.definition?.name, "species");
+  }
+  for (const cls of data.classes ?? []) {
+    for (const cf of cls.classFeatures ?? []) {
+      registerDirect(cf.definition?.id, cf.definition?.name, "class");
+    }
+  }
+  for (const feat of data.feats ?? []) {
+    registerDirect(feat.definition?.id, feat.definition?.name, "feat");
   }
 
   // "race"/"class"/"feat" here is D&D Beyond's own data grouping, not the
-  // renamed 2024 terminology — mapped to `originType` so the UI can label
-  // the "other" (non-action) bucket's sub-sections the way D&D Beyond's own
-  // Features & Traits tab does: Species Traits/Class Features/Feat Features.
+  // renamed 2024 terminology — the fallback `originType` for an action/option
+  // whose `componentId` doesn't resolve via `parentInfoById` above.
   const originTypeByDdbGroup: Record<"race" | "class" | "feat", Feature["originType"]> = {
     race: "species",
     class: "class",
@@ -1104,14 +1141,16 @@ function computeFeatures(
   for (const group of ["race", "class", "feat"] as const) {
     for (const action of data.actions?.[group] ?? []) {
       if (!action.name) continue;
-      const source = parentNameById.get(action.componentId) || actionFallbackSource[group];
+      const parentInfo = parentInfoById.get(action.componentId);
+      const source = parentInfo?.name || actionFallbackSource[group];
+      const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       const charges = action.limitedUse ? computeLimitedUseCharges(action.limitedUse, abilities, profBonus) ?? undefined : undefined;
       add(
         action.name,
         shortDescription(action.snippet, action.description),
         source,
         activationGroup(action.activation?.activationType),
-        originTypeByDdbGroup[group],
+        originType,
         charges
       );
     }
@@ -1163,8 +1202,10 @@ function computeFeatures(
   for (const [group, fallbackSource] of optionGroups) {
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
-      const source = parentNameById.get(opt.componentId) || fallbackSource;
-      add(df.name, shortDescription(df.snippet, df.description), source, "other", originTypeByDdbGroup[group], actionChargesById.get(df.id));
+      const parentInfo = parentInfoById.get(opt.componentId);
+      const source = parentInfo?.name || fallbackSource;
+      const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
+      add(df.name, shortDescription(df.snippet, df.description), source, "other", originType, actionChargesById.get(df.id));
     }
   }
 

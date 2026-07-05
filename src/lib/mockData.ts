@@ -256,7 +256,7 @@ export const demoCharacters: Character[] = [
         "name": "Vex (Handaxe)",
         "source": "Weapon Mastery",
         "group": "action",
-        "originType": "feat",
+        "originType": "class",
         "description": "**Vex.** If you hit a creature with a Handaxe and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
@@ -264,7 +264,7 @@ export const demoCharacters: Character[] = [
         "name": "Cleave (Greataxe)",
         "source": "Weapon Mastery",
         "group": "action",
-        "originType": "feat",
+        "originType": "class",
         "description": "**Cleave.** Once per turn, if you hit a creature with a melee attack using a Greataxe, you can make another melee attack with it against a second creature within 5 ft. of the first that’s within your reach. On a hit, the second creature takes the Greataxe’s damage, but without your ability modifier (unless the modifier is negative)."
       },
       {
@@ -272,7 +272,7 @@ export const demoCharacters: Character[] = [
         "name": "Push (Pike)",
         "source": "4: Weapon Mastery",
         "group": "action",
-        "originType": "feat",
+        "originType": "class",
         "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
       },
       {
@@ -449,9 +449,9 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-29",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Soldier Ability Score Improvements",
+        "source": "Savage Attacker",
         "group": "other",
-        "originType": "feat",
+        "originType": "background",
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
@@ -1050,7 +1050,7 @@ export const demoCharacters: Character[] = [
         "name": "Luck Points",
         "source": "Lucky",
         "group": "special",
-        "originType": "feat",
+        "originType": "background",
         "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
         "current": 3,
         "max": 3,
@@ -1069,7 +1069,7 @@ export const demoCharacters: Character[] = [
         "name": "Vex (Shortsword)",
         "source": "Weapon Mastery",
         "group": "action",
-        "originType": "feat",
+        "originType": "class",
         "description": "**Vex.** If you hit a creature with a Shortsword and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
@@ -1077,7 +1077,7 @@ export const demoCharacters: Character[] = [
         "name": "Nick (Scimitar)",
         "source": "Weapon Mastery",
         "group": "action",
-        "originType": "feat",
+        "originType": "class",
         "description": "**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. This extra attack can only be made once per turn."
       },
       {
@@ -1329,9 +1329,9 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-47",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Wayfarer Ability Score Improvements",
+        "source": "Lucky",
         "group": "other",
-        "originType": "feat",
+        "originType": "background",
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
@@ -2167,9 +2167,9 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-39",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Noble Ability Score Improvements",
+        "source": "Skilled",
         "group": "other",
-        "originType": "feat",
+        "originType": "background",
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
