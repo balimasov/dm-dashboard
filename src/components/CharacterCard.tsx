@@ -248,7 +248,7 @@ export function CharacterCard({
       )}
 
       {/* Combat state */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <HpBar
           hp={c.combat.hp}
           maxHp={c.combat.maxHp}
