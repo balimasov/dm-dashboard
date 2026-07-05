@@ -95,12 +95,12 @@ export interface Feature {
   /**
    * Set when this entry matches one of the "not really an actionable
    * ability" heuristics (ability score bumps, subclass-choice announcements,
-   * generic rulebook boilerplate, or a plain duplicate of a Sense already
-   * shown elsewhere) — still returned (never dropped) so the UI can display
-   * it in a separate, clearly-marked review area instead of silently hiding
-   * it, until the heuristics are confirmed against enough real characters.
+   * or generic rulebook boilerplate) — still returned (never dropped) so the
+   * UI can display it in a separate, clearly-marked review area instead of
+   * silently hiding it, until the heuristics are confirmed against enough
+   * real characters.
    */
-  filteredReason?: "ability-score" | "subclass-announcement" | "core-traits" | "boilerplate" | "duplicate-of-sense";
+  filteredReason?: "ability-score" | "subclass-announcement" | "core-traits" | "boilerplate";
 }
 
 export interface SpellcastingStats {

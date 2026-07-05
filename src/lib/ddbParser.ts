@@ -792,6 +792,11 @@ const BOILERPLATE_FEATURE_NAMES = new Set([
   "spellcasting",
   "expertise",
   "skilled",
+  // Announces that a lineage choice exists ("Choose a lineage from the Elven
+  // Lineages table...") without saying which one — the specific lineage
+  // picked (e.g. "High Elf Lineage", "Drow Lineage") is already its own
+  // Feature entry via `options.race`.
+  "elven lineage",
 ]);
 
 /** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name. */
@@ -845,7 +850,6 @@ function classifyFeatureFilter(name: string, rawDescription?: string): Feature["
 function computeFeatures(
   data: any,
   resources: Resource[],
-  senses: Sense[],
   abilities: AbilityScores,
   profBonus: number,
   level: number
@@ -893,10 +897,7 @@ function computeFeatures(
     if (!key || seen.has(key)) return;
     seen.add(key);
 
-    const isDuplicateSense = senses.some((s) => normalizeFeatureName(s.name) === key);
-    const filteredReason = isDuplicateSense
-      ? "duplicate-of-sense"
-      : classifyFeatureFilter(name!, rawDescription);
+    const filteredReason = classifyFeatureFilter(name!, rawDescription);
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
     const description = rawDescription
       ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, matchedResource?.max)
@@ -1176,7 +1177,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     spellSlots: computeSpellSlots(data),
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
     knownSpells: computeSpells(data, abilities, profBonus, level),
-    features: computeFeatures(data, resources, senses, abilities, profBonus, level),
+    features: computeFeatures(data, resources, abilities, profBonus, level),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
     ...computeDamageModifiers(mods),

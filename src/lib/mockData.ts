@@ -217,8 +217,7 @@ export const demoCharacters: Character[] = [
         "name": "Darkvision",
         "source": "Race",
         "category": "race",
-        "description": "You have Darkvision with a range of 120 ft.",
-        "filteredReason": "duplicate-of-sense"
+        "description": "You have Darkvision with a range of 120 ft."
       },
       {
         "id": "feature-2",
@@ -912,15 +911,15 @@ export const demoCharacters: Character[] = [
         "name": "Darkvision",
         "source": "Race",
         "category": "race",
-        "description": "You have Darkvision with a range of 60 ft.",
-        "filteredReason": "duplicate-of-sense"
+        "description": "You have Darkvision with a range of 60 ft."
       },
       {
         "id": "feature-4",
         "name": "Elven Lineage",
         "source": "Race",
         "category": "race",
-        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
+        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-5",
@@ -1647,15 +1646,15 @@ export const demoCharacters: Character[] = [
         "name": "Darkvision",
         "source": "Race",
         "category": "race",
-        "description": "You have Darkvision with a range of 60 ft.",
-        "filteredReason": "duplicate-of-sense"
+        "description": "You have Darkvision with a range of 60 ft."
       },
       {
         "id": "feature-1",
         "name": "Elven Lineage",
         "source": "Race",
         "category": "race",
-        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
+        "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage.",
+        "filteredReason": "boilerplate"
       },
       {
         "id": "feature-2",
@@ -2242,8 +2241,7 @@ export const demoCharacters: Character[] = [
         "name": "Darkvision",
         "source": "Race",
         "category": "race",
-        "description": "You can see in darkness (shades of gray) up to 60 ft.",
-        "filteredReason": "duplicate-of-sense"
+        "description": "You can see in darkness (shades of gray) up to 60 ft."
       },
       {
         "id": "feature-1",
