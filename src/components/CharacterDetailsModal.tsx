@@ -13,6 +13,8 @@ import {
   SkillName,
 } from "@/lib/types";
 import { CharacterHeader, ordinalLevel, Pill, SkillPanel, StatBox } from "./CharacterCard";
+import { DotMeter } from "./ResourceMeter";
+import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 
 function spellLevelLabel(level: number): string {
@@ -77,11 +79,11 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable] sm:items-center"
       onClick={onClose}
     >
       <div
-        className="my-4 w-full max-w-lg rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40 flex flex-col gap-4"
+        className="my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -126,35 +128,51 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                 <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
               </div>
             )}
-            {spellLevels.map((level) => (
-              <div key={level}>
-                <p className="mb-1.5 text-sm text-slate-400">{spellLevelLabel(level)}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(spellsByLevel.get(level) ?? [])
-                    .slice()
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((spell) => (
-                      <Pill key={spell.id} panel={<SpellPanel spell={spell} />}>
-                        {spell.name}
-                      </Pill>
-                    ))}
+            {spellLevels.map((level) => {
+              const slot = c.spellSlots.find((s) => s.level === level);
+              return (
+                <div key={level}>
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-slate-300">{spellLevelLabel(level)}</span>
+                    {slot &&
+                      (slot.max > 0 && slot.max <= 6 ? (
+                        <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
+                      ) : (
+                        <span className="font-medium text-slate-100">
+                          {slot.current}/{slot.max}
+                        </span>
+                      ))}
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {(spellsByLevel.get(level) ?? [])
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((spell) => (
+                        <div key={spell.id} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="min-w-0 flex-1 text-slate-300">
+                            <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                          </span>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* Features and Traits */}
         {sortedFeatures.length > 0 && (
-          <div className="border-t border-slate-800 pt-3">
+          <div className="border-t border-slate-800 pt-3 space-y-1.5">
             <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {sortedFeatures.map((feature) => (
-                <Pill key={feature.id} panel={<FeaturePanel feature={feature} />}>
-                  {feature.name}
-                </Pill>
-              ))}
-            </div>
+            {sortedFeatures.map((feature) => (
+              <div key={feature.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 flex-1 text-slate-300">
+                  <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                </span>
+                <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
+              </div>
+            ))}
           </div>
         )}
 
