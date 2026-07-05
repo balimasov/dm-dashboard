@@ -12,6 +12,17 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.34.0] - 2026-07-05
+
+### Changed
+- Замінено тестових персонажів (Alor, стара версія Lilith) на повний
+  розпарсений набір із наданих реальних JSON — Ragnar "Black Rage"
+  (Orc Barbarian/Path of the Berserker), Lilith (Elf Paladin/Oath of
+  Glory), Yorun (Runa) Dabrace (Elf Sorcerer/Spellfire Sorcery) і
+  Цінотижка aka Есмеральда фон Пуппікс (Tiefling Bard/College of Dance) —
+  зі всіма фічами, спелами, ресурсами та інвентарем, щоб демо-дані повніше
+  показували можливості додатку.
+
 ## [0.33.0] - 2026-07-05
 
 ### Changed
