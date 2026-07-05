@@ -238,13 +238,13 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                     const slot = c.spellSlots.find((s) => s.level === level);
                     return (
                       <div key={level}>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-slate-300">{spellLevelLabel(level)}</span>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
                           {slot &&
                             (slot.max > 0 && slot.max <= 6 ? (
                               <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
                             ) : (
-                              <span className="font-medium text-slate-100">
+                              <span className="text-sm font-medium text-slate-100">
                                 {slot.current}/{slot.max}
                               </span>
                             ))}
