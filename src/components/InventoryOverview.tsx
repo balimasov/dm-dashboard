@@ -169,11 +169,11 @@ function CurrencyConversionPanel() {
   );
 }
 
-function CoinChip({ coin, amount }: { coin: (typeof COIN_ORDER)[number]; amount: number }) {
+function CoinChip({ code, value, colorClass }: { code: string; value: number | string; colorClass: string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-md border border-slate-800 bg-slate-800/40 px-2 py-0.5 text-xs font-medium">
-      <span className={COIN_COLOR[coin]}>{amount}</span>
-      <span className="text-slate-500">{coin.toUpperCase()}</span>
+      <span className={colorClass}>{value}</span>
+      <span className="text-slate-500">{code}</span>
     </span>
   );
 }
@@ -184,11 +184,27 @@ function CurrencyRow({ character }: { character: Character }) {
       <span className="text-sm font-medium text-slate-100">{character.name}</span>
       <div className="flex flex-wrap gap-1.5">
         {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
-          <CoinChip key={k} coin={k} amount={character.currency[k]} />
+          <CoinChip key={k} code={k.toUpperCase()} value={character.currency[k]} colorClass={COIN_COLOR[k]} />
         ))}
       </div>
     </div>
   );
+}
+
+function splitIntoColumns<T>(entries: T[], weight: (entry: T) => number): [T[], T[]] {
+  if (entries.length <= 1) return [entries, []];
+  const total = entries.reduce((sum, e) => sum + weight(e), 0);
+  let running = 0;
+  let splitIndex = entries.length;
+  for (let i = 0; i < entries.length; i++) {
+    running += weight(entries[i]);
+    if (running >= total / 2) {
+      splitIndex = i + 1;
+      break;
+    }
+  }
+  if (splitIndex >= entries.length) splitIndex = Math.ceil(entries.length / 2);
+  return [entries.slice(0, splitIndex), entries.slice(splitIndex)];
 }
 
 export function InventoryOverview({ characters }: { characters: Character[] }) {
@@ -197,6 +213,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
   const totalGp = characters.reduce((sum, c) => sum + currencyToGp(c.currency), 0);
 
   const [leftRows, rightRows] = splitRowsIntoColumns(flattenToRows(groups));
+  const [leftCurrency, rightCurrency] = splitIntoColumns(charactersWithCurrency, () => 1);
 
   if (groups.length === 0 && charactersWithCurrency.length === 0) {
     return <p className="text-sm text-slate-500">Немає предметів чи грошей у жодного персонажа.</p>;
@@ -223,21 +240,32 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
 
       {charactersWithCurrency.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <InfoTooltip panel={<CurrencyConversionPanel />}>Гроші</InfoTooltip>
-            </h3>
-            <div className="text-right">
-              <div className="text-xl font-bold text-amber-300">
-                {totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)} GP
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <InfoTooltip panel={<CurrencyConversionPanel />}>Гроші</InfoTooltip>
+          </h3>
+          {rightCurrency.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-800">
+              <div className="flex flex-col gap-2 sm:pr-6">
+                {leftCurrency.map((c) => (
+                  <CurrencyRow key={c.id} character={c} />
+                ))}
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-slate-600">Загалом по партії</div>
+              <div className="flex flex-col gap-2 sm:pl-6">
+                {rightCurrency.map((c) => (
+                  <CurrencyRow key={c.id} character={c} />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {charactersWithCurrency.map((c) => (
-              <CurrencyRow key={c.id} character={c} />
-            ))}
+          ) : (
+            <div className="flex flex-col gap-2">
+              {leftCurrency.map((c) => (
+                <CurrencyRow key={c.id} character={c} />
+              ))}
+            </div>
+          )}
+          <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
+            <span className="text-sm font-medium text-slate-100">Загалом по партії</span>
+            <CoinChip code="GP" value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)} colorClass="text-amber-400" />
           </div>
         </div>
       )}
