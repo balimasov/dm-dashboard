@@ -887,11 +887,29 @@ function computeFeatures(
     if (df?.id != null && df?.name) parentInfoById.set(df.id, { name: df.name, category: "feat" });
   }
 
+  // A charge pool's D&D Beyond `action` entry is very often named
+  // differently from the Feature that grants it (a Fighter's "Superiority
+  // Dice" action vs. its "Combat Superiority" classFeature; a Sorcerer's
+  // "Font of Magic: Sorcery Points" action vs. its "Font of Magic"
+  // classFeature) — name-matching alone misses these. Confirmed on real
+  // exports: the action's `componentId` matches the `definition.id` of the
+  // classFeature/racialTrait/feat that grants it, the same relationship
+  // `options.*` uses above, so charges can be looked up by id instead.
+  const actionChargesById = new Map<number, { current: number; max: number; recovery: RecoveryType }>();
+  for (const group of ["race", "class", "feat"] as const) {
+    for (const action of data.actions?.[group] ?? []) {
+      if (action.componentId == null || !action.limitedUse) continue;
+      const charges = computeLimitedUseCharges(action.limitedUse, abilities, profBonus);
+      if (charges) actionChargesById.set(action.componentId, charges);
+    }
+  }
+
   function add(
     name: string | undefined,
     rawDescription: string | undefined,
     source: string,
-    category: Feature["category"]
+    category: Feature["category"],
+    definitionId?: number
   ) {
     const key = normalizeFeatureName(name || "");
     if (!key || seen.has(key)) return;
@@ -899,8 +917,9 @@ function computeFeatures(
 
     const filteredReason = classifyFeatureFilter(name!, rawDescription);
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
+    const charges = (definitionId != null ? actionChargesById.get(definitionId) : undefined) ?? matchedResource;
     const description = rawDescription
-      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, matchedResource?.max)
+      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max)
       : undefined;
 
     features.push({
@@ -910,16 +929,14 @@ function computeFeatures(
       category,
       ...(description ? { description } : {}),
       ...(filteredReason ? { filteredReason } : {}),
-      ...(matchedResource
-        ? { current: matchedResource.current, max: matchedResource.max, recovery: matchedResource.recovery }
-        : {}),
+      ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
     });
   }
 
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition ?? {};
     if (df.hideOnDetailsPage || df.hideInSheet) continue;
-    add(df.name, shortDescription(df.snippet, df.description), "Race", "race");
+    add(df.name, shortDescription(df.snippet, df.description), "Race", "race", df.id);
   }
 
   for (const cls of data.classes ?? []) {
@@ -935,14 +952,15 @@ function computeFeatures(
         df.name,
         shortDescription(df.snippet, df.description),
         isSubclassFeature ? subclassName : className,
-        isSubclassFeature ? "subclass" : "class"
+        isSubclassFeature ? "subclass" : "class",
+        df.id
       );
     }
   }
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    add(df.name, shortDescription(df.snippet, df.description), "Feat", "feat");
+    add(df.name, shortDescription(df.snippet, df.description), "Feat", "feat", df.id);
   }
 
   // The *specific* choices a player made for a feature that offers options —
@@ -962,7 +980,7 @@ function computeFeatures(
       const df = opt.definition ?? {};
       const parentInfo = parentInfoById.get(opt.componentId);
       const source = parentInfo?.name || fallbackSource;
-      add(df.name, shortDescription(df.snippet, df.description), source, parentInfo?.category ?? group);
+      add(df.name, shortDescription(df.snippet, df.description), source, parentInfo?.category ?? group, df.id);
     }
   }
 

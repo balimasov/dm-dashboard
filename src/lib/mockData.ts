@@ -992,7 +992,10 @@ export const demoCharacters: Character[] = [
         "name": "Lay On Hands",
         "source": "Paladin",
         "category": "class",
-        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature."
+        "description": "You have a pool of healing power that replenishes when you finish a Long Rest. With that pool, you can restore a total of HP. As a Bonus Action, you can touch a creature (which could be yourself) and restore a number HP to that creature, up to the maximum amount remaining in the pool. You can also expend 5 HP from the pool of healing to remove the Poisoned condition from the creature; those points don’t also restore HP to the creature.",
+        "current": 10,
+        "max": 25,
+        "recovery": "long-rest"
       },
       {
         "id": "feature-15",
@@ -1076,7 +1079,10 @@ export const demoCharacters: Character[] = [
         "name": "Lucky",
         "source": "Feat",
         "category": "feat",
-        "description": "**Luck Points.** You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll."
+        "description": "**Luck Points.** You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
+        "current": 3,
+        "max": 3,
+        "recovery": "long-rest"
       },
       {
         "id": "feature-26",
@@ -1723,7 +1729,10 @@ export const demoCharacters: Character[] = [
         "name": "Font of Magic",
         "source": "Sorcerer",
         "category": "class",
-        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required). **Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5"
+        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required). **Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5",
+        "current": 4,
+        "max": 5,
+        "recovery": "long-rest"
       },
       {
         "id": "feature-11",
@@ -2278,7 +2287,7 @@ export const demoCharacters: Character[] = [
         "source": "Bard",
         "category": "class",
         "description": "As a Bonus Action, you can inspire another creature within 60 ft. that can see or hear you. That creature gains one of your Bardic Inspiration dice (5). Once within the next hour, when the creature fails a D20 Test, the creature can roll the Bardic Inspiration die and add the number rolled to the total, potentially turning the failure into a success. You can confer your Bardic Inspiration die 5 times per Long Rest.",
-        "current": 5,
+        "current": 3,
         "max": 5,
         "recovery": "short-rest"
       },
