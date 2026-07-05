@@ -38,7 +38,7 @@ export default function RootLayout({
               </svg>
               DM Dashboard
             </Link>
-            <div id="header-actions" className="flex flex-wrap items-center justify-end gap-2" />
+            <div id="header-actions" className="flex flex-1 flex-wrap items-center justify-end gap-2" />
           </div>
         </header>
         <main className="flex-1">{children}</main>

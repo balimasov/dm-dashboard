@@ -119,8 +119,12 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
           return (
             <h3
               key={`header-${row.category}-${idx}`}
-              className={`text-xs font-semibold uppercase tracking-wide text-slate-500 ${
-                idx === 0 ? "mb-2" : "mb-2 mt-3 border-t border-slate-800 pt-3"
+              className={`text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 ${
+                idx > 0
+                  ? "mt-3 border-t border-slate-800 pt-3"
+                  : row.continued
+                    ? "mt-3 border-t border-slate-800 pt-3 sm:mt-0 sm:border-t-0 sm:pt-0"
+                    : ""
               }`}
             >
               {CATEGORY_LABELS[row.category]}
