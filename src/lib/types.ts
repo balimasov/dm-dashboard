@@ -90,6 +90,15 @@ export interface Feature {
    * "other" rather than being filtered out by a custom heuristic.
    */
   group: "action" | "bonusAction" | "reaction" | "special" | "other";
+  /**
+   * Where this feature originates from, independent of `group` — mirrors the
+   * section headers D&D Beyond's own Features & Traits tab uses (Species
+   * Traits/Class Features/Feat Features/Background Feature), a different
+   * axis than the Actions-tab-style `group` above. Only used to sub-group
+   * the "other" bucket in the UI, since Action/Bonus Action/Reaction/Special
+   * are already short lists that don't need a second split.
+   */
+  originType: "species" | "class" | "feat" | "background";
   description?: string;
   /**
    * Present when this feature is also tracked as a Resource elsewhere on the

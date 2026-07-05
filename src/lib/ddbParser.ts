@@ -1011,6 +1011,16 @@ function computeFeatures(
     if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
   }
 
+  // "race"/"class"/"feat" here is D&D Beyond's own data grouping, not the
+  // renamed 2024 terminology — mapped to `originType` so the UI can label
+  // the "other" (non-action) bucket's sub-sections the way D&D Beyond's own
+  // Features & Traits tab does: Species Traits/Class Features/Feat Features.
+  const originTypeByDdbGroup: Record<"race" | "class" | "feat", Feature["originType"]> = {
+    race: "species",
+    class: "class",
+    feat: "feat",
+  };
+
   // A charge pool's D&D Beyond `action` entry is very often named
   // differently from the Feature that grants it (a Fighter's "Superiority
   // Dice" action vs. its "Combat Superiority" classFeature; a Sorcerer's
@@ -1033,6 +1043,7 @@ function computeFeatures(
     rawDescription: string | undefined,
     source: string,
     group: Feature["group"],
+    originType: Feature["originType"],
     explicitCharges?: { current: number; max: number; recovery: RecoveryType }
   ) {
     const trimmedName = (name || "").trim();
@@ -1057,6 +1068,7 @@ function computeFeatures(
       name: trimmedName,
       source,
       group,
+      originType,
       ...(description ? { description } : {}),
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
     });
@@ -1082,6 +1094,7 @@ function computeFeatures(
         shortDescription(action.snippet, action.description),
         source,
         activationGroup(action.activation?.activationType),
+        originTypeByDdbGroup[group],
         charges
       );
     }
@@ -1090,7 +1103,7 @@ function computeFeatures(
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition ?? {};
     if (df.hideOnDetailsPage || df.hideInSheet) continue;
-    add(df.name, shortDescription(df.snippet, df.description), "Race", "other", actionChargesById.get(df.id));
+    add(df.name, shortDescription(df.snippet, df.description), "Race", "other", "species", actionChargesById.get(df.id));
   }
 
   for (const cls of data.classes ?? []) {
@@ -1107,6 +1120,7 @@ function computeFeatures(
         shortDescription(df.snippet, df.description),
         isSubclassFeature ? subclassName : className,
         "other",
+        "class",
         actionChargesById.get(df.id)
       );
     }
@@ -1114,7 +1128,7 @@ function computeFeatures(
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    add(df.name, shortDescription(df.snippet, df.description), "Feat", "other", actionChargesById.get(df.id));
+    add(df.name, shortDescription(df.snippet, df.description), "Feat", "other", "feat", actionChargesById.get(df.id));
   }
 
   // The *specific* choices a player made for a feature that offers options —
@@ -1133,13 +1147,13 @@ function computeFeatures(
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
       const source = parentNameById.get(opt.componentId) || fallbackSource;
-      add(df.name, shortDescription(df.snippet, df.description), source, "other", actionChargesById.get(df.id));
+      add(df.name, shortDescription(df.snippet, df.description), source, "other", originTypeByDdbGroup[group], actionChargesById.get(df.id));
     }
   }
 
   const bg = data.background?.definition;
   if (bg?.featureName && bg?.featureDescription && !bg?.featureIsFeat) {
-    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background", "other");
+    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background", "other", "background");
   }
 
   return features;

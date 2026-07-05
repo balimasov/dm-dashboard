@@ -12,6 +12,16 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.41.0] - 2026-07-05
+
+### Added
+- Група "Other" у Features and Traits тепер додатково поділяється на
+  Species Traits / Class Features / Feat Features / Background
+  Feature — так само, як власний таб Features & Traits у D&D Beyond
+  (окремо від Actions tab, звідки взято групування Action/Bonus
+  Action/Reaction/Special). Дає змогу одразу знайти расові риси
+  персонажа, не гортаючи всю "решту" одним суцільним списком.
+
 ## [0.40.1] - 2026-07-05
 
 ### Fixed

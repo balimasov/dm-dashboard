@@ -91,6 +91,29 @@ function groupFeaturesByGroup(features: Feature[]): Array<[Feature["group"], Fea
   ]);
 }
 
+const ORIGIN_LABELS: Record<Feature["originType"], string> = {
+  species: "Species Traits",
+  class: "Class Features",
+  feat: "Feat Features",
+  background: "Background Feature",
+};
+
+const ORIGIN_ORDER: Feature["originType"][] = ["species", "class", "feat", "background"];
+
+/** Same idea as `groupFeaturesByGroup`, one level down — only used for the "Other" bucket, which mirrors D&D Beyond's separate Features & Traits tab (grouped by where a feature comes from) rather than the Actions-tab-style groups above. Action/Bonus Action/Reaction/Special stay flat since those lists are already short. */
+function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"], Feature[]]> {
+  const byOrigin = new Map<Feature["originType"], Feature[]>();
+  for (const feature of features) {
+    const list = byOrigin.get(feature.originType) ?? [];
+    list.push(feature);
+    byOrigin.set(feature.originType, list);
+  }
+  return ORIGIN_ORDER.filter((origin) => byOrigin.has(origin)).map((origin) => [
+    origin,
+    byOrigin.get(origin)!.sort((a, b) => a.name.localeCompare(b.name)),
+  ]);
+}
+
 function SpellPanel({ spell }: { spell: KnownSpell }) {
   return (
     <div className="space-y-1">
@@ -122,6 +145,17 @@ function FeaturePanel({ feature }: { feature: Feature }) {
           <RichText text={feature.description} />
         </p>
       )}
+    </div>
+  );
+}
+
+function FeatureRow({ feature }: { feature: Feature }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="min-w-0 flex-1 text-slate-300">
+        <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+      </span>
+      {feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
     </div>
   );
 }
@@ -410,21 +444,31 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
             {currentTab === "features" && (
               <div className="space-y-3">
-                {groupedFeatures.map(([group, features]) => (
-                  <div key={group} className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
-                    {features.map((feature) => (
-                      <div key={feature.id} className="flex items-center gap-2 text-sm">
-                        <span className="min-w-0 flex-1 text-slate-300">
-                          <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                        </span>
-                        {feature.max !== undefined && (
-                          <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                {groupedFeatures.map(([group, features]) =>
+                  group === "other" ? (
+                    // The "other" bucket sub-groups by origin instead of a flat
+                    // list — mirrors D&D Beyond's separate Features & Traits tab
+                    // (Species Traits/Class Features/Feat Features/Background
+                    // Feature) rather than the Actions-tab-style groups above.
+                    <div key={group} className="space-y-3">
+                      {groupFeaturesByOrigin(features).map(([origin, originFeatures]) => (
+                        <div key={origin} className="space-y-1">
+                          <p className="text-[10px] uppercase tracking-wide text-slate-600">{ORIGIN_LABELS[origin]}</p>
+                          {originFeatures.map((feature) => (
+                            <FeatureRow key={feature.id} feature={feature} />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div key={group} className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
+                      {features.map((feature) => (
+                        <FeatureRow key={feature.id} feature={feature} />
+                      ))}
+                    </div>
+                  )
+                )}
               </div>
             )}
 
