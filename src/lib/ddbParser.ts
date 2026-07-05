@@ -771,6 +771,14 @@ const BOILERPLATE_FEATURE_NAMES = new Set([
   "creature type",
   "size",
   "speed",
+  // Generic wrapper features that exist on nearly every class/feat but whose
+  // real content is already shown elsewhere with more specific detail —
+  // "Spellcasting" duplicates the whole Spells section, "Expertise" duplicates
+  // the amber Skills pills, "Skilled" (an origin feat) duplicates whichever
+  // skills the player picked, already visible as ordinary skill proficiencies.
+  "spellcasting",
+  "expertise",
+  "skilled",
 ]);
 
 /** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name. */
@@ -781,12 +789,28 @@ function normalizeFeatureName(name: string): string {
     .replace(/\s*\([^)]*\)\s*$/, "");
 }
 
-function classifyFeatureFilter(name: string): Feature["filteredReason"] {
+/**
+ * Beyond name-based rules, some `data.options.*` entries (see computeFeatures
+ * below) are themselves just a trivial sub-note about a choice already made
+ * elsewhere — e.g. a feat's "which ability score does this use" pointer
+ * ("Charisma is the ability score you use for this feat") or a racial
+ * lineage's "which ability powers these spells" note ("Your High Elf Lineage
+ * spells use Intelligence") — confirmed verbatim on real Sorcerer/Bard
+ * exports. Neither describes an action; both are already implied by the
+ * parent feature/spell they modify.
+ */
+function classifyFeatureFilter(name: string, rawDescription?: string): Feature["filteredReason"] {
   const n = normalizeFeatureName(name);
   if (/ability score (improvement|increase)s?\b/.test(n)) return "ability-score";
+  if (/^increase (one|two|a) scores?\b/.test(n)) return "ability-score";
   if (/subclass$/.test(n) || LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES.has(n)) return "subclass-announcement";
   if (/^core .+ traits$/.test(n)) return "core-traits";
   if (BOILERPLATE_FEATURE_NAMES.has(n)) return "boilerplate";
+  const d = rawDescription?.trim();
+  if (d) {
+    if (/is the ability score you (use|increase)/i.test(d)) return "ability-score";
+    if (/^your .+ uses? \w+\.?$/i.test(d)) return "boilerplate";
+  }
   return undefined;
 }
 
@@ -807,7 +831,9 @@ function computeFeatures(
     seen.add(key);
 
     const isDuplicateSense = senses.some((s) => normalizeFeatureName(s.name) === key);
-    const filteredReason = isDuplicateSense ? "duplicate-of-sense" : classifyFeatureFilter(name!);
+    const filteredReason = isDuplicateSense
+      ? "duplicate-of-sense"
+      : classifyFeatureFilter(name!, rawDescription);
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
     const description = rawDescription
       ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, matchedResource?.max)
@@ -844,6 +870,25 @@ function computeFeatures(
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
     add(df.name, shortDescription(df.snippet, df.description), "Feat");
+  }
+
+  // The *specific* choices a player made for a feature that offers options —
+  // which Battle Master maneuvers, which Fighting Style, which Metamagic,
+  // which racial lineage — live here, separately from the classFeatures/
+  // racialTraits/feats definitions above (which only describe the umbrella
+  // feature, e.g. "Maneuvers", not which ones were picked). Without this,
+  // exactly the specific abilities a DM most wants to know about a character
+  // were the ones missing.
+  const optionGroups: Array<["race" | "class" | "feat", string]> = [
+    ["race", "Race"],
+    ["class", "Class"],
+    ["feat", "Feat"],
+  ];
+  for (const [group, source] of optionGroups) {
+    for (const opt of data.options?.[group] ?? []) {
+      const df = opt.definition ?? {};
+      add(df.name, shortDescription(df.snippet, df.description), source);
+    }
   }
 
   const bg = data.background?.definition;
