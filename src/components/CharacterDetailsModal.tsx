@@ -76,6 +76,8 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
   const sortedFeatures = c.features.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const hasSpells = spellLevels.length > 0;
+  const hasFeatures = sortedFeatures.length > 0;
 
   return (
     <div
@@ -83,7 +85,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
       onClick={onClose}
     >
       <div
-        className="my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
+        className="my-4 flex w-full max-w-4xl flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -100,7 +102,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           </button>
         </div>
 
-        {/* Skills */}
+        {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
@@ -123,66 +125,71 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           </div>
         </div>
 
-        {/* Spells */}
-        {spellLevels.length > 0 && (
-          <div className="border-t border-slate-800 pt-3 space-y-3">
-            <h3 className="text-xs uppercase tracking-wide text-slate-500 -mb-1.5">Spells</h3>
-            {c.spellcasting && (
-              <div className="grid grid-cols-3 gap-1.5">
-                <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
-                <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
-                <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
+        {/* Spells and Features and Traits run side by side on wide screens (each can get long on its own) instead of always stacking, which was pushing the modal well past the viewport height. */}
+        {(hasSpells || hasFeatures) && (
+          <div className={`grid grid-cols-1 gap-4 ${hasSpells && hasFeatures ? "lg:grid-cols-2" : ""}`}>
+            {hasSpells && (
+              <div className="border-t border-slate-800 pt-3">
+                <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
+                <div className="space-y-3">
+                  {c.spellcasting && (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
+                      <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
+                      <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
+                    </div>
+                  )}
+                  {spellLevels.map((level) => {
+                    const slot = c.spellSlots.find((s) => s.level === level);
+                    return (
+                      <div key={level}>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-slate-300">{spellLevelLabel(level)}</span>
+                          {slot &&
+                            (slot.max > 0 && slot.max <= 6 ? (
+                              <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
+                            ) : (
+                              <span className="font-medium text-slate-100">
+                                {slot.current}/{slot.max}
+                              </span>
+                            ))}
+                        </div>
+                        <div className="mt-1 space-y-1">
+                          {(spellsByLevel.get(level) ?? [])
+                            .slice()
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((spell) => (
+                              <div key={spell.id} className="flex items-center justify-between gap-3 text-sm">
+                                <span className="min-w-0 flex-1 text-slate-300">
+                                  <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
-            {spellLevels.map((level) => {
-              const slot = c.spellSlots.find((s) => s.level === level);
-              return (
-                <div key={level}>
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-slate-300">{spellLevelLabel(level)}</span>
-                    {slot &&
-                      (slot.max > 0 && slot.max <= 6 ? (
-                        <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
-                      ) : (
-                        <span className="font-medium text-slate-100">
-                          {slot.current}/{slot.max}
-                        </span>
-                      ))}
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    {(spellsByLevel.get(level) ?? [])
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((spell) => (
-                        <div key={spell.id} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="min-w-0 flex-1 text-slate-300">
-                            <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Features and Traits */}
-        {sortedFeatures.length > 0 && (
-          <div className="border-t border-slate-800 pt-3 space-y-1.5">
-            <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
-            {sortedFeatures.map((feature) => (
-              <div key={feature.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 flex-1 text-slate-300">
-                  <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                </span>
-                <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
+            {hasFeatures && (
+              <div className="border-t border-slate-800 pt-3 space-y-1.5">
+                <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
+                {sortedFeatures.map((feature) => (
+                  <div key={feature.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 flex-1 text-slate-300">
+                      <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                    </span>
+                    <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
-        {sortedFeatures.length === 0 && spellLevels.length === 0 && (
+        {!hasSpells && !hasFeatures && (
           <p className="border-t border-slate-800 pt-3 text-sm text-slate-500">
             No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
           </p>
