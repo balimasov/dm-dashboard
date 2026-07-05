@@ -398,8 +398,22 @@ function computeClassSummary(data: any) {
   return { level, className, subclass };
 }
 
-function computeSpeed(data: any): number {
-  return data.race?.weightSpeeds?.normal?.walk ?? 30;
+/**
+ * The race's base walking speed alone misses class/feat/item bonuses like a
+ * Barbarian's Fast Movement (+10 ft while not wearing Heavy armor) —
+ * confirmed on a real level-5 Barbarian export undercounting speed by
+ * exactly that 10, since it only ever read `weightSpeeds`. These show up as
+ * ordinary `type: "bonus", subType: "speed"` modifiers alongside AC/ability
+ * bonuses; `isGranted` is D&D Beyond's own pre-computed signal for whether a
+ * conditional bonus like this currently applies (e.g. the Heavy-armor
+ * restriction), the same flag Unarmored Defense's bonus relies on above.
+ */
+function computeSpeed(data: any, mods: any[]): number {
+  const base = data.race?.weightSpeeds?.normal?.walk ?? 30;
+  const bonus = mods
+    .filter((m) => m.type === "bonus" && m.subType === "speed" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? 0), 0);
+  return base + bonus;
 }
 
 /**
@@ -1382,7 +1396,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const profBonus = proficiencyBonus(level);
   const { hp, maxHp, tempHp, maxHpLocked } = computeHp(data, mods, conMod, level, existing);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
-  const speed = computeSpeed(data);
+  const speed = computeSpeed(data, mods);
   const resources = computeResources(data, abilities, profBonus, level, speed);
   const senses = computeSenses(mods);
 

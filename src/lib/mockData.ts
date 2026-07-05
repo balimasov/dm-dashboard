@@ -15,7 +15,7 @@ export const demoCharacters: Character[] = [
       "maxHp": 55,
       "tempHp": 0,
       "ac": 15,
-      "speed": 30,
+      "speed": 40,
       "passivePerception": 10,
       "passiveInvestigation": 9,
       "passiveInsight": 10,
