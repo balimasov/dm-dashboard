@@ -171,9 +171,6 @@ export function SkillPanel({ skill }: { skill: SkillProficiency }) {
         {SKILL_LABELS[skill.name]} <span className="text-slate-500">({SKILL_ABILITY[skill.name].toUpperCase()})</span>
       </p>
       <p>{SKILL_DESCRIPTIONS[skill.name]}</p>
-      {!skill.proficient && !skill.expertise && skill.halfProficiency && (
-        <p className="text-cyan-400">Half Proficiency — half your proficiency bonus (rounded down), e.g. Jack of All Trades.</p>
-      )}
       {advantageLabel && (
         <p className={advantageLabel === "Advantage" ? "text-emerald-400" : "text-red-400"}>
           {advantageLabel}
@@ -218,7 +215,7 @@ export function Pill({
   children,
 }: {
   panel?: React.ReactNode;
-  color?: "slate" | "sky" | "amber" | "cyan";
+  color?: "slate" | "sky" | "amber" | "teal";
   children: React.ReactNode;
 }) {
   const colorCls =
@@ -226,8 +223,8 @@ export function Pill({
       ? "border-amber-700 bg-amber-950/30 text-amber-300"
       : color === "sky"
         ? "border-sky-700 bg-sky-950/40 text-sky-300"
-        : color === "cyan"
-          ? "border-cyan-800 bg-cyan-950/25 text-cyan-400"
+        : color === "teal"
+          ? "border-teal-700 bg-teal-950/30 text-teal-300"
           : "border-slate-800 bg-slate-800/40 text-slate-200";
   const boxCls = `rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`;
   if (!panel) {
@@ -460,7 +457,7 @@ export function CharacterCard({
                 : skill.proficient
                   ? "sky"
                   : skill.halfProficiency
-                    ? "cyan"
+                    ? "teal"
                     : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>

@@ -81,7 +81,15 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable] sm:items-center"
+      // Deliberately not `items-center`: a flex container that centers an
+      // overflowing child clips the excess at the *start* with no way to
+      // scroll to it (scrollTop can't go negative) — confirmed on a real
+      // Sorcerer with 22 spells/18 features, where this hid the header and
+      // close button above the viewport with no way to reach them. Top
+      // alignment always keeps the start of the content reachable at
+      // scrollTop 0, at the cost of short modals sitting near the top
+      // instead of dead center.
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
       onClick={onClose}
     >
       <div
@@ -112,7 +120,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                 : skill.proficient
                   ? "sky"
                   : skill.halfProficiency
-                    ? "cyan"
+                    ? "teal"
                     : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
