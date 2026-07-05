@@ -43,6 +43,11 @@ function ChargeBadge({ current, max, recovery }: { current: number; max: number;
   );
 }
 
+/** Small muted tag showing where a Feature/Spell comes from — kept separate from ChargeBadge so usage (right edge) and origin (this) never share the same slot. */
+function TypeTag({ children }: { children: React.ReactNode }) {
+  return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
+}
+
 function SpellPanel({ spell }: { spell: KnownSpell }) {
   return (
     <div className="space-y-1">
@@ -50,7 +55,11 @@ function SpellPanel({ spell }: { spell: KnownSpell }) {
         {spell.name}
         {spell.school && <span className="text-slate-500"> ({spell.school})</span>}
       </p>
-      <p className="text-xs uppercase tracking-wide text-slate-500">{spell.source}</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">
+        {spell.source}
+        {spell.components && ` · ${spell.components}`}
+      </p>
+      {spell.materialComponent && <p className="text-slate-500">Material: {spell.materialComponent}</p>}
       {spell.description && (
         <p>
           <RichText text={spell.description} />
@@ -222,10 +231,11 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                             .slice()
                             .sort((a, b) => a.name.localeCompare(b.name))
                             .map((spell) => (
-                              <div key={spell.id} className="flex items-center justify-between gap-3 text-sm">
+                              <div key={spell.id} className="flex items-center gap-2 text-sm">
                                 <span className="min-w-0 flex-1 text-slate-300">
                                   <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
                                 </span>
+                                {spell.components && <TypeTag>{spell.components}</TypeTag>}
                                 {spell.max !== undefined && (
                                   <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
                                 )}
@@ -243,14 +253,13 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
               <div className="border-t border-slate-800 pt-3 space-y-1.5">
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
                 {visibleFeatures.map((feature) => (
-                  <div key={feature.id} className="flex items-center justify-between gap-3 text-sm">
+                  <div key={feature.id} className="flex items-center gap-2 text-sm">
                     <span className="min-w-0 flex-1 text-slate-300">
                       <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
                     </span>
-                    {feature.max !== undefined ? (
+                    <TypeTag>{feature.source}</TypeTag>
+                    {feature.max !== undefined && (
                       <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
-                    ) : (
-                      <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
                     )}
                   </div>
                 ))}

@@ -870,6 +870,8 @@ function computeFeatures(
  * duplicate that has `limitedUse` upgrades an earlier duplicate that lacked
  * it, rather than always keeping whichever copy came first.
  */
+const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
+
 function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number): KnownSpell[] {
   const spells: KnownSpell[] = [];
   const byName = new Map<string, KnownSpell>();
@@ -887,6 +889,7 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
     }
 
     const rawDescription = shortDescription(df.snippet, df.description);
+    const components: number[] = df.components ?? [];
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
@@ -896,6 +899,10 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
         ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max)
         : undefined,
       source,
+      ...(components.length > 0
+        ? { components: components.map((c) => COMPONENT_LABELS[c]).filter(Boolean).join(", ") }
+        : {}),
+      ...(df.componentsDescription ? { materialComponent: df.componentsDescription.trim() } : {}),
       ...(charges ? charges : {}),
     };
     byName.set(key, spell);

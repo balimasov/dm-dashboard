@@ -57,6 +57,10 @@ export interface KnownSpell {
   description?: string;
   /** Where this spell comes from (e.g. "Class", "Race", "Item"). */
   source: string;
+  /** e.g. "V, S, M" — which of Verbal/Somatic/Material components the spell needs. */
+  components?: string;
+  /** The specific material component text (e.g. "a bit of fleece"), when the spell needs one worth calling out. */
+  materialComponent?: string;
   /**
    * Present only for spells with their own limited-use charge pool (e.g. an
    * innate racial spell castable once per long rest without a spell slot) —
