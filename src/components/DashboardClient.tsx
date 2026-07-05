@@ -55,9 +55,9 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       {linkedCharacters.length > 0 && (
         <HeaderPortal>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {lastSyncedAt && (
-              <span className="text-xs text-slate-500">
+              <span className="whitespace-nowrap text-xs text-slate-500">
                 Синхронізовано: <SyncTimestamp iso={lastSyncedAt} />
               </span>
             )}

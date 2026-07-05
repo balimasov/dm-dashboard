@@ -20,8 +20,8 @@ export default function RootLayout({
     <html lang="uk" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-          <div className="mx-auto max-w-[1800px] px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 font-semibold text-slate-100">
+          <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+            <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
               <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
                 <circle cx="16" cy="16" r="16" fill="#dc2626" />
                 <text
@@ -38,7 +38,7 @@ export default function RootLayout({
               </svg>
               DM Dashboard
             </Link>
-            <div id="header-actions" className="flex items-center gap-2" />
+            <div id="header-actions" className="flex flex-wrap items-center justify-end gap-2" />
           </div>
         </header>
         <main className="flex-1">{children}</main>
