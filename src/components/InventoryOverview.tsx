@@ -244,7 +244,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
             <InfoTooltip panel={<CurrencyConversionPanel />}>Гроші</InfoTooltip>
           </h3>
           {rightCurrency.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-800">
+            <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
               <div className="flex flex-col gap-2 sm:pr-6">
                 {leftCurrency.map((c) => (
                   <CurrencyRow key={c.id} character={c} />
