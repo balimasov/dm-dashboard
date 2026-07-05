@@ -24,7 +24,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 
-const STAT_ORDER: Array<keyof Character["stats"]> = [
+export const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
   "dex",
   "con",
@@ -40,7 +40,7 @@ export function ordinalLevel(level: number): string {
   return `${level}th`;
 }
 
-function ShieldIcon({ className }: { className?: string }) {
+export function ShieldIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
       <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
@@ -48,7 +48,7 @@ function ShieldIcon({ className }: { className?: string }) {
   );
 }
 
-function SpeedIcon({ className }: { className?: string }) {
+export function SpeedIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
       <path d="M3 12h13M12 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -56,7 +56,7 @@ function SpeedIcon({ className }: { className?: string }) {
   );
 }
 
-function InitiativeIcon({ className }: { className?: string }) {
+export function InitiativeIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M13 2L4.5 14h5.5l-1.5 8L18 10h-5.5L13 2z" />
@@ -64,7 +64,7 @@ function InitiativeIcon({ className }: { className?: string }) {
   );
 }
 
-function ProficiencyIcon({ className }: { className?: string }) {
+export function ProficiencyIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 2z" />
@@ -72,7 +72,7 @@ function ProficiencyIcon({ className }: { className?: string }) {
   );
 }
 
-function ExhaustionIcon({ className }: { className?: string }) {
+export function ExhaustionIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
       <rect x="2" y="7" width="16" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -82,7 +82,7 @@ function ExhaustionIcon({ className }: { className?: string }) {
   );
 }
 
-function ConditionsIcon({ className }: { className?: string }) {
+export function ConditionsIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
       <circle cx="12" cy="12" r="9" />
@@ -108,7 +108,7 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
-function HpBar({
+export function HpBar({
   hp,
   maxHp,
   tempHp,
@@ -149,7 +149,7 @@ function HpBar({
   );
 }
 
-function ExhaustionPanel({ level }: { level: number }) {
+export function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);
   return (
     <div className="space-y-2">
@@ -163,7 +163,7 @@ function ExhaustionPanel({ level }: { level: number }) {
   );
 }
 
-function ConditionsPanel({ conditions }: { conditions: string[] }) {
+export function ConditionsPanel({ conditions }: { conditions: string[] }) {
   return (
     <div className="space-y-1.5">
       {conditions.map((condition) => {

@@ -1,21 +1,40 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
+  abilityModifier,
   Character,
   Feature,
   formatModifier,
   KnownSpell,
+  proficiencyBonus,
   RECOVERY_LABELS,
   RECOVERY_SHORT_LABELS,
   RecoveryType,
+  savingThrowBonus,
   SKILL_ABBR,
   SKILL_LABELS,
   SkillProficiency,
   skillBonus,
   SkillName,
 } from "@/lib/types";
-import { CharacterHeader, ordinalLevel, Pill, SkillPanel, StatBox } from "./CharacterCard";
+import {
+  CharacterHeader,
+  ConditionsIcon,
+  ConditionsPanel,
+  ExhaustionIcon,
+  ExhaustionPanel,
+  HpBar,
+  InitiativeIcon,
+  ordinalLevel,
+  Pill,
+  ProficiencyIcon,
+  ShieldIcon,
+  SkillPanel,
+  SpeedIcon,
+  STAT_ORDER,
+  StatBox,
+} from "./CharacterCard";
 import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
@@ -107,6 +126,8 @@ function FeaturePanel({ feature }: { feature: Feature }) {
   );
 }
 
+type DetailsTab = "features" | "spells";
+
 export function CharacterDetailsModal({ character, onClose }: { character: Character; onClose: () => void }) {
   const c = character;
 
@@ -130,6 +151,9 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
     };
   }, []);
 
+  const isDown = c.combat.hp <= 0;
+  const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
+
   const allSkills: SkillProficiency[] = (Object.keys(SKILL_LABELS) as SkillName[])
     .map((name) => c.skillProficiencies.find((s) => s.name === name) ?? { name, proficient: false, expertise: false })
     .sort((a, b) => SKILL_LABELS[a.name].localeCompare(SKILL_LABELS[b.name]));
@@ -147,62 +171,12 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
 
-  /** Body of one spell-level group, without the `break-inside-avoid-column`
-   * wrapper — the caller applies that so the very first group can be glued
-   * to the "Spells" heading above it instead (see below). */
-  function renderSpellLevelBody(level: number) {
-    const slot = c.spellSlots.find((s) => s.level === level);
-    return (
-      <>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
-          {slot &&
-            (slot.max > 0 && slot.max <= 6 ? (
-              <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
-            ) : (
-              <span className="text-sm font-medium text-slate-100">
-                {slot.current}/{slot.max}
-              </span>
-            ))}
-        </div>
-        <div className="mt-1 space-y-1">
-          {(spellsByLevel.get(level) ?? [])
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((spell) => (
-              <div key={spell.id} className="flex items-center gap-2 text-sm">
-                <span className="min-w-0 flex-1 text-slate-300">
-                  <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
-                </span>
-                {spell.components && <TypeTag>{spell.components}</TypeTag>}
-                {spell.max !== undefined && (
-                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
-                )}
-              </div>
-            ))}
-        </div>
-      </>
-    );
-  }
-
-  /** Body of one feature-category group, same pattern as renderSpellLevelBody. */
-  function renderFeatureGroupBody(category: Feature["category"], features: Feature[]) {
-    return (
-      <>
-        <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
-        {features.map((feature) => (
-          <div key={feature.id} className="flex items-center gap-2 text-sm">
-            <span className="min-w-0 flex-1 text-slate-300">
-              <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-            </span>
-            {feature.max !== undefined && (
-              <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
-            )}
-          </div>
-        ))}
-      </>
-    );
-  }
+  const tabs: Array<{ key: DetailsTab; label: string }> = [
+    ...(hasFeatures ? [{ key: "features" as const, label: "Features and Traits" }] : []),
+    ...(hasSpells ? [{ key: "spells" as const, label: "Spells" }] : []),
+  ];
+  const [activeTab, setActiveTab] = useState<DetailsTab | undefined>(tabs[0]?.key);
+  const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
 
   return (
     <div
@@ -218,7 +192,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
       onClick={onClose}
     >
       <div
-        className="my-4 flex w-full max-w-4xl flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
+        className="my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -254,6 +228,140 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           </div>
         )}
 
+        {/* Combat state — same block as the main card, so this modal is a superset of it rather than a different view. */}
+        <div className="border-t border-slate-800 pt-3">
+          <HpBar
+            hp={c.combat.hp}
+            maxHp={c.combat.maxHp}
+            tempHp={c.combat.tempHp}
+            isDown={isDown}
+            deathSaves={c.combat.deathSaves}
+          />
+          <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              AC {c.combat.ac}
+            </span>
+            <span className="flex items-center gap-1.5 pl-2">
+              <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              Speed {c.combat.speed}ft
+            </span>
+            <span className="flex items-center gap-1.5">
+              <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              Initiative {formatModifier(c.initiative)}
+            </span>
+            <span className="flex items-center gap-1.5 pl-2">
+              <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              <span className="min-w-0 flex-1">
+                <InfoTooltip
+                  panel={
+                    <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
+                  }
+                >
+                  Prof {formatModifier(proficiencyBonus(c.level))}
+                </InfoTooltip>
+              </span>
+            </span>
+          </div>
+          <div className="mt-1 space-y-1 text-sm text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <ExhaustionIcon
+                className={`h-3.5 w-3.5 shrink-0 ${c.combat.exhaustion > 0 ? "text-amber-500" : "text-slate-500"}`}
+              />
+              <span className={`min-w-0 flex-1 ${c.combat.exhaustion > 0 ? "text-amber-300" : ""}`}>
+                <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
+                  Exhaustion: {c.combat.exhaustion}
+                </InfoTooltip>
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ConditionsIcon
+                className={`h-3.5 w-3.5 shrink-0 ${c.combat.conditions.length > 0 ? "text-amber-500" : "text-slate-500"}`}
+              />
+              <span className={`min-w-0 flex-1 ${c.combat.conditions.length > 0 ? "text-amber-300" : ""}`}>
+                {c.combat.conditions.length > 0 ? (
+                  <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
+                    Conditions: {c.combat.conditions.join(", ")}
+                  </InfoTooltip>
+                ) : (
+                  <span className="block truncate">Conditions: none</span>
+                )}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Senses — same block as the main card. */}
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Senses</h3>
+          <div className="grid grid-cols-3 gap-1.5">
+            <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
+              {SKILL_ABBR.perception} {c.combat.passivePerception}
+            </Pill>
+            <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+              {SKILL_ABBR.investigation} {c.combat.passiveInvestigation}
+            </Pill>
+            <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+              {SKILL_ABBR.insight} {c.combat.passiveInsight}
+            </Pill>
+          </div>
+          {c.senses.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
+              {c.senses.map((s) => (
+                <span key={s.name}>
+                  <span className="text-slate-500">{s.name}:</span> {s.range} ft
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Stats — same block as the main card. */}
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Stats</h3>
+          <div className="grid grid-cols-6 gap-1.5">
+            {STAT_ORDER.map((key) => (
+              <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(c.stats[key]))} />
+            ))}
+          </div>
+        </div>
+
+        {/* Saving Throws — same block as the main card. */}
+        <div>
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Saving Throws</h3>
+          <div className="grid grid-cols-6 gap-1.5">
+            {STAT_ORDER.map((key) => (
+              <StatBox
+                key={key}
+                label={key.toUpperCase()}
+                value={formatModifier(savingThrowBonus(c, key))}
+                highlight={c.savingThrowProficiencies.includes(key)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
+        {hasDamageInfo && (
+          <div className="space-y-1 text-sm text-slate-300">
+            {c.resistances.length > 0 && (
+              <p>
+                <span className="text-slate-500">Resist:</span> {c.resistances.join(", ")}
+              </p>
+            )}
+            {c.immunities.length > 0 && (
+              <p>
+                <span className="text-slate-500">Immune:</span> {c.immunities.join(", ")}
+              </p>
+            )}
+            {c.vulnerabilities.length > 0 && (
+              <p>
+                <span className="text-slate-500">Vulnerable:</span> {c.vulnerabilities.join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
@@ -277,68 +385,57 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           </div>
         </div>
 
-        {/* Spells and Features and Traits share a CSS multi-column flow on wide
-            screens (instead of a rigid 50/50 grid split) so a short section
-            (e.g. a martial character with a couple of racial cantrips) doesn't
-            leave half the row empty while the other column keeps going —
-            content balances by actual height instead. Each sub-group below
-            gets `break-inside-avoid-column` so a spell level or feature
-            category never gets its header separated from its own entries. */}
-        {(hasSpells || hasFeatures) && (
-          <div className={hasSpells && hasFeatures ? "lg:columns-2 lg:gap-4" : ""}>
-            {hasSpells && (
-              <div className="border-t border-slate-800 pt-3">
-                <div className="space-y-3">
-                  {/* First block is glued to the heading in one break-inside-avoid
-                      unit — `break-after: avoid` on the heading alone isn't
-                      reliably honored by Chromium in *balanced* multi-column
-                      layout, so the heading could otherwise get stranded at
-                      the bottom of a column with its content pushed to the next. */}
-                  <div className="break-inside-avoid-column">
-                    <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
-                    {c.spellcasting ? (
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
-                        <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
-                        <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
-                      </div>
-                    ) : (
-                      renderSpellLevelBody(spellLevels[0])
-                    )}
-                  </div>
-                  {spellLevels.slice(c.spellcasting ? 0 : 1).map((level) => (
-                    <div key={level} className="break-inside-avoid-column">
-                      {renderSpellLevelBody(level)}
-                    </div>
-                  ))}
-                </div>
+        {/* Features and Traits / Spells — tabbed instead of side-by-side columns so
+            each reads as a single, comfortably narrow list. Only characters with
+            more than one populated tab get a tab switcher; a martial character
+            with no spells just sees Features and Traits directly, no empty Spells
+            tab to click into. More tabs (e.g. Inventory) can slot in here later. */}
+        {tabs.length > 0 && (
+          <div className="border-t border-slate-800 pt-3">
+            {tabs.length > 1 && (
+              <div className="mb-3 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex-1 rounded-md px-2 py-1 font-medium transition-colors ${
+                      currentTab === tab.key ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             )}
 
-            {hasFeatures && (
-              <div className={`border-t border-slate-800 pt-3 space-y-3 ${hasSpells ? "mt-4 lg:mt-0" : ""}`}>
-                {groupedVisibleFeatures.length > 0 ? (
-                  <>
-                    <div className="space-y-1 break-inside-avoid-column">
-                      <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
-                      {renderFeatureGroupBody(...groupedVisibleFeatures[0])}
-                    </div>
-                    {groupedVisibleFeatures.slice(1).map(([category, features]) => (
-                      <div key={category} className="space-y-1 break-inside-avoid-column">
-                        {renderFeatureGroupBody(category, features)}
-                      </div>
-                    ))}
-                  </>
-                ) : (
+            {currentTab === "features" && (
+              <div className="space-y-3">
+                {groupedVisibleFeatures.length === 0 && (
                   <h3 className="text-xs uppercase tracking-wide text-slate-500">Features and Traits</h3>
                 )}
+                {groupedVisibleFeatures.map(([category, features]) => (
+                  <div key={category} className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
+                    {features.map((feature) => (
+                      <div key={feature.id} className="flex items-center gap-2 text-sm">
+                        <span className="min-w-0 flex-1 text-slate-300">
+                          <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                        </span>
+                        {feature.max !== undefined && (
+                          <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
 
                 {/* Temporary review area: not a permanent UI, just surfacing the new filter heuristics
                     (ability-score bumps, subclass-choice announcements, rulebook boilerplate, Sense
                     duplicates) separately so they can be checked against real characters before those
                     heuristics start dropping entries outright. */}
                 {groupedReviewFeatures.length > 0 && (
-                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2 break-inside-avoid-column">
+                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2">
                     <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-600">
                       Filtered out for review (not shown on the main card)
                     </p>
@@ -359,10 +456,56 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                 )}
               </div>
             )}
+
+            {currentTab === "spells" && (
+              <div className="space-y-3">
+                {c.spellcasting && (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
+                    <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
+                    <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
+                  </div>
+                )}
+                {spellLevels.map((level) => {
+                  const slot = c.spellSlots.find((s) => s.level === level);
+                  return (
+                    <div key={level}>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
+                        {slot &&
+                          (slot.max > 0 && slot.max <= 6 ? (
+                            <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
+                          ) : (
+                            <span className="text-sm font-medium text-slate-100">
+                              {slot.current}/{slot.max}
+                            </span>
+                          ))}
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {(spellsByLevel.get(level) ?? [])
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((spell) => (
+                            <div key={spell.id} className="flex items-center gap-2 text-sm">
+                              <span className="min-w-0 flex-1 text-slate-300">
+                                <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                              </span>
+                              {spell.components && <TypeTag>{spell.components}</TypeTag>}
+                              {spell.max !== undefined && (
+                                <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {!hasSpells && !hasFeatures && (
+        {tabs.length === 0 && (
           <p className="border-t border-slate-800 pt-3 text-sm text-slate-500">
             No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
           </p>
