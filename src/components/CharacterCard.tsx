@@ -661,13 +661,6 @@ export function CharacterCard({
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
-          {c.spellcasting && (
-            <div className="mb-2 grid grid-cols-3 gap-1.5">
-              <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
-              <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
-              <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
-            </div>
-          )}
           <div className="space-y-1">
             {c.spellSlots
               .slice()
