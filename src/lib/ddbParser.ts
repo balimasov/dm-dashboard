@@ -443,10 +443,17 @@ function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): nu
 
   const armor = equippedArmor[0];
   const base = armor.definition?.armorClass ?? 10;
-  const type = armor.definition?.type;
+  // `definition.armorTypeId` (1 = Light, 2 = Medium, 3 = Heavy, 4 = Shield —
+  // the same field already used above to separate shields) is the reliable
+  // signal for the Dex cap. The human-readable `definition.type` string
+  // ("Heavy Armor") isn't always populated — confirmed on a real Paladin
+  // export where it was an empty string despite armorTypeId correctly being
+  // 3, which silently let the full Dex mod through on Heavy Armor and
+  // overcounted her AC by exactly that modifier.
+  const armorTypeId = armor.definition?.armorTypeId;
   let dexContribution = dexMod;
-  if (type === "Medium Armor") dexContribution = Math.min(dexMod, 2);
-  else if (type === "Heavy Armor") dexContribution = 0;
+  if (armorTypeId === 2) dexContribution = Math.min(dexMod, 2);
+  else if (armorTypeId === 3) dexContribution = 0;
 
   return base + dexContribution + shieldBonus + flatBonus + customBonus;
 }
