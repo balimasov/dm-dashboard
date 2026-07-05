@@ -60,10 +60,6 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
         </HeaderPortal>
       )}
 
-      <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
-        <InventoryOverview characters={characters} />
-      </CollapsibleSection>
-
       <CollapsibleSection
         title={`Персонажі (${characters.length})`}
         storageKey="dm-dashboard-characters-open"
@@ -101,6 +97,10 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
             ))}
           </div>
         )}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
+        <InventoryOverview characters={characters} />
       </CollapsibleSection>
     </div>
   );
