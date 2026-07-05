@@ -85,6 +85,18 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  // Without this, touch-scrolling the modal's backdrop on mobile also scrolls
+  // the dashboard page underneath it — the backdrop is `fixed`, but the body
+  // behind it is still a normal scrollable document as far as the browser's
+  // touch-scroll gesture is concerned.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const allSkills: SkillProficiency[] = (Object.keys(SKILL_LABELS) as SkillName[])
     .map((name) => c.skillProficiencies.find((s) => s.name === name) ?? { name, proficient: false, expertise: false })
     .sort((a, b) => SKILL_LABELS[a.name].localeCompare(SKILL_LABELS[b.name]));
