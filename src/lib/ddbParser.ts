@@ -838,7 +838,37 @@ function computeFeatures(
   const features: Feature[] = [];
   const seen = new Set<string>();
 
-  function add(name: string | undefined, rawDescription: string | undefined, source: string) {
+  // Lets an `options.*` entry (see below) report the *specific* feature that
+  // granted the choice — e.g. "Maneuvers" or "Metamagic Options" — instead of
+  // just the broad group it came from. Confirmed on real exports: an option's
+  // `componentId` matches the `definition.id` of its parent racial
+  // trait/class feature/feat (a Battle Master's chosen maneuvers all share
+  // `componentId` with the "Maneuvers" class feature; a Sorcerer's Metamagic
+  // choices share it with "Metamagic Options", a *different* class feature
+  // from the "Metamagic" one that's otherwise shown). Built from the raw,
+  // unfiltered definitions so a hidden/filtered parent still resolves.
+  const parentNameById = new Map<number, string>();
+  for (const trait of data.race?.racialTraits ?? []) {
+    const df = trait.definition;
+    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+  }
+  for (const cls of data.classes ?? []) {
+    for (const cf of cls.classFeatures ?? []) {
+      const df = cf.definition;
+      if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+    }
+  }
+  for (const feat of data.feats ?? []) {
+    const df = feat.definition;
+    if (df?.id != null && df?.name) parentNameById.set(df.id, df.name);
+  }
+
+  function add(
+    name: string | undefined,
+    rawDescription: string | undefined,
+    source: string,
+    category: Feature["category"]
+  ) {
     const key = normalizeFeatureName(name || "");
     if (!key || seen.has(key)) return;
     seen.add(key);
@@ -856,6 +886,7 @@ function computeFeatures(
       id: `feature-${features.length}`,
       name: name!.trim(),
       source,
+      category,
       ...(description ? { description } : {}),
       ...(filteredReason ? { filteredReason } : {}),
       ...(matchedResource
@@ -867,7 +898,7 @@ function computeFeatures(
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition ?? {};
     if (df.hideOnDetailsPage || df.hideInSheet) continue;
-    add(df.name, shortDescription(df.snippet, df.description), "Race");
+    add(df.name, shortDescription(df.snippet, df.description), "Race", "race");
   }
 
   for (const cls of data.classes ?? []) {
@@ -876,13 +907,13 @@ function computeFeatures(
       const df = cf.definition ?? {};
       if (df.hideInSheet) continue;
       if (df.requiredLevel != null && df.requiredLevel > (cls.level ?? 0)) continue;
-      add(df.name, shortDescription(df.snippet, df.description), source);
+      add(df.name, shortDescription(df.snippet, df.description), source, "class");
     }
   }
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    add(df.name, shortDescription(df.snippet, df.description), "Feat");
+    add(df.name, shortDescription(df.snippet, df.description), "Feat", "feat");
   }
 
   // The *specific* choices a player made for a feature that offers options —
@@ -897,16 +928,17 @@ function computeFeatures(
     ["class", "Class"],
     ["feat", "Feat"],
   ];
-  for (const [group, source] of optionGroups) {
+  for (const [group, fallbackSource] of optionGroups) {
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
-      add(df.name, shortDescription(df.snippet, df.description), source);
+      const source = parentNameById.get(opt.componentId) || fallbackSource;
+      add(df.name, shortDescription(df.snippet, df.description), source, group);
     }
   }
 
   const bg = data.background?.definition;
   if (bg?.featureName && bg?.featureDescription && !bg?.featureIsFeat) {
-    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background");
+    add(bg.featureName, shortDescription(undefined, bg.featureDescription), "Background", "background");
   }
 
   return features;

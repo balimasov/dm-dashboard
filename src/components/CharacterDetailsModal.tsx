@@ -48,6 +48,25 @@ function TypeTag({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
+const CATEGORY_DOT_COLOR: Record<Feature["category"], string> = {
+  race: "bg-sky-400",
+  class: "bg-violet-400",
+  feat: "bg-teal-400",
+  background: "bg-rose-400",
+};
+
+/**
+ * A Feature row's origin (Race/Class/Feat/Background — now often a much more
+ * specific label, like "Maneuvers", once resolved from its parent) no longer
+ * fits in the row itself now that the far right is reserved for the charge
+ * badge. A small color-coded dot before the name gives an at-a-glance
+ * category without competing for that space; the exact label is still one
+ * hover away via the tooltip.
+ */
+function CategoryDot({ category }: { category: Feature["category"] }) {
+  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${CATEGORY_DOT_COLOR[category]}`} />;
+}
+
 function SpellPanel({ spell }: { spell: KnownSpell }) {
   return (
     <div className="space-y-1">
@@ -254,6 +273,7 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
                 {visibleFeatures.map((feature) => (
                   <div key={feature.id} className="flex items-center gap-2 text-sm">
+                    <CategoryDot category={feature.category} />
                     <span className="min-w-0 flex-1 text-slate-300">
                       <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
                     </span>
@@ -274,7 +294,8 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                     </p>
                     <div className="space-y-1">
                       {reviewFeatures.map((feature) => (
-                        <div key={feature.id} className="flex items-center justify-between gap-3 text-xs text-slate-600">
+                        <div key={feature.id} className="flex items-center gap-2 text-xs text-slate-600">
+                          <CategoryDot category={feature.category} />
                           <span className="min-w-0 flex-1">
                             <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
                           </span>

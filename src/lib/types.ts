@@ -74,8 +74,14 @@ export interface KnownSpell {
 export interface Feature {
   id: string;
   name: string;
-  /** Where this feature comes from (e.g. "Race", "Class", "Subclass", "Feat"). */
+  /**
+   * Where this feature comes from — as specific as the data allows (e.g. the
+   * parent feature that granted a choice, like "Maneuvers" or "Metamagic
+   * Options", rather than just "Class"), shown in the hover hint.
+   */
   source: string;
+  /** Broad grouping behind `source`, only used to color-code the row (race/class/feat/background always map to the same few colors, unlike `source` which can be almost anything). */
+  category: "race" | "class" | "feat" | "background";
   description?: string;
   /**
    * Present when this feature is also tracked as a Resource elsewhere on the

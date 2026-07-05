@@ -64,10 +64,10 @@ export const demoCharacters: Character[] = [
     spellSlots: [],
     knownSpells: [],
     features: [
-      { id: "f1", name: "Fighting Style: Dueling", source: "Class", description: "+2 damage with a one-handed melee weapon and no other weapon in the other hand." },
-      { id: "f2", name: "Extra Attack", source: "Class", description: "Attack twice, instead of once, whenever you take the Attack action." },
-      { id: "f3", name: "Fey Ancestry", source: "Race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
-      { id: "f4", name: "Darkvision", source: "Race", description: "See in dim light within 120 feet as if bright light, and in darkness as if dim light." },
+      { id: "f1", name: "Fighting Style: Dueling", source: "Class", category: "class", description: "+2 damage with a one-handed melee weapon and no other weapon in the other hand." },
+      { id: "f2", name: "Extra Attack", source: "Class", category: "class", description: "Attack twice, instead of once, whenever you take the Attack action." },
+      { id: "f3", name: "Fey Ancestry", source: "Race", category: "race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
+      { id: "f4", name: "Darkvision", source: "Race", category: "race", description: "See in dim light within 120 feet as if bright light, and in darkness as if dim light." },
     ],
     savingThrowProficiencies: ["str", "con"],
     skillProficiencies: [
@@ -160,10 +160,10 @@ export const demoCharacters: Character[] = [
       { id: "s4", name: "Zone of Truth", level: 2, school: "Enchantment", source: "Class", description: "Creatures in the zone can't speak deliberate lies while inside." },
     ],
     features: [
-      { id: "f1", name: "Divine Smite", source: "Class", description: "Expend a spell slot to deal extra radiant damage on a melee weapon hit." },
-      { id: "f2", name: "Lay on Hands", source: "Class", description: "A pool of healing power you can draw from to restore HP or cure ailments." },
-      { id: "f3", name: "Radiant Strikes", source: "Subclass", description: "Your weapon attacks deal extra radiant damage." },
-      { id: "f4", name: "Fey Ancestry", source: "Race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
+      { id: "f1", name: "Divine Smite", source: "Class", category: "class", description: "Expend a spell slot to deal extra radiant damage on a melee weapon hit." },
+      { id: "f2", name: "Lay on Hands", source: "Class", category: "class", description: "A pool of healing power you can draw from to restore HP or cure ailments." },
+      { id: "f3", name: "Radiant Strikes", source: "Subclass", category: "class", description: "Your weapon attacks deal extra radiant damage." },
+      { id: "f4", name: "Fey Ancestry", source: "Race", category: "race", description: "Advantage on saving throws against being Charmed, and magic can't put you to sleep." },
     ],
     savingThrowProficiencies: ["wis", "cha"],
     skillProficiencies: [
