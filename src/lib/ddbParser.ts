@@ -983,6 +983,18 @@ function computeFeatures(
 ): Feature[] {
   const features: Feature[] = [];
   const seen = new Set<string>();
+  // Some abilities are described *twice* in D&D Beyond's data under genuinely
+  // different names — a weapon mastery property shows up once via
+  // `actions.*` as "Vex (Handaxe)" and again via `options.*` as "Handaxe
+  // (Vex)" (word order swapped), and a chosen Metamagic option similarly
+  // appears as both "Metamagic: Careful Spell" and bare "Careful Spell" —
+  // confirmed on real exports, always with byte-identical rules text. Name
+  // matching can't catch this (the strings genuinely differ), so the fully
+  // resolved description text is the de-dupe signal instead; whichever copy
+  // is processed first wins (actions are processed before classFeatures/
+  // racialTraits/feats/options below, so the properly action-grouped copy
+  // wins over the generic "other" one describing the same thing).
+  const seenDescriptions = new Set<string>();
 
   // Lets an `options.*` entry (see below) report the *specific* feature that
   // granted the choice — e.g. "Maneuvers" or "Metamagic Options" — instead of
@@ -1062,6 +1074,11 @@ function computeFeatures(
     const description = rawDescription
       ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
       : undefined;
+
+    if (description) {
+      if (seenDescriptions.has(description)) return;
+      seenDescriptions.add(description);
+    }
 
     features.push({
       id: `feature-${features.length}`,

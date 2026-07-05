@@ -448,30 +448,6 @@ export const demoCharacters: Character[] = [
       },
       {
         "id": "feature-29",
-        "name": "Handaxe (Vex)",
-        "source": "Weapon Mastery",
-        "group": "other",
-        "originType": "feat",
-        "description": "**Vex.** If you hit a creature with a Handaxe and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
-      },
-      {
-        "id": "feature-30",
-        "name": "Greataxe (Cleave)",
-        "source": "Weapon Mastery",
-        "group": "other",
-        "originType": "feat",
-        "description": "**Cleave.** Once per turn, if you hit a creature with a melee attack using a Greataxe, you can make another melee attack with it against a second creature within 5 ft. of the first that’s within your reach. On a hit, the second creature takes the Greataxe’s damage, but without your ability modifier (unless the modifier is negative)."
-      },
-      {
-        "id": "feature-31",
-        "name": "Pike (Push)",
-        "source": "4: Weapon Mastery",
-        "group": "other",
-        "originType": "feat",
-        "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
-      },
-      {
-        "id": "feature-32",
         "name": "Increase two scores (+2 / +1)",
         "source": "Soldier Ability Score Improvements",
         "group": "other",
@@ -1357,22 +1333,6 @@ export const demoCharacters: Character[] = [
         "group": "other",
         "originType": "feat",
         "description": "Increase one of these scores by 2 and a different score by 1."
-      },
-      {
-        "id": "feature-48",
-        "name": "Shortsword (Vex)",
-        "source": "Weapon Mastery",
-        "group": "other",
-        "originType": "feat",
-        "description": "**Vex.** If you hit a creature with a Shortsword and deal damage to it, you have Advantage on your next attack roll against that creature before the end of your next turn."
-      },
-      {
-        "id": "feature-49",
-        "name": "Scimitar (Nick)",
-        "source": "Weapon Mastery",
-        "group": "other",
-        "originType": "feat",
-        "description": "**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. This extra attack can only be made once per turn."
       }
     ],
     "notes": "An Oath of Glory paladin chasing legendary deeds — Inspiring Smite and Peerless Athlete reward big, showy moments. Scenes with an audience, a rival to outshine, or a feat of athletics/glory work well for her.",
@@ -2206,22 +2166,6 @@ export const demoCharacters: Character[] = [
       },
       {
         "id": "feature-39",
-        "name": "Careful Spell",
-        "source": "Metamagic Options",
-        "group": "other",
-        "originType": "class",
-        "description": "When you cast a spell that forces other creatures to make a saving throw, you can spend 1 Sorcery Point and choose up to 3 creatures to automatically succeed on its saving throw, and it takes no damage if it would normally take half damage on a success."
-      },
-      {
-        "id": "feature-40",
-        "name": "Seeking Spell",
-        "source": "Metamagic Options",
-        "group": "other",
-        "originType": "class",
-        "description": "If you make an attack roll for a spell and miss, you can spend 1 Sorcery Point to reroll the d20, and you must use the new roll. You can use Seeking Spell, even if you’ve already used a different Metamagic option."
-      },
-      {
-        "id": "feature-41",
         "name": "Increase two scores (+2 / +1)",
         "source": "Noble Ability Score Improvements",
         "group": "other",
