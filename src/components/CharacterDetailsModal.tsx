@@ -105,7 +105,13 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
             {allSkills.map((skill) => {
-              const color = skill.expertise ? "amber" : skill.proficient ? "sky" : "slate";
+              const color = skill.expertise
+                ? "amber"
+                : skill.proficient
+                  ? "sky"
+                  : skill.halfProficiency
+                    ? "cyan"
+                    : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
                   {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}

@@ -257,6 +257,13 @@ export interface SkillProficiency {
   /** False for an entry that exists only to carry an advantage/disadvantage note without real training. */
   proficient: boolean;
   expertise: boolean;
+  /**
+   * Half the proficiency bonus (rounded down), added on top of the ability
+   * modifier — e.g. a Bard's Jack of All Trades. Only meaningful when
+   * `proficient`/`expertise` are both false (those already grant the full or
+   * doubled bonus and take precedence).
+   */
+  halfProficiency?: boolean;
   /** Conditional advantage/disadvantage on this skill's checks (e.g. Dance Virtuoso's advantage on Performance while dancing). */
   advantage?: "advantage" | "disadvantage";
   /** The condition text, if any (e.g. "that involves you dancing"). */
@@ -344,9 +351,12 @@ export function savingThrowBonus(character: Character, ability: keyof AbilitySco
 /** Ability-mod + proficiency bonus (doubled for expertise) — plain ability mod if not actually proficient. */
 export function skillBonus(character: Character, skill: SkillProficiency): number {
   const mod = abilityModifier(character.stats[SKILL_ABILITY[skill.name]]);
-  if (!skill.proficient && !skill.expertise) return mod;
-  const multiplier = skill.expertise ? 2 : 1;
-  return mod + proficiencyBonus(character.level) * multiplier;
+  if (skill.proficient || skill.expertise) {
+    const multiplier = skill.expertise ? 2 : 1;
+    return mod + proficiencyBonus(character.level) * multiplier;
+  }
+  if (skill.halfProficiency) return mod + Math.floor(proficiencyBonus(character.level) / 2);
+  return mod;
 }
 
 /** e.g. "Orc · Barbarian/Path of the Berserker" (level shown separately) */

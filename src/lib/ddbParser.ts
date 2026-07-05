@@ -240,15 +240,33 @@ function computeCurrency(data: any): Currency {
   };
 }
 
+/**
+ * A Bard's Jack of All Trades (and similar features) grant half the
+ * proficiency bonus, rounded down, on ability checks that don't already
+ * include the full bonus — modeled by D&D Beyond as a `type:
+ * "half-proficiency"` modifier. Confirmed on a real Bard export: `subType:
+ * "ability-checks"` with no `entityId`, meaning it's not scoped to one skill
+ * but applies across the board — every skill this character isn't already
+ * proficient/expert in still gets the half bonus, so all of them start
+ * showing up here (previously only proficient/expertise/advantage skills
+ * were surfaced at all, silently dropping this bonus everywhere).
+ */
 function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolean): SkillProficiency[] {
+  const jackOfAllTrades = mods.some(
+    (m) => m.type === "half-proficiency" && m.subType === "ability-checks" && m.isGranted
+  );
   const skills: SkillProficiency[] = [];
   for (const name of Object.keys(SKILL_ABILITY) as SkillName[]) {
     const proficient = mods.some((m) => m.type === "proficiency" && m.subType === name);
     const expertise = mods.some((m) => m.type === "expertise" && m.subType === name);
+    const halfProficiency =
+      !proficient &&
+      !expertise &&
+      (jackOfAllTrades || mods.some((m) => m.type === "half-proficiency" && m.subType === name && m.isGranted));
     const advMod = mods.find((m) => m.type === "advantage" && m.subType === name && m.isGranted);
     const disadvMod = mods.find((m) => m.type === "disadvantage" && m.subType === name && m.isGranted);
     const fromArmor = name === "stealth" && armorStealthDisadvantage;
-    if (!proficient && !expertise && !advMod && !disadvMod && !fromArmor) continue;
+    if (!proficient && !expertise && !halfProficiency && !advMod && !disadvMod && !fromArmor) continue;
 
     let advantage: "advantage" | "disadvantage" | undefined;
     let advantageNote: string | undefined;
@@ -264,6 +282,7 @@ function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolea
       name,
       proficient,
       expertise,
+      ...(halfProficiency ? { halfProficiency: true } : {}),
       ...(advantage ? { advantage, ...(advantageNote ? { advantageNote } : {}) } : {}),
     });
   }
