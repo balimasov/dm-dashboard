@@ -6,6 +6,9 @@ import {
   Feature,
   formatModifier,
   KnownSpell,
+  RECOVERY_LABELS,
+  RECOVERY_SHORT_LABELS,
+  RecoveryType,
   SKILL_ABBR,
   SKILL_LABELS,
   SkillProficiency,
@@ -16,9 +19,28 @@ import { CharacterHeader, ordinalLevel, Pill, SkillPanel, StatBox } from "./Char
 import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
+import { SyncTimestamp } from "./SyncTimestamp";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
+}
+
+/** Same dot-meter + recovery abbreviation used for Resources/Spell Slots on the main card, reused here for any Feature or Spell that turns out to have its own charge pool. */
+function ChargeBadge({ current, max, recovery }: { current: number; max: number; recovery: RecoveryType }) {
+  return (
+    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+      {max > 0 && max <= 6 ? (
+        <DotMeter current={current} max={max} />
+      ) : (
+        <span className="text-sm font-medium text-slate-100">
+          {current}/{max}
+        </span>
+      )}
+      <span className="text-xs text-slate-500" title={RECOVERY_LABELS[recovery]}>
+        {RECOVERY_SHORT_LABELS[recovery]}
+      </span>
+    </span>
+  );
 }
 
 function SpellPanel({ spell }: { spell: KnownSpell }) {
@@ -76,6 +98,8 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
   const sortedFeatures = c.features.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const visibleFeatures = sortedFeatures.filter((f) => !f.filteredReason);
+  const reviewFeatures = sortedFeatures.filter((f) => f.filteredReason);
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = sortedFeatures.length > 0;
 
@@ -109,6 +133,25 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
             ✕
           </button>
         </div>
+
+        {/* Sync — same block as the main card's footer, so this modal doesn't hide whether the data on screen is fresh. */}
+        {!c.synced && c.dndBeyondUrl && (
+          <div className="rounded-md border border-amber-900 bg-amber-950/40 px-2 py-1 text-xs text-amber-300">
+            Not synced with D&D Beyond — fill in manually.
+          </div>
+        )}
+        {c.dndBeyondUrl && (
+          <div className="text-xs">
+            <a href={c.dndBeyondUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
+              D&D Beyond ↗
+            </a>
+            {c.lastSyncedAt && (
+              <span className="ml-2 text-slate-500">
+                Synced: <SyncTimestamp iso={c.lastSyncedAt} />
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
         <div className="border-t border-slate-800 pt-3">
@@ -171,6 +214,9 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                                 <span className="min-w-0 flex-1 text-slate-300">
                                   <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
                                 </span>
+                                {spell.max !== undefined && (
+                                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                                )}
                               </div>
                             ))}
                         </div>
@@ -184,14 +230,40 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
             {hasFeatures && (
               <div className="border-t border-slate-800 pt-3 space-y-1.5">
                 <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
-                {sortedFeatures.map((feature) => (
+                {visibleFeatures.map((feature) => (
                   <div key={feature.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 flex-1 text-slate-300">
                       <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
                     </span>
-                    <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
+                    {feature.max !== undefined ? (
+                      <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
+                    ) : (
+                      <span className="whitespace-nowrap text-xs text-slate-500">{feature.source}</span>
+                    )}
                   </div>
                 ))}
+
+                {/* Temporary review area: not a permanent UI, just surfacing the new filter heuristics
+                    (ability-score bumps, subclass-choice announcements, rulebook boilerplate, Sense
+                    duplicates) separately so they can be checked against real characters before those
+                    heuristics start dropping entries outright. */}
+                {reviewFeatures.length > 0 && (
+                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2">
+                    <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-600">
+                      Filtered out for review (not shown on the main card)
+                    </p>
+                    <div className="space-y-1">
+                      {reviewFeatures.map((feature) => (
+                        <div key={feature.id} className="flex items-center justify-between gap-3 text-xs text-slate-600">
+                          <span className="min-w-0 flex-1">
+                            <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+                          </span>
+                          <span className="whitespace-nowrap italic">{feature.filteredReason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

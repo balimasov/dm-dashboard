@@ -518,6 +518,15 @@ function cleanRulesText(html: string): string {
     .replace(/\[\/?(?:rules|skill|item|spell|condition)\]/gi, "")
     .replace(/<\/(?:p|div|li)>/gi, " ")
     .replace(/<br\s*\/?>/gi, " ")
+    // Nested <strong><em>Label.</em></strong> (a common "bold sub-heading"
+    // convention in these rules texts, confirmed on real Sorcerer/Barbarian/
+    // Bard/feat descriptions) has to collapse to a single bold marker before
+    // the two tags are converted independently below — otherwise **+* on one
+    // side and *+** on the other stack up into a stray `***Label.***`, which
+    // RichText's bold/italic parser can't split cleanly and leaves loose `*`
+    // characters in the rendered tooltip.
+    .replace(/<strong><em>([\s\S]*?)<\/em><\/strong>/gi, "**$1**")
+    .replace(/<em><strong>([\s\S]*?)<\/strong><\/em>/gi, "**$1**")
     .replace(/<(?:strong|b)>/gi, "**")
     .replace(/<\/(?:strong|b)>/gi, "**")
     .replace(/<(?:em|i)>/gi, "*")
@@ -535,12 +544,44 @@ function shortDescription(snippet?: string | null, description?: string | null):
   return cleaned || undefined;
 }
 
-/** Resolves the D&D Beyond snippet template placeholders we can fill in from data we have. */
-function resolveSnippetTemplate(text: string, maxUses: number, level: number, abilities: AbilityScores): string {
+/**
+ * Resolves the D&D Beyond snippet template placeholders we can fill in from
+ * data we have. Covers every simple, single-concept placeholder confirmed
+ * across real Resource/Feature/Spell descriptions (`classlevel`, ability
+ * `modifier`, `proficiency`, and the `savedc`/`spellattack` shorthands for
+ * "8 + prof + mod" / "prof + mod"), plus `scalevalue`/`limiteduse` when a
+ * charge count is available (only meaningful for a Resource, or a Feature/
+ * Spell that turned out to have its own charge pool).
+ *
+ * Deliberately does NOT attempt the compound arithmetic expressions that
+ * also show up in the wild (e.g. `{{(12+classlevel)/7#rounddown,min:2,
+ * unsigned}}`, or the genuinely idiosyncratic `{{4+(classlevel-13)@min:0,
+ * max:1*4}}`) — the syntax for those isn't fully reverse-engineered from the
+ * handful of real examples seen so far, and a wrong guess would print a
+ * confidently incorrect number, which is worse than the catch-all below
+ * silently dropping it.
+ */
+function resolveSnippetTemplate(
+  text: string,
+  level: number,
+  abilities: AbilityScores,
+  profBonus: number,
+  maxUses?: number
+): string {
   return text
-    .replace(/\{\{scalevalue\}\}/gi, String(maxUses))
-    .replace(/\{\{limiteduse\}\}/gi, String(maxUses))
+    .replace(/\{\{(?:scalevalue|limiteduse)\}\}/gi, () => (maxUses !== undefined ? String(maxUses) : ""))
     .replace(/\{\{classlevel\}\}/gi, String(level))
+    .replace(/\{\{proficiency(?:#(signed|unsigned))?\}\}/gi, (_match, sign) =>
+      sign === "signed" ? formatModifier(profBonus) : String(profBonus)
+    )
+    .replace(/\{\{savedc:(\w+)\}\}/gi, (_match, abilityKey) => {
+      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
+      return String(8 + profBonus + abilityModifier(abilities[ability] ?? 10));
+    })
+    .replace(/\{\{spellattack:(\w+)\}\}/gi, (_match, abilityKey) => {
+      const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
+      return String(profBonus + abilityModifier(abilities[ability] ?? 10));
+    })
     .replace(/\{\{modifier:(\w+)(?:@min:(-?\d+))?#(signed|unsigned)\}\}/gi, (_match, abilityKey, min, sign) => {
       const ability = String(abilityKey).toLowerCase() as keyof AbilityScores;
       let mod = abilityModifier(abilities[ability] ?? 10);
@@ -552,7 +593,23 @@ function resolveSnippetTemplate(text: string, maxUses: number, level: number, ab
     .trim();
 }
 
-function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number): Resource[] {
+/**
+ * Shared by Resources, Spells, and (via cross-reference) Features — anywhere
+ * D&D Beyond tracks a live charge pool via a `limitedUse` object (as opposed
+ * to the unrelated, non-live-tracked `limitedUse` scaling table that also
+ * appears directly on class-feature/racial-trait/feat *definitions*, which
+ * has a completely different shape and isn't usable for this). Confirmed the
+ * same rich shape (`maxUses`/`statModifierUsesId`/`useProficiencyBonus`/
+ * `resetType`/`numberUsed`) appears both on `data.actions.*` entries and on
+ * `data.spells.*` entries (an innate spell castable a few times/day without a
+ * slot), so one calculation covers both.
+ */
+function computeLimitedUseCharges(
+  lu: any,
+  abilities: AbilityScores,
+  profBonus: number
+): { current: number; max: number; recovery: RecoveryType } | null {
+  if (!lu || (!lu.maxUses && !lu.statModifierUsesId && !lu.useProficiencyBonus)) return null;
   const abilityById: Record<number, number> = {
     1: abilities.str,
     2: abilities.dex,
@@ -561,7 +618,23 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     5: abilities.wis,
     6: abilities.cha,
   };
+  let maxUses = lu.maxUses && lu.maxUses !== -1 ? lu.maxUses : 0;
+  if (lu.statModifierUsesId) {
+    const mod = abilityModifier(abilityById[lu.statModifierUsesId] ?? 10);
+    maxUses = lu.operator === 2 ? maxUses * mod : maxUses + mod;
+  }
+  if (lu.useProficiencyBonus) {
+    maxUses = lu.proficiencyBonusOperator === 2 ? maxUses * profBonus : maxUses + profBonus;
+  }
+  maxUses = Math.max(0, maxUses);
+  return {
+    current: Math.max(0, maxUses - (lu.numberUsed ?? 0)),
+    max: maxUses,
+    recovery: RESET_TYPE_MAP[lu.resetType] ?? "manual",
+  };
+}
 
+function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number): Resource[] {
   function fromLimitedUse(
     name: string,
     lu: any,
@@ -570,25 +643,17 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     rawDescription: string | undefined,
     source: string
   ): Resource | null {
-    if (!lu || (!lu.maxUses && !lu.statModifierUsesId && !lu.useProficiencyBonus)) return null;
-    let maxUses = lu.maxUses && lu.maxUses !== -1 ? lu.maxUses : 0;
-    if (lu.statModifierUsesId) {
-      const mod = abilityModifier(abilityById[lu.statModifierUsesId] ?? 10);
-      maxUses = lu.operator === 2 ? maxUses * mod : maxUses + mod;
-    }
-    if (lu.useProficiencyBonus) {
-      maxUses = lu.proficiencyBonusOperator === 2 ? maxUses * profBonus : maxUses + profBonus;
-    }
-    maxUses = Math.max(0, maxUses);
+    const charges = computeLimitedUseCharges(lu, abilities, profBonus);
+    if (!charges) return null;
     const description = rawDescription
-      ? resolveSnippetTemplate(rawDescription, maxUses, level, abilities)
+      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges.max)
       : undefined;
     return {
       id: `${keyPrefix}-${idx}`,
       name: name || "Resource",
-      current: Math.max(0, maxUses - (lu.numberUsed ?? 0)),
-      max: maxUses,
-      recovery: RESET_TYPE_MAP[lu.resetType] ?? "manual",
+      current: charges.current,
+      max: charges.max,
+      recovery: charges.recovery,
       source,
       ...(description ? { description } : {}),
     };
@@ -670,17 +735,94 @@ function dedupeResourcesByName(resources: Resource[]): Resource[] {
  * lower-level, now-superseded restatement (both copies share a name; only one
  * has `hideInSheet: false`). Class features are further filtered by
  * `requiredLevel` because D&D Beyond lists a class's *entire* feature table up
- * to level 20 regardless of the character's actual level.
+ * to level 20 regardless of the character's actual level. These are hard
+ * excludes (never returned at all) — D&D Beyond's own flags, not a heuristic,
+ * and not something worth a DM reviewing.
+ *
+ * Beyond that, real exports still surface plenty of entries that are
+ * technically "features" but aren't actionable abilities — organizational
+ * boilerplate (a class's "Core X Traits" grant-everything wrapper, a
+ * "{Class} Subclass"/"Martial Archetype" subclass-choice announcement,
+ * "Ability Score Improvement") or flat rulebook reference dumps
+ * ("Proficiencies", "Hit Points", "Languages") that `hideOnDetailsPage`
+ * doesn't reliably catch (confirmed inconsistent between two real exports —
+ * one Race correctly hides "Creature Type"/"Size"/"Speed", another leaves
+ * them all visible). Unlike the hard excludes above, these are *heuristics*
+ * being validated against real characters, so instead of dropping them they
+ * get tagged with `filteredReason` and stay in the returned array — the UI
+ * decides whether to show them in a separate review area.
  */
-function computeFeatures(data: any): Feature[] {
+const LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES = new Set([
+  "martial archetype",
+  "divine domain",
+  "sacred oath",
+  "otherworldly patron",
+  "primal path",
+  "roguish archetype",
+  "monastic tradition",
+  "arcane tradition",
+  "divine order",
+]);
+
+const BOILERPLATE_FEATURE_NAMES = new Set([
+  "proficiencies",
+  "hit points",
+  "languages",
+  "creature type",
+  "size",
+  "speed",
+]);
+
+/** Strips a trailing parenthetical (e.g. "Rage (Enter)" -> "rage") so a Feature can be matched against the same ability tracked elsewhere under a plainer name. */
+function normalizeFeatureName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, "");
+}
+
+function classifyFeatureFilter(name: string): Feature["filteredReason"] {
+  const n = normalizeFeatureName(name);
+  if (/ability score (improvement|increase)s?\b/.test(n)) return "ability-score";
+  if (/subclass$/.test(n) || LEGACY_SUBCLASS_ANNOUNCEMENT_NAMES.has(n)) return "subclass-announcement";
+  if (/^core .+ traits$/.test(n)) return "core-traits";
+  if (BOILERPLATE_FEATURE_NAMES.has(n)) return "boilerplate";
+  return undefined;
+}
+
+function computeFeatures(
+  data: any,
+  resources: Resource[],
+  senses: Sense[],
+  abilities: AbilityScores,
+  profBonus: number,
+  level: number
+): Feature[] {
   const features: Feature[] = [];
   const seen = new Set<string>();
 
-  function add(name: string | undefined, description: string | undefined, source: string) {
-    const key = (name || "").trim().toLowerCase();
+  function add(name: string | undefined, rawDescription: string | undefined, source: string) {
+    const key = normalizeFeatureName(name || "");
     if (!key || seen.has(key)) return;
     seen.add(key);
-    features.push({ id: `feature-${features.length}`, name: name!.trim(), source, ...(description ? { description } : {}) });
+
+    const isDuplicateSense = senses.some((s) => normalizeFeatureName(s.name) === key);
+    const filteredReason = isDuplicateSense ? "duplicate-of-sense" : classifyFeatureFilter(name!);
+    const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === key);
+    const description = rawDescription
+      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, matchedResource?.max)
+      : undefined;
+
+    features.push({
+      id: `feature-${features.length}`,
+      name: name!.trim(),
+      source,
+      ...(description ? { description } : {}),
+      ...(filteredReason ? { filteredReason } : {}),
+      ...(matchedResource
+        ? { current: matchedResource.current, max: matchedResource.max, recovery: matchedResource.recovery }
+        : {}),
+    });
   }
 
   for (const trait of data.race?.racialTraits ?? []) {
@@ -701,7 +843,6 @@ function computeFeatures(data: any): Feature[] {
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    if (/ability score improvement/i.test(df.name ?? "")) continue;
     add(df.name, shortDescription(df.snippet, df.description), "Feat");
   }
 
@@ -724,25 +865,41 @@ function computeFeatures(data: any): Feature[] {
  * is uniformly false even for genuinely-granted spells, so presence there is
  * itself taken as the inclusion signal; the same group can also list the same
  * spell twice differing only in `limitedUse` (an at-will/charges casting mode
- * vs. a spell-slot mode), so results are deduped by name across all sources.
+ * vs. a spell-slot mode) — confirmed on a real export the entry actually
+ * carrying charge data can appear in either array position, so a later
+ * duplicate that has `limitedUse` upgrades an earlier duplicate that lacked
+ * it, rather than always keeping whichever copy came first.
  */
-function computeSpells(data: any): KnownSpell[] {
+function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number): KnownSpell[] {
   const spells: KnownSpell[] = [];
-  const seen = new Set<string>();
+  const byName = new Map<string, KnownSpell>();
 
   function add(entry: any, source: string) {
     const df = entry?.definition;
     const key = (df?.name || "").trim().toLowerCase();
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-    spells.push({
+    if (!key) return;
+    const charges = computeLimitedUseCharges(entry?.limitedUse, abilities, profBonus);
+
+    const existing = byName.get(key);
+    if (existing) {
+      if (charges && existing.max === undefined) Object.assign(existing, charges);
+      return;
+    }
+
+    const rawDescription = shortDescription(df.snippet, df.description);
+    const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
       level: df.level ?? 0,
       school: df.school || undefined,
-      description: shortDescription(df.snippet, df.description),
+      description: rawDescription
+        ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max)
+        : undefined,
       source,
-    });
+      ...(charges ? charges : {}),
+    };
+    byName.set(key, spell);
+    spells.push(spell);
   }
 
   for (const group of data.classSpells ?? []) {
@@ -855,6 +1012,8 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const profBonus = proficiencyBonus(level);
   const { hp, maxHp, tempHp, maxHpLocked } = computeHp(data, mods, conMod, level, existing);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
+  const resources = computeResources(data, abilities, profBonus, level);
+  const senses = computeSenses(mods);
 
   return {
     ...existing,
@@ -887,16 +1046,16 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
           : undefined,
     },
     stats: abilities,
-    resources: computeResources(data, abilities, profBonus, level),
+    resources,
     spellSlots: computeSpellSlots(data),
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
-    knownSpells: computeSpells(data),
-    features: computeFeatures(data),
+    knownSpells: computeSpells(data, abilities, profBonus, level),
+    features: computeFeatures(data, resources, senses, abilities, profBonus, level),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
     ...computeDamageModifiers(mods),
     advantages: computeAdvantages(mods),
-    senses: computeSenses(mods),
+    senses,
     inventory: computeInventory(data),
     currency: computeCurrency(data),
     synced: true,

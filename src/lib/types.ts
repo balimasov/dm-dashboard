@@ -57,6 +57,14 @@ export interface KnownSpell {
   description?: string;
   /** Where this spell comes from (e.g. "Class", "Race", "Item"). */
   source: string;
+  /**
+   * Present only for spells with their own limited-use charge pool (e.g. an
+   * innate racial spell castable once per long rest without a spell slot) —
+   * absent for spells cast normally through spell slots.
+   */
+  current?: number;
+  max?: number;
+  recovery?: RecoveryType;
 }
 
 export interface Feature {
@@ -65,6 +73,24 @@ export interface Feature {
   /** Where this feature comes from (e.g. "Race", "Class", "Subclass", "Feat"). */
   source: string;
   description?: string;
+  /**
+   * Present when this feature is also tracked as a Resource elsewhere on the
+   * character (e.g. "Second Wind") — lets the Features list show the same
+   * charge dots/recovery label inline instead of the character needing to
+   * cross-reference the Resources section for the same ability.
+   */
+  current?: number;
+  max?: number;
+  recovery?: RecoveryType;
+  /**
+   * Set when this entry matches one of the "not really an actionable
+   * ability" heuristics (ability score bumps, subclass-choice announcements,
+   * generic rulebook boilerplate, or a plain duplicate of a Sense already
+   * shown elsewhere) — still returned (never dropped) so the UI can display
+   * it in a separate, clearly-marked review area instead of silently hiding
+   * it, until the heuristics are confirmed against enough real characters.
+   */
+  filteredReason?: "ability-score" | "subclass-announcement" | "core-traits" | "boilerplate" | "duplicate-of-sense";
 }
 
 export interface SpellcastingStats {
