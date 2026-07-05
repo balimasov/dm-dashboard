@@ -5,7 +5,7 @@ import packageJson from "../../package.json";
 import { FeedbackFab } from "@/components/FeedbackFab";
 
 export const metadata: Metadata = {
-  title: "DM Character Dashboard",
+  title: "DM Dashboard",
   description: "Компактний дашборд персонажів партії для Данжеон Майстра",
 };
 
@@ -21,15 +21,29 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
           <div className="mx-auto max-w-[1800px] px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="font-semibold text-slate-100">
-              DM Character Dashboard
+            <Link href="/" className="flex items-center gap-2 font-semibold text-slate-100">
+              <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
+                <circle cx="16" cy="16" r="16" fill="#dc2626" />
+                <text
+                  x="16"
+                  y="23"
+                  fontFamily="Georgia, 'Times New Roman', serif"
+                  fontSize="20"
+                  fontWeight="700"
+                  fill="white"
+                  textAnchor="middle"
+                >
+                  &amp;
+                </text>
+              </svg>
+              DM Dashboard
             </Link>
             <div id="header-actions" className="flex items-center gap-2" />
           </div>
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
-          DM Character Dashboard · v{APP_VERSION}
+          DM Dashboard · v{APP_VERSION}
         </footer>
         <FeedbackFab />
       </body>
