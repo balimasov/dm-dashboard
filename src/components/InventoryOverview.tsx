@@ -185,7 +185,7 @@ function CoinChip({ code, value, chipClass }: { code: string; value: number | st
 function CurrencyRow({ character }: { character: Character }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-medium text-slate-100">{character.name}</span>
+      <span className="text-sm font-medium text-slate-300">{character.name}</span>
       <div className="flex flex-wrap gap-1.5">
         {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
           <CoinChip key={k} code={k.toUpperCase()} value={character.currency[k]} chipClass={COIN_CHIP_CLASS[k]} />
