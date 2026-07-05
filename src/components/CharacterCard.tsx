@@ -64,6 +64,26 @@ function ProficiencyIcon({ className }: { className?: string }) {
   );
 }
 
+function ExhaustionIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <rect x="2" y="7" width="16" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 10.5v3" strokeLinecap="round" />
+      <path d="M6 12h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ConditionsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v5" strokeLinecap="round" />
+      <circle cx="12" cy="16.2" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 function HpBar({
   hp,
   maxHp,
@@ -255,16 +275,26 @@ export function CharacterCard({
           </span>
         </div>
         <div className="space-y-1 text-sm text-slate-300">
-          <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
-            Exhaustion: {c.combat.exhaustion}
-          </InfoTooltip>
-          {c.combat.conditions.length > 0 ? (
-            <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
-              Conditions: {c.combat.conditions.join(", ")}
-            </InfoTooltip>
-          ) : (
-            <span className="block truncate">Conditions: none</span>
-          )}
+          <span className="flex items-center gap-1.5">
+            <ExhaustionIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="min-w-0 flex-1">
+              <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
+                Exhaustion: {c.combat.exhaustion}
+              </InfoTooltip>
+            </span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ConditionsIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="min-w-0 flex-1">
+              {c.combat.conditions.length > 0 ? (
+                <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
+                  Conditions: {c.combat.conditions.join(", ")}
+                </InfoTooltip>
+              ) : (
+                <span className="block truncate">Conditions: none</span>
+              )}
+            </span>
+          </span>
         </div>
       </div>
 
