@@ -110,10 +110,10 @@ function HpBar({
             Death Saves: ✅ {deathSaves.successes}/3 · ❌ {deathSaves.failures}/3
           </span>
         ) : (
-          <span className="font-medium text-slate-100">
+          <span className="text-sm font-medium text-slate-100">
             <span className="text-2xl font-bold">{hp}</span>
             <span className="text-slate-500"> / {maxHp}</span>
-            {tempHp > 0 && <span className="text-sm text-sky-400"> (+{tempHp} temp)</span>}
+            {tempHp > 0 && <span className="text-sky-400"> (+{tempHp} temp)</span>}
           </span>
         )}
       </div>
@@ -132,7 +132,7 @@ function ExhaustionPanel({ level }: { level: number }) {
       <p>{EXHAUSTION_RULES_TEXT}</p>
       {effect && (
         <p className="border-t border-slate-700 pt-2 font-semibold text-amber-300">
-          Зараз (рівень {level}): −{effect.d20Penalty} до d20-перевірок, швидкість −{effect.speedPenalty} фт.
+          Right now (level {level}): −{effect.d20Penalty} to d20 rolls, speed −{effect.speedPenalty} ft.
         </p>
       )}
     </div>
@@ -171,17 +171,24 @@ function StatBox({
       }`}
     >
       <span className={`text-sm font-bold ${highlight ? "text-sky-300" : "text-slate-100"}`}>{value}</span>
-      <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
     </div>
   );
 }
 
+/**
+ * `panel` (not a native `title`) so every hoverable hint in the card shares
+ * the same styled InfoTooltip affordance — the box itself can't carry
+ * `truncate` (InfoTooltip's own inner span already does, and nesting it
+ * under another truncating ancestor is the clipping bug this codebase hit
+ * more than once), so truncation only applies in the no-panel fallback.
+ */
 function Pill({
-  title,
+  panel,
   color = "slate",
   children,
 }: {
-  title?: string;
+  panel?: React.ReactNode;
   color?: "slate" | "sky" | "amber";
   children: React.ReactNode;
 }) {
@@ -191,12 +198,13 @@ function Pill({
       : color === "sky"
         ? "border-sky-700 bg-sky-950/40 text-sky-300"
         : "border-slate-800 bg-slate-800/40 text-slate-200";
+  const boxCls = `rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`;
+  if (!panel) {
+    return <span className={`block truncate ${boxCls}`}>{children}</span>;
+  }
   return (
-    <span
-      title={title}
-      className={`block truncate rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`}
-    >
-      {children}
+    <span className={`block ${boxCls}`}>
+      <InfoTooltip panel={panel}>{children}</InfoTooltip>
     </span>
   );
 }
@@ -243,7 +251,7 @@ export function CharacterCard({
 
       {!c.synced && c.dndBeyondUrl && (
         <div className="rounded-md bg-amber-950/40 border border-amber-900 px-2 py-1 text-xs text-amber-300">
-          Не синхронізовано з D&D Beyond — заповніть дані вручну.
+          Not synced with D&D Beyond — fill in manually.
         </div>
       )}
 
@@ -256,7 +264,7 @@ export function CharacterCard({
           isDown={isDown}
           deathSaves={c.combat.deathSaves}
         />
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
+        <div className="grid grid-cols-2 gap-1.5 text-sm text-slate-300">
           <span className="flex items-center gap-1.5">
             <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             AC {c.combat.ac}
@@ -269,9 +277,17 @@ export function CharacterCard({
             <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             Initiative {formatModifier(c.initiative)}
           </span>
-          <span className="flex items-center gap-1.5" title="Proficiency Bonus">
+          <span className="flex items-center gap-1.5">
             <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            Prof {formatModifier(proficiencyBonus(c.level))}
+            <span className="min-w-0 flex-1">
+              <InfoTooltip
+                panel={
+                  <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
+                }
+              >
+                Prof {formatModifier(proficiencyBonus(c.level))}
+              </InfoTooltip>
+            </span>
           </span>
         </div>
         <div className="space-y-1 text-sm text-slate-300">
@@ -300,11 +316,17 @@ export function CharacterCard({
 
       {/* Senses */}
       <div className="border-t border-slate-800 pt-3 space-y-1.5">
-        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Senses</h3>
+        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Senses</h3>
         <div className="grid grid-cols-3 gap-1.5">
-          <Pill title="Passive Perception">{SKILL_ABBR.perception} {c.combat.passivePerception}</Pill>
-          <Pill title="Passive Investigation">{SKILL_ABBR.investigation} {c.combat.passiveInvestigation}</Pill>
-          <Pill title="Passive Insight">{SKILL_ABBR.insight} {c.combat.passiveInsight}</Pill>
+          <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
+            {SKILL_ABBR.perception} {c.combat.passivePerception}
+          </Pill>
+          <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+            {SKILL_ABBR.investigation} {c.combat.passiveInvestigation}
+          </Pill>
+          <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+            {SKILL_ABBR.insight} {c.combat.passiveInsight}
+          </Pill>
         </div>
         {c.senses.length > 0 && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
@@ -328,7 +350,7 @@ export function CharacterCard({
       </div>
 
       {/* Saving throws */}
-      <div>
+      <div className="border-t border-slate-800 pt-3">
         <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Saving Throws</h3>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
@@ -344,7 +366,7 @@ export function CharacterCard({
 
       {/* Resistances / Immunities / Vulnerabilities */}
       {hasDamageInfo && (
-        <div className="space-y-1 text-xs text-slate-300">
+        <div className="border-t border-slate-800 pt-3 space-y-1 text-xs text-slate-300">
           {c.resistances.length > 0 && (
             <p>
               <span className="text-slate-500">Resist:</span> {c.resistances.join(", ")}
@@ -375,7 +397,7 @@ export function CharacterCard({
                 .join(" — ");
               const color = skill.expertise ? "amber" : skill.proficient ? "sky" : "slate";
               return (
-                <Pill key={skill.name} title={title} color={color}>
+                <Pill key={skill.name} panel={<p>{title}</p>} color={color}>
                   {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
                   {skill.advantage === "advantage" && <span className="ml-0.5 text-emerald-400">▲</span>}
                   {skill.advantage === "disadvantage" && <span className="ml-0.5 text-red-400">▼</span>}
@@ -389,9 +411,7 @@ export function CharacterCard({
       {/* Resources */}
       {c.resources.length > 0 && (
         <div className="border-t border-slate-800 pt-3 space-y-1.5">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-            Resources
-          </h3>
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Resources</h3>
           {c.resources.map((r) => (
             <ResourceMeter key={r.id} resource={r} />
           ))}
@@ -401,9 +421,7 @@ export function CharacterCard({
       {/* Spell slots */}
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-            Spells
-          </h3>
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
           {c.spellcasting && (
             <div className="mb-2 grid grid-cols-3 gap-1.5">
               <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
@@ -434,7 +452,7 @@ export function CharacterCard({
       {/* Notes */}
       {c.notes && (
         <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Notes</h3>
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Notes</h3>
           <p className="text-sm text-slate-400 leading-snug">{c.notes}</p>
         </div>
       )}
@@ -451,8 +469,8 @@ export function CharacterCard({
               D&D Beyond ↗
             </a>
             {c.lastSyncedAt && (
-              <p className="text-slate-600">
-                Синхронізовано: <SyncTimestamp iso={c.lastSyncedAt} />
+              <p className="text-slate-500">
+                Synced: <SyncTimestamp iso={c.lastSyncedAt} />
               </p>
             )}
           </div>

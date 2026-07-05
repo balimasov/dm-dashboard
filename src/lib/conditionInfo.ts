@@ -4,21 +4,21 @@
  * meant as an in-session memory jog, not a rules-lawyering reference.
  */
 export const CONDITION_INFO: Record<string, string> = {
-  blinded: "Не бачить, автоматично провалює перевірки, що потребують зору. Атаки по ньому — з перевагою, його атаки — з незручністю.",
-  charmed: "Не може атакувати чарівника чи цілити його шкідливими ефектами. Чарівник має перевагу на соціальні перевірки проти нього.",
-  deafened: "Не чує, автоматично провалює перевірки, що потребують слуху.",
-  frightened: "Незручність на перевірки характеристик і кидки атаки, поки джерело страху в полі зору. Не може добровільно наближатись до нього.",
-  grappled: "Швидкість стає 0 і не може збільшуватись. Незручність на атаки по цілях, окрім того, хто схопив.",
-  incapacitated: "Не може вчиняти дії, бонусні дії чи реакції. Концентрація переривається. Не може говорити.",
-  invisible: "Його не видно без спецчуття. Атаки по ньому — з незручністю, його власні атаки — з перевагою.",
-  paralyzed: "Недієздатний, не рухається й не говорить. Автоматично провалює спасброски Сили й Спритності. Атаки по ньому — з перевагою; попадання впритул — критичні.",
-  petrified: "Перетворений на камінь, недієздатний, не усвідомлює оточення. Опір усій шкоді, імунітет до отрути й хвороб.",
-  poisoned: "Незручність на кидки атаки й перевірки характеристик.",
-  prone: "Незручність на власні кидки атаки. Атаки впритул по ньому — з перевагою, дальні — з незручністю. Встати коштує половину швидкості.",
-  restrained: "Швидкість стає 0. Атаки по ньому — з перевагою, його атаки — з незручністю. Незручність на спасброски Спритності.",
-  stunned: "Недієздатний, не рухається, говорить лише уривками. Автоматично провалює спасброски Сили й Спритності. Атаки по ньому — з перевагою.",
-  unconscious: "Недієздатний, не рухається й не говорить, не усвідомлює оточення. Падає, випускає предмети. Провалює спасброски Сили й Спритності. Атаки по ньому — з перевагою; попадання впритул — критичні.",
-  diseased: "Загальний термін — конкретні симптоми залежать від хвороби.",
+  blinded: "Can't see, automatically fails checks that require sight. Attacks against it have advantage, its own attacks have disadvantage.",
+  charmed: "Can't attack the charmer or target it with harmful effects. The charmer has advantage on social checks against it.",
+  deafened: "Can't hear, automatically fails checks that require hearing.",
+  frightened: "Disadvantage on ability checks and attack rolls while the source of fear is in sight. Can't willingly move closer to it.",
+  grappled: "Speed becomes 0 and can't increase. Disadvantage on attacks against anyone but the grappler.",
+  incapacitated: "Can't take actions, bonus actions, or reactions. Concentration breaks. Can't speak.",
+  invisible: "Can't be seen without special senses. Attacks against it have disadvantage, its own attacks have advantage.",
+  paralyzed: "Incapacitated, can't move or speak. Automatically fails Strength and Dexterity saves. Attacks against it have advantage; hits from within 5 ft are critical.",
+  petrified: "Turned to stone, incapacitated, unaware of surroundings. Resistant to all damage, immune to poison and disease.",
+  poisoned: "Disadvantage on attack rolls and ability checks.",
+  prone: "Disadvantage on its own attack rolls. Melee attacks against it have advantage, ranged attacks have disadvantage. Standing up costs half its speed.",
+  restrained: "Speed becomes 0. Attacks against it have advantage, its own attacks have disadvantage. Disadvantage on Dexterity saves.",
+  stunned: "Incapacitated, can't move, speaks only falteringly. Automatically fails Strength and Dexterity saves. Attacks against it have advantage.",
+  unconscious: "Incapacitated, can't move or speak, unaware of surroundings. Drops what it's holding, falls prone. Fails Strength and Dexterity saves. Attacks against it have advantage; hits from within 5 ft are critical.",
+  diseased: "Generic term — actual symptoms depend on the specific disease.",
 };
 
 export function getConditionInfo(name: string): string | undefined {
@@ -27,9 +27,9 @@ export function getConditionInfo(name: string): string | undefined {
 
 /** Exhaustion is cumulative (1-6): -2×level to every d20 Test, speed -5ft×level, level 6 = death. */
 export const EXHAUSTION_RULES_TEXT =
-  "Виснаження сумарне (1-6 рівнів). Кожен рівень: −2×рівень до всіх перевірок на d20 " +
-  "(характеристики, атаки, спасброски), швидкість −5 фт×рівень. Рівень 6 = смерть. " +
-  "Тривалий відпочинок знімає 1 рівень.";
+  "Exhaustion is cumulative (1-6 levels). Each level: −2×level to every d20 roll " +
+  "(ability checks, attacks, saves), speed −5 ft×level. Level 6 = death. " +
+  "A long rest removes 1 level.";
 
 export function getExhaustionEffect(level: number): { d20Penalty: number; speedPenalty: number } | null {
   if (level <= 0) return null;

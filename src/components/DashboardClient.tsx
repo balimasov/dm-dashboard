@@ -112,6 +112,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
       </CollapsibleSection>
 
       <CollapsibleSection title="Інвентар" storageKey="dm-dashboard-inventory-open">
+        <p className="mb-4 text-sm text-slate-500">Речі та гроші всіх персонажів партії.</p>
         <InventoryOverview characters={characters} />
       </CollapsibleSection>
     </div>
