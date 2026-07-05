@@ -257,7 +257,6 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
                     <span className="min-w-0 flex-1 text-slate-300">
                       <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
                     </span>
-                    <TypeTag>{feature.source}</TypeTag>
                     {feature.max !== undefined && (
                       <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
                     )}
