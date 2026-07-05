@@ -315,7 +315,7 @@ export function CharacterCard({
       </div>
 
       {/* Senses */}
-      <div className="border-t border-slate-800 pt-3 space-y-1.5">
+      <div className="border-t border-slate-800 pt-3">
         <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Senses</h3>
         <div className="grid grid-cols-3 gap-1.5">
           <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
@@ -329,7 +329,7 @@ export function CharacterCard({
           </Pill>
         </div>
         {c.senses.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
             {c.senses.map((s) => (
               <span key={s.name}>
                 <span className="text-slate-500">{s.name}:</span> {s.range} ft
@@ -425,7 +425,7 @@ export function CharacterCard({
           {c.spellcasting && (
             <div className="mb-2 grid grid-cols-3 gap-1.5">
               <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
-              <StatBox label="Spell Attack" value={formatModifier(c.spellcasting.attack)} />
+              <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
               <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
             </div>
           )}
