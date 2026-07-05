@@ -147,6 +147,63 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
 
+  /** Body of one spell-level group, without the `break-inside-avoid-column`
+   * wrapper — the caller applies that so the very first group can be glued
+   * to the "Spells" heading above it instead (see below). */
+  function renderSpellLevelBody(level: number) {
+    const slot = c.spellSlots.find((s) => s.level === level);
+    return (
+      <>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
+          {slot &&
+            (slot.max > 0 && slot.max <= 6 ? (
+              <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
+            ) : (
+              <span className="text-sm font-medium text-slate-100">
+                {slot.current}/{slot.max}
+              </span>
+            ))}
+        </div>
+        <div className="mt-1 space-y-1">
+          {(spellsByLevel.get(level) ?? [])
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((spell) => (
+              <div key={spell.id} className="flex items-center gap-2 text-sm">
+                <span className="min-w-0 flex-1 text-slate-300">
+                  <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                </span>
+                {spell.components && <TypeTag>{spell.components}</TypeTag>}
+                {spell.max !== undefined && (
+                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                )}
+              </div>
+            ))}
+        </div>
+      </>
+    );
+  }
+
+  /** Body of one feature-category group, same pattern as renderSpellLevelBody. */
+  function renderFeatureGroupBody(category: Feature["category"], features: Feature[]) {
+    return (
+      <>
+        <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
+        {features.map((feature) => (
+          <div key={feature.id} className="flex items-center gap-2 text-sm">
+            <span className="min-w-0 flex-1 text-slate-300">
+              <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+            </span>
+            {feature.max !== undefined && (
+              <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
+            )}
+          </div>
+        ))}
+      </>
+    );
+  }
+
   return (
     <div
       // Deliberately not `items-center`: a flex container that centers an
@@ -220,83 +277,68 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
           </div>
         </div>
 
-        {/* Spells and Features and Traits run side by side on wide screens (each can get long on its own) instead of always stacking, which was pushing the modal well past the viewport height. */}
+        {/* Spells and Features and Traits share a CSS multi-column flow on wide
+            screens (instead of a rigid 50/50 grid split) so a short section
+            (e.g. a martial character with a couple of racial cantrips) doesn't
+            leave half the row empty while the other column keeps going —
+            content balances by actual height instead. Each sub-group below
+            gets `break-inside-avoid-column` so a spell level or feature
+            category never gets its header separated from its own entries. */}
         {(hasSpells || hasFeatures) && (
-          <div className={`grid grid-cols-1 gap-4 ${hasSpells && hasFeatures ? "lg:grid-cols-2" : ""}`}>
+          <div className={hasSpells && hasFeatures ? "lg:columns-2 lg:gap-4" : ""}>
             {hasSpells && (
               <div className="border-t border-slate-800 pt-3">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
                 <div className="space-y-3">
-                  {c.spellcasting && (
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
-                      <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
-                      <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
-                    </div>
-                  )}
-                  {spellLevels.map((level) => {
-                    const slot = c.spellSlots.find((s) => s.level === level);
-                    return (
-                      <div key={level}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
-                          {slot &&
-                            (slot.max > 0 && slot.max <= 6 ? (
-                              <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
-                            ) : (
-                              <span className="text-sm font-medium text-slate-100">
-                                {slot.current}/{slot.max}
-                              </span>
-                            ))}
-                        </div>
-                        <div className="mt-1 space-y-1">
-                          {(spellsByLevel.get(level) ?? [])
-                            .slice()
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((spell) => (
-                              <div key={spell.id} className="flex items-center gap-2 text-sm">
-                                <span className="min-w-0 flex-1 text-slate-300">
-                                  <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
-                                </span>
-                                {spell.components && <TypeTag>{spell.components}</TypeTag>}
-                                {spell.max !== undefined && (
-                                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
-                                )}
-                              </div>
-                            ))}
-                        </div>
+                  {/* First block is glued to the heading in one break-inside-avoid
+                      unit — `break-after: avoid` on the heading alone isn't
+                      reliably honored by Chromium in *balanced* multi-column
+                      layout, so the heading could otherwise get stranded at
+                      the bottom of a column with its content pushed to the next. */}
+                  <div className="break-inside-avoid-column">
+                    <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
+                    {c.spellcasting ? (
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <StatBox label="Modifier" value={formatModifier(c.spellcasting.modifier)} />
+                        <StatBox label="Attack" value={formatModifier(c.spellcasting.attack)} />
+                        <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
                       </div>
-                    );
-                  })}
+                    ) : (
+                      renderSpellLevelBody(spellLevels[0])
+                    )}
+                  </div>
+                  {spellLevels.slice(c.spellcasting ? 0 : 1).map((level) => (
+                    <div key={level} className="break-inside-avoid-column">
+                      {renderSpellLevelBody(level)}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {hasFeatures && (
-              <div className="border-t border-slate-800 pt-3 space-y-3">
-                <h3 className="text-xs uppercase tracking-wide text-slate-500">Features and Traits</h3>
-                {groupedVisibleFeatures.map(([category, features]) => (
-                  <div key={category} className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{CATEGORY_LABELS[category]}</p>
-                    {features.map((feature) => (
-                      <div key={feature.id} className="flex items-center gap-2 text-sm">
-                        <span className="min-w-0 flex-1 text-slate-300">
-                          <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-                        </span>
-                        {feature.max !== undefined && (
-                          <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />
-                        )}
+              <div className={`border-t border-slate-800 pt-3 space-y-3 ${hasSpells ? "mt-4 lg:mt-0" : ""}`}>
+                {groupedVisibleFeatures.length > 0 ? (
+                  <>
+                    <div className="space-y-1 break-inside-avoid-column">
+                      <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Features and Traits</h3>
+                      {renderFeatureGroupBody(...groupedVisibleFeatures[0])}
+                    </div>
+                    {groupedVisibleFeatures.slice(1).map(([category, features]) => (
+                      <div key={category} className="space-y-1 break-inside-avoid-column">
+                        {renderFeatureGroupBody(category, features)}
                       </div>
                     ))}
-                  </div>
-                ))}
+                  </>
+                ) : (
+                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Features and Traits</h3>
+                )}
 
                 {/* Temporary review area: not a permanent UI, just surfacing the new filter heuristics
                     (ability-score bumps, subclass-choice announcements, rulebook boilerplate, Sense
                     duplicates) separately so they can be checked against real characters before those
                     heuristics start dropping entries outright. */}
                 {groupedReviewFeatures.length > 0 && (
-                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2">
+                  <div className="mt-3 border-t border-dashed border-slate-700 pt-2 space-y-2 break-inside-avoid-column">
                     <p className="mb-1 text-[10px] uppercase tracking-wide text-slate-600">
                       Filtered out for review (not shown on the main card)
                     </p>
