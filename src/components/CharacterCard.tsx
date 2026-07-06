@@ -264,7 +264,7 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
   );
 }
 
-export function StatusRail({
+function StatusBadges({
   conditions,
   exhaustion,
   concentrating,
@@ -276,12 +276,60 @@ export function StatusRail({
   onToggleConcentration?: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-4 z-10 flex translate-x-1/2 flex-col items-center gap-3">
+    <>
       <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
       {conditions.map((condition, index) => (
         <ConditionBadge key={condition} condition={condition} index={index} />
       ))}
+    </>
+  );
+}
+
+export function StatusRail({
+  conditions,
+  exhaustion,
+  concentrating,
+  onToggleConcentration,
+  sticky = false,
+}: {
+  conditions: string[];
+  exhaustion: number;
+  concentrating: boolean;
+  onToggleConcentration?: () => void;
+  /**
+   * Only meaningful where the badge rail's ancestor chain reaches the page's
+   * own scroll container unobstructed — e.g. the details modal. The
+   * horizontally-scrolling party row can't use it: `overflow-x-auto` there
+   * forces the row's own overflow-y to a non-"visible" value no matter what
+   * we set it to (confirmed — `overflow-y-clip` still computes to `hidden`),
+   * which makes the *row* the sticky containing block instead of the page.
+   * Since the row itself never scrolls vertically, `sticky` would just be
+   * dead weight there, so the card passes `sticky={false}` (the default)
+   * and gets a plain repositioned overlay instead.
+   */
+  sticky?: boolean;
+}) {
+  const badgeProps = { conditions, exhaustion, concentrating, onToggleConcentration };
+
+  if (!sticky) {
+    return (
+      <div className="absolute right-0 top-7 z-10 flex translate-x-1/2 flex-col items-center gap-3">
+        <StatusBadges {...badgeProps} />
+      </div>
+    );
+  }
+
+  return (
+    // Zero-height flow anchor — sits at the top of the modal's content (the
+    // `-mb-4` cancels the parent's own `gap-4` so it doesn't push the header
+    // down) so the actual badges, absolutely positioned off of it, stay
+    // parked at `top-16` once scrolling would otherwise carry them off the
+    // top of the screen, instead of scrolling away with a long modal.
+    <div className="sticky top-16 z-10 -mb-4 h-0">
+      <div className="absolute -right-4 top-3 flex translate-x-1/2 flex-col items-center gap-3">
+        <StatusBadges {...badgeProps} />
+      </div>
     </div>
   );
 }
@@ -640,32 +688,6 @@ export function CharacterCard({
             </span>
           </span>
         </div>
-        <div className="mt-1 space-y-1 text-sm text-slate-300">
-          <span className="flex items-center gap-1.5">
-            <ExhaustionIcon
-              className={`h-3.5 w-3.5 shrink-0 ${c.combat.exhaustion > 0 ? "text-amber-500" : "text-slate-500"}`}
-            />
-            <span className={`min-w-0 flex-1 ${c.combat.exhaustion > 0 ? "text-amber-300" : ""}`}>
-              <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
-                Exhaustion: {c.combat.exhaustion}
-              </InfoTooltip>
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <ConditionsIcon
-              className={`h-3.5 w-3.5 shrink-0 ${c.combat.conditions.length > 0 ? "text-amber-500" : "text-slate-500"}`}
-            />
-            <span className={`min-w-0 flex-1 ${c.combat.conditions.length > 0 ? "text-amber-300" : ""}`}>
-              {c.combat.conditions.length > 0 ? (
-                <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
-                  Conditions: {c.combat.conditions.join(", ")}
-                </InfoTooltip>
-              ) : (
-                <span className="block truncate">Conditions: none</span>
-              )}
-            </span>
-          </span>
-        </div>
       </div>
 
       {/* Senses */}
@@ -780,24 +802,7 @@ export function CharacterCard({
       {/* Spell slots */}
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
-          <div className="mb-1.5 flex items-center justify-between">
-            <h3 className="text-xs uppercase tracking-wide text-slate-500">Spells</h3>
-            {onUpdate && (
-              <button
-                type="button"
-                onClick={() => onUpdate(c.id, { concentrating: !c.concentrating })}
-                aria-pressed={Boolean(c.concentrating)}
-                title="Toggle whether this character is currently concentrating"
-                className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
-                  c.concentrating
-                    ? "border-violet-500 bg-violet-950/60 text-violet-300"
-                    : "border-slate-700 text-slate-500 hover:border-violet-700 hover:text-violet-400"
-                }`}
-              >
-                Concentrating
-              </button>
-            )}
-          </div>
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Spells</h3>
           <div className="space-y-1">
             {c.spellSlots
               .slice()

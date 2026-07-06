@@ -20,10 +20,6 @@ import {
 } from "@/lib/types";
 import {
   CharacterHeader,
-  ConditionsIcon,
-  ConditionsPanel,
-  ExhaustionIcon,
-  ExhaustionPanel,
   HpBar,
   InitiativeIcon,
   ordinalLevel,
@@ -34,6 +30,7 @@ import {
   SpeedIcon,
   STAT_ORDER,
   StatBox,
+  StatusRail,
 } from "./CharacterCard";
 import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
@@ -278,9 +275,17 @@ export function CharacterDetailsModal({
       onClick={onClose}
     >
       <div
-        className="my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
+        className="relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
+        <StatusRail
+          conditions={c.combat.conditions}
+          exhaustion={c.combat.exhaustion}
+          concentrating={Boolean(c.concentrating)}
+          onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
+          sticky
+        />
+
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <CharacterHeader character={c} />
@@ -346,32 +351,6 @@ export function CharacterDetailsModal({
                 >
                   Prof {formatModifier(proficiencyBonus(c.level))}
                 </InfoTooltip>
-              </span>
-            </span>
-          </div>
-          <div className="mt-1 space-y-1 text-sm text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <ExhaustionIcon
-                className={`h-3.5 w-3.5 shrink-0 ${c.combat.exhaustion > 0 ? "text-amber-500" : "text-slate-500"}`}
-              />
-              <span className={`min-w-0 flex-1 ${c.combat.exhaustion > 0 ? "text-amber-300" : ""}`}>
-                <InfoTooltip panel={<ExhaustionPanel level={c.combat.exhaustion} />}>
-                  Exhaustion: {c.combat.exhaustion}
-                </InfoTooltip>
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <ConditionsIcon
-                className={`h-3.5 w-3.5 shrink-0 ${c.combat.conditions.length > 0 ? "text-amber-500" : "text-slate-500"}`}
-              />
-              <span className={`min-w-0 flex-1 ${c.combat.conditions.length > 0 ? "text-amber-300" : ""}`}>
-                {c.combat.conditions.length > 0 ? (
-                  <InfoTooltip panel={<ConditionsPanel conditions={c.combat.conditions} />}>
-                    Conditions: {c.combat.conditions.join(", ")}
-                  </InfoTooltip>
-                ) : (
-                  <span className="block truncate">Conditions: none</span>
-                )}
               </span>
             </span>
           </div>
