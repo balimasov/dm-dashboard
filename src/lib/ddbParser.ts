@@ -369,6 +369,17 @@ function computeSenses(mods: any[]): Sense[] {
  * against it using D&D Beyond's damage tracker (`removedHitPoints`), which is
  * safe to trust every time. An explicit D&D Beyond HP override always wins
  * outright, regardless of the lock.
+ *
+ * A level-up is the one case where recomputing is *always* wanted (that's
+ * the whole reason the DM hit Sync) and safe enough to trust — a jump from,
+ * say, level 1 to 20 obviously needs new max HP, and the CON-drift risk
+ * above only bites when CON changes *without* a level change (a bare ASI
+ * re-sync or a stat correction), which staying locked still protects
+ * against. So the lock is bypassed for this sync specifically whenever the
+ * incoming level is higher than what's on file, then re-armed for next
+ * time — previously this function returned `maxHpLocked: true`
+ * unconditionally, which locked max HP after the character's very first
+ * sync ever and left every later level-up silently ignored.
  */
 function computeHp(data: any, mods: any[], conMod: number, totalLevel: number, existing: Character) {
   const perLevelBonus = mods
@@ -380,7 +391,8 @@ function computeHp(data: any, mods: any[], conMod: number, totalLevel: number, e
 
   const computedMax =
     conMod * totalLevel + (data.baseHitPoints ?? 0) + (data.bonusHitPoints ?? 0) + perLevelBonus + flatBonus;
-  const shouldLockMax = existing.maxHpLocked ?? existing.synced ?? false;
+  const leveledUp = totalLevel > (existing.level ?? 0);
+  const shouldLockMax = !leveledUp && (existing.maxHpLocked ?? existing.synced ?? false);
   const maxHp = data.overrideHitPoints ?? (shouldLockMax ? existing.combat.maxHp : computedMax);
   const hp = Math.max(0, maxHp - (data.removedHitPoints ?? 0));
   return { hp, maxHp, tempHp: data.temporaryHitPoints ?? 0, maxHpLocked: true };
