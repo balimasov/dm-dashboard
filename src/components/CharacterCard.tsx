@@ -314,17 +314,25 @@ export function StatusRail({
 
   if (!sticky) {
     return (
-      // `z-[5]`: needs to sit strictly *between* two things. Below the
-      // page's own `sticky top-0 z-10` header, so this rail (which visually
-      // overlaps the header's box while the party row scrolls underneath it)
-      // renders behind it rather than on top (confirmed at z-10 it won that
-      // tie). But above `z-0`/`auto` — every card in the row is itself
-      // `position: relative` with no explicit z-index, which still puts it
-      // in the same stacking bucket as `z-0`, and a later sibling card wins
-      // ties there — so `z-0` let the *next* character's card paint over
-      // this rail's half-overlapping badges (confirmed too). `z-[5]` clears
-      // every card while staying under the header.
-      <div className="absolute right-0 top-14 z-[5] flex translate-x-1/2 flex-col items-center gap-3">
+      // Straddles the *top* border (row, centered, shifted up by half its
+      // own height) instead of the right edge — a vertical rail there kept
+      // colliding with something: the header/HP/AC text it ran alongside,
+      // or the next character's card in the row. The top border has no
+      // competing content on either side, so this is clear by construction
+      // rather than by tuning offsets. Deliberately no `flex-wrap`: with
+      // enough simultaneous badges to not fit one line, wrapping doubles
+      // this row's own height, and since it's centered via -50% transform
+      // (relative to its *own* height) it then bled up far more than the
+      // party row's reserved top padding — clipped (confirmed). A too-wide
+      // single line just overlaps the next card, which is already handled
+      // (see z-index note below); overflowing sideways beats disappearing
+      // upward. `z-[5]`: below the page's own `sticky top-0 z-10` header, so
+      // once the party row scrolls enough that this rail's screen position
+      // reaches the header, it renders behind it rather than on top
+      // (confirmed at z-10 it won that tie) — but above `z-0`/`auto`, since
+      // every card is itself `position: relative` with no explicit z-index
+      // and shares that stacking bucket.
+      <div className="absolute inset-x-0 top-0 z-[5] flex -translate-y-1/2 items-center justify-center gap-3 px-6">
         <StatusBadges {...badgeProps} />
       </div>
     );

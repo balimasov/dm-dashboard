@@ -101,7 +101,14 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
             </Link>
           </div>
         ) : (
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto pb-2">
+          // Status badges now straddle each card's *top* border and bleed
+          // above it — `overflow-x-auto` here forces this row's own
+          // overflow-y to compute as non-"visible" regardless of what's set
+          // (the same quirk noted on StatusRail), which clips anything that
+          // pokes out above the row's own box. `pt-5` reserves enough room
+          // above the cards so the badges have somewhere to bleed into
+          // before that clipping edge.
+          <div className="scrollbar-themed flex gap-4 overflow-x-auto pb-2 pt-6">
             {characters.map((character) => (
               <div key={character.id} className="w-[300px] shrink-0">
                 <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
