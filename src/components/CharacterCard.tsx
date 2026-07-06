@@ -403,17 +403,19 @@ export function Pill({
   children,
 }: {
   panel?: React.ReactNode;
-  color?: "slate" | "sky" | "amber" | "teal";
+  color?: "slate" | "sky" | "amber" | "orange" | "yellow";
   children: React.ReactNode;
 }) {
   const colorCls =
-    color === "amber"
-      ? "border-amber-700 bg-amber-950/30 text-amber-300"
-      : color === "sky"
-        ? "border-sky-700 bg-sky-950/40 text-sky-300"
-        : color === "teal"
-          ? "border-teal-700 bg-teal-950/30 text-teal-300"
-          : "border-slate-800 bg-slate-800/40 text-slate-200";
+    color === "yellow"
+      ? "border-yellow-600 bg-yellow-950/40 text-yellow-300"
+      : color === "amber"
+        ? "border-amber-700 bg-amber-950/30 text-amber-300"
+        : color === "sky"
+          ? "border-sky-700 bg-sky-950/40 text-sky-300"
+          : color === "orange"
+            ? "border-orange-700 bg-orange-950/30 text-orange-300"
+            : "border-slate-800 bg-slate-800/40 text-slate-200";
   const boxCls = `rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`;
   if (!panel) {
     return <span className={`block truncate ${boxCls}`}>{children}</span>;
@@ -804,11 +806,11 @@ export function CharacterCard({
           <div className="flex flex-wrap gap-1.5">
             {c.skillProficiencies.map((skill) => {
               const color = skill.expertise
-                ? "amber"
+                ? "yellow"
                 : skill.proficient
-                  ? "sky"
+                  ? "amber"
                   : skill.halfProficiency
-                    ? "teal"
+                    ? "orange"
                     : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>

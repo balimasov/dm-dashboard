@@ -5,7 +5,7 @@ import { RichText } from "./RichText";
 const RARITY_COLOR: Record<ItemRarity, string> = {
   Common: "text-slate-300",
   Uncommon: "text-emerald-400",
-  Rare: "text-sky-400",
+  Rare: "text-blue-400",
   "Very Rare": "text-violet-400",
   Legendary: "text-amber-400",
   Artifact: "text-red-400",

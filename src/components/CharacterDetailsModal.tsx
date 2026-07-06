@@ -439,11 +439,11 @@ export function CharacterDetailsModal({
           <div className="flex flex-wrap gap-1.5">
             {allSkills.map((skill) => {
               const color = skill.expertise
-                ? "amber"
+                ? "yellow"
                 : skill.proficient
-                  ? "sky"
+                  ? "amber"
                   : skill.halfProficiency
-                    ? "teal"
+                    ? "orange"
                     : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
