@@ -63,22 +63,8 @@ body {
   animation: concentrating-glow 2s ease-in-out infinite;
 }
 
-/* Same pulsing-glow treatment as `.concentrating-ring`, recolored for the
-   Conditions/Exhaustion status badges pinned to a card's edge — each status
-   type gets its own color so a row of badges reads as distinct at a glance. */
-@keyframes status-glow-amber {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px rgba(245, 158, 11, 0.55),
-      0 0 12px 2px rgba(245, 158, 11, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(245, 158, 11, 0.95),
-      0 0 20px 6px rgba(245, 158, 11, 0.6);
-  }
-}
+/* Same pulsing-glow treatment as `.concentrating-ring`, for the
+   Exhaustion status badge pinned to a card's edge. */
 @keyframes status-glow-red {
   0%,
   100% {
@@ -92,9 +78,27 @@ body {
       0 0 20px 6px rgba(239, 68, 68, 0.6);
   }
 }
-.status-ring-amber {
-  animation: status-glow-amber 2s ease-in-out infinite;
-}
 .status-ring-red {
   animation: status-glow-red 2s ease-in-out infinite;
+}
+
+/* Conditions badges get a per-condition color (computed from the condition
+   name, see `conditionHue` in CharacterCard.tsx) instead of one fixed hue —
+   the glow reads the four --glow-N custom properties the badge sets inline
+   so one keyframe works for any color. */
+@keyframes status-glow-dynamic {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--glow-1),
+      0 0 12px 2px var(--glow-2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--glow-3),
+      0 0 20px 6px var(--glow-4);
+  }
+}
+.status-ring-dynamic {
+  animation: status-glow-dynamic 2s ease-in-out infinite;
 }
