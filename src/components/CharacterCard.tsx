@@ -265,6 +265,18 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
   );
 }
 
+/** Placeholder icon for the overflow badge — a plain ellipsis, standing in for whatever custom art replaces it later. */
+function OverflowBadge({ conditions }: { conditions: string[] }) {
+  return (
+    <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
+      <InfoTooltip panel={<ConditionsPanel conditions={conditions} />}>•••</InfoTooltip>
+    </span>
+  );
+}
+
+/** Total badge slots (concentration + exhaustion + conditions + the overflow badge itself) a card has room for before it gets crowded. */
+const MAX_BADGES = 6;
+
 function StatusBadges({
   conditions,
   exhaustion,
@@ -276,13 +288,20 @@ function StatusBadges({
   concentrating: boolean;
   onToggleConcentration?: () => void;
 }) {
+  const fixedCount = 1 + (exhaustion > 0 ? 1 : 0);
+  const availableForConditions = MAX_BADGES - fixedCount;
+  const overflowing = conditions.length > availableForConditions;
+  const visibleConditions = overflowing ? conditions.slice(0, Math.max(0, availableForConditions - 1)) : conditions;
+  const overflowConditions = overflowing ? conditions.slice(visibleConditions.length) : [];
+
   return (
     <>
       <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
-      {conditions.map((condition, index) => (
+      {visibleConditions.map((condition, index) => (
         <ConditionBadge key={condition} condition={condition} index={index} />
       ))}
+      {overflowConditions.length > 0 && <OverflowBadge conditions={overflowConditions} />}
     </>
   );
 }
@@ -292,63 +311,38 @@ export function StatusRail({
   exhaustion,
   concentrating,
   onToggleConcentration,
-  sticky = false,
 }: {
   conditions: string[];
   exhaustion: number;
   concentrating: boolean;
   onToggleConcentration?: () => void;
-  /**
-   * Only meaningful where the badge rail's ancestor chain reaches the page's
-   * own scroll container unobstructed — e.g. the details modal. The
-   * horizontally-scrolling party row can't use it: `overflow-x-auto` there
-   * forces the row's own overflow-y to a non-"visible" value no matter what
-   * we set it to (confirmed — `overflow-y-clip` still computes to `hidden`),
-   * which makes the *row* the sticky containing block instead of the page.
-   * Since the row itself never scrolls vertically, `sticky` would just be
-   * dead weight there, so the card passes `sticky={false}` (the default)
-   * and gets a plain repositioned overlay instead.
-   */
-  sticky?: boolean;
 }) {
-  const badgeProps = { conditions, exhaustion, concentrating, onToggleConcentration };
-
-  if (!sticky) {
-    return (
-      // Straddles the *top* border (row, centered, shifted up by half its
-      // own height) instead of the right edge — a vertical rail there kept
-      // colliding with something: the header/HP/AC text it ran alongside,
-      // or the next character's card in the row. The top border has no
-      // competing content on either side, so this is clear by construction
-      // rather than by tuning offsets. Deliberately no `flex-wrap`: with
-      // enough simultaneous badges to not fit one line, wrapping doubles
-      // this row's own height, and since it's centered via -50% transform
-      // (relative to its *own* height) it then bled up far more than the
-      // party row's reserved top padding — clipped (confirmed). A too-wide
-      // single line just overlaps the next card, which is already handled
-      // (see z-index note below); overflowing sideways beats disappearing
-      // upward. `z-[5]`: below the page's own `sticky top-0 z-10` header, so
-      // once the party row scrolls enough that this rail's screen position
-      // reaches the header, it renders behind it rather than on top
-      // (confirmed at z-10 it won that tie) — but above `z-0`/`auto`, since
-      // every card is itself `position: relative` with no explicit z-index
-      // and shares that stacking bucket.
-      <div className="absolute inset-x-0 top-0 z-[5] flex -translate-y-1/2 items-center justify-center gap-3 px-6">
-        <StatusBadges {...badgeProps} />
-      </div>
-    );
-  }
-
   return (
-    // Zero-height flow anchor — sits at the top of the modal's content (the
-    // `-mb-4` cancels the parent's own `gap-4` so it doesn't push the header
-    // down) so the actual badges, absolutely positioned off of it, stay
-    // parked at `top-16` once scrolling would otherwise carry them off the
-    // top of the screen, instead of scrolling away with a long modal.
-    <div className="sticky top-16 z-10 -mb-4 h-0">
-      <div className="absolute -right-4 top-3 flex translate-x-1/2 flex-col items-center gap-3">
-        <StatusBadges {...badgeProps} />
-      </div>
+    // Straddles the *top* border (row, centered, shifted up by half its own
+    // height) instead of the right edge — a vertical rail there kept
+    // colliding with something: the header/HP/AC text it ran alongside, the
+    // next character's card in the row, or (in the details modal) just
+    // reused the same crowded right-edge column. The top border has no
+    // competing content on either side, so this is clear by construction
+    // rather than by tuning offsets, and works the same in both the card and
+    // the modal. Deliberately no `flex-wrap`: with enough simultaneous
+    // badges to not fit one line, wrapping doubles this row's own height,
+    // and since it's centered via a -50% transform (relative to its *own*
+    // height) it then bled up far more than the party row's reserved top
+    // padding — clipped (confirmed). `MAX_BADGES` above keeps a single line
+    // from growing unbounded in the first place. `z-[5]`: below the page's
+    // own `sticky top-0 z-10` header, so once the party row scrolls enough
+    // that this rail's screen position reaches the header, it renders
+    // behind it rather than on top (confirmed at z-10 it won that tie) —
+    // but above `z-0`/`auto`, since every card is itself `position:
+    // relative` with no explicit z-index and shares that stacking bucket.
+    <div className="absolute inset-x-0 top-0 z-[5] flex -translate-y-1/2 items-center justify-center gap-3 px-6">
+      <StatusBadges
+        conditions={conditions}
+        exhaustion={exhaustion}
+        concentrating={concentrating}
+        onToggleConcentration={onToggleConcentration}
+      />
     </div>
   );
 }

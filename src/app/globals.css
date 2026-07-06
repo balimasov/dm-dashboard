@@ -102,3 +102,23 @@ body {
 .status-ring-dynamic {
   animation: status-glow-dynamic 2s ease-in-out infinite;
 }
+
+/* Same pulsing-glow treatment again, neutral gray — for the overflow ("•••")
+   badge that stands in for whichever conditions didn't fit, so it reads as
+   its own distinct (non-condition) color. */
+@keyframes status-glow-gray {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(148, 163, 184, 0.55),
+      0 0 12px 2px rgba(148, 163, 184, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(148, 163, 184, 0.95),
+      0 0 20px 6px rgba(148, 163, 184, 0.6);
+  }
+}
+.status-ring-gray {
+  animation: status-glow-gray 2s ease-in-out infinite;
+}

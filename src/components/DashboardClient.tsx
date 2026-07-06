@@ -121,14 +121,17 @@ export function DashboardClient({
             <p>No characters yet. Add some from this campaign&apos;s Settings on the Campaigns page.</p>
           </div>
         ) : (
-          // Status badges now straddle each card's *top* border and bleed
-          // above it — `overflow-x-auto` here forces this row's own
-          // overflow-y to compute as non-"visible" regardless of what's set
-          // (the same quirk noted on StatusRail), which clips anything that
-          // pokes out above the row's own box. `pt-5` reserves enough room
-          // above the cards so the badges have somewhere to bleed into
-          // before that clipping edge.
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto pb-2 pt-6">
+          // Status badges straddle each card's *top* border and can bleed
+          // sideways too once there are several of them — `overflow-x-auto`
+          // here forces this row's own overflow-y to compute as non-"visible"
+          // regardless of what's set (the same quirk noted on StatusRail),
+          // which clips anything that pokes out above the row's own box, and
+          // the row has no scroll room to the left/right of its first/last
+          // card either. `pt-8`/`px-8` reserve room on every side so the
+          // leftmost, rightmost, and topmost badges always have somewhere to
+          // bleed into before hitting a clipping edge (confirmed clipped
+          // without this).
+          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-8 pb-2 pt-8">
             {characters.map((character) => (
               <div key={character.id} className="w-[300px] shrink-0">
                 <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />

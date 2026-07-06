@@ -284,7 +284,6 @@ export function CharacterDetailsModal({
           exhaustion={c.combat.exhaustion}
           concentrating={Boolean(c.concentrating)}
           onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
-          sticky
         />
 
         <div className="flex items-start gap-3">
