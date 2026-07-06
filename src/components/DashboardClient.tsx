@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useCharacters } from "@/hooks/useCharacters";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CharacterCard } from "@/components/CharacterCard";
@@ -110,18 +109,7 @@ export function DashboardClient({
         <CampaignNotes campaign={campaign} />
       </CollapsibleSection>
 
-      <CollapsibleSection
-        title={`Party (${characters.length})`}
-        storageKey="dm-dashboard-characters-open"
-        actions={
-          <Link
-            href={`/campaigns/${campaign.id}/settings`}
-            className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
-          >
-            Settings
-          </Link>
-        }
-      >
+      <CollapsibleSection title={`Party (${characters.length})`} storageKey="dm-dashboard-characters-open">
         <p className="mb-4 text-sm text-slate-500">
           Combat state, resources, and notes for every character.
         </p>
@@ -130,13 +118,7 @@ export function DashboardClient({
 
         {characters.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
-            <p>No characters yet.</p>
-            <Link
-              href={`/campaigns/${campaign.id}/settings`}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-            >
-              + Add character
-            </Link>
+            <p>No characters yet. Add some from this campaign&apos;s Settings on the Campaigns page.</p>
           </div>
         ) : (
           // Status badges now straddle each card's *top* border and bleed

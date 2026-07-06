@@ -82,6 +82,12 @@ function CampaignRow({
           {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
         </p>
       </div>
+      <Link
+        href={`/campaigns/${campaign.id}/settings`}
+        className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+      >
+        Settings
+      </Link>
       <button
         type="button"
         onClick={() => {
@@ -114,7 +120,7 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
     setError(null);
     try {
       const campaign = await addCampaign(trimmed);
-      router.push(`/campaigns/${campaign.id}`);
+      router.push(`/campaigns/${campaign.id}/settings`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign.");
       setCreating(false);
