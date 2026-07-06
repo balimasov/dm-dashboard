@@ -23,6 +23,7 @@ import { CharacterAvatar } from "./CharacterAvatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
+import { getSenseInfo } from "@/lib/senseInfo";
 
 export const STAT_ORDER: Array<keyof Character["stats"]> = [
   "str",
@@ -724,11 +725,17 @@ export function CharacterCard({
         </div>
         {c.senses.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
-            {c.senses.map((s) => (
-              <span key={s.name}>
-                <span className="text-slate-500">{s.name}:</span> {s.range} ft
-              </span>
-            ))}
+            {c.senses.map((s) => {
+              const info = getSenseInfo(s.name);
+              const label = (
+                <>
+                  <span className="text-slate-500">{s.name}:</span> {s.range} ft
+                </>
+              );
+              return (
+                <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>
+              );
+            })}
           </div>
         )}
       </div>

@@ -36,6 +36,7 @@ import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { SyncTimestamp } from "./SyncTimestamp";
+import { getSenseInfo } from "@/lib/senseInfo";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -372,11 +373,17 @@ export function CharacterDetailsModal({
           </div>
           {c.senses.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
-              {c.senses.map((s) => (
-                <span key={s.name}>
-                  <span className="text-slate-500">{s.name}:</span> {s.range} ft
-                </span>
-              ))}
+              {c.senses.map((s) => {
+                const info = getSenseInfo(s.name);
+                const label = (
+                  <>
+                    <span className="text-slate-500">{s.name}:</span> {s.range} ft
+                  </>
+                );
+                return (
+                  <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>
+                );
+              })}
             </div>
           )}
         </div>
