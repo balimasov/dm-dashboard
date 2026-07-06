@@ -333,15 +333,29 @@ export function CharacterDetailsModal({
           <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
             <span className="flex items-center gap-1.5">
               <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              AC {c.combat.ac}
+              <span className="min-w-0 flex-1">
+                <InfoTooltip panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}>
+                  AC {c.combat.ac}
+                </InfoTooltip>
+              </span>
             </span>
             <span className="flex items-center gap-1.5 pl-2">
               <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              Speed {c.combat.speed}ft
+              <span className="min-w-0 flex-1">
+                <InfoTooltip panel={<p>Speed — how many feet you can move on your turn.</p>}>
+                  Speed {c.combat.speed}ft
+                </InfoTooltip>
+              </span>
             </span>
             <span className="flex items-center gap-1.5">
               <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              Initiative {formatModifier(c.initiative)}
+              <span className="min-w-0 flex-1">
+                <InfoTooltip
+                  panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+                >
+                  Initiative {formatModifier(c.initiative)}
+                </InfoTooltip>
+              </span>
             </span>
             <span className="flex items-center gap-1.5 pl-2">
               <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
