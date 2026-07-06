@@ -14,6 +14,7 @@ import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { Campaign, CampaignSummary, Character } from "@/lib/types";
 
+/** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
   if (campaign.logoUrl) {
     return (
@@ -21,12 +22,12 @@ function CampaignLogo({ campaign }: { campaign: Campaign }) {
       <img
         src={campaign.logoUrl}
         alt=""
-        className="h-9 w-9 shrink-0 rounded-md border border-slate-800 object-cover"
+        className="h-9 w-9 shrink-0 rounded-lg border border-slate-700 object-cover"
       />
     );
   }
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-800 text-sm font-semibold text-slate-600">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-slate-600">
       {campaign.name.trim().charAt(0).toUpperCase() || "?"}
     </div>
   );
@@ -124,17 +125,17 @@ export function DashboardClient({
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+        <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+        <div className="flex shrink-0 items-center gap-2">
           <CampaignLogo campaign={campaignState} />
-          <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            Settings
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-        >
-          Settings
-        </button>
       </div>
 
       {linkedCharacters.length > 0 && (
