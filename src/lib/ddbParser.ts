@@ -1246,18 +1246,28 @@ function computeFeatures(
 /**
  * A character's full known-spell list is split across two independent
  * sources that must be merged, not chosen between: `classSpells` (this
- * class's spell list — `countsAsKnownSpell`/`alwaysPrepared` mark the ones
- * actually known rather than just eligible) and `spells.{race,class,
- * background,item,feat}` (bonus spells granted outside the class list, e.g.
- * a subclass's bonus spells — confirmed on a real export to contain spells
- * entirely absent from `classSpells`). Within `spells.*`, `countsAsKnownSpell`
- * is uniformly false even for genuinely-granted spells, so presence there is
- * itself taken as the inclusion signal; the same group can also list the same
- * spell twice differing only in `limitedUse` (an at-will/charges casting mode
- * vs. a spell-slot mode) — confirmed on a real export the entry actually
- * carrying charge data can appear in either array position, so a later
- * duplicate that has `limitedUse` upgrades an earlier duplicate that lacked
- * it, rather than always keeping whichever copy came first.
+ * class's spell list — `countsAsKnownSpell`/`alwaysPrepared`/`prepared` mark
+ * the ones actually known/prepared rather than just eligible) and
+ * `spells.{race,class,background,item,feat}` (bonus spells granted outside
+ * the class list, e.g. a subclass's bonus spells — confirmed on a real
+ * export to contain spells entirely absent from `classSpells`). Within
+ * `spells.*`, `countsAsKnownSpell` is uniformly false even for genuinely-
+ * granted spells, so presence there is itself taken as the inclusion signal;
+ * the same group can also list the same spell twice differing only in
+ * `limitedUse` (an at-will/charges casting mode vs. a spell-slot mode) —
+ * confirmed on a real export the entry actually carrying charge data can
+ * appear in either array position, so a later duplicate that has
+ * `limitedUse` upgrades an earlier duplicate that lacked it, rather than
+ * always keeping whichever copy came first.
+ *
+ * `countsAsKnownSpell` only covers "fixed spellbook" casters (Wizard-style —
+ * every spell copied into the book is known regardless of what's prepared
+ * today) and `alwaysPrepared` only covers the handful of spells a subclass
+ * grants automatically (e.g. domain/oath spells). Neither one is set for a
+ * "prepare from the full class list" caster's (Cleric/Druid/Paladin) actual
+ * daily choices — those live on the same entry under `prepared`, which is
+ * why a Cleric's manually-selected prepared spells were silently dropped
+ * without checking it too.
  */
 const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
@@ -1300,7 +1310,7 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
 
   for (const group of data.classSpells ?? []) {
     for (const entry of group.spells ?? []) {
-      if (entry.countsAsKnownSpell || entry.alwaysPrepared) add(entry, "Class");
+      if (entry.countsAsKnownSpell || entry.alwaysPrepared || entry.prepared) add(entry, "Class");
     }
   }
 
