@@ -183,17 +183,38 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
   );
 }
 
-function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
+/** Shared row shell for anything the DM can flag with a reminder flame (features, spells) — kept as one component so the two never drift out of sync in how a flagged row looks, the way they once did. */
+function FlaggableRow({
+  flagged,
+  onToggleFlag,
+  children,
+  trailing,
+}: {
+  flagged: boolean;
+  onToggleFlag: () => void;
+  children: React.ReactNode;
+  trailing?: React.ReactNode;
+}) {
   return (
     <div
       className={`flex items-center gap-2 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
     >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
-      <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>
-        <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
-      </span>
-      {feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
+      <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>{children}</span>
+      {trailing}
     </div>
+  );
+}
+
+function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
+  return (
+    <FlaggableRow
+      flagged={flagged}
+      onToggleFlag={onToggleFlag}
+      trailing={feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
+    >
+      <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+    </FlaggableRow>
   );
 }
 
@@ -573,16 +594,21 @@ export function CharacterDetailsModal({
                           .map((spell) => {
                             const flagged = flaggedAbilities.includes(spell.name);
                             return (
-                              <div key={spell.id} className="flex items-center gap-2 text-sm">
-                                <FlameToggle active={flagged} onToggle={() => toggleFlag(spell.name)} />
-                                <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>
-                                  <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
-                                </span>
-                                {spell.components && <TypeTag>{spell.components}</TypeTag>}
-                                {spell.max !== undefined && (
-                                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
-                                )}
-                              </div>
+                              <FlaggableRow
+                                key={spell.id}
+                                flagged={flagged}
+                                onToggleFlag={() => toggleFlag(spell.name)}
+                                trailing={
+                                  <>
+                                    {spell.components && <TypeTag>{spell.components}</TypeTag>}
+                                    {spell.max !== undefined && (
+                                      <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                                    )}
+                                  </>
+                                }
+                              >
+                                <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                              </FlaggableRow>
                             );
                           })}
                       </div>
