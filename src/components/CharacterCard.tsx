@@ -92,6 +92,16 @@ export function ConditionsIcon({ className }: { className?: string }) {
   );
 }
 
+/** Placeholder icon for the Concentration status badge — a bullseye, standing in until custom art is added. */
+export function ConcentrationIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 function PlusIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
@@ -175,6 +185,83 @@ export function ConditionsPanel({ conditions }: { conditions: string[] }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Floating status badges pinned to the card's right edge — a static
+ * "Exhaustion: 2" text line lower in the card is easy to miss at a glance
+ * across a full party row, so anything currently active also gets a small
+ * pulsing badge up top. Half-overlaps the card's border (rather than sitting
+ * fully inset) so it reads as a floating marker without eating into the
+ * 16px content padding where the header/text actually starts.
+ */
+const STATUS_BADGE_SIZE = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
+
+function ConditionBadge({ condition }: { condition: string }) {
+  return (
+    <span
+      className={`${STATUS_BADGE_SIZE} status-ring-amber border-amber-500 text-[9px] font-bold text-amber-300`}
+    >
+      <InfoTooltip panel={<ConditionsPanel conditions={[condition]} />}>
+        {condition.slice(0, 2).toUpperCase()}
+      </InfoTooltip>
+    </span>
+  );
+}
+
+function ExhaustionBadge({ level }: { level: number }) {
+  return (
+    <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500 relative`}>
+      <InfoTooltip panel={<ExhaustionPanel level={level} />}>
+        <ExhaustionIcon className="h-3 w-3 text-red-300" />
+      </InfoTooltip>
+      <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-600 text-[8px] font-bold leading-none text-white">
+        {level}
+      </span>
+    </span>
+  );
+}
+
+function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
+  const sizeCls = active ? "h-6 w-6" : "h-4 w-4";
+  return (
+    <button
+      type="button"
+      disabled={!onToggle}
+      onClick={onToggle}
+      aria-pressed={active}
+      title="Toggle whether this character is currently concentrating"
+      className={`flex ${sizeCls} shrink-0 items-center justify-center rounded-full border-2 bg-slate-950 transition-all ${
+        active
+          ? "concentrating-ring border-violet-500 text-violet-300"
+          : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
+      }`}
+    >
+      <ConcentrationIcon className={active ? "h-3.5 w-3.5" : "h-2.5 w-2.5"} />
+    </button>
+  );
+}
+
+export function StatusRail({
+  conditions,
+  exhaustion,
+  concentrating,
+  onToggleConcentration,
+}: {
+  conditions: string[];
+  exhaustion: number;
+  concentrating: boolean;
+  onToggleConcentration?: () => void;
+}) {
+  return (
+    <div className="absolute right-0 top-1/2 z-10 flex -translate-y-1/2 translate-x-1/2 flex-col items-center gap-1.5">
+      {conditions.map((condition) => (
+        <ConditionBadge key={condition} condition={condition} />
+      ))}
+      {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
+      <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
     </div>
   );
 }
@@ -476,12 +563,19 @@ export function CharacterCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 shadow-lg shadow-black/20 flex flex-col gap-4 ${
+      className={`relative rounded-xl border p-4 shadow-lg shadow-black/20 flex flex-col gap-4 ${
         c.concentrating
           ? "concentrating-ring border-violet-500 bg-violet-950/10"
           : "border-slate-800 bg-slate-900/60"
       }`}
     >
+      <StatusRail
+        conditions={c.combat.conditions}
+        exhaustion={c.combat.exhaustion}
+        concentrating={Boolean(c.concentrating)}
+        onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
+      />
+
       {/* Header */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
 
