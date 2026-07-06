@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HeaderPortal } from "@/components/HeaderPortal";
@@ -11,7 +12,7 @@ import { NotesEditor } from "@/components/NotesEditor";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
-import { Campaign, Character } from "@/lib/types";
+import { Campaign, CampaignSummary, Character } from "@/lib/types";
 
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
   if (campaign.logoUrl) {
@@ -31,8 +32,13 @@ function CampaignLogo({ campaign }: { campaign: Campaign }) {
   );
 }
 
-/** Local state + save-on-blur — same lightweight pattern used elsewhere in this app, no dedicated save button. */
-function CampaignNotes({ campaign }: { campaign: Campaign }) {
+/**
+ * Local state + save-on-blur — same lightweight pattern used elsewhere in
+ * this app, no dedicated save button. Reports the saved value up via
+ * `onSaved` so the Settings modal (a separate notes editor instance) opens
+ * with this editor's latest text instead of whatever the page loaded with.
+ */
+function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (notes: string) => void }) {
   const [notes, setNotes] = useState(campaign.notes);
 
   async function saveNotes() {
@@ -42,6 +48,7 @@ function CampaignNotes({ campaign }: { campaign: Campaign }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes }),
     });
+    onSaved(notes);
   }
 
   return <NotesEditor value={notes} onChange={setNotes} onBlur={saveNotes} placeholder="Campaign notes..." />;
@@ -57,6 +64,28 @@ export function DashboardClient({
   const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
+  const [campaignState, setCampaignState] = useState(campaign);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  async function patchCampaign(id: string, updates: Partial<Campaign>) {
+    setCampaignState((c) => ({ ...c, ...updates }));
+    await fetch(`/api/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+  }
+
+  function closeSettings(updated?: CampaignSummary) {
+    setSettingsOpen(false);
+    if (!updated) return;
+    setCampaignState((c) => ({ ...c, name: updated.name, notes: updated.notes, logoUrl: updated.logoUrl }));
+    // The roster editor inside the modal keeps its own character list state,
+    // separate from this page's — a simple reload is the least-risky way to
+    // reflect any add/remove/sync that happened in there, without wiring two
+    // independent `useCharacters` instances together.
+    if (updated.characterCount !== characters.length) window.location.reload();
+  }
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
   const lastSyncedAt = linkedCharacters.reduce<string | undefined>((latest, c) => {
@@ -94,7 +123,16 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
-      <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaign.name }]} />
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+        >
+          Settings
+        </button>
+      </div>
 
       {linkedCharacters.length > 0 && (
         <HeaderPortal>
@@ -118,13 +156,16 @@ export function DashboardClient({
       <CollapsibleSection
         title={
           <span className="flex items-center gap-2">
-            <CampaignLogo campaign={campaign} />
-            {campaign.name}
+            <CampaignLogo campaign={campaignState} />
+            {campaignState.name}
           </span>
         }
         storageKey="dm-dashboard-campaign-open"
       >
-        <CampaignNotes campaign={campaign} />
+        <CampaignNotes
+          campaign={campaignState}
+          onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
+        />
       </CollapsibleSection>
 
       <CollapsibleSection title={`Party (${characters.length})`} storageKey="dm-dashboard-characters-open">
@@ -163,6 +204,15 @@ export function DashboardClient({
         <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
         <InventoryOverview characters={characters} />
       </CollapsibleSection>
+
+      {settingsOpen && (
+        <CampaignFormModal
+          campaign={{ ...campaignState, characterCount: characters.length }}
+          initialCharacters={characters}
+          actions={{ updateCampaign: patchCampaign }}
+          onClose={closeSettings}
+        />
+      )}
     </div>
   );
 }

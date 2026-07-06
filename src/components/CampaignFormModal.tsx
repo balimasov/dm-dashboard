@@ -7,7 +7,10 @@ import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
 import { NotesEditor } from "@/components/NotesEditor";
 import { Campaign, CampaignSummary, Character } from "@/lib/types";
 
-type Actions = Pick<ReturnType<typeof useCampaigns>, "addCampaign" | "updateCampaign">;
+type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
+  /** Omitted by callers that only ever open this modal in edit mode (e.g. the dashboard's Settings button) — there's no campaign-less create path there. */
+  addCampaign?: ReturnType<typeof useCampaigns>["addCampaign"];
+};
 
 /**
  * Create mode (`campaign === null`): name/notes/logo only — no roster section
@@ -48,6 +51,8 @@ export function CampaignFormModal({
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
+
+    if (!actions.addCampaign) return;
 
     setCreating(true);
     setError(null);

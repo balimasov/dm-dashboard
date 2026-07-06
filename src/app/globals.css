@@ -123,22 +123,34 @@ body {
   animation: status-glow-gray 2s ease-in-out infinite;
 }
 
-/* `NotesEditor`'s Tiptap content area — ProseMirror emits plain <h2>/<ul>/
-   <ol>/<strong>/<em> tags, which inherit this app's flat paragraph styling
-   without their own rules (no @tailwindcss/typography plugin installed for
-   just this one editor). */
+/* `NotesEditor`'s Tiptap content area — ProseMirror emits plain <h1>-<h3>/
+   <ul>/<ol>/<strong>/<em>/<a> tags, which inherit this app's flat paragraph
+   styling without their own rules (no @tailwindcss/typography plugin
+   installed for just this one editor). */
 .notes-editor-content p {
   margin: 0;
 }
 .notes-editor-content p + p {
   margin-top: 0.5em;
 }
-.notes-editor-content h2 {
-  font-size: 1rem;
+.notes-editor-content h1,
+.notes-editor-content h2,
+.notes-editor-content h3 {
   font-weight: 700;
   margin: 0.75em 0 0.25em;
 }
-.notes-editor-content h2:first-child {
+.notes-editor-content h1 {
+  font-size: 1.25rem;
+}
+.notes-editor-content h2 {
+  font-size: 1.1rem;
+}
+.notes-editor-content h3 {
+  font-size: 1rem;
+}
+.notes-editor-content h1:first-child,
+.notes-editor-content h2:first-child,
+.notes-editor-content h3:first-child {
   margin-top: 0;
 }
 .notes-editor-content strong {
@@ -146,6 +158,10 @@ body {
 }
 .notes-editor-content em {
   font-style: italic;
+}
+.notes-editor-content a {
+  color: #38bdf8;
+  text-decoration: underline;
 }
 .notes-editor-content ul,
 .notes-editor-content ol {
