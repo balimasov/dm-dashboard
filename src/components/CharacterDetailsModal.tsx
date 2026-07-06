@@ -444,13 +444,19 @@ export function CharacterDetailsModal({ character, onClose }: { character: Chara
 
             {currentTab === "features" && (
               <div className="space-y-3">
-                {groupedFeatures.map(([group, features]) =>
+                {groupedFeatures.map(([group, features], index) =>
                   group === "other" ? (
                     // The "other" bucket sub-groups by origin instead of a flat
                     // list — mirrors D&D Beyond's separate Features & Traits tab
                     // (Species Traits/Class Features/Feat Features/Background
                     // Feature) rather than the Actions-tab-style groups above.
-                    <div key={group} className="space-y-3">
+                    // Only divided from those when there actually are any
+                    // (index > 0) — a character with no Action/Bonus Action/
+                    // Reaction/Special entries has nothing above to separate from.
+                    <div
+                      key={group}
+                      className={`space-y-3 ${index > 0 ? "border-t border-slate-800 pt-3" : ""}`}
+                    >
                       {groupFeaturesByOrigin(features).map(([origin, originFeatures]) => (
                         <div key={origin} className="space-y-1">
                           <p className="text-[10px] uppercase tracking-wide text-slate-600">{ORIGIN_LABELS[origin]}</p>
