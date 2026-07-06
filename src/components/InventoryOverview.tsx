@@ -15,12 +15,26 @@ const RARITY_COLOR: Record<ItemRarity, string> = {
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 
+// Bolder borders/fills than a plain low-opacity tint — against the warm
+// dark background introduced with the parchment/brass reskin, a faint
+// same-family warm tint (amber, orange) reads as barely-there. `sp` moves
+// off `slate` (now part of that warm reskin) to `zinc`, an untouched cool
+// neutral — actual silver reads cool/metallic, which also happens to be
+// the one coin color guaranteed to stay visible against a warm backdrop.
 const COIN_CHIP_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
-  pp: "border-violet-500/40 bg-violet-500/10",
-  gp: "border-amber-500/40 bg-amber-500/10",
-  ep: "border-teal-500/40 bg-teal-500/10",
-  sp: "border-slate-400/40 bg-slate-400/10",
-  cp: "border-orange-500/40 bg-orange-500/10",
+  pp: "border-violet-400 bg-violet-500/15",
+  gp: "border-amber-400 bg-amber-500/15",
+  ep: "border-teal-400 bg-teal-500/15",
+  sp: "border-zinc-300 bg-zinc-400/15",
+  cp: "border-orange-400 bg-orange-500/15",
+};
+
+const COIN_CODE_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
+  pp: "text-violet-300",
+  gp: "text-amber-300",
+  ep: "text-teal-300",
+  sp: "text-zinc-300",
+  cp: "text-orange-300",
 };
 
 interface ItemGroup {
@@ -173,11 +187,21 @@ function CurrencyConversionPanel() {
   );
 }
 
-function CoinChip({ code, value, chipClass }: { code: string; value: number | string; chipClass: string }) {
+function CoinChip({
+  code,
+  value,
+  chipClass,
+  codeClass,
+}: {
+  code: string;
+  value: number | string;
+  chipClass: string;
+  codeClass?: string;
+}) {
   return (
     <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${chipClass}`}>
       <span className="text-slate-100">{value}</span>
-      <span className="text-slate-400">{code}</span>
+      <span className={codeClass ?? "text-slate-400"}>{code}</span>
     </span>
   );
 }
@@ -188,7 +212,13 @@ function CurrencyRow({ character }: { character: Character }) {
       <span className="text-sm font-medium text-slate-300">{character.name}</span>
       <div className="flex flex-wrap gap-1.5">
         {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
-          <CoinChip key={k} code={k.toUpperCase()} value={character.currency[k]} chipClass={COIN_CHIP_CLASS[k]} />
+          <CoinChip
+            key={k}
+            code={k.toUpperCase()}
+            value={character.currency[k]}
+            chipClass={COIN_CHIP_CLASS[k]}
+            codeClass={COIN_CODE_CLASS[k]}
+          />
         ))}
       </div>
     </div>
@@ -273,6 +303,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
               code="GP"
               value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
               chipClass={COIN_CHIP_CLASS.gp}
+              codeClass={COIN_CODE_CLASS.gp}
             />
           </div>
         </div>

@@ -381,10 +381,10 @@ export function StatBox({
   return (
     <div
       className={`flex flex-col items-center rounded-md border py-1.5 ${
-        highlight ? "border-sky-700 bg-sky-950/40" : "border-slate-800 bg-slate-800/40"
+        highlight ? "border-amber-700 bg-amber-950/30" : "border-slate-800 bg-slate-800/40"
       }`}
     >
-      <span className={`text-sm font-bold ${highlight ? "text-sky-300" : "text-slate-100"}`}>{value}</span>
+      <span className={`text-sm font-bold ${highlight ? "text-amber-300" : "text-slate-100"}`}>{value}</span>
       <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
     </div>
   );
@@ -403,12 +403,12 @@ export function Pill({
   children,
 }: {
   panel?: React.ReactNode;
-  color?: "slate" | "sky" | "amber" | "orange" | "yellow";
+  color?: "slate" | "sky" | "amber" | "orange" | "rose";
   children: React.ReactNode;
 }) {
   const colorCls =
-    color === "yellow"
-      ? "border-yellow-600 bg-yellow-950/40 text-yellow-300"
+    color === "rose"
+      ? "border-rose-600 bg-rose-950/40 text-rose-300"
       : color === "amber"
         ? "border-amber-700 bg-amber-950/30 text-amber-300"
         : color === "sky"
@@ -517,8 +517,8 @@ function QuickNoteRow({
   }
 
   return (
-    <div className="flex items-start gap-1.5 text-sm text-slate-300">
-      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+    <div className="flex items-center gap-1.5 text-sm text-slate-300">
+      <span className="h-1 w-1 shrink-0 rounded-full bg-slate-600" />
       <button
         type="button"
         onClick={() => {
@@ -533,7 +533,7 @@ function QuickNoteRow({
         type="button"
         onClick={onDelete}
         aria-label="Delete note"
-        className="shrink-0 text-slate-600 hover:text-red-400"
+        className="flex shrink-0 items-center text-slate-600 hover:text-red-400"
       >
         <TrashIcon className="h-3.5 w-3.5" />
       </button>
@@ -806,7 +806,7 @@ export function CharacterCard({
           <div className="flex flex-wrap gap-1.5">
             {c.skillProficiencies.map((skill) => {
               const color = skill.expertise
-                ? "yellow"
+                ? "rose"
                 : skill.proficient
                   ? "amber"
                   : skill.halfProficiency

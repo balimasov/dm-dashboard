@@ -176,7 +176,7 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
       aria-label={active ? "Remove reminder" : "Flag as a reminder"}
       aria-pressed={active}
       title={active ? "Remove reminder" : "Flag as a reminder"}
-      className={`shrink-0 rounded p-0.5 ${active ? "text-amber-400" : "text-slate-600 hover:text-amber-400"}`}
+      className={`shrink-0 rounded p-0.5 ${active ? "text-amber-300" : "text-slate-600 hover:text-amber-400"}`}
     >
       <FlameIcon className="h-3.5 w-3.5" filled={active} />
     </button>
@@ -185,7 +185,9 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
 
 function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div
+      className={`flex items-center gap-2 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
+    >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
       <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>
         <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
@@ -439,7 +441,7 @@ export function CharacterDetailsModal({
           <div className="flex flex-wrap gap-1.5">
             {allSkills.map((skill) => {
               const color = skill.expertise
-                ? "yellow"
+                ? "rose"
                 : skill.proficient
                   ? "amber"
                   : skill.halfProficiency
