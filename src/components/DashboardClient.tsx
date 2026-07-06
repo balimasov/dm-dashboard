@@ -124,7 +124,10 @@ export function DashboardClient({
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="flex items-center justify-between gap-3">
-        <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+        <div className="flex min-w-0 items-center gap-2">
+          <CampaignLogo campaign={campaignState} />
+          <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+        </div>
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
@@ -153,24 +156,18 @@ export function DashboardClient({
         </HeaderPortal>
       )}
 
-      <CollapsibleSection
-        title={
-          <span className="flex items-center gap-2">
-            <CampaignLogo campaign={campaignState} />
-            {campaignState.name}
-          </span>
-        }
-        storageKey="dm-dashboard-campaign-open"
-      >
+      <CollapsibleSection title={`Campaign: "${campaignState.name}"`} storageKey="dm-dashboard-campaign-open">
+        <p className="mb-4 text-sm text-slate-500">Overview and notes for this campaign.</p>
         <CampaignNotes
           campaign={campaignState}
           onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
         />
       </CollapsibleSection>
 
-      <CollapsibleSection title={`Party (${characters.length})`} storageKey="dm-dashboard-characters-open">
+      <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open">
         <p className="mb-4 text-sm text-slate-500">
-          Combat state, resources, and notes for every character.
+          {characters.length} {characters.length === 1 ? "character" : "characters"} — combat state, resources,
+          and notes for each.
         </p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
