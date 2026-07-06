@@ -466,7 +466,6 @@ export const demoCharacters: Character[] = [
     ],
     "subclass": "Path of the Berserker",
     "avatarUrl": "https://www.dndbeyond.com/avatars/17/208/636377840332911633.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
-    "maxHpLocked": true,
     "synced": false
   },
   {
@@ -1352,7 +1351,6 @@ export const demoCharacters: Character[] = [
       "saveDc": 14
     },
     "avatarUrl": "https://www.dndbeyond.com/avatars/56275/822/1581111423-139992128.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
-    "maxHpLocked": true,
     "synced": false
   },
   {
@@ -2191,7 +2189,6 @@ export const demoCharacters: Character[] = [
       "saveDc": 14
     },
     "avatarUrl": "https://www.dndbeyond.com/avatars/54062/147/1581111423-158958304.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
-    "maxHpLocked": true,
     "synced": false
   },
   {
@@ -2843,7 +2840,6 @@ export const demoCharacters: Character[] = [
       "saveDc": 16
     },
     "avatarUrl": "https://www.dndbeyond.com/avatars/46249/732/1581111423-138454566.jpeg?width=150&height=150&fit=crop&quality=95&auto=webp",
-    "maxHpLocked": true,
     "synced": false
   }
 ];

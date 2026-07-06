@@ -344,14 +344,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
                 onChange={(e) => setCombat("hp", Number(e.target.value))}
               />
             </Field>
-            <Field
-              label="Max HP"
-              hint={
-                draft.maxHpLocked
-                  ? "Locked — sync won't change this value."
-                  : "Recalculated automatically on the next sync."
-              }
-            >
+            <Field label="Max HP" hint="Recalculated automatically on the next sync.">
               <input
                 type="number"
                 className={inputCls}
@@ -433,14 +426,6 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={draft.maxHpLocked ?? false}
-              onChange={(e) => set("maxHpLocked", e.target.checked)}
-            />
-            Lock Max HP (ignore automatic recalculation on sync)
-          </label>
         </section>
 
         {/* Stats */}

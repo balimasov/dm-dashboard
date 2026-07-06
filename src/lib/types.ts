@@ -411,14 +411,6 @@ export interface Character {
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;
-  /**
-   * When true, syncing from D&D Beyond keeps the current Max HP untouched and
-   * only refreshes current HP against it (damage tracking is safe to trust;
-   * the Max HP formula isn't once ability scores have changed after leveling).
-   * Automatically set after the first successful sync, but editable — the DM
-   * can uncheck it to let one sync recompute Max HP fresh again.
-   */
-  maxHpLocked?: boolean;
 }
 
 export function abilityModifier(score: number): number {
