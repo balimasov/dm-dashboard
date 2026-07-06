@@ -475,7 +475,13 @@ export function CharacterCard({
   const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20 flex flex-col gap-4">
+    <div
+      className={`rounded-xl border p-4 shadow-lg shadow-black/20 flex flex-col gap-4 ${
+        c.concentrating
+          ? "border-violet-500 ring-2 ring-violet-500/50 bg-violet-950/10"
+          : "border-slate-800 bg-slate-900/60"
+      }`}
+    >
       {/* Header */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
 
@@ -660,7 +666,24 @@ export function CharacterCard({
       {/* Spell slots */}
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Spells</h3>
+          <div className="mb-1.5 flex items-center justify-between">
+            <h3 className="text-xs uppercase tracking-wide text-slate-500">Spells</h3>
+            {onUpdate && (
+              <button
+                type="button"
+                onClick={() => onUpdate(c.id, { concentrating: !c.concentrating })}
+                aria-pressed={Boolean(c.concentrating)}
+                title="Toggle whether this character is currently concentrating"
+                className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
+                  c.concentrating
+                    ? "border-violet-500 bg-violet-950/60 text-violet-300"
+                    : "border-slate-700 text-slate-500 hover:border-violet-700 hover:text-violet-400"
+                }`}
+              >
+                Concentrating
+              </button>
+            )}
+          </div>
           <div className="space-y-1">
             {c.spellSlots
               .slice()

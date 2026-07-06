@@ -382,6 +382,15 @@ export interface Character {
    * every D&D Beyond sync and wouldn't stay stable across one.
    */
   flaggedAbilities?: string[];
+  /**
+   * Manually toggled by the DM (not synced from D&D Beyond — that field was
+   * tried before and removed, since which spell is being concentrated on
+   * isn't reliably exposed by the API). Just a plain reminder flag: players
+   * routinely forget they're concentrating, so the whole card gets a violet
+   * ring/tint when this is set, toggled via a button in the card's Spells
+   * section.
+   */
+  concentrating?: boolean;
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;
