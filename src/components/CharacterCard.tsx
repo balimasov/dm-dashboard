@@ -314,7 +314,15 @@ export function StatusRail({
 
   if (!sticky) {
     return (
-      <div className="absolute right-0 top-7 z-10 flex translate-x-1/2 flex-col items-center gap-3">
+      // `z-0` (not `z-10`): the page's own header is `sticky top-0 z-10` —
+      // as the party row scrolls underneath it, this rail's screen position
+      // can momentarily overlap the header's box. Neither establishes its
+      // own stacking context beyond that z-index, so with equal z-index the
+      // later element in the DOM (this one) would win ties and paint over
+      // the header (confirmed: it did, at exactly that scroll offset).
+      // Staying below the header's z-index keeps it correctly hidden behind
+      // it instead.
+      <div className="absolute right-0 top-10 z-0 flex translate-x-1/2 flex-col items-center gap-3">
         <StatusBadges {...badgeProps} />
       </div>
     );
