@@ -197,20 +197,22 @@ export function ConditionsPanel({ conditions }: { conditions: string[] }) {
  * fully inset) so it reads as a floating marker without eating into the
  * 16px content padding where the header/text actually starts.
  */
-const STATUS_BADGE_SIZE = "flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
+const STATUS_BADGE_SIZE = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
 
-/** Deterministic hue per condition name, so freeform text (e.g. "Poisoned") always gets the same distinct border color without a hardcoded per-condition palette. */
-function conditionHue(name: string): number {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  return hash % 360;
-}
+/**
+ * Condition badges cycle through a curated, well-spaced set of hues by
+ * position (not a name hash) — guarantees no two *simultaneously active*
+ * conditions share a color as long as there are 8 or fewer of them, which a
+ * hash could easily collide on. Deliberately excludes violet/red, since
+ * those are already reserved for Concentration/Exhaustion.
+ */
+const CONDITION_HUES = [16, 48, 80, 112, 144, 176, 208, 320];
 
-function ConditionBadge({ condition }: { condition: string }) {
-  const hue = conditionHue(condition.trim().toLowerCase());
+function ConditionBadge({ condition, index }: { condition: string; index: number }) {
+  const hue = CONDITION_HUES[index % CONDITION_HUES.length];
   return (
     <span
-      className={`${STATUS_BADGE_SIZE} status-ring-dynamic text-sm font-bold`}
+      className={`${STATUS_BADGE_SIZE} status-ring-dynamic text-[10px] font-bold`}
       style={
         {
           borderColor: `hsl(${hue}, 75%, 55%)`,
@@ -233,9 +235,9 @@ function ExhaustionBadge({ level }: { level: number }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500 relative`}>
       <InfoTooltip panel={<ExhaustionPanel level={level} />}>
-        <ExhaustionIcon className="h-6 w-6 text-red-300" />
+        <ExhaustionIcon className="h-[18px] w-[18px] text-red-300" />
       </InfoTooltip>
-      <span className="pointer-events-none absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-xs font-bold leading-none text-white">
+      <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold leading-none text-white">
         {level}
       </span>
     </span>
@@ -243,7 +245,7 @@ function ExhaustionBadge({ level }: { level: number }) {
 }
 
 function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
-  const sizeCls = active ? "h-12 w-12" : "h-8 w-8";
+  const sizeCls = active ? "h-9 w-9" : "h-6 w-6";
   return (
     <button
       type="button"
@@ -257,7 +259,7 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
           : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
       }`}
     >
-      <ConcentrationIcon className={active ? "h-7 w-7" : "h-5 w-5"} />
+      <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
     </button>
   );
 }
@@ -274,11 +276,11 @@ export function StatusRail({
   onToggleConcentration?: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-4 z-10 flex translate-x-1/2 flex-col items-center gap-5">
+    <div className="absolute right-0 top-4 z-10 flex translate-x-1/2 flex-col items-center gap-3">
       <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
-      {conditions.map((condition) => (
-        <ConditionBadge key={condition} condition={condition} />
+      {conditions.map((condition, index) => (
+        <ConditionBadge key={condition} condition={condition} index={index} />
       ))}
     </div>
   );
