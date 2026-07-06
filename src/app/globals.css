@@ -40,3 +40,25 @@ body {
 .scrollbar-themed::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.55);
 }
+
+/* Concentrating card highlight — a static ring reads as just another border
+   at a glance across a row of cards, easy to miss exactly when it matters
+   most (mid-combat). Pulsing box-shadow (not `animate-pulse`'s opacity,
+   which would fade the card's own content too) keeps the glow itself
+   breathing without touching anything inside the card. */
+@keyframes concentrating-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(139, 92, 246, 0.55),
+      0 0 14px 3px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(139, 92, 246, 0.95),
+      0 0 26px 8px rgba(139, 92, 246, 0.6);
+  }
+}
+.concentrating-ring {
+  animation: concentrating-glow 2s ease-in-out infinite;
+}

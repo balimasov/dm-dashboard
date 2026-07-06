@@ -478,7 +478,7 @@ export function CharacterCard({
     <div
       className={`rounded-xl border p-4 shadow-lg shadow-black/20 flex flex-col gap-4 ${
         c.concentrating
-          ? "border-violet-500 ring-2 ring-violet-500/50 bg-violet-950/10"
+          ? "concentrating-ring border-violet-500 bg-violet-950/10"
           : "border-slate-800 bg-slate-900/60"
       }`}
     >
