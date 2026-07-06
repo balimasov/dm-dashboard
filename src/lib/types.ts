@@ -374,6 +374,14 @@ export interface Character {
    * text.
    */
   quickNotes: QuickNote[];
+  /**
+   * Names of abilities/spells the DM has flagged as a reminder for the
+   * player (e.g. "you keep forgetting you have this") — shown with a flame
+   * icon and amber highlight in the character details modal. Matched by
+   * name rather than id, since Feature/KnownSpell ids are regenerated on
+   * every D&D Beyond sync and wouldn't stay stable across one.
+   */
+  flaggedAbilities?: string[];
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;

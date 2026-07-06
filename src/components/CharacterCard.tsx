@@ -726,7 +726,9 @@ export function CharacterCard({
         </div>
       </div>
 
-      {detailsOpen && <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} />}
+      {detailsOpen && (
+        <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} />
+      )}
     </div>
   );
 }
