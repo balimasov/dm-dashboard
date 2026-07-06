@@ -37,7 +37,10 @@ function CampaignRow({
     <li className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
       <CampaignLogo campaign={campaign} />
       <div className="min-w-0 flex-1">
-        <Link href={`/campaigns/${campaign.id}`} className="truncate text-lg font-semibold text-slate-100 hover:underline">
+        <Link
+          href={`/campaigns/${campaign.id}`}
+          className="block break-words text-lg font-semibold text-slate-100 hover:underline"
+        >
           {campaign.name}
         </Link>
         <p className="text-sm text-slate-500">

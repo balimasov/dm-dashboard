@@ -54,14 +54,14 @@ export function CollapsibleSection({
         <button
           type="button"
           onClick={() => setOpenState(storageKey, !open)}
-          className="group flex items-center gap-2"
+          className="group flex items-start gap-2 text-left"
         >
           <span
-            className={`text-slate-500 transition-transform group-hover:text-slate-300 ${open ? "rotate-90" : ""}`}
+            className={`mt-1 shrink-0 text-slate-500 transition-transform group-hover:text-slate-300 ${open ? "rotate-90" : ""}`}
           >
             ▶
           </span>
-          <h2 className="text-2xl font-bold text-slate-50 group-hover:text-slate-200">{title}</h2>
+          <h2 className="break-words text-2xl font-bold text-slate-50 group-hover:text-slate-200">{title}</h2>
         </button>
         {actions}
       </div>
