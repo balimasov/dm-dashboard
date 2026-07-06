@@ -2,92 +2,55 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCampaigns } from "@/hooks/useCampaigns";
-import { CampaignSummary } from "@/lib/types";
+import { CampaignFormModal } from "@/components/CampaignFormModal";
+import { CampaignSummary, Character } from "@/lib/types";
 
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path
-        d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19 3 20l1-4 12.5-12.5z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
+  if (campaign.logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
+      <img
+        src={campaign.logoUrl}
+        alt=""
+        className="h-12 w-12 shrink-0 rounded-md border border-slate-800 object-cover"
       />
-    </svg>
+    );
+  }
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-800 text-lg font-semibold text-slate-600">
+      {campaign.name.trim().charAt(0).toUpperCase() || "?"}
+    </div>
   );
 }
 
-/** Name is a `Link` into the campaign, so renaming needs its own affordance rather than click-to-edit on the name itself (which QuickNoteRow uses, but there nothing else competes for that click). */
 function CampaignRow({
   campaign,
-  onRename,
+  onEdit,
   onRemove,
 }: {
   campaign: CampaignSummary;
-  onRename: (id: string, name: string) => void;
+  onEdit: (campaign: CampaignSummary) => void;
   onRemove: (id: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(campaign.name);
-
-  function commitRename() {
-    const trimmed = draft.trim();
-    if (trimmed && trimmed !== campaign.name) onRename(campaign.id, trimmed);
-    else setDraft(campaign.name);
-    setEditing(false);
-  }
-
   return (
     <li className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
+      <CampaignLogo campaign={campaign} />
       <div className="min-w-0 flex-1">
-        {editing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename();
-              else if (e.key === "Escape") {
-                setDraft(campaign.name);
-                setEditing(false);
-              }
-            }}
-            onBlur={commitRename}
-            className="w-full rounded-md border border-sky-700 bg-slate-800 px-2 py-1 text-lg font-semibold text-slate-100 outline-none"
-          />
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/campaigns/${campaign.id}`}
-              className="truncate text-lg font-semibold text-slate-100 hover:underline"
-            >
-              {campaign.name}
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(campaign.name);
-                setEditing(true);
-              }}
-              aria-label="Rename campaign"
-              title="Rename campaign"
-              className="shrink-0 rounded p-0.5 text-slate-600 hover:text-sky-400"
-            >
-              <EditIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+        <Link href={`/campaigns/${campaign.id}`} className="truncate text-lg font-semibold text-slate-100 hover:underline">
+          {campaign.name}
+        </Link>
         <p className="text-sm text-slate-500">
           {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
         </p>
       </div>
-      <Link
-        href={`/campaigns/${campaign.id}/settings`}
+      <button
+        type="button"
+        onClick={() => onEdit(campaign)}
         className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
       >
-        Settings
-      </Link>
+        Edit
+      </button>
       <button
         type="button"
         onClick={() => {
@@ -104,65 +67,95 @@ function CampaignRow({
   );
 }
 
+function Hero() {
+  return (
+    <div className="mb-10 flex flex-col items-center gap-3 text-center">
+      <svg viewBox="0 0 32 32" width="56" height="56" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="#dc2626" />
+        <text
+          x="16"
+          y="23"
+          fontFamily="Georgia, 'Times New Roman', serif"
+          fontSize="20"
+          fontWeight="700"
+          fill="white"
+          textAnchor="middle"
+        >
+          &amp;
+        </text>
+      </svg>
+      <h1 className="text-2xl font-bold text-slate-50">DM Dashboard</h1>
+      <p className="max-w-xl text-sm text-slate-400">
+        Running a campaign means juggling character sheets, notes, and a dozen D&D Beyond tabs with no single
+        place that has it all. DM Dashboard pulls a whole party — combat stats, inventory, spells, and notes —
+        into one screen that stays in sync. Built for my own table, now shared with the rest of the DM community.
+      </p>
+    </div>
+  );
+}
+
 export function CampaignsClient({ initialCampaigns }: { initialCampaigns: CampaignSummary[] }) {
-  const { campaigns, addCampaign, renameCampaign, removeCampaign } = useCampaigns(initialCampaigns);
-  const [name, setName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const { campaigns, addCampaign, updateCampaign, removeCampaign, setCampaignSummary } =
+    useCampaigns(initialCampaigns);
+  const [modalState, setModalState] = useState<{ campaign: CampaignSummary | null; characters: Character[] } | null>(
+    null
+  );
+  const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-
-    setCreating(true);
-    setError(null);
+  async function openEdit(campaign: CampaignSummary) {
+    setLoadingEdit(campaign.id);
     try {
-      const campaign = await addCampaign(trimmed);
-      router.push(`/campaigns/${campaign.id}/settings`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create campaign.");
-      setCreating(false);
+      const res = await fetch(`/api/characters?campaignId=${campaign.id}`);
+      const characters = res.ok ? ((await res.json()) as Character[]) : [];
+      setModalState({ campaign, characters });
+    } finally {
+      setLoadingEdit(null);
     }
+  }
+
+  function closeModal(updated?: CampaignSummary) {
+    if (updated) setCampaignSummary(updated);
+    setModalState(null);
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-1 text-2xl font-bold text-slate-50">Campaigns</h1>
-      <p className="mb-6 text-sm text-slate-500">Pick a campaign to manage its party, or start a new one.</p>
+      <Hero />
 
-      <form onSubmit={handleSubmit} className="mb-1 flex gap-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setError(null);
-          }}
-          placeholder="Campaign name"
-          className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
-        />
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
         <button
-          type="submit"
-          disabled={!name.trim() || creating}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+          type="button"
+          onClick={() => setModalState({ campaign: null, characters: [] })}
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
         >
-          {creating ? "Creating..." : "+ New Campaign"}
+          + New Campaign
         </button>
-      </form>
-      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
-
-      <h2 className="mb-3 mt-6 text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
+      </div>
 
       {campaigns.length === 0 ? (
         <p className="text-sm text-slate-600">No campaigns yet — create one above.</p>
       ) : (
         <ul className="space-y-2">
           {campaigns.map((c) => (
-            <CampaignRow key={c.id} campaign={c} onRename={renameCampaign} onRemove={removeCampaign} />
+            <CampaignRow
+              key={c.id}
+              campaign={c}
+              onEdit={() => openEdit(c)}
+              onRemove={removeCampaign}
+            />
           ))}
         </ul>
+      )}
+      {loadingEdit && <p className="mt-3 text-sm text-slate-600">Loading...</p>}
+
+      {modalState && (
+        <CampaignFormModal
+          campaign={modalState.campaign}
+          initialCharacters={modalState.characters}
+          actions={{ addCampaign, updateCampaign }}
+          onClose={closeModal}
+        />
       )}
     </div>
   );

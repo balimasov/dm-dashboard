@@ -142,13 +142,14 @@ export function getCampaign(id: string): Campaign | null {
   return row ? (JSON.parse(row.data) as Campaign) : null;
 }
 
-export function createCampaign(name: string): Campaign {
+export function createCampaign(input: { name: string; notes?: string; logoUrl?: string }): Campaign {
   const db = getDb();
   const campaign: Campaign = {
     id: `campaign-${Date.now()}`,
-    name,
-    notes: "",
+    name: input.name,
+    notes: input.notes ?? "",
     createdAt: new Date().toISOString(),
+    ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}),
   };
   const maxPosition = db.prepare("SELECT MAX(position) AS maxPosition FROM campaigns").get() as {
     maxPosition: number | null;

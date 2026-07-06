@@ -7,10 +7,29 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HeaderPortal } from "@/components/HeaderPortal";
 import { InventoryOverview } from "@/components/InventoryOverview";
+import { NotesEditor } from "@/components/NotesEditor";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { Campaign, Character } from "@/lib/types";
+
+function CampaignLogo({ campaign }: { campaign: Campaign }) {
+  if (campaign.logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
+      <img
+        src={campaign.logoUrl}
+        alt=""
+        className="h-9 w-9 shrink-0 rounded-md border border-slate-800 object-cover"
+      />
+    );
+  }
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-800 text-sm font-semibold text-slate-600">
+      {campaign.name.trim().charAt(0).toUpperCase() || "?"}
+    </div>
+  );
+}
 
 /** Local state + save-on-blur — same lightweight pattern used elsewhere in this app, no dedicated save button. */
 function CampaignNotes({ campaign }: { campaign: Campaign }) {
@@ -25,16 +44,7 @@ function CampaignNotes({ campaign }: { campaign: Campaign }) {
     });
   }
 
-  return (
-    <textarea
-      value={notes}
-      onChange={(e) => setNotes(e.target.value)}
-      onBlur={saveNotes}
-      placeholder="Campaign notes..."
-      rows={4}
-      className="w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-sky-600"
-    />
-  );
+  return <NotesEditor value={notes} onChange={setNotes} onBlur={saveNotes} placeholder="Campaign notes..." />;
 }
 
 export function DashboardClient({
@@ -105,7 +115,15 @@ export function DashboardClient({
         </HeaderPortal>
       )}
 
-      <CollapsibleSection title={campaign.name} storageKey="dm-dashboard-campaign-open">
+      <CollapsibleSection
+        title={
+          <span className="flex items-center gap-2">
+            <CampaignLogo campaign={campaign} />
+            {campaign.name}
+          </span>
+        }
+        storageKey="dm-dashboard-campaign-open"
+      >
         <CampaignNotes campaign={campaign} />
       </CollapsibleSection>
 
@@ -118,7 +136,7 @@ export function DashboardClient({
 
         {characters.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
-            <p>No characters yet. Add some from this campaign&apos;s Settings on the Campaigns page.</p>
+            <p>No characters yet. Add some by editing this campaign from the Campaigns page.</p>
           </div>
         ) : (
           // Status badges straddle each card's *top* border and can bleed

@@ -37,7 +37,7 @@ export function CollapsibleSection({
   storageKey,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
   actions?: React.ReactNode;
   storageKey: string;
   children: React.ReactNode;

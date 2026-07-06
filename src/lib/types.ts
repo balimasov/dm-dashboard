@@ -344,6 +344,8 @@ export interface Campaign {
   name: string;
   notes: string;
   createdAt: string;
+  /** A square (cropped client-side) base64 data URI — absent falls back to an initial letter, same as `CharacterAvatar` does for characters. */
+  logoUrl?: string;
 }
 
 /** A campaign plus its roster size — used for the campaigns list, where showing a count doesn't require loading every character. */

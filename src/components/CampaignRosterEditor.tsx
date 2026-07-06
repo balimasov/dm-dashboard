@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -17,22 +17,28 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Character, extractDndBeyondCharacterId } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 
-export function SettingsClient({
+/** The add/sync/reorder roster UI, without any page-level chrome — embedded inside `CampaignFormModal`. */
+export function CampaignRosterEditor({
   campaignId,
-  campaignName,
   initialCharacters,
+  onCountChange,
 }: {
   campaignId: string;
-  campaignName: string;
   initialCharacters: Character[];
+  /** Roster edits happen inside this component's own `useCharacters` state — this reports count changes up so an enclosing modal can keep a stale `characterCount` in sync without lifting the whole list. */
+  onCountChange?: (count: number) => void;
 }) {
   const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } =
     useCharacters(initialCharacters);
+
+  useEffect(() => {
+    onCountChange?.(characters.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characters.length]);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -119,16 +125,8 @@ export function SettingsClient({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Breadcrumbs
-        items={[
-          { label: "Campaigns", href: "/" },
-          { label: campaignName, href: `/campaigns/${campaignId}` },
-          { label: "Settings" },
-        ]}
-      />
-      <h1 className="text-2xl font-bold text-slate-50 mb-1">Settings</h1>
-      <p className="text-sm text-slate-500 mb-6">
+    <div>
+      <p className="mb-3 text-sm text-slate-500">
         Add D&D Beyond character links to have them show up on the dashboard.
       </p>
 
@@ -151,15 +149,15 @@ export function SettingsClient({
           {adding ? "Adding..." : "Add"}
         </button>
       </form>
-      <div className="mb-6 space-y-1">
+      <div className="mb-4 space-y-1">
         {error && <p className="text-sm text-red-400">{error}</p>}
         {syncError && <p className="text-sm text-amber-400">{syncError}</p>}
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">
+        <h3 className="text-sm uppercase tracking-wide text-slate-500">
           Added Characters ({characters.length})
-        </h2>
+        </h3>
         {characters.length > 1 && (
           <p className="text-xs text-slate-600">Drag ⠿ to reorder on the dashboard</p>
         )}
