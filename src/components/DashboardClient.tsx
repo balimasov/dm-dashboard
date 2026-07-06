@@ -124,9 +124,9 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
-      <div className="flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <CampaignLogo campaign={campaignState} />
           <button
             type="button"

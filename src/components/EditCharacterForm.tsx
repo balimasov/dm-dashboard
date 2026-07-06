@@ -253,6 +253,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           { label: campaignName, href: `/campaigns/${character.campaignId}` },
           { label: character.name },
         ]}
+        className="mb-4"
       />
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold text-slate-50">Edit Character</h1>
