@@ -158,15 +158,17 @@ export function DashboardClient({
       )}
 
       <CollapsibleSection title={`Campaign: "${campaignState.name}"`} storageKey="dm-dashboard-campaign-open">
-        <p className="mb-4 text-sm text-slate-500">Overview and notes for this campaign.</p>
-        <CampaignNotes
-          campaign={campaignState}
-          onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
-        />
+        <div className="px-3">
+          <p className="mb-4 text-sm text-slate-500">Overview and notes for this campaign.</p>
+          <CampaignNotes
+            campaign={campaignState}
+            onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
+          />
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open">
-        <p className="mb-4 text-sm text-slate-500">
+        <p className="mb-4 px-3 text-sm text-slate-500">
           {characters.length} {characters.length === 1 ? "character" : "characters"} — combat state, resources,
           and notes for each.
         </p>
@@ -174,7 +176,7 @@ export function DashboardClient({
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
         {characters.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
+          <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
             <p>No characters yet. Add some by editing this campaign from the Campaigns page.</p>
           </div>
         ) : (
@@ -184,11 +186,12 @@ export function DashboardClient({
           // regardless of what's set (the same quirk noted on StatusRail),
           // which clips anything that pokes out above the row's own box, and
           // the row has no scroll room to the left/right of its first/last
-          // card either. `pt-8`/`px-8` reserve room on every side so the
+          // card either. `pt-8`/`px-3` reserve room on every side so the
           // leftmost, rightmost, and topmost badges always have somewhere to
           // bleed into before hitting a clipping edge (confirmed clipped
-          // without this).
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-8 pb-2 pt-8">
+          // without this) — `px-3` also matches the Campaign/Inventory
+          // blocks' own inset so all three line up on the same left edge.
+          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
             {characters.map((character) => (
               <div key={character.id} className="w-[300px] shrink-0">
                 <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
@@ -199,8 +202,10 @@ export function DashboardClient({
       </CollapsibleSection>
 
       <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open">
-        <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
-        <InventoryOverview characters={characters} />
+        <div className="px-3">
+          <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
+          <InventoryOverview characters={characters} />
+        </div>
       </CollapsibleSection>
 
       {settingsOpen && (
