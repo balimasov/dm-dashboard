@@ -2,7 +2,7 @@ import "server-only";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import { Character, extractDndBeyondCharacterId, ItemCategory, ItemRarity } from "./types";
+import { Campaign, CampaignSummary, Character, extractDndBeyondCharacterId, ItemCategory, ItemRarity } from "./types";
 import { demoCharacters } from "./mockData";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at
@@ -13,6 +13,8 @@ import { demoCharacters } from "./mockData";
 const DB_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "dm-dashboard.sqlite");
 
+const DEMO_CAMPAIGN_ID = "demo-campaign";
+
 function openDb(): Database.Database {
   if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
   const db = new Database(DB_PATH);
@@ -20,10 +22,27 @@ function openDb(): Database.Database {
   db.exec(`
     CREATE TABLE IF NOT EXISTS characters (
       id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL DEFAULT '',
       position INTEGER NOT NULL,
       data TEXT NOT NULL
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      position INTEGER NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+
+  // `characters` predates campaigns — `CREATE TABLE IF NOT EXISTS` above
+  // doesn't retrofit a column onto an already-existing table, so an existing
+  // DB needs an explicit migration instead.
+  const characterColumns = db.prepare("PRAGMA table_info(characters)").all() as Array<{ name: string }>;
+  if (!characterColumns.some((c) => c.name === "campaign_id")) {
+    db.exec("ALTER TABLE characters ADD COLUMN campaign_id TEXT NOT NULL DEFAULT ''");
+  }
+
   return db;
 }
 
@@ -35,11 +54,34 @@ declare global {
 function getDb(): Database.Database {
   if (!global.__dmDashboardDb) {
     const db = openDb();
+
+    const campaignCount = db.prepare("SELECT COUNT(*) AS count FROM campaigns").get() as { count: number };
+    if (campaignCount.count === 0) {
+      const campaign: Campaign = {
+        id: DEMO_CAMPAIGN_ID,
+        name: "The Sundered Vale",
+        notes: "",
+        createdAt: new Date().toISOString(),
+      };
+      db.prepare("INSERT INTO campaigns (id, position, data) VALUES (?, ?, ?)").run(
+        campaign.id,
+        0,
+        JSON.stringify(campaign)
+      );
+    }
+
+    // Backfills any character saved before campaigns existed onto the demo
+    // campaign — covers upgrading an existing single-tenant DB, not just a
+    // fresh install (which seeds characters already carrying this id below).
+    db.prepare("UPDATE characters SET campaign_id = ? WHERE campaign_id = ''").run(DEMO_CAMPAIGN_ID);
+
     const count = db.prepare("SELECT COUNT(*) AS count FROM characters").get() as { count: number };
     if (count.count === 0) {
-      const insert = db.prepare("INSERT INTO characters (id, position, data) VALUES (?, ?, ?)");
+      const insert = db.prepare(
+        "INSERT INTO characters (id, campaign_id, position, data) VALUES (?, ?, ?, ?)"
+      );
       demoCharacters.forEach((character, index) => {
-        insert.run(character.id, index, JSON.stringify(character));
+        insert.run(character.id, character.campaignId, index, JSON.stringify(character));
       });
     }
     global.__dmDashboardDb = db;
@@ -82,10 +124,66 @@ function rowToCharacter(row: { data: string }): Character {
   };
 }
 
-export function listCharacters(): Character[] {
+export function listCampaigns(): CampaignSummary[] {
   const rows = getDb()
-    .prepare("SELECT data FROM characters ORDER BY position ASC")
-    .all() as Array<{ data: string }>;
+    .prepare(
+      `SELECT c.data AS data, COUNT(ch.id) AS characterCount
+       FROM campaigns c
+       LEFT JOIN characters ch ON ch.campaign_id = c.id
+       GROUP BY c.id
+       ORDER BY c.position ASC`
+    )
+    .all() as Array<{ data: string; characterCount: number }>;
+  return rows.map((row) => ({ ...(JSON.parse(row.data) as Campaign), characterCount: row.characterCount }));
+}
+
+export function getCampaign(id: string): Campaign | null {
+  const row = getDb().prepare("SELECT data FROM campaigns WHERE id = ?").get(id) as { data: string } | undefined;
+  return row ? (JSON.parse(row.data) as Campaign) : null;
+}
+
+export function createCampaign(name: string): Campaign {
+  const db = getDb();
+  const campaign: Campaign = {
+    id: `campaign-${Date.now()}`,
+    name,
+    notes: "",
+    createdAt: new Date().toISOString(),
+  };
+  const maxPosition = db.prepare("SELECT MAX(position) AS maxPosition FROM campaigns").get() as {
+    maxPosition: number | null;
+  };
+  const position = (maxPosition.maxPosition ?? -1) + 1;
+  db.prepare("INSERT INTO campaigns (id, position, data) VALUES (?, ?, ?)").run(
+    campaign.id,
+    position,
+    JSON.stringify(campaign)
+  );
+  return campaign;
+}
+
+export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign | null {
+  const existing = getCampaign(id);
+  if (!existing) return null;
+  const updated: Campaign = { ...existing, ...updates, id: existing.id };
+  getDb().prepare("UPDATE campaigns SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
+  return updated;
+}
+
+/** Cascades: a campaign's characters have nowhere else to belong, so removing it takes its whole roster with it. */
+export function deleteCampaign(id: string): void {
+  const db = getDb();
+  const transaction = db.transaction(() => {
+    db.prepare("DELETE FROM characters WHERE campaign_id = ?").run(id);
+    db.prepare("DELETE FROM campaigns WHERE id = ?").run(id);
+  });
+  transaction();
+}
+
+export function listCharacters(campaignId: string): Character[] {
+  const rows = getDb()
+    .prepare("SELECT data FROM characters WHERE campaign_id = ? ORDER BY position ASC")
+    .all(campaignId) as Array<{ data: string }>;
   return rows.map(rowToCharacter);
 }
 
@@ -96,10 +194,11 @@ export function getCharacter(id: string): Character | null {
   return row ? rowToCharacter(row) : null;
 }
 
-export function createBlankCharacter(url: string): Character {
+export function createBlankCharacter(url: string, campaignId: string): Character {
   const ddbId = extractDndBeyondCharacterId(url);
   return {
     id: `char-${ddbId ?? Date.now()}`,
+    campaignId,
     name: ddbId ? `Character #${ddbId}` : "New Character",
     race: "",
     className: "",
@@ -140,15 +239,16 @@ export function createBlankCharacter(url: string): Character {
   };
 }
 
-export function addCharacterFromUrl(url: string): Character {
+export function addCharacterFromUrl(url: string, campaignId: string): Character {
   const db = getDb();
-  const character = createBlankCharacter(url);
-  const maxPosition = db.prepare("SELECT MAX(position) AS maxPosition FROM characters").get() as {
-    maxPosition: number | null;
-  };
+  const character = createBlankCharacter(url, campaignId);
+  const maxPosition = db
+    .prepare("SELECT MAX(position) AS maxPosition FROM characters WHERE campaign_id = ?")
+    .get(campaignId) as { maxPosition: number | null };
   const position = (maxPosition.maxPosition ?? -1) + 1;
-  db.prepare("INSERT INTO characters (id, position, data) VALUES (?, ?, ?)").run(
+  db.prepare("INSERT INTO characters (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
     character.id,
+    campaignId,
     position,
     JSON.stringify(character)
   );
@@ -167,12 +267,11 @@ export function removeCharacter(id: string): void {
   getDb().prepare("DELETE FROM characters WHERE id = ?").run(id);
 }
 
-export function reorderCharacters(orderedIds: string[]): Character[] {
+export function reorderCharacters(orderedIds: string[]): void {
   const db = getDb();
   const update = db.prepare("UPDATE characters SET position = ? WHERE id = ?");
   const transaction = db.transaction((ids: string[]) => {
     ids.forEach((id, index) => update.run(index, id));
   });
   transaction(orderedIds);
-  return listCharacters();
 }

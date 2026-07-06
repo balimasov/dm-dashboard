@@ -338,8 +338,23 @@ export interface QuickNote {
   createdAt: string;
 }
 
+/** A DM's campaign — its own name, freeform notes, and character roster (characters point back via `Character.campaignId`). */
+export interface Campaign {
+  id: string;
+  name: string;
+  notes: string;
+  createdAt: string;
+}
+
+/** A campaign plus its roster size — used for the campaigns list, where showing a count doesn't require loading every character. */
+export interface CampaignSummary extends Campaign {
+  characterCount: number;
+}
+
 export interface Character {
   id: string;
+  /** Every character belongs to exactly one campaign — scopes the roster shown on that campaign's dashboard. */
+  campaignId: string;
   name: string;
   avatarUrl?: string;
   race: string;

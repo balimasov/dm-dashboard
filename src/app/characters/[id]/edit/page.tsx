@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCharacter } from "@/lib/db";
+import { getCampaign, getCharacter } from "@/lib/db";
 import { EditCharacterForm } from "@/components/EditCharacterForm";
 
 export default async function EditCharacterPage({
@@ -15,11 +15,13 @@ export default async function EditCharacterPage({
       <div className="mx-auto max-w-3xl px-4 py-10 text-slate-500">
         Character not found.{" "}
         <Link href="/" className="text-sky-400 hover:underline">
-          Back to dashboard
+          Back to campaigns
         </Link>
       </div>
     );
   }
 
-  return <EditCharacterForm character={character} />;
+  const campaign = getCampaign(character.campaignId);
+
+  return <EditCharacterForm character={character} campaignName={campaign?.name ?? "Campaign"} />;
 }

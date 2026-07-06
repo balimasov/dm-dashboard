@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCharacters } from "@/hooks/useCharacters";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HeaderPortal } from "@/components/HeaderPortal";
@@ -10,9 +11,40 @@ import { InventoryOverview } from "@/components/InventoryOverview";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
-import { Character } from "@/lib/types";
+import { Campaign, Character } from "@/lib/types";
 
-export function DashboardClient({ initialCharacters }: { initialCharacters: Character[] }) {
+/** Local state + save-on-blur — same lightweight pattern used elsewhere in this app, no dedicated save button. */
+function CampaignNotes({ campaign }: { campaign: Campaign }) {
+  const [notes, setNotes] = useState(campaign.notes);
+
+  async function saveNotes() {
+    if (notes === campaign.notes) return;
+    await fetch(`/api/campaigns/${campaign.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
+  }
+
+  return (
+    <textarea
+      value={notes}
+      onChange={(e) => setNotes(e.target.value)}
+      onBlur={saveNotes}
+      placeholder="Campaign notes..."
+      rows={4}
+      className="w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-sky-600"
+    />
+  );
+}
+
+export function DashboardClient({
+  campaign,
+  initialCharacters,
+}: {
+  campaign: Campaign;
+  initialCharacters: Character[];
+}) {
   const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
@@ -53,6 +85,8 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
+      <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaign.name }]} />
+
       {linkedCharacters.length > 0 && (
         <HeaderPortal>
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
@@ -72,12 +106,16 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
         </HeaderPortal>
       )}
 
+      <CollapsibleSection title={campaign.name} storageKey="dm-dashboard-campaign-open">
+        <CampaignNotes campaign={campaign} />
+      </CollapsibleSection>
+
       <CollapsibleSection
         title={`Party (${characters.length})`}
         storageKey="dm-dashboard-characters-open"
         actions={
           <Link
-            href="/settings"
+            href={`/campaigns/${campaign.id}/settings`}
             className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
           >
             Settings
@@ -94,7 +132,7 @@ export function DashboardClient({ initialCharacters }: { initialCharacters: Char
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
             <p>No characters yet.</p>
             <Link
-              href="/settings"
+              href={`/campaigns/${campaign.id}/settings`}
               className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
             >
               + Add character

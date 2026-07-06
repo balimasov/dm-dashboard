@@ -24,6 +24,7 @@ import {
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
+import { Breadcrumbs } from "./Breadcrumbs";
 import { SyncTimestamp } from "./SyncTimestamp";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
@@ -34,7 +35,7 @@ function nextId() {
   return `new-${Date.now()}-${uid}`;
 }
 
-export function EditCharacterForm({ character }: { character: Character }) {
+export function EditCharacterForm({ character, campaignName }: { character: Character; campaignName: string }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Character>(character);
   const [syncing, setSyncing] = useState(false);
@@ -237,7 +238,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
     setSaveError(null);
     try {
       await patchCharacter(draft.id, { ...draft, synced: true });
-      router.push("/");
+      router.push(`/campaigns/${draft.campaignId}`);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save character.");
       setSaving(false);
@@ -246,9 +247,17 @@ export function EditCharacterForm({ character }: { character: Character }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <Breadcrumbs
+        items={[
+          { label: "Campaigns", href: "/" },
+          { label: campaignName, href: `/campaigns/${character.campaignId}` },
+          { label: "Settings", href: `/campaigns/${character.campaignId}/settings` },
+          { label: character.name },
+        ]}
+      />
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold text-slate-50">Edit Character</h1>
-        <Link href="/" className="text-sm text-slate-400 hover:text-slate-200">
+        <Link href={`/campaigns/${character.campaignId}`} className="text-sm text-slate-400 hover:text-slate-200">
           ← Back to dashboard
         </Link>
       </div>
@@ -841,7 +850,10 @@ export function EditCharacterForm({ character }: { character: Character }) {
         {saveError && <p className="text-sm text-red-400">{saveError}</p>}
 
         <div className="flex justify-end gap-3 pt-2">
-          <Link href="/" className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
+          <Link
+            href={`/campaigns/${character.campaignId}`}
+            className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
+          >
             Cancel
           </Link>
           <button

@@ -1,11 +1,11 @@
-import { listCharacters } from "@/lib/db";
-import { DashboardClient } from "@/components/DashboardClient";
+import { listCampaigns } from "@/lib/db";
+import { CampaignsClient } from "@/components/CampaignsClient";
 
-// Character data changes at runtime (add/edit/reorder/sync) and lives in a
+// Campaign data changes at runtime (create/rename/remove) and lives in a
 // local SQLite file — this page must never be statically cached at build time.
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
-  const characters = listCharacters();
-  return <DashboardClient initialCharacters={characters} />;
+export default function CampaignsPage() {
+  const campaigns = listCampaigns();
+  return <CampaignsClient initialCampaigns={campaigns} />;
 }

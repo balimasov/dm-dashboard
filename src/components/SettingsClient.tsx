@@ -17,11 +17,20 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Character, extractDndBeyondCharacterId } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 
-export function SettingsClient({ initialCharacters }: { initialCharacters: Character[] }) {
+export function SettingsClient({
+  campaignId,
+  campaignName,
+  initialCharacters,
+}: {
+  campaignId: string;
+  campaignName: string;
+  initialCharacters: Character[];
+}) {
   const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } =
     useCharacters(initialCharacters);
   const [url, setUrl] = useState("");
@@ -58,7 +67,7 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
     let character;
     try {
-      character = await addFromUrl(trimmedUrl);
+      character = await addFromUrl(trimmedUrl, campaignId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add character. Please try again.");
       setAdding(false);
@@ -111,6 +120,13 @@ export function SettingsClient({ initialCharacters }: { initialCharacters: Chara
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <Breadcrumbs
+        items={[
+          { label: "Campaigns", href: "/" },
+          { label: campaignName, href: `/campaigns/${campaignId}` },
+          { label: "Settings" },
+        ]}
+      />
       <h1 className="text-2xl font-bold text-slate-50 mb-1">Settings</h1>
       <p className="text-sm text-slate-500 mb-6">
         Add D&D Beyond character links to have them show up on the dashboard.

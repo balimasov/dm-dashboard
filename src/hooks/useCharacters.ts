@@ -15,11 +15,11 @@ async function parseJsonOrThrow(res: Response, fallbackMessage: string): Promise
 export function useCharacters(initialCharacters: Character[]) {
   const [characters, setCharacters] = useState<Character[]>(initialCharacters);
 
-  const addFromUrl = useCallback(async (url: string): Promise<Character> => {
+  const addFromUrl = useCallback(async (url: string, campaignId: string): Promise<Character> => {
     const res = await fetch("/api/characters", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, campaignId }),
     });
     const character = (await parseJsonOrThrow(res, "Failed to add character.")) as Character;
     setCharacters((prev) => [...prev, character]);

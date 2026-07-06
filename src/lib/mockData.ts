@@ -3,6 +3,7 @@ import { Character } from "./types";
 export const demoCharacters: Character[] = [
   {
     "id": "demo-ragnar",
+    "campaignId": "demo-campaign",
     "name": "Ragnar \"Black Rage\"",
     "race": "Orc",
     "className": "Barbarian",
@@ -470,6 +471,7 @@ export const demoCharacters: Character[] = [
   },
   {
     "id": "demo-lilith",
+    "campaignId": "demo-campaign",
     "name": "Lilith",
     "race": "Elf",
     "className": "Paladin",
@@ -1355,6 +1357,7 @@ export const demoCharacters: Character[] = [
   },
   {
     "id": "demo-yorun",
+    "campaignId": "demo-campaign",
     "name": "Yorun (Runa) Dabrace",
     "race": "Elf",
     "className": "Sorcerer",
@@ -2193,6 +2196,7 @@ export const demoCharacters: Character[] = [
   },
   {
     "id": "demo-esmeralda",
+    "campaignId": "demo-campaign",
     "name": "Цінотижка aka Есмеральда фон Пуппікс",
     "race": "Tiefling",
     "className": "Bard",

@@ -8,6 +8,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "orderedIds must be an array of strings." }, { status: 400 });
   }
 
-  const characters = reorderCharacters(orderedIds);
-  return NextResponse.json(characters);
+  reorderCharacters(orderedIds);
+  return NextResponse.json({ ok: true });
 }
