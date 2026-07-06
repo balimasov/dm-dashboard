@@ -149,7 +149,7 @@ export function DashboardClient({
             <button
               onClick={handleSyncAll}
               disabled={syncingAll}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+              className="min-w-28 rounded-lg bg-sky-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
             >
               {syncingAll ? "Syncing..." : "Sync All"}
             </button>
