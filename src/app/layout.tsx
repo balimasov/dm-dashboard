@@ -28,7 +28,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <GlobalLoadingIndicator />
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-          <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+          <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-2 gap-y-2 px-4 py-3">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
               {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset, no need for next/image here */}
               <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
@@ -42,7 +42,7 @@ export default async function RootLayout({
                 always empty too (you can't reach any portaling page
                 unauthenticated) — so there's never an empty slot to collapse. */}
             {authenticated && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div id="header-actions" className="flex flex-wrap items-center gap-2 empty:hidden" />
                 <form action={logout}>
                   <button

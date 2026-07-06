@@ -142,14 +142,14 @@ export function DashboardClient({
         <HeaderPortal>
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {lastSyncedAt && (
-              <span className="whitespace-nowrap text-xs text-slate-500">
+              <span className="hidden whitespace-nowrap text-xs text-slate-500 sm:inline">
                 Synced: <SyncTimestamp iso={lastSyncedAt} />
               </span>
             )}
             <button
               onClick={handleSyncAll}
               disabled={syncingAll}
-              className="min-w-28 rounded-lg bg-sky-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+              className="min-w-[102px] rounded-lg bg-sky-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
             >
               {syncingAll ? "Syncing..." : "Sync All"}
             </button>
