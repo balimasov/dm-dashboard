@@ -274,7 +274,7 @@ export function StatusRail({
   onToggleConcentration?: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-4 z-10 flex translate-x-1/2 flex-col items-center gap-3">
+    <div className="absolute right-0 top-4 z-10 flex translate-x-1/2 flex-col items-center gap-5">
       <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
       {conditions.map((condition) => (
