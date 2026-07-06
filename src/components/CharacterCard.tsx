@@ -253,14 +253,16 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
       disabled={!onToggle}
       onClick={onToggle}
       aria-pressed={active}
-      title="Toggle whether this character is currently concentrating"
+      aria-label="Toggle Concentration"
       className={`flex ${sizeCls} shrink-0 items-center justify-center rounded-full border-2 bg-slate-950 transition-all ${
         active
           ? "concentrating-ring border-violet-500 text-violet-300"
           : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
       }`}
     >
-      <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
+      <InfoTooltip hoverOnly panel={<p>Toggle Concentration — currently {active ? "on" : "off"}.</p>}>
+        <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
+      </InfoTooltip>
     </button>
   );
 }

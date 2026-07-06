@@ -33,9 +33,12 @@ const EDGE_MARGIN = 8;
 export function InfoTooltip({
   children,
   panel,
+  hoverOnly = false,
 }: {
   children: React.ReactNode;
   panel: React.ReactNode;
+  /** Skips the tap-to-toggle affordance and the dotted-underline hint styling — for wrapping an element that already has its own onClick (e.g. a toggle button), so a click there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS. */
+  hoverOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -101,15 +104,25 @@ export function InfoTooltip({
   return (
     <span
       ref={wrapperRef}
-      className="group/tooltip relative block max-w-full cursor-help"
-      onClick={(e) => {
-        e.stopPropagation();
-        setOpen((v) => !v);
-      }}
+      className={`group/tooltip relative block max-w-full ${hoverOnly ? "" : "cursor-help"}`}
+      onClick={
+        hoverOnly
+          ? undefined
+          : (e) => {
+              e.stopPropagation();
+              setOpen((v) => !v);
+            }
+      }
       onMouseEnter={positionPanel}
       onFocus={positionPanel}
     >
-      <span className="block truncate underline decoration-dotted decoration-slate-600 underline-offset-2">
+      <span
+        className={
+          hoverOnly
+            ? "block"
+            : "block truncate underline decoration-dotted decoration-slate-600 underline-offset-2"
+        }
+      >
         {children}
       </span>
       <span

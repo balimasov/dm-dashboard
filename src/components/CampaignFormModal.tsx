@@ -71,7 +71,7 @@ export function CampaignFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={close}>
       <div
-        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl border border-slate-800 bg-slate-900 p-5"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-900 p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -86,7 +86,7 @@ export function CampaignFormModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto pr-1">
+        <div className="scrollbar-themed overflow-y-auto pr-1">
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="flex items-start gap-3">
               <CampaignLogoPicker logoUrl={logoUrl} name={name} onChange={(dataUrl) => {

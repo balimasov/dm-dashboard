@@ -251,7 +251,6 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
         items={[
           { label: "Campaigns", href: "/" },
           { label: campaignName, href: `/campaigns/${character.campaignId}` },
-          { label: "Settings", href: `/campaigns/${character.campaignId}/settings` },
           { label: character.name },
         ]}
       />

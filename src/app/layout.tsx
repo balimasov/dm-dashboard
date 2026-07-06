@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import packageJson from "../../package.json";
 import { FeedbackFab } from "@/components/FeedbackFab";
+import { GlobalLoadingBar } from "@/components/GlobalLoadingBar";
 import { AUTH_COOKIE_NAME, isValidSessionToken } from "@/lib/auth";
 import { logout } from "@/app/login/actions";
 
@@ -25,6 +26,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+        <GlobalLoadingBar />
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
           <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
