@@ -30,20 +30,8 @@ export default async function RootLayout({
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
           <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
-              <svg viewBox="0 0 32 32" width="28" height="28" className="shrink-0" aria-hidden="true">
-                <circle cx="16" cy="16" r="16" fill="#dc2626" />
-                <text
-                  x="16"
-                  y="23"
-                  fontFamily="Georgia, 'Times New Roman', serif"
-                  fontSize="20"
-                  fontWeight="700"
-                  fill="white"
-                  textAnchor="middle"
-                >
-                  &amp;
-                </text>
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset, no need for next/image here */}
+              <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
               DM Dashboard
             </Link>
             {/* Sync/settings actions and logout are one flex item together, so
