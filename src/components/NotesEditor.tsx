@@ -1,89 +1,82 @@
 "use client";
 
-import { useRef } from "react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { Placeholder } from "@tiptap/extensions";
 
-function wrapSelection(textarea: HTMLTextAreaElement, marker: string) {
-  const { selectionStart, selectionEnd, value } = textarea;
-  const selected = value.slice(selectionStart, selectionEnd);
-  const newValue = value.slice(0, selectionStart) + marker + selected + marker + value.slice(selectionEnd);
-  const cursorStart = selectionStart + marker.length;
-  return { newValue, cursorStart, cursorEnd: cursorStart + selected.length };
-}
+const TOOLBAR_BUTTONS = [
+  { key: "bold", label: "B", title: "Bold", cls: "font-bold", run: (e: Editor) => e.chain().focus().toggleBold().run(), active: (e: Editor) => e.isActive("bold") },
+  { key: "italic", label: "I", title: "Italic", cls: "italic", run: (e: Editor) => e.chain().focus().toggleItalic().run(), active: (e: Editor) => e.isActive("italic") },
+  { key: "heading", label: "H", title: "Heading", cls: "font-bold", run: (e: Editor) => e.chain().focus().toggleHeading({ level: 2 }).run(), active: (e: Editor) => e.isActive("heading", { level: 2 }) },
+  { key: "bulletList", label: "≡", title: "Bullet list", cls: "", run: (e: Editor) => e.chain().focus().toggleBulletList().run(), active: (e: Editor) => e.isActive("bulletList") },
+  { key: "orderedList", label: "1.", title: "Numbered list", cls: "", run: (e: Editor) => e.chain().focus().toggleOrderedList().run(), active: (e: Editor) => e.isActive("orderedList") },
+] as const;
 
-/** Prefixes every line touched by the current selection with `- `, so selecting a whole paragraph turns it into a bullet list in one click, not one line at a time. */
-function prefixLines(textarea: HTMLTextAreaElement, prefix: string) {
-  const { selectionStart, selectionEnd, value } = textarea;
-  const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
-  const nextBreak = value.indexOf("\n", selectionEnd);
-  const lineEnd = nextBreak === -1 ? value.length : nextBreak;
-  const block = value.slice(lineStart, lineEnd);
-  const prefixed = block
-    .split("\n")
-    .map((line) => (line.startsWith(prefix) ? line : prefix + line))
-    .join("\n");
-  const newValue = value.slice(0, lineStart) + prefixed + value.slice(lineEnd);
-  return { newValue, cursorStart: lineStart, cursorEnd: lineStart + prefixed.length };
-}
-
-/** Textarea plus a small markdown-syntax toolbar (Bold/Italic/Bullet list) — no live preview, just faster syntax insertion around the current selection. */
+/** Rich-text notes editor (Tiptap) with a small toolbar — Bold/Italic/Heading/Bullet/Numbered list apply and render live, rather than inserting raw markdown syntax around the selection. Stores/loads its content as HTML. */
 export function NotesEditor({
   value,
   onChange,
   onBlur,
   placeholder,
-  rows = 4,
 }: {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
   placeholder?: string;
-  rows?: number;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit.configure({ heading: { levels: [2] } }),
+        Placeholder.configure({ placeholder: placeholder ?? "" }),
+      ],
+      content: value,
+      immediatelyRender: false,
+      onUpdate: ({ editor }) => onChange(editor.getHTML()),
+      onBlur: () => onBlur?.(),
+      editorProps: {
+        attributes: {
+          class:
+            "notes-editor-content min-h-24 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-600",
+        },
+      },
+    },
+    // With an empty deps array, `useEditor` re-diffs every option (including
+    // `content`) on each render and pushes changes into the live editor —
+    // and `value` here is this very editor's own last `onUpdate` output,
+    // round-tripped through the parent's state. Left at the default, that
+    // feeds the editor's last keystroke back in as a fresh "content" on the
+    // very next render, resetting the document mid-edit (confirmed: typed
+    // text came out scrambled). A non-empty, per-mount-stable deps array
+    // instead makes the editor instance-only — created once, then left
+    // alone for its whole mounted lifetime, exactly like the plain
+    // `<textarea>` this replaced.
+    [placeholder]
+  );
 
-  function applyFormat(kind: "bold" | "italic" | "list") {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const result = kind === "list" ? prefixLines(textarea, "- ") : wrapSelection(textarea, kind === "bold" ? "**" : "*");
-    onChange(result.newValue);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(result.cursorStart, result.cursorEnd);
-    });
-  }
+  if (!editor) return null;
 
   return (
     <div>
       <div className="mb-1.5 flex items-center gap-1">
-        {(
-          [
-            ["bold", "B", "Bold", "font-bold"],
-            ["italic", "I", "Italic", "italic"],
-            ["list", "≡", "Bullet list", ""],
-          ] as const
-        ).map(([kind, label, title, cls]) => (
+        {TOOLBAR_BUTTONS.map(({ key, label, title, cls, run, active }) => (
           <button
-            key={kind}
+            key={key}
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => applyFormat(kind)}
+            onClick={() => run(editor)}
             title={title}
             aria-label={title}
-            className={`rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-100 ${cls}`}
+            aria-pressed={active(editor)}
+            className={`rounded px-2 py-1 text-xs hover:bg-slate-800 hover:text-slate-100 ${cls} ${
+              active(editor) ? "bg-slate-800 text-sky-400" : "text-slate-400"
+            }`}
           >
             {label}
           </button>
         ))}
       </div>
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-sky-600"
-      />
+      <EditorContent editor={editor} />
     </div>
   );
 }

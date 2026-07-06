@@ -123,18 +123,45 @@ body {
   animation: status-glow-gray 2s ease-in-out infinite;
 }
 
-/* Indeterminate sweep for `GlobalLoadingBar` — a third-width bar drifting
-   left-to-right across the fixed-width track, rather than a percentage-based
-   progress fill, since there's no real completion percentage to report for
-   an arbitrary fetch. */
-@keyframes loading-bar-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(300%);
-  }
+/* `NotesEditor`'s Tiptap content area — ProseMirror emits plain <h2>/<ul>/
+   <ol>/<strong>/<em> tags, which inherit this app's flat paragraph styling
+   without their own rules (no @tailwindcss/typography plugin installed for
+   just this one editor). */
+.notes-editor-content p {
+  margin: 0;
 }
-.loading-bar-sweep {
-  animation: loading-bar-sweep 1.1s ease-in-out infinite;
+.notes-editor-content p + p {
+  margin-top: 0.5em;
+}
+.notes-editor-content h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.75em 0 0.25em;
+}
+.notes-editor-content h2:first-child {
+  margin-top: 0;
+}
+.notes-editor-content strong {
+  font-weight: 700;
+}
+.notes-editor-content em {
+  font-style: italic;
+}
+.notes-editor-content ul,
+.notes-editor-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.25em;
+}
+.notes-editor-content ul {
+  list-style: disc;
+}
+.notes-editor-content ol {
+  list-style: decimal;
+}
+.notes-editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #475569;
+  pointer-events: none;
 }

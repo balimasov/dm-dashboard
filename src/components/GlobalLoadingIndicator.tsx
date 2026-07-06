@@ -37,7 +37,7 @@ function isApiRequest(input: RequestInfo | URL): boolean {
  * shared counter, without wiring loading state into every component by hand.
  * Scoped to `/api/*` rather than every `fetch` so Next's own background
  * link-prefetch requests (which also go through `fetch`, just to a route's
- * RSC payload, not `/api/`) don't keep the bar lit. Guarded by `typeof
+ * RSC payload, not `/api/`) don't keep the indicator lit. Guarded by `typeof
  * window` so it only ever patches the browser's `fetch`, never the server's
  * (the module also runs during SSR of this client component, where `window`
  * is undefined).
@@ -64,19 +64,21 @@ function patchFetchOnce() {
   };
 }
 
-/** A slim, always-mounted top-of-page progress bar — fades in only once a request has been in flight long enough to matter, so quick saves don't just flicker it. */
-export function GlobalLoadingBar() {
+/** A small centered spinner chip — a familiar, unmistakable "something is loading" cue, shown while a request has been in flight long enough to matter (a short delay avoids flicker on quick saves). */
+export function GlobalLoadingIndicator() {
   patchFetchOnce();
   const active = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return (
     <div
       aria-hidden
-      className={`pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden bg-transparent transition-opacity ${
-        active ? "opacity-100 delay-150 duration-150" : "opacity-0 duration-300"
+      className={`pointer-events-none fixed inset-0 z-50 flex items-center justify-center transition-opacity ${
+        active ? "opacity-100 delay-150 duration-150" : "opacity-0 duration-200"
       }`}
     >
-      <div className="loading-bar-sweep h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-sky-400 to-transparent" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-800 bg-slate-950/90 shadow-xl">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+      </div>
     </div>
   );
 }

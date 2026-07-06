@@ -89,28 +89,31 @@ export function CampaignFormModal({
         <div className="scrollbar-themed overflow-y-auto pr-1">
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="flex items-start gap-3">
-              <CampaignLogoPicker logoUrl={logoUrl} name={name} onChange={(dataUrl) => {
-                setLogoUrl(dataUrl);
-                if (isEditing) saveField({ logoUrl: dataUrl });
-              }} />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setError(null);
+              <CampaignLogoPicker
+                logoUrl={logoUrl}
+                name={name}
+                onChange={(dataUrl) => {
+                  setLogoUrl(dataUrl);
+                  if (isEditing) saveField({ logoUrl: dataUrl });
                 }}
-                onBlur={() => {
-                  const trimmed = name.trim();
-                  if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
-                }}
-                placeholder="Campaign name"
-                className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
               />
+              <div className="flex-1">
+                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setError(null);
+                  }}
+                  onBlur={() => {
+                    const trimmed = name.trim();
+                    if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
+                  }}
+                  placeholder="Campaign name"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                />
+              </div>
             </div>
 
             <div>
@@ -139,7 +142,8 @@ export function CampaignFormModal({
           </form>
 
           {isEditing && (
-            <div className="mt-6 border-t border-slate-800 pt-4">
+            <div className="mt-6">
+              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Characters</label>
               <CampaignRosterEditor
                 campaignId={current.id}
                 initialCharacters={characters}
