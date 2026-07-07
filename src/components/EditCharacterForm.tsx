@@ -25,6 +25,7 @@ import {
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { NumberInput } from "./NumberInput";
 import { SyncTimestamp } from "./SyncTimestamp";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
@@ -303,20 +304,10 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
               />
             </Field>
             <Field label="Level">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.level}
-                onChange={(e) => set("level", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.level} onChange={(n) => set("level", n)} />
             </Field>
             <Field label="Initiative (bonus)">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.initiative}
-                onChange={(e) => set("initiative", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.initiative} onChange={(n) => set("initiative", n)} />
             </Field>
             <Field label="Party Role">
               <input className={inputCls} value={draft.role} onChange={(e) => set("role", e.target.value)} />
@@ -337,77 +328,48 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           <h2 className="text-sm uppercase tracking-wide text-slate-500">Combat State</h2>
           <div className="grid grid-cols-3 gap-3">
             <Field label="HP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.combat.hp}
-                onChange={(e) => setCombat("hp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.combat.hp} onChange={(n) => setCombat("hp", n)} />
             </Field>
             <Field label="Max HP" hint="Recalculated automatically on the next sync.">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.combat.maxHp}
-                onChange={(e) => setCombat("maxHp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.combat.maxHp} onChange={(n) => setCombat("maxHp", n)} />
             </Field>
             <Field label="Temp HP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.combat.tempHp}
-                onChange={(e) => setCombat("tempHp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.combat.tempHp} onChange={(n) => setCombat("tempHp", n)} />
             </Field>
             <Field label="AC">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.combat.ac}
-                onChange={(e) => setCombat("ac", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.combat.ac} onChange={(n) => setCombat("ac", n)} />
             </Field>
             <Field label="Speed">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.combat.speed}
-                onChange={(e) => setCombat("speed", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.combat.speed} onChange={(n) => setCombat("speed", n)} />
             </Field>
             <Field label="Passive Perception">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.combat.passivePerception}
-                onChange={(e) => setCombat("passivePerception", Number(e.target.value))}
+                onChange={(n) => setCombat("passivePerception", n)}
               />
             </Field>
             <Field label="Passive Investigation">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.combat.passiveInvestigation}
-                onChange={(e) => setCombat("passiveInvestigation", Number(e.target.value))}
+                onChange={(n) => setCombat("passiveInvestigation", n)}
               />
             </Field>
             <Field label="Passive Insight">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.combat.passiveInsight}
-                onChange={(e) => setCombat("passiveInsight", Number(e.target.value))}
+                onChange={(n) => setCombat("passiveInsight", n)}
               />
             </Field>
             <Field label="Exhaustion">
-              <input
-                type="number"
+              <NumberInput
                 min={0}
                 max={6}
                 className={inputCls}
                 value={draft.combat.exhaustion}
-                onChange={(e) => setCombat("exhaustion", Number(e.target.value))}
+                onChange={(n) => setCombat("exhaustion", n)}
               />
             </Field>
             <Field label="Conditions (comma-separated)">
@@ -434,12 +396,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
               <Field key={key} label={key.toUpperCase()}>
-                <input
-                  type="number"
-                  className={inputCls}
-                  value={draft.stats[key]}
-                  onChange={(e) => setStat(key, Number(e.target.value))}
-                />
+                <NumberInput className={inputCls} value={draft.stats[key]} onChange={(n) => setStat(key, n)} />
               </Field>
             ))}
           </div>
@@ -559,11 +516,10 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
                   value={s.name}
                   onChange={(e) => updateSense(index, { name: e.target.value })}
                 />
-                <input
-                  type="number"
+                <NumberInput
                   className={`${inputCls} w-20`}
                   value={s.range}
-                  onChange={(e) => updateSense(index, { range: Number(e.target.value) })}
+                  onChange={(n) => updateSense(index, { range: n })}
                 />
                 <span className="text-slate-500">ft</span>
                 <button
@@ -596,18 +552,16 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
                     value={r.name}
                     onChange={(e) => updateResource(r.id, { name: e.target.value })}
                   />
-                  <input
-                    type="number"
+                  <NumberInput
                     className={`${inputCls} w-20`}
                     value={r.current}
-                    onChange={(e) => updateResource(r.id, { current: Number(e.target.value) })}
+                    onChange={(n) => updateResource(r.id, { current: n })}
                   />
                   <span className="text-slate-500">/</span>
-                  <input
-                    type="number"
+                  <NumberInput
                     className={`${inputCls} w-20`}
                     value={r.max}
-                    onChange={(e) => updateResource(r.id, { max: Number(e.target.value) })}
+                    onChange={(n) => updateResource(r.id, { max: n })}
                   />
                   <select
                     className={inputCls}
@@ -657,27 +611,24 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Modifier">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.spellcasting?.modifier ?? 0}
-                onChange={(e) => setSpellcasting("modifier", Number(e.target.value))}
+                onChange={(n) => setSpellcasting("modifier", n)}
               />
             </Field>
             <Field label="Spell Attack">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.spellcasting?.attack ?? 0}
-                onChange={(e) => setSpellcasting("attack", Number(e.target.value))}
+                onChange={(n) => setSpellcasting("attack", n)}
               />
             </Field>
             <Field label="Save DC">
-              <input
-                type="number"
+              <NumberInput
                 className={inputCls}
                 value={draft.spellcasting?.saveDc ?? 0}
-                onChange={(e) => setSpellcasting("saveDc", Number(e.target.value))}
+                onChange={(n) => setSpellcasting("saveDc", n)}
               />
             </Field>
           </div>
@@ -688,18 +639,16 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
               .map((s) => (
                 <div key={s.level} className="flex items-center gap-2">
                   <span className="text-sm text-slate-400 w-10">L{s.level}</span>
-                  <input
-                    type="number"
+                  <NumberInput
                     className={`${inputCls} w-20`}
                     value={s.current}
-                    onChange={(e) => updateSlot(s.level, { current: Number(e.target.value) })}
+                    onChange={(n) => updateSlot(s.level, { current: n })}
                   />
                   <span className="text-slate-500">/</span>
-                  <input
-                    type="number"
+                  <NumberInput
                     className={`${inputCls} w-20`}
                     value={s.max}
-                    onChange={(e) => updateSlot(s.level, { max: Number(e.target.value) })}
+                    onChange={(n) => updateSlot(s.level, { max: n })}
                   />
                   <button
                     type="button"
@@ -753,12 +702,11 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
                       </option>
                     ))}
                   </select>
-                  <input
-                    type="number"
+                  <NumberInput
                     min={1}
                     className={`${inputCls} w-20`}
                     value={item.quantity}
-                    onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) })}
+                    onChange={(n) => updateItem(item.id, { quantity: n })}
                   />
                   <button
                     type="button"
@@ -779,44 +727,19 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           </div>
           <div className="grid grid-cols-5 gap-3">
             <Field label="PP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.currency.pp}
-                onChange={(e) => setCurrency("pp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.currency.pp} onChange={(n) => setCurrency("pp", n)} />
             </Field>
             <Field label="GP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.currency.gp}
-                onChange={(e) => setCurrency("gp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.currency.gp} onChange={(n) => setCurrency("gp", n)} />
             </Field>
             <Field label="EP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.currency.ep}
-                onChange={(e) => setCurrency("ep", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.currency.ep} onChange={(n) => setCurrency("ep", n)} />
             </Field>
             <Field label="SP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.currency.sp}
-                onChange={(e) => setCurrency("sp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.currency.sp} onChange={(n) => setCurrency("sp", n)} />
             </Field>
             <Field label="CP">
-              <input
-                type="number"
-                className={inputCls}
-                value={draft.currency.cp}
-                onChange={(e) => setCurrency("cp", Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={draft.currency.cp} onChange={(n) => setCurrency("cp", n)} />
             </Field>
           </div>
         </section>

@@ -360,6 +360,15 @@ export function removeCreature(id: string): void {
   getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
 }
 
+export function reorderCreatures(orderedIds: string[]): void {
+  const db = getDb();
+  const update = db.prepare("UPDATE creatures SET position = ? WHERE id = ?");
+  const transaction = db.transaction((ids: string[]) => {
+    ids.forEach((id, index) => update.run(index, id));
+  });
+  transaction(orderedIds);
+}
+
 /** Case-insensitive substring match on name, most-recently-added first (a DM re-searching mid-session is more likely after the one they just added than an old unrelated entry). */
 export function searchBestiary(query: string): CreatureTemplate[] {
   const trimmed = query.trim();

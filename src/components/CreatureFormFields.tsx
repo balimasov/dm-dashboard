@@ -1,6 +1,7 @@
 "use client";
 
 import { AbilityScores, Character, CreatureTrait, abilityModifier } from "@/lib/types";
+import { NumberInput } from "@/components/NumberInput";
 
 export interface CreatureFormValue {
   templateName: string;
@@ -143,36 +144,16 @@ export function CreatureFormFields({
           />
         </Field>
         <Field label="AC">
-          <input
-            type="number"
-            className={inputCls}
-            value={value.ac}
-            onChange={(e) => onChange({ ac: Number(e.target.value) })}
-          />
+          <NumberInput className={inputCls} value={value.ac} onChange={(n) => onChange({ ac: n })} />
         </Field>
         <Field label="HP">
-          <input
-            type="number"
-            className={inputCls}
-            value={value.hp}
-            onChange={(e) => onChange({ hp: Number(e.target.value) })}
-          />
+          <NumberInput className={inputCls} value={value.hp} onChange={(n) => onChange({ hp: n })} />
         </Field>
         <Field label="Max HP">
-          <input
-            type="number"
-            className={inputCls}
-            value={value.maxHp}
-            onChange={(e) => onChange({ maxHp: Number(e.target.value) })}
-          />
+          <NumberInput className={inputCls} value={value.maxHp} onChange={(n) => onChange({ maxHp: n })} />
         </Field>
         <Field label="Speed (ft)">
-          <input
-            type="number"
-            className={inputCls}
-            value={value.speed}
-            onChange={(e) => onChange({ speed: Number(e.target.value) })}
-          />
+          <NumberInput className={inputCls} value={value.speed} onChange={(n) => onChange({ speed: n })} />
         </Field>
       </div>
 
@@ -180,12 +161,7 @@ export function CreatureFormFields({
         <div className="mb-1 grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
             <Field key={key} label={key.toUpperCase()}>
-              <input
-                type="number"
-                className={inputCls}
-                value={value.stats[key]}
-                onChange={(e) => setStat(key, Number(e.target.value))}
-              />
+              <NumberInput className={inputCls} value={value.stats[key]} onChange={(n) => setStat(key, n)} />
             </Field>
           ))}
         </div>

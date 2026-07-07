@@ -3,22 +3,24 @@ import { AbilityScores, CreatureTemplate, CreatureTrait } from "./types";
 
 /**
  * Best-effort SRD stat-block lookup against Open5e's public monster API (no
- * key required). Unverified against a live response as of the first version
- * of this file — the sandbox this was built in has outbound access to
- * api.open5e.com blocked by its network policy, the same way D&D Beyond is —
- * and the first version's mapping turned out to only match Open5e's older
- * (v1) field names, so every stat silently fell back to a default (1 HP, 10
- * across every ability) once the live API didn't match. This version reads
- * each stat through a list of candidate paths (covering both the v1 shape
- * this was originally written against and the more nested v2-style shape —
- * e.g. `abilities.strength` instead of a flat `strength`, `armor_class` as a
- * list of `{value}` objects instead of a bare number) so a schema drift in
- * either direction degrades to "one field missing" instead of "everything is
- * a default". Still unverified against a real response; if fields are still
- * wrong, the actual shape needs to be pulled from a live request and the
- * candidate paths below adjusted to match it.
+ * key required). Unverified against a live response — the sandbox this was
+ * built in has outbound access to api.open5e.com blocked by its network
+ * policy (confirmed: the egress proxy 403s the CONNECT to that host, same as
+ * it does for dndbeyond.com), so every round of this file has been written
+ * against remembered/documented shapes rather than a real request.
+ *
+ * Round 2 fixed a mapping-only bug (fields read from the wrong paths, so
+ * everything silently defaulted). Round 3's report — common SRD monsters
+ * like "orc"/"goblin"/"imp" returning zero results, not just wrong stats —
+ * points at the endpoint itself rather than the field mapping: Open5e's
+ * `/monsters/` (v1) path may no longer exist now that a `/v2/creatures/`
+ * API exists. Since that can't be confirmed from here either, both
+ * endpoints are tried in turn (first whichever responds with results wins)
+ * rather than betting on one. `console.error` on a non-OK response or fetch
+ * failure so a real deployment's logs show *why* a search came back empty
+ * instead of that being a silent dead end again.
  */
-const OPEN5E_BASE = "https://api.open5e.com/monsters/";
+const OPEN5E_ENDPOINTS = ["https://api.open5e.com/monsters/", "https://api.open5e.com/v2/creatures/"];
 
 function get(obj: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>((acc, key) => {
@@ -137,26 +139,38 @@ function mapOpen5eMonster(m: Record<string, unknown>): CreatureTemplate | null {
   };
 }
 
+async function fetchOpen5e(base: string, query: string): Promise<Array<Record<string, unknown>>> {
+  let res: Response;
+  try {
+    res = await fetch(`${base}?search=${encodeURIComponent(query)}&limit=10`, { cache: "no-store" });
+  } catch (err) {
+    console.error(`[bestiarySearch] fetch failed for ${base}:`, err);
+    return [];
+  }
+  if (!res.ok) {
+    console.error(`[bestiarySearch] ${base} responded ${res.status} ${res.statusText}`);
+    return [];
+  }
+
+  const json = await res.json().catch((err) => {
+    console.error(`[bestiarySearch] failed to parse JSON from ${base}:`, err);
+    return null;
+  });
+  if (Array.isArray((json as { results?: unknown } | null)?.results)) {
+    return (json as { results: unknown[] }).results as Array<Record<string, unknown>>;
+  }
+  if (Array.isArray(json)) return json as Array<Record<string, unknown>>;
+  return [];
+}
+
 export async function searchSrdMonsters(query: string): Promise<CreatureTemplate[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  let res: Response;
-  try {
-    res = await fetch(`${OPEN5E_BASE}?search=${encodeURIComponent(trimmed)}&limit=10`, { cache: "no-store" });
-  } catch {
-    return [];
+  for (const base of OPEN5E_ENDPOINTS) {
+    const raw = await fetchOpen5e(base, trimmed);
+    const mapped = raw.map(mapOpen5eMonster).filter((t): t is CreatureTemplate => t !== null);
+    if (mapped.length > 0) return mapped;
   }
-  if (!res.ok) return [];
-
-  const json = await res.json().catch(() => null);
-  const results = Array.isArray((json as { results?: unknown } | null)?.results)
-    ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
-    : Array.isArray(json)
-      ? (json as Array<Record<string, unknown>>)
-      : [];
-
-  return results
-    .map(mapOpen5eMonster)
-    .filter((t): t is CreatureTemplate => t !== null);
+  return [];
 }

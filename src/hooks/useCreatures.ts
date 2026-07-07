@@ -65,5 +65,17 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     await fetch(`/api/creatures/${id}`, { method: "DELETE" });
   }, []);
 
-  return { creatures, addCreature, updateCreature, removeCreature };
+  const reorderCreatures = useCallback(async (orderedIds: string[]) => {
+    setCreatures((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]));
+      return orderedIds.map((id) => byId.get(id)).filter((c): c is Creature => Boolean(c));
+    });
+    await fetch("/api/creatures/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds }),
+    });
+  }, []);
+
+  return { creatures, addCreature, updateCreature, removeCreature, reorderCreatures };
 }

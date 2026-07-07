@@ -2,6 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { Character, Creature, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
@@ -152,16 +169,39 @@ function CreatureRow({
   onRemove: (id: string) => Promise<void>;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: creature.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
-    <li className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-100">{creature.name}</p>
-        <p className="truncate text-xs text-slate-500">
-          {creatureInfoLine(creature)} · AC {creature.ac} · {creature.hp}/{creature.maxHp} HP
-          {owner && <span className="text-slate-600"> · {owner.name}</span>}
-          {creature.source && <span className="text-slate-600"> · {creature.source}</span>}
-        </p>
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 ${
+        isDragging ? "opacity-50" : ""
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="cursor-grab touch-none px-1 text-slate-600 hover:text-slate-300 active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          ⠿
+        </button>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-100">{creature.name}</p>
+          <p className="truncate text-xs text-slate-500">
+            {creatureInfoLine(creature)} · AC {creature.ac} · {creature.hp}/{creature.maxHp} HP
+            {owner && <span className="text-slate-600"> · {owner.name}</span>}
+            {creature.source && <span className="text-slate-600"> · {creature.source}</span>}
+          </p>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-3 text-sm">
         <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
@@ -187,26 +227,50 @@ export function CreatureRosterEditor({
   characters: Character[];
   onCountChange?: (count: number) => void;
 }) {
-  const { creatures, addCreature, removeCreature } = useCreatures(campaignId, initialCreatures);
+  const { creatures, addCreature, removeCreature, reorderCreatures } = useCreatures(campaignId, initialCreatures);
 
   useEffect(() => {
     onCountChange?.(creatures.length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creatures.length]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = creatures.findIndex((c) => c.id === active.id);
+    const newIndex = creatures.findIndex((c) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(creatures, oldIndex, newIndex);
+    reorderCreatures(reordered.map((c) => c.id));
+  }
+
   return (
     <div>
       <AddCreaturePanel onAdd={addCreature} />
 
-      <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">Added Creatures ({creatures.length})</h3>
+      <div className="mb-3 mt-5 flex items-center justify-between">
+        <h3 className="text-sm uppercase tracking-wide text-slate-500">Added Creatures ({creatures.length})</h3>
+        {creatures.length > 1 && <p className="text-xs text-slate-600">Drag ⠿ to reorder on the dashboard</p>}
+      </div>
       {creatures.length === 0 ? (
         <p className="text-sm text-slate-600">No companions or summons yet.</p>
       ) : (
-        <ul className="space-y-2">
-          {creatures.map((creature) => (
-            <CreatureRow key={creature.id} creature={creature} characters={characters} onRemove={removeCreature} />
-          ))}
-        </ul>
+        <DndContext id="creatures-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={creatures.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-2">
+              {creatures.map((creature) => (
+                <CreatureRow key={creature.id} creature={creature} characters={characters} onRemove={removeCreature} />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
