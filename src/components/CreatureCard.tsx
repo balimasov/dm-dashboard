@@ -108,7 +108,7 @@ export function CreatureCard({
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
       <div className="flex items-start gap-3">
         <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
         <div className="min-w-0 flex-1">
@@ -129,44 +129,46 @@ export function CreatureCard({
         )}
       </div>
 
-      <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
-      {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
-      {creature.source && <p className="text-xs text-slate-500">Source: {creature.source}</p>}
+      <div className="space-y-2">
+        <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
+        {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
+        {creature.source && <p className="text-xs text-slate-500">Source: {creature.source}</p>}
 
-      <div className="space-y-1.5 text-sm text-slate-300">
-        <IconStat
-          icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-          panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}
-          label="AC"
-        >
-          {creature.ac}
-          {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
-        </IconStat>
-        <IconStat
-          icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-          panel={<p>Speed — how many feet it can move on its turn.</p>}
-          label="Speed"
-        >
-          {creature.speedDetail ?? `${creature.speed}ft`}
-        </IconStat>
-        {creature.initiativeBonus !== undefined && (
+        <div className="space-y-1.5 text-sm text-slate-300">
           <IconStat
-            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
-            label="Initiative"
+            icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}
+            label="AC"
           >
-            {formatModifier(creature.initiativeBonus)}
+            {creature.ac}
+            {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
           </IconStat>
-        )}
-        {creature.languages && (
           <IconStat
-            icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
-            label="Languages:"
+            icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Speed — how many feet it can move on its turn.</p>}
+            label="Speed"
           >
-            {creature.languages}
+            {creature.speedDetail ?? `${creature.speed}ft`}
           </IconStat>
-        )}
+          {creature.initiativeBonus !== undefined && (
+            <IconStat
+              icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+              label="Initiative"
+            >
+              {formatModifier(creature.initiativeBonus)}
+            </IconStat>
+          )}
+          {creature.languages && (
+            <IconStat
+              icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
+              label="Languages:"
+            >
+              {creature.languages}
+            </IconStat>
+          )}
+        </div>
       </div>
 
       <div className="border-t border-slate-800 pt-3">
@@ -262,7 +264,7 @@ export function CreatureCard({
       )}
 
       {groups.length > 0 && (
-        <div className="space-y-3 border-t border-slate-800 pt-2">
+        <div className="space-y-3 border-t border-slate-800 pt-3">
           {groups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
               <p className="text-xs uppercase tracking-wide text-slate-500">{GROUP_LABELS[group]}</p>
