@@ -132,7 +132,7 @@ export function CampaignFormModal({
                       if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
                     }}
                     placeholder="Campaign name"
-                    className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                    className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
                   />
                 </div>
               </div>

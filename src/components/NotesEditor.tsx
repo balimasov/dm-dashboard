@@ -58,7 +58,7 @@ export function NotesEditor({
       editorProps: {
         attributes: {
           class:
-            "notes-editor-content min-h-24 w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-600",
+            "notes-editor-content min-h-24 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600",
         },
       },
     },

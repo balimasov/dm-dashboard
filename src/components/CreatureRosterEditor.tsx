@@ -176,9 +176,8 @@ function CreatureRow({
   onRemove: (id: string) => Promise<void>;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
-  const infoLine = [creatureInfoLine(creature), creature.challengeRating && `CR ${creature.challengeRating}`]
-    .filter(Boolean)
-    .join(" · ");
+  const infoLine = creatureInfoLine(creature);
+  const ownerLine = [owner?.name, creature.source].filter(Boolean).join(" · ");
 
   return (
     <RosterRow
@@ -198,14 +197,17 @@ function CreatureRow({
       <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
         {creature.name}
       </p>
-      <p title={infoLine} className="truncate text-xs text-slate-500">
-        {infoLine}
-      </p>
-      <p className="truncate text-xs text-slate-600">
-        AC {creature.ac} · {creature.hp}/{creature.maxHp} HP
-        {owner && ` · ${owner.name}`}
-        {creature.source && ` · ${creature.source}`}
-      </p>
+      {infoLine && (
+        <p title={infoLine} className="truncate text-xs text-slate-500">
+          {infoLine}
+        </p>
+      )}
+      {creature.challengeRating && <p className="text-xs text-slate-600">CR {creature.challengeRating}</p>}
+      {ownerLine && (
+        <p title={ownerLine} className="truncate text-xs text-slate-600">
+          {ownerLine}
+        </p>
+      )}
     </RosterRow>
   );
 }
