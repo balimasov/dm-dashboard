@@ -252,10 +252,9 @@ export function CreatureRosterEditor({
     <div>
       <AddCreaturePanel onAdd={addCreature} />
 
-      <div className="mb-3 mt-5 flex items-center justify-between">
-        <h3 className="text-sm uppercase tracking-wide text-slate-500">Added Creatures ({creatures.length})</h3>
-        {creatures.length > 1 && <p className="text-xs text-slate-600">Drag ⠿ to reorder on the dashboard</p>}
-      </div>
+      <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">
+        Added Creatures ({creatures.length})
+      </h3>
       {creatures.length === 0 ? (
         <p className="text-sm text-slate-600">No companions or summons yet.</p>
       ) : (

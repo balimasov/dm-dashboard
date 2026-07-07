@@ -150,14 +150,9 @@ export function CampaignRosterEditor({
         {syncError && <p className="text-sm text-amber-400">{syncError}</p>}
       </div>
 
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm uppercase tracking-wide text-slate-500">
-          Added Characters ({characters.length})
-        </h3>
-        {characters.length > 1 && (
-          <p className="text-xs text-slate-600">Drag ⠿ to reorder on the dashboard</p>
-        )}
-      </div>
+      <h3 className="mb-3 text-sm uppercase tracking-wide text-slate-500">
+        Added Characters ({characters.length})
+      </h3>
 
       {characters.length === 0 && <p className="text-sm text-slate-600">The list is empty.</p>}
 
