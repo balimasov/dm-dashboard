@@ -26,6 +26,10 @@ export interface AddCreatureInput {
   senses?: string;
   languages?: string;
   challengeRating?: string;
+  damageVulnerabilities?: string;
+  damageResistances?: string;
+  damageImmunities?: string;
+  conditionImmunities?: string;
   traits: CreatureTrait[];
   ownerCharacterId?: string;
   source?: string;

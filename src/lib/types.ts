@@ -449,6 +449,11 @@ export interface CreatureTemplate {
   languages?: string;
   /** e.g. "1/4", "None" — display text, not used in any calculation. */
   challengeRating?: string;
+  /** Free text, e.g. "Bludgeoning, Piercing, and Slashing from Nonmagical Attacks" — same convention as `senses`/`languages`. */
+  damageVulnerabilities?: string;
+  damageResistances?: string;
+  damageImmunities?: string;
+  conditionImmunities?: string;
   traits: CreatureTrait[];
   /** Where the stat block came from — an SRD search result, or typed in by hand. */
   origin: "srd" | "custom";
@@ -484,6 +489,10 @@ export interface Creature {
   senses?: string;
   languages?: string;
   challengeRating?: string;
+  damageVulnerabilities?: string;
+  damageResistances?: string;
+  damageImmunities?: string;
+  conditionImmunities?: string;
   traits: CreatureTrait[];
   conditions: string[];
   /** Which character summons/commands this creature — purely informational (shown as a tag on the card), not a game-mechanical link. */

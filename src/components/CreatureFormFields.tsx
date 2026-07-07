@@ -18,6 +18,10 @@ export interface CreatureFormValue {
   senses: string;
   languages: string;
   challengeRating: string;
+  damageVulnerabilities: string;
+  damageResistances: string;
+  damageImmunities: string;
+  conditionImmunities: string;
   traits: CreatureTrait[];
   ownerCharacterId: string;
   source: string;
@@ -39,6 +43,10 @@ export function emptyCreatureFormValue(): CreatureFormValue {
     senses: "",
     languages: "",
     challengeRating: "",
+    damageVulnerabilities: "",
+    damageResistances: "",
+    damageImmunities: "",
+    conditionImmunities: "",
     traits: [],
     ownerCharacterId: "",
     source: "",
@@ -197,6 +205,37 @@ export function CreatureFormFields({
             placeholder="1/4"
             value={value.challengeRating}
             onChange={(e) => onChange({ challengeRating: e.target.value })}
+          />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Field label="Damage Vulnerabilities">
+          <input
+            className={inputCls}
+            value={value.damageVulnerabilities}
+            onChange={(e) => onChange({ damageVulnerabilities: e.target.value })}
+          />
+        </Field>
+        <Field label="Damage Resistances">
+          <input
+            className={inputCls}
+            value={value.damageResistances}
+            onChange={(e) => onChange({ damageResistances: e.target.value })}
+          />
+        </Field>
+        <Field label="Damage Immunities">
+          <input
+            className={inputCls}
+            value={value.damageImmunities}
+            onChange={(e) => onChange({ damageImmunities: e.target.value })}
+          />
+        </Field>
+        <Field label="Condition Immunities">
+          <input
+            className={inputCls}
+            value={value.conditionImmunities}
+            onChange={(e) => onChange({ conditionImmunities: e.target.value })}
           />
         </Field>
       </div>

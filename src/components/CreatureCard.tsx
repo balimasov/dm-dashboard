@@ -120,7 +120,13 @@ export function CreatureCard({
         </div>
       </div>
 
-      {(creature.senses || creature.languages || creature.challengeRating) && (
+      {(creature.senses ||
+        creature.languages ||
+        creature.challengeRating ||
+        creature.damageVulnerabilities ||
+        creature.damageResistances ||
+        creature.damageImmunities ||
+        creature.conditionImmunities) && (
         <div className="space-y-1 border-t border-slate-800 pt-2 text-sm text-slate-300">
           {creature.senses && (
             <p>
@@ -135,6 +141,26 @@ export function CreatureCard({
           {creature.challengeRating && (
             <p>
               <span className="text-slate-500">CR:</span> {creature.challengeRating}
+            </p>
+          )}
+          {creature.damageVulnerabilities && (
+            <p>
+              <span className="text-slate-500">Vulnerabilities:</span> {creature.damageVulnerabilities}
+            </p>
+          )}
+          {creature.damageResistances && (
+            <p>
+              <span className="text-slate-500">Resistances:</span> {creature.damageResistances}
+            </p>
+          )}
+          {creature.damageImmunities && (
+            <p>
+              <span className="text-slate-500">Damage Immunities:</span> {creature.damageImmunities}
+            </p>
+          )}
+          {creature.conditionImmunities && (
+            <p>
+              <span className="text-slate-500">Condition Immunities:</span> {creature.conditionImmunities}
             </p>
           )}
         </div>

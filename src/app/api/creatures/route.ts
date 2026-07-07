@@ -56,6 +56,10 @@ export async function POST(req: Request) {
   const senses = typeof body?.senses === "string" ? body.senses : undefined;
   const languages = typeof body?.languages === "string" ? body.languages : undefined;
   const challengeRating = typeof body?.challengeRating === "string" ? body.challengeRating : undefined;
+  const damageVulnerabilities = typeof body?.damageVulnerabilities === "string" ? body.damageVulnerabilities : undefined;
+  const damageResistances = typeof body?.damageResistances === "string" ? body.damageResistances : undefined;
+  const damageImmunities = typeof body?.damageImmunities === "string" ? body.damageImmunities : undefined;
+  const conditionImmunities = typeof body?.conditionImmunities === "string" ? body.conditionImmunities : undefined;
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
 
   const creature = createCreature({
@@ -76,6 +80,10 @@ export async function POST(req: Request) {
     senses,
     languages,
     challengeRating,
+    damageVulnerabilities,
+    damageResistances,
+    damageImmunities,
+    conditionImmunities,
     traits,
     conditions: [],
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
@@ -99,6 +107,10 @@ export async function POST(req: Request) {
     senses,
     languages,
     challengeRating,
+    damageVulnerabilities,
+    damageResistances,
+    damageImmunities,
+    conditionImmunities,
     traits,
     origin: templateId?.startsWith("srd-") ? "srd" : "custom",
   });
