@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
-import { Character, Creature, CreatureTemplate, creatureInfoLine } from "@/lib/types";
+import { Character, Creature, CreatureSearchHit, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
 
@@ -31,13 +31,18 @@ import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creature
  * all; the full stat block is filled in afterwards via each creature's own
  * `/creatures/[id]/edit` page, same as a character's details live on its own
  * edit page rather than inline in this list.
+ *
+ * Search results are lightweight previews (name/type/size/CR) — a popular
+ * query can return upwards of a hundred creature hits, so the full stat
+ * block is only fetched (`/api/bestiary/resolve`) for the one actually
+ * picked, not for every row in the list.
  */
 function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promise<Creature> }) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [results, setResults] = useState<CreatureTemplate[]>([]);
+  const [results, setResults] = useState<CreatureSearchHit[]>([]);
   const [adding, setAdding] = useState(false);
 
   async function handleSearch() {
@@ -47,7 +52,7 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
     setSearchError(null);
     try {
       const res = await fetch(`/api/bestiary?q=${encodeURIComponent(trimmed)}`);
-      const data = (await res.json()) as CreatureTemplate[];
+      const data = (await res.json()) as CreatureSearchHit[];
       setResults(data);
       setSearched(true);
     } catch {
@@ -59,11 +64,16 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
     }
   }
 
-  async function addTemplate(template: CreatureTemplate) {
+  async function addHit(hit: CreatureSearchHit) {
     setAdding(true);
     try {
+      const res = await fetch(`/api/bestiary/resolve?id=${encodeURIComponent(hit.id)}`);
+      if (!res.ok) throw new Error("Failed to load stat block.");
+      const template = (await res.json()) as CreatureTemplate;
       await onAdd(formValueToAddCreatureInput(templateToFormValue(template), template.id));
       reset();
+    } catch {
+      setSearchError(`Failed to load "${hit.name}"'s stat block — try again.`);
     } finally {
       setAdding(false);
     }
@@ -121,7 +131,7 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
       {searchError && <p className="text-sm text-amber-400">{searchError}</p>}
 
       {searched && results.length > 0 && (
-        <ul className="space-y-1.5">
+        <ul className="scrollbar-themed max-h-80 space-y-1.5 overflow-y-auto pr-1">
           {results.map((t) => (
             <li
               key={t.id}
@@ -130,13 +140,14 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-100">{t.name}</p>
                 <p className="truncate text-xs text-slate-500">
-                  {creatureInfoLine(t)} · AC {t.ac} · {t.maxHp} HP
+                  {creatureInfoLine(t)}
+                  {t.challengeRating && ` · CR ${t.challengeRating}`}
                   <span className="ml-1.5 text-slate-600">{t.origin === "srd" ? "(SRD)" : "(Saved)"}</span>
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => addTemplate(t)}
+                onClick={() => addHit(t)}
                 disabled={adding}
                 className="shrink-0 text-sm text-sky-400 hover:underline disabled:opacity-50"
               >

@@ -1,5 +1,5 @@
 import "server-only";
-import { AbilityScores, CreatureTemplate, CreatureTrait, abilityModifier } from "./types";
+import { AbilityScores, CreatureSearchHit, CreatureTemplate, CreatureTrait, abilityModifier } from "./types";
 
 /**
  * SRD stat-block lookup against Open5e's v2 API, using the real two-step
@@ -17,7 +17,12 @@ import { AbilityScores, CreatureTemplate, CreatureTrait, abilityModifier } from 
  *     SRD specifically — the same search covers "srd-2014", third-party
  *     documents, etc., which this app deliberately doesn't want).
  *  2. `GET /{route}{object_pk}/` (e.g. `v2/creatures/srd-2024_adult-red-dragon/`)
- *     for each matching hit — this is the full stat block.
+ *     — the full stat block, fetched lazily: only for the one hit the DM
+ *     actually picks (`fetchSrdCreatureDetail`), not for every row in the
+ *     list. A popular query can return upwards of a hundred creature hits,
+ *     and eagerly fetching full detail for all of them would mean that many
+ *     extra requests before the DM has even chosen one — the search hit's
+ *     own `object` preview (cr/type/size) is already enough for the list.
  *
  * The v2 creature detail schema is entirely different from the v1
  * `/monsters/` list schema an earlier version of this file was written
@@ -32,7 +37,7 @@ import { AbilityScores, CreatureTemplate, CreatureTrait, abilityModifier } from 
  */
 const OPEN5E_ORIGIN = "https://api.open5e.com";
 const TARGET_DOCUMENT_KEY = "srd-2024";
-const MAX_RESULTS = 15;
+const MAX_RESULTS = 100;
 
 function get(obj: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>((acc, key) => {
@@ -240,8 +245,20 @@ async function fetchJson(url: string): Promise<unknown> {
   });
 }
 
+/**
+ * A big `limit` here matters: the search endpoint mixes every content type
+ * (creatures, spells, rules text...) and every source document into one
+ * paginated result set, and this app only wants a slice of that (2024 SRD
+ * creatures) — a default/small page size can get eaten entirely by
+ * non-matching hits before this file's own filtering ever sees the real
+ * matches for a broad, popular query.
+ */
+const SEARCH_LIMIT = 5000;
+
 async function fetchSearchResults(query: string): Promise<Array<Record<string, unknown>>> {
-  const json = await fetchJson(`${OPEN5E_ORIGIN}/v2/search/?schema=v2&query=${encodeURIComponent(query)}`);
+  const json = await fetchJson(
+    `${OPEN5E_ORIGIN}/v2/search/?schema=v2&query=${encodeURIComponent(query)}&limit=${SEARCH_LIMIT}`
+  );
   return Array.isArray((json as { results?: unknown } | null)?.results)
     ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
     : [];
@@ -250,13 +267,6 @@ async function fetchSearchResults(query: string): Promise<Array<Record<string, u
 /** Only real creature hits from the 2024 SRD — the same search also returns spells, rules text, other source documents, etc. */
 function isTargetCreatureHit(item: Record<string, unknown>): boolean {
   return item.object_model === "Creature" && get(item, "document.key") === TARGET_DOCUMENT_KEY;
-}
-
-function detailUrl(item: Record<string, unknown>): string | null {
-  const objectPk = firstString(item, ["object_pk"]);
-  if (!objectPk) return null;
-  const route = (firstString(item, ["route"]) ?? "v2/creatures/").replace(/^\/+/, "").replace(/\/*$/, "/");
-  return `${OPEN5E_ORIGIN}/${route}${objectPk}/`;
 }
 
 function rankByQuery<T extends { name: string }>(items: T[], query: string): T[] {
@@ -272,25 +282,40 @@ function rankByQuery<T extends { name: string }>(items: T[], query: string): T[]
     });
 }
 
-export async function searchSrdMonsters(query: string): Promise<CreatureTemplate[]> {
+/**
+ * Lightweight search only — no per-hit detail fetch. A search hit's own
+ * `object` field already carries a preview (cr/type/size), which is enough
+ * for the picker list; the full stat block is only fetched for whichever
+ * one the DM actually picks, via `fetchSrdCreatureDetail`.
+ */
+export async function searchSrdCreatures(query: string): Promise<CreatureSearchHit[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   const hits = (await fetchSearchResults(trimmed)).filter(isTargetCreatureHit);
   const named = hits
-    .map((item) => ({ item, name: firstString(item, ["object_name"]) ?? "" }))
-    .filter((h) => h.name);
-  const ranked = rankByQuery(named, trimmed).slice(0, MAX_RESULTS);
-
-  const details = await Promise.all(
-    ranked.map(({ item }) => {
-      const url = detailUrl(item);
-      return url ? fetchJson(url) : Promise.resolve(null);
+    .map((item): CreatureSearchHit | null => {
+      const objectPk = firstString(item, ["object_pk"]);
+      const name = firstString(item, ["object_name"]);
+      if (!objectPk || !name) return null;
+      const preview = (get(item, "object") ?? {}) as Record<string, unknown>;
+      return {
+        id: `srd-${objectPk}`,
+        name,
+        creatureType: firstString(preview, ["type"]),
+        size: firstString(preview, ["size"]),
+        challengeRating: toChallengeRatingText(preview.cr),
+        origin: "srd",
+      };
     })
-  );
+    .filter((h): h is CreatureSearchHit => h !== null);
 
-  return details
-    .filter((d): d is Record<string, unknown> => d != null && typeof d === "object")
-    .map(mapOpen5eV2Creature)
-    .filter((t): t is CreatureTemplate => t !== null);
+  return rankByQuery(named, trimmed).slice(0, MAX_RESULTS);
+}
+
+/** Fetches and maps the full stat block for one search hit, by the `id` `searchSrdCreatures` gave it. */
+export async function fetchSrdCreatureDetail(id: string): Promise<CreatureTemplate | null> {
+  const objectPk = id.startsWith("srd-") ? id.slice("srd-".length) : id;
+  const json = await fetchJson(`${OPEN5E_ORIGIN}/v2/creatures/${objectPk}/`);
+  return json != null && typeof json === "object" ? mapOpen5eV2Creature(json as Record<string, unknown>) : null;
 }

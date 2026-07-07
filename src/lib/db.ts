@@ -356,8 +356,27 @@ export function updateCreature(id: string, updates: Partial<Creature>): Creature
   return updated;
 }
 
+/**
+ * Also purges the shared bestiary entry for this creature's `templateName`
+ * once no other creature (in any campaign) references it any more —
+ * otherwise a stale/incorrect cached stat block (e.g. from an early,
+ * wrongly-parsed import) would sit in the bestiary forever, permanently
+ * shadowing a fresh re-import of the same name with no way to fix it short
+ * of manually editing the saved entry.
+ */
 export function removeCreature(id: string): void {
-  getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
+  const db = getDb();
+  const existing = getCreature(id);
+  db.prepare("DELETE FROM creatures WHERE id = ?").run(id);
+  if (!existing) return;
+
+  const remaining = db.prepare("SELECT data FROM creatures").all() as Array<{ data: string }>;
+  const stillReferenced = remaining.some(
+    (row) => (JSON.parse(row.data) as Creature).templateName?.toLowerCase() === existing.templateName.toLowerCase()
+  );
+  if (!stillReferenced) {
+    db.prepare("DELETE FROM bestiary_templates WHERE name = ? COLLATE NOCASE").run(existing.templateName);
+  }
 }
 
 export function reorderCreatures(orderedIds: string[]): void {
@@ -367,6 +386,13 @@ export function reorderCreatures(orderedIds: string[]): void {
     ids.forEach((id, index) => update.run(index, id));
   });
   transaction(orderedIds);
+}
+
+export function getBestiaryTemplateById(id: string): CreatureTemplate | null {
+  const row = getDb().prepare("SELECT data FROM bestiary_templates WHERE id = ?").get(id) as
+    | { data: string }
+    | undefined;
+  return row ? (JSON.parse(row.data) as CreatureTemplate) : null;
 }
 
 /** Case-insensitive substring match on name, most-recently-added first (a DM re-searching mid-session is more likely after the one they just added than an old unrelated entry). */

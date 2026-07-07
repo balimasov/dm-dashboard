@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Character, Creature, CreatureTrait, abilityModifier, creatureInfoLine, formatModifier } from "@/lib/types";
 import { FlaggableRow } from "./CharacterDetailsModal";
-import { HpBar, ShieldIcon, SpeedIcon, StatBox, STAT_ORDER } from "./CharacterCard";
+import { HpBar, InitiativeIcon, Pill, ShieldIcon, SpeedIcon, StatBox, STAT_ORDER } from "./CharacterCard";
 import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
 
 const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Traits",
@@ -74,8 +75,9 @@ export function CreatureCard({
       </div>
 
       <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
+      {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
 
-      <div className="grid grid-cols-2 gap-1.5 text-sm text-slate-300">
+      <div className="space-y-1.5 text-sm text-slate-300">
         <span className="flex items-center gap-1.5">
           <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           <span className="min-w-0 flex-1">
@@ -85,7 +87,7 @@ export function CreatureCard({
             </InfoTooltip>
           </span>
         </span>
-        <span className="flex items-center gap-1.5 pl-2">
+        <span className="flex items-center gap-1.5">
           <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           <span className="min-w-0 flex-1">
             <InfoTooltip panel={<p>Speed — how many feet it can move on its turn.</p>}>
@@ -94,12 +96,16 @@ export function CreatureCard({
           </span>
         </span>
         {creature.initiativeBonus !== undefined && (
-          <span className="col-span-2 text-slate-300">
-            Initiative Bonus {formatModifier(creature.initiativeBonus)}
+          <span className="flex items-center gap-1.5">
+            <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <span className="min-w-0 flex-1">
+              <InfoTooltip
+                panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+              >
+                Initiative {formatModifier(creature.initiativeBonus)}
+              </InfoTooltip>
+            </span>
           </span>
-        )}
-        {creature.hitDice && (
-          <span className="col-span-2 text-slate-500">Hit Dice: {creature.hitDice}</span>
         )}
       </div>
 
@@ -129,51 +135,24 @@ export function CreatureCard({
         </div>
       </div>
 
-      {(creature.senses ||
-        creature.languages ||
-        creature.skills ||
-        creature.challengeRating ||
-        creature.damageVulnerabilities ||
-        creature.damageResistances ||
+      {(creature.damageResistances ||
         creature.damageImmunities ||
+        creature.damageVulnerabilities ||
         creature.conditionImmunities) && (
-        <div className="space-y-1 border-t border-slate-800 pt-2 text-sm text-slate-300">
-          {creature.skills && (
-            <p>
-              <span className="text-slate-500">Skills:</span> {creature.skills}
-            </p>
-          )}
-          {creature.senses && (
-            <p>
-              <span className="text-slate-500">Senses:</span> {creature.senses}
-            </p>
-          )}
-          {creature.languages && (
-            <p>
-              <span className="text-slate-500">Languages:</span> {creature.languages}
-            </p>
-          )}
-          {creature.challengeRating && (
-            <p>
-              <span className="text-slate-500">CR:</span> {creature.challengeRating}
-              {creature.experiencePoints !== undefined && (
-                <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
-              )}
-            </p>
-          )}
-          {creature.damageVulnerabilities && (
-            <p>
-              <span className="text-slate-500">Vulnerabilities:</span> {creature.damageVulnerabilities}
-            </p>
-          )}
+        <div className="space-y-1 text-sm text-slate-300">
           {creature.damageResistances && (
             <p>
-              <span className="text-slate-500">Resistances:</span> {creature.damageResistances}
+              <span className="text-slate-500">Resist:</span> {creature.damageResistances}
             </p>
           )}
           {creature.damageImmunities && (
             <p>
-              <span className="text-slate-500">Damage Immunities:</span> {creature.damageImmunities}
+              <span className="text-slate-500">Immune:</span> {creature.damageImmunities}
+            </p>
+          )}
+          {creature.damageVulnerabilities && (
+            <p>
+              <span className="text-slate-500">Vulnerable:</span> {creature.damageVulnerabilities}
             </p>
           )}
           {creature.conditionImmunities && (
@@ -181,6 +160,43 @@ export function CreatureCard({
               <span className="text-slate-500">Condition Immunities:</span> {creature.conditionImmunities}
             </p>
           )}
+        </div>
+      )}
+
+      {creature.skills && (
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Skills</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {creature.skills
+              .split(",")
+              .map((entry) => entry.trim())
+              .filter(Boolean)
+              .map((entry) => (
+                <Pill key={entry}>{entry}</Pill>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {(creature.senses || creature.languages || creature.challengeRating) && (
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
+          <div className="space-y-1 text-sm text-slate-300">
+            {creature.senses && <p>{creature.senses}</p>}
+            {creature.languages && (
+              <p>
+                <span className="text-slate-500">Languages:</span> {creature.languages}
+              </p>
+            )}
+            {creature.challengeRating && (
+              <p>
+                <span className="text-slate-500">CR:</span> {creature.challengeRating}
+                {creature.experiencePoints !== undefined && (
+                  <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
+                )}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -194,7 +210,7 @@ export function CreatureCard({
                 return (
                   <FlaggableRow key={`${group}-${index}`} flagged={flagged} onToggleFlag={() => toggleFlag(trait.name)}>
                     <span className="font-semibold">{trait.name}.</span>{" "}
-                    {trait.description && <span>{trait.description}</span>}
+                    {trait.description && <RichText text={trait.description} />}
                   </FlaggableRow>
                 );
               })}

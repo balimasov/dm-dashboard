@@ -425,6 +425,23 @@ export interface CreatureTrait {
 }
 
 /**
+ * A lightweight bestiary search result — shown in the "Add Creature" picker
+ * list without fetching a full stat block for every hit (a popular query
+ * can return upwards of a hundred matches; fetching each one's full detail
+ * up front would mean that many extra requests before the DM has even
+ * picked one). The full `CreatureTemplate` is only fetched for the specific
+ * hit actually picked, via `/api/bestiary/resolve?id=`.
+ */
+export interface CreatureSearchHit {
+  id: string;
+  name: string;
+  creatureType?: string;
+  size?: string;
+  challengeRating?: string;
+  origin: "srd" | "custom";
+}
+
+/**
  * A reusable stat-block — the shared "bestiary" — independent of any
  * campaign or character. Entering a creature's stats once (by hand, or
  * picked from an SRD search result) makes it instantly available again next
