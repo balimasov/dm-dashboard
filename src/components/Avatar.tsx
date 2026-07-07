@@ -1,4 +1,5 @@
 const SIZE_CLASSES = {
+  xs: "h-4 w-4 text-[8px]",
   sm: "h-14 w-14 text-lg",
   md: "h-16 w-16 text-xl",
 } as const;

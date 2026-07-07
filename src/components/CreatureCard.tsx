@@ -33,6 +33,8 @@ import {
   StatBox,
   STAT_ORDER,
 } from "./CharacterCard";
+import { Avatar } from "./Avatar";
+import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 
 const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -110,14 +112,15 @@ export function CreatureCard({
     <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
       <div className="min-w-0">
         <p className="truncate text-lg font-semibold text-slate-100">{creature.name}</p>
-        {infoLine && <p className="truncate text-xs text-slate-500">{infoLine}</p>}
-        {(owner || creature.source) && (
-          <p className="mt-0.5 truncate text-xs text-slate-600">
-            {owner && `Owner: ${owner.name}`}
-            {owner && creature.source && " · "}
-            {creature.source}
-          </p>
-        )}
+        <div className="flex items-center gap-1.5">
+          {infoLine && <p className="min-w-0 truncate text-xs text-slate-500">{infoLine}</p>}
+          {owner && (
+            <InfoTooltip hoverOnly panel={<p>Owner: {owner.name}</p>}>
+              <Avatar src={owner.avatarUrl} label={owner.name} size="xs" />
+            </InfoTooltip>
+          )}
+        </div>
+        {creature.source && <p className="mt-0.5 truncate text-xs text-slate-600">{creature.source}</p>}
       </div>
 
       <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
