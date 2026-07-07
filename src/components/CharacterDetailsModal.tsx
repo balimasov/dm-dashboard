@@ -20,6 +20,7 @@ import {
 } from "@/lib/types";
 import {
   CharacterHeader,
+  DamageInfoList,
   HpBar,
   IconStat,
   InitiativeIcon,
@@ -262,7 +263,6 @@ export function CharacterDetailsModal({
   }, []);
 
   const isDown = c.combat.hp <= 0;
-  const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
 
   const allSkills: SkillProficiency[] = (Object.keys(SKILL_LABELS) as SkillName[])
     .map((name) => c.skillProficiencies.find((s) => s.name === name) ?? { name, proficient: false, expertise: false })
@@ -436,25 +436,17 @@ export function CharacterDetailsModal({
         </div>
 
         {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
-        {hasDamageInfo && (
-          <div className="space-y-1 text-sm text-slate-300">
-            {c.resistances.length > 0 && (
-              <p>
-                <span className="text-slate-500">Resist:</span> {c.resistances.join(", ")}
-              </p>
-            )}
-            {c.immunities.length > 0 && (
-              <p>
-                <span className="text-slate-500">Immune:</span> {c.immunities.join(", ")}
-              </p>
-            )}
-            {c.vulnerabilities.length > 0 && (
-              <p>
-                <span className="text-slate-500">Vulnerable:</span> {c.vulnerabilities.join(", ")}
-              </p>
-            )}
-          </div>
-        )}
+        <DamageInfoList
+          entries={[
+            { label: "Resist", value: c.resistances.join(", "), panel: <p>Resistance — takes half damage from this damage type.</p> },
+            { label: "Immune", value: c.immunities.join(", "), panel: <p>Immunity — takes no damage from this damage type.</p> },
+            {
+              label: "Vulnerable",
+              value: c.vulnerabilities.join(", "),
+              panel: <p>Vulnerability — takes double damage from this damage type.</p>,
+            },
+          ]}
+        />
 
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
         <div className="border-t border-slate-800 pt-3">

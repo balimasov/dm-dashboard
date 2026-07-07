@@ -453,6 +453,39 @@ export function SenseEntries({ senses }: { senses: Array<{ name: string; range: 
   );
 }
 
+export interface DamageInfoEntry {
+  label: string;
+  value?: string;
+  panel: React.ReactNode;
+}
+
+/**
+ * The Resist/Immune/Vulnerable (and, for a creature, Condition Immunities)
+ * list — shared so both cards and the character details modal render it
+ * from one place. Entries with no value are skipped; the hint anchors to
+ * the label only, same convention as every other hint in these cards.
+ */
+export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
+  const visible = entries.filter((e) => e.value);
+  if (visible.length === 0) return null;
+  return (
+    <div className="space-y-1 text-sm text-slate-300">
+      {visible.map((e) => (
+        // A `div`, not a `p` — the tooltip's own hint text is a `<p>`, and
+        // React renders that panel into the DOM even while hidden (only its
+        // `hidden`/`block` class toggles), so a `<p>` wrapper here would put
+        // a `<p>` inside a `<p>` and trip a hydration mismatch (confirmed).
+        <div key={e.label}>
+          <InfoTooltip inline panel={e.panel}>
+            <span className="text-slate-500">{e.label}:</span>
+          </InfoTooltip>{" "}
+          {e.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function StatBox({
   label,
   value,
@@ -729,7 +762,6 @@ export function CharacterCard({
   const isDown = c.combat.hp <= 0;
   const [detailsOpen, setDetailsOpen] = useState(false);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
-  const hasDamageInfo = c.resistances.length + c.immunities.length + c.vulnerabilities.length > 0;
 
   return (
     <div
@@ -847,25 +879,17 @@ export function CharacterCard({
       </div>
 
       {/* Resistances / Immunities / Vulnerabilities */}
-      {hasDamageInfo && (
-        <div className="space-y-1 text-sm text-slate-300">
-          {c.resistances.length > 0 && (
-            <p>
-              <span className="text-slate-500">Resist:</span> {c.resistances.join(", ")}
-            </p>
-          )}
-          {c.immunities.length > 0 && (
-            <p>
-              <span className="text-slate-500">Immune:</span> {c.immunities.join(", ")}
-            </p>
-          )}
-          {c.vulnerabilities.length > 0 && (
-            <p>
-              <span className="text-slate-500">Vulnerable:</span> {c.vulnerabilities.join(", ")}
-            </p>
-          )}
-        </div>
-      )}
+      <DamageInfoList
+        entries={[
+          { label: "Resist", value: c.resistances.join(", "), panel: <p>Resistance — takes half damage from this damage type.</p> },
+          { label: "Immune", value: c.immunities.join(", "), panel: <p>Immunity — takes no damage from this damage type.</p> },
+          {
+            label: "Vulnerable",
+            value: c.vulnerabilities.join(", "),
+            panel: <p>Vulnerability — takes double damage from this damage type.</p>,
+          },
+        ]}
+      />
 
       {/* Skills */}
       {c.skillProficiencies.length > 0 && (

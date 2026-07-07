@@ -34,11 +34,20 @@ export function InfoTooltip({
   children,
   panel,
   hoverOnly = false,
+  inline = false,
 }: {
   children: React.ReactNode;
   panel: React.ReactNode;
   /** Skips the tap-to-toggle affordance and the dotted-underline hint styling — for wrapping an element that already has its own onClick (e.g. a toggle button), so a click there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS. */
   hoverOnly?: boolean;
+  /**
+   * For a short label (e.g. "Resist:") that needs to sit on the same line as
+   * plain text right after it — the default trigger is `block`/`truncate`
+   * for standalone use (a whole pill, a whole row), which forces a line
+   * break before any inline sibling. `inline` skips both, since a short
+   * label never needs truncation anyway.
+   */
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -104,7 +113,7 @@ export function InfoTooltip({
   return (
     <span
       ref={wrapperRef}
-      className={`group/tooltip relative block max-w-full ${hoverOnly ? "" : "cursor-help"}`}
+      className={`group/tooltip relative ${inline ? "inline-block" : "block max-w-full"} ${hoverOnly ? "" : "cursor-help"}`}
       onClick={
         hoverOnly
           ? undefined
@@ -118,9 +127,13 @@ export function InfoTooltip({
     >
       <span
         className={
-          hoverOnly
-            ? "block"
-            : "block truncate underline decoration-dotted decoration-slate-600 underline-offset-2"
+          inline
+            ? hoverOnly
+              ? ""
+              : "underline decoration-dotted decoration-slate-600 underline-offset-2"
+            : hoverOnly
+              ? "block"
+              : "block truncate underline decoration-dotted decoration-slate-600 underline-offset-2"
         }
       >
         {children}

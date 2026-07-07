@@ -21,6 +21,7 @@ import {
 import { FlaggableRow } from "./CharacterDetailsModal";
 import {
   ChallengeRatingIcon,
+  DamageInfoList,
   HpBar,
   IconStat,
   InitiativeIcon,
@@ -198,33 +199,30 @@ export function CreatureCard({
         </div>
       </div>
 
-      {(creature.damageResistances ||
-        creature.damageImmunities ||
-        creature.damageVulnerabilities ||
-        creature.conditionImmunities) && (
-        <div className="space-y-1 text-sm text-slate-300">
-          {creature.damageResistances && (
-            <p>
-              <span className="text-slate-500">Resist:</span> {creature.damageResistances}
-            </p>
-          )}
-          {creature.damageImmunities && (
-            <p>
-              <span className="text-slate-500">Immune:</span> {creature.damageImmunities}
-            </p>
-          )}
-          {creature.damageVulnerabilities && (
-            <p>
-              <span className="text-slate-500">Vulnerable:</span> {creature.damageVulnerabilities}
-            </p>
-          )}
-          {creature.conditionImmunities && (
-            <p>
-              <span className="text-slate-500">Condition Immunities:</span> {creature.conditionImmunities}
-            </p>
-          )}
-        </div>
-      )}
+      <DamageInfoList
+        entries={[
+          {
+            label: "Resist",
+            value: creature.damageResistances,
+            panel: <p>Resistance — takes half damage from this damage type.</p>,
+          },
+          {
+            label: "Immune",
+            value: creature.damageImmunities,
+            panel: <p>Immunity — takes no damage from this damage type.</p>,
+          },
+          {
+            label: "Vulnerable",
+            value: creature.damageVulnerabilities,
+            panel: <p>Vulnerability — takes double damage from this damage type.</p>,
+          },
+          {
+            label: "Condition Immunities",
+            value: creature.conditionImmunities,
+            panel: <p>Condition Immunity — can&apos;t be affected by this condition at all.</p>,
+          },
+        ]}
+      />
 
       {skills.length > 0 && (
         <div className="border-t border-slate-800 pt-3">
