@@ -2,8 +2,21 @@
 
 import { useCallback, useRef, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
+import { Avatar } from "./Avatar";
 
 const OUTPUT_SIZE = 200;
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M4 20l.9-3.6L16.4 5 19 7.6 7.6 19.1 4 20z M14.5 6.9l2.6 2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -71,21 +84,16 @@ export function CampaignLogoPicker({
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
-          <img src={logoUrl} alt="" className="h-16 w-16 shrink-0 rounded-md border border-slate-800 object-cover" />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-800 text-xl font-semibold text-slate-600">
-            {name.trim().charAt(0).toUpperCase() || "?"}
-          </div>
-        )}
+      <div className="relative inline-flex h-16 w-16 shrink-0">
+        <Avatar src={logoUrl} label={name} size="md" />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          aria-label={logoUrl ? "Change logo" : "Upload logo"}
+          title={logoUrl ? "Change logo" : "Upload logo"}
+          className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-300 shadow hover:bg-slate-700 hover:text-white"
         >
-          {logoUrl ? "Change logo" : "Upload logo"}
+          <PencilIcon className="h-3 w-3" />
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
       </div>

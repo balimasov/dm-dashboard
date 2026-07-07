@@ -126,10 +126,6 @@ export function CampaignRosterEditor({
 
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">
-        Add D&D Beyond character links to have them show up on the dashboard.
-      </p>
-
       <form onSubmit={handleSubmit} className="flex gap-2 mb-1">
         <input
           type="url"

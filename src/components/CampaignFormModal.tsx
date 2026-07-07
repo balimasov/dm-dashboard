@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
@@ -12,6 +12,17 @@ type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
   /** Omitted by callers that only ever open this modal in edit mode (e.g. the dashboard's Settings button) — there's no campaign-less create path there. */
   addCampaign?: ReturnType<typeof useCampaigns>["addCampaign"];
 };
+
+/** One titled block of the modal — keeps every section's heading/spacing identical instead of each field row inventing its own label style. */
+function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-slate-800/80 pt-5 first:border-t-0 first:pt-0">
+      <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
+      {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
 
 /**
  * Create mode (`campaign === null`): name/notes/logo only — no roster section
@@ -96,37 +107,38 @@ export function CampaignFormModal({
         </div>
 
         <div className="scrollbar-themed overflow-y-auto pr-1">
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="flex items-start gap-3">
-              <CampaignLogoPicker
-                logoUrl={logoUrl}
-                name={name}
-                onChange={(dataUrl) => {
-                  setLogoUrl(dataUrl);
-                  if (isEditing) saveField({ logoUrl: dataUrl });
-                }}
-              />
-              <div className="flex-1">
-                <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setError(null);
+          <form onSubmit={handleCreate}>
+            <Section title="Details">
+              <div className="flex items-center gap-3">
+                <CampaignLogoPicker
+                  logoUrl={logoUrl}
+                  name={name}
+                  onChange={(dataUrl) => {
+                    setLogoUrl(dataUrl);
+                    if (isEditing) saveField({ logoUrl: dataUrl });
                   }}
-                  onBlur={() => {
-                    const trimmed = name.trim();
-                    if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
-                  }}
-                  placeholder="Campaign name"
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
                 />
+                <div className="min-w-0 flex-1">
+                  <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setError(null);
+                    }}
+                    onBlur={() => {
+                      const trimmed = name.trim();
+                      if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
+                    }}
+                    placeholder="Campaign name"
+                    className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                  />
+                </div>
               </div>
-            </div>
+            </Section>
 
-            <div>
-              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Notes</label>
+            <Section title="Notes">
               <NotesEditor
                 value={notes}
                 onChange={setNotes}
@@ -135,15 +147,15 @@ export function CampaignFormModal({
                 }}
                 placeholder="Campaign notes..."
               />
-            </div>
+            </Section>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
             {!isEditing && (
               <button
                 type="submit"
                 disabled={!name.trim() || creating}
-                className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+                className="mt-5 w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
               >
                 {creating ? "Creating..." : "Create Campaign"}
               </button>
@@ -151,28 +163,27 @@ export function CampaignFormModal({
           </form>
 
           {isEditing && (
-            <div className="mt-6">
-              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Characters</label>
+            <Section title="Characters" description="Add D&D Beyond character links to have them show up on the dashboard.">
               <CampaignRosterEditor
                 campaignId={current.id}
                 initialCharacters={characters}
                 onCountChange={setCharacterCount}
               />
-            </div>
+            </Section>
           )}
 
           {isEditing && (
-            <div className="mt-6 border-t border-slate-800 pt-6">
-              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
-                Creatures (companions &amp; summons)
-              </label>
+            <Section
+              title="Creatures"
+              description="Companions & summons — search the bestiary by name, or add one blank and fill in its stat block afterwards."
+            >
               <CreatureRosterEditor
                 campaignId={current.id}
                 initialCreatures={initialCreatures}
                 characters={characters}
                 onCountChange={setCreatureCount}
               />
-            </div>
+            </Section>
           )}
         </div>
 

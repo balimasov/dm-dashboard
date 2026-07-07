@@ -15,14 +15,14 @@ import {
   SortableContext,
   arrayMove,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { Character, Creature, CreatureSearchHit, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
+import { Avatar } from "@/components/Avatar";
+import { RosterRow } from "@/components/RosterRow";
 
 /**
  * Deliberately minimal, same weight as the character roster's "paste a
@@ -99,10 +99,6 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-500">
-        Search the SRD bestiary or your own saved creatures by name — pick a match to add it, or add it blank and
-        fill in the stat block on its own edit page afterwards.
-      </p>
       <div className="flex gap-2">
         <input
           className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
@@ -180,49 +176,37 @@ function CreatureRow({
   onRemove: (id: string) => Promise<void>;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: creature.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+  const infoLine = [creatureInfoLine(creature), creature.challengeRating && `CR ${creature.challengeRating}`]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 ${
-        isDragging ? "opacity-50" : ""
-      }`}
+    <RosterRow
+      id={creature.id}
+      avatar={<Avatar label={creature.name} />}
+      actions={
+        <>
+          <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
+            Edit
+          </Link>
+          <button type="button" onClick={() => onRemove(creature.id)} className="text-red-500/80 hover:text-red-400">
+            Remove
+          </button>
+        </>
+      }
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          className="cursor-grab touch-none px-1 text-slate-600 hover:text-slate-300 active:cursor-grabbing"
-          aria-label="Drag to reorder"
-        >
-          ⠿
-        </button>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-100">{creature.name}</p>
-          <p className="truncate text-xs text-slate-500">
-            {creatureInfoLine(creature)} · AC {creature.ac} · {creature.hp}/{creature.maxHp} HP
-            {owner && <span className="text-slate-600"> · {owner.name}</span>}
-            {creature.source && <span className="text-slate-600"> · {creature.source}</span>}
-          </p>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-3 text-sm">
-        <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
-          Edit
-        </Link>
-        <button type="button" onClick={() => onRemove(creature.id)} className="text-red-500/80 hover:text-red-400">
-          Remove
-        </button>
-      </div>
-    </li>
+      <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
+        {creature.name}
+      </p>
+      <p title={infoLine} className="truncate text-xs text-slate-500">
+        {infoLine}
+      </p>
+      <p className="truncate text-xs text-slate-600">
+        AC {creature.ac} · {creature.hp}/{creature.maxHp} HP
+        {owner && ` · ${owner.name}`}
+        {creature.source && ` · ${creature.source}`}
+      </p>
+    </RosterRow>
   );
 }
 
