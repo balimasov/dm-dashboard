@@ -14,6 +14,7 @@ async function parseJsonOrThrow(res: Response, fallbackMessage: string): Promise
 export interface AddCreatureInput {
   templateName: string;
   name?: string;
+  avatarUrl?: string;
   creatureType?: string;
   size?: string;
   alignment?: string;

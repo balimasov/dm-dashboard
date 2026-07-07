@@ -74,11 +74,14 @@ export async function POST(req: Request) {
   const experiencePoints = parseOptionalNumber(body?.experiencePoints);
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
 
+  const avatarUrl = typeof body?.avatarUrl === "string" ? body.avatarUrl : undefined;
+
   const creature = createCreature({
     campaignId,
     templateId,
     templateName,
     name,
+    avatarUrl,
     creatureType,
     size,
     alignment,

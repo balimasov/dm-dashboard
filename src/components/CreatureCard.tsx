@@ -20,7 +20,6 @@ import {
 } from "@/lib/creatureStatText";
 import { FlaggableRow } from "./CharacterDetailsModal";
 import {
-  ChallengeRatingIcon,
   DamageInfoList,
   HpBar,
   IconStat,
@@ -110,21 +109,29 @@ export function CreatureCard({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <div className="min-w-0">
-        <p className="truncate text-lg font-semibold text-slate-100">{creature.name}</p>
-        <div className="flex items-center gap-1.5">
-          {infoLine && <p className="min-w-0 truncate text-xs text-slate-500">{infoLine}</p>}
-          {owner && (
-            <InfoTooltip hoverOnly panel={<p>Owner: {owner.name}</p>}>
-              <Avatar src={owner.avatarUrl} label={owner.name} size="xs" />
-            </InfoTooltip>
+      <div className="flex items-start gap-3">
+        <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
+        <div className="min-w-0 flex-1">
+          <p title={creature.name} className="truncate text-lg font-semibold text-slate-50">
+            {creature.name}
+          </p>
+          {infoLine && (
+            <p title={infoLine} className="truncate text-sm text-slate-400">
+              {infoLine}
+            </p>
           )}
+          {creature.challengeRating && <p className="text-xs text-slate-500">CR {creature.challengeRating}</p>}
         </div>
-        {creature.source && <p className="mt-0.5 truncate text-xs text-slate-600">{creature.source}</p>}
+        {owner && (
+          <InfoTooltip hoverOnly panel={<p>Owner: {owner.name}</p>}>
+            <Avatar src={owner.avatarUrl} label={owner.name} size="xs" />
+          </InfoTooltip>
+        )}
       </div>
 
       <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
       {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
+      {creature.source && <p className="text-xs text-slate-500">Source: {creature.source}</p>}
 
       <div className="space-y-1.5 text-sm text-slate-300">
         <IconStat
@@ -158,20 +165,6 @@ export function CreatureCard({
             label="Languages:"
           >
             {creature.languages}
-          </IconStat>
-        )}
-        {creature.challengeRating && (
-          <IconStat
-            icon={<ChallengeRatingIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={
-              <p>Challenge Rating — a rough gauge of how tough this creature is in a fight, and the XP it&apos;s worth when defeated.</p>
-            }
-            label="CR"
-          >
-            {creature.challengeRating}
-            {creature.experiencePoints !== undefined && (
-              <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
-            )}
           </IconStat>
         )}
       </div>

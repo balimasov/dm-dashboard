@@ -38,6 +38,7 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
   return {
     templateName: creature.templateName,
     name: creature.name,
+    avatarUrl: creature.avatarUrl ?? "",
     creatureType: creature.creatureType ?? "",
     size: creature.size ?? "",
     alignment: creature.alignment ?? "",
@@ -82,6 +83,7 @@ export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Cr
   return {
     templateName: value.templateName.trim() || value.name.trim(),
     name: value.name.trim() || value.templateName.trim(),
+    avatarUrl: value.avatarUrl || undefined,
     creatureType: value.creatureType || undefined,
     size: value.size || undefined,
     alignment: value.alignment || undefined,
@@ -115,6 +117,7 @@ export function formValueToAddCreatureInput(value: CreatureFormValue, templateId
   return {
     templateName: value.templateName.trim(),
     name: value.name.trim() || undefined,
+    avatarUrl: value.avatarUrl || undefined,
     creatureType: value.creatureType || undefined,
     size: value.size || undefined,
     alignment: value.alignment || undefined,

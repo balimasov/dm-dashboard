@@ -2,10 +2,12 @@
 
 import { AbilityScores, Character, CreatureTrait, abilityModifier } from "@/lib/types";
 import { NumberInput } from "@/components/NumberInput";
+import { AvatarPicker } from "@/components/AvatarPicker";
 
 export interface CreatureFormValue {
   templateName: string;
   name: string;
+  avatarUrl: string;
   creatureType: string;
   size: string;
   alignment: string;
@@ -37,6 +39,7 @@ export function emptyCreatureFormValue(): CreatureFormValue {
   return {
     templateName: "",
     name: "",
+    avatarUrl: "",
     creatureType: "",
     size: "",
     alignment: "",
@@ -125,6 +128,15 @@ export function CreatureFormFields({
 
   return (
     <div className="space-y-3">
+      <div>
+        <label className="mb-1 block text-xs text-slate-400">Portrait</label>
+        <AvatarPicker
+          imageUrl={value.avatarUrl || undefined}
+          label={value.name.trim() || value.templateName.trim() || "?"}
+          onChange={(dataUrl) => onChange({ avatarUrl: dataUrl })}
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
           <input

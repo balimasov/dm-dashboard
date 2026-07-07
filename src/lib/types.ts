@@ -503,6 +503,8 @@ export interface Creature {
   templateName: string;
   /** An in-play nickname (e.g. "Thunder") — falls back to `templateName` if never set. */
   name: string;
+  /** Optional uploaded portrait (base64 data URI, same convention as `Campaign.logoUrl`) — falls back to an initial-letter placeholder when absent. */
+  avatarUrl?: string;
   creatureType?: string;
   size?: string;
   alignment?: string;
