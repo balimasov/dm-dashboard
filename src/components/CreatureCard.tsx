@@ -169,6 +169,33 @@ export function CreatureCard({
         )}
       </div>
 
+      <div className="border-t border-slate-800 pt-3">
+        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Pill
+            panel={
+              <p>
+                Passive Perception — the score a hidden creature or object must beat to avoid its notice; also what
+                Stealth checks are rolled against.
+              </p>
+            }
+          >
+            {SKILL_ABBR.perception} {passivePerception}
+          </Pill>
+          <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+            {SKILL_ABBR.investigation} {passiveInvestigation}
+          </Pill>
+          <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+            {SKILL_ABBR.insight} {passiveInsight}
+          </Pill>
+        </div>
+        {senses.entries.length > 0 && (
+          <div className="mt-4">
+            <SenseEntries senses={senses.entries} />
+          </div>
+        )}
+      </div>
+
       <div>
         <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Stats</p>
         <div className="grid grid-cols-6 gap-1.5">
@@ -233,33 +260,6 @@ export function CreatureCard({
           </div>
         </div>
       )}
-
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
-        <div className="grid grid-cols-3 gap-1.5">
-          <Pill
-            panel={
-              <p>
-                Passive Perception — the score a hidden creature or object must beat to avoid its notice; also what
-                Stealth checks are rolled against.
-              </p>
-            }
-          >
-            {SKILL_ABBR.perception} {passivePerception}
-          </Pill>
-          <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
-            {SKILL_ABBR.investigation} {passiveInvestigation}
-          </Pill>
-          <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
-            {SKILL_ABBR.insight} {passiveInsight}
-          </Pill>
-        </div>
-        {senses.entries.length > 0 && (
-          <div className="mt-4">
-            <SenseEntries senses={senses.entries} />
-          </div>
-        )}
-      </div>
 
       {groups.length > 0 && (
         <div className="space-y-3 border-t border-slate-800 pt-2">
