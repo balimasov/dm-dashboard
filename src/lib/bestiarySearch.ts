@@ -1,40 +1,37 @@
 import "server-only";
-import { AbilityScores, CreatureTemplate, CreatureTrait } from "./types";
+import { AbilityScores, CreatureTemplate, CreatureTrait, abilityModifier } from "./types";
 
 /**
- * SRD stat-block lookup against Open5e's public monster API (no key
- * required). Every earlier version of this file guessed at the filter query
- * param (`?search=`) without ever seeing a real response — the sandbox this
- * is built in gets its CONNECT to api.open5e.com refused by network policy,
- * same as dndbeyond.com. This version is written against an actual response
- * (a real `GET /v1/monsters/?name__icontains=dragon` result, inspected
- * directly), which confirmed two things at once:
+ * SRD stat-block lookup against Open5e's v2 API, using the real two-step
+ * flow confirmed from actual captured responses (not guessed): a search
+ * hit only carries a name/CR/type preview, not a full stat block, so
+ * finding a creature is:
  *
- *  1. The real filter param is `name__icontains`, not `search` — Open5e
- *     silently ignores unrecognized query params rather than erroring, so
- *     `?search=` was never filtering anything; every request fell back to
- *     the default unfiltered/paginated listing. That's what caused both
- *     symptoms reported after the param was still wrong: results looking
- *     like an alphabetical slice unrelated to the query, and search taking
- *     15-20 seconds (because with no real filter, finding a match required
- *     this file's own code to page through hundreds of unrelated creatures
- *     itself). With the real param, a single request already returns just
- *     the matching creatures — no multi-page scan needed any more.
- *  2. The field shapes this file's mapper already assumed (flat
- *     `armor_class`/`hit_points`/`strength`.../`strength_save`, a nested
- *     `speed: {walk, fly, ...}`, string `senses`/`languages`/
- *     `damage_resistances`/`damage_immunities`/`condition_immunities`,
- *     array `actions`/`special_abilities`/`bonus_actions`/`reactions`/
- *     `legendary_actions` with `{name, desc}` entries) were already
- *     correct — the reason "everything but HP/saves/actions" looked empty
- *     wasn't the mapping, it was that `?search=` requests kept returning
- *     the wrong creatures (or none) to map in the first place. One real
- *     bug *was* found this way, though: `strength_save` etc. come back as
- *     JSON `null` (not absent) when a creature isn't proficient in that
- *     save — `Number(null)` is `0`, which used to be read as an explicit
- *     "+0 override" instead of "no override, use the plain modifier".
+ *  1. `GET /v2/search/?schema=v2&query=<name>` — returns hits across every
+ *     content type (creatures, spells, rules text...) and every source
+ *     document. Each hit looks like:
+ *     `{ document: {key, name}, object_pk, object_name, object: {cr, type,
+ *     size}, object_model, route, ... }`. Filtered to `object_model ===
+ *     "Creature"` (so a spell whose description mentions the query isn't
+ *     treated as a monster) and `document.key === "srd-2024"` (the 2024
+ *     SRD specifically — the same search covers "srd-2014", third-party
+ *     documents, etc., which this app deliberately doesn't want).
+ *  2. `GET /{route}{object_pk}/` (e.g. `v2/creatures/srd-2024_adult-red-dragon/`)
+ *     for each matching hit — this is the full stat block.
+ *
+ * The v2 creature detail schema is entirely different from the v1
+ * `/monsters/` list schema an earlier version of this file was written
+ * against: ability scores/type/size/size are nested objects, saving
+ * throws are always present (equal to the plain modifier when a creature
+ * isn't proficient, rather than the v1 list's `null`), resistances and
+ * immunities arrive as ready-made display strings, actions/bonus actions/
+ * reactions/legendary actions are one merged `actions` array disambiguated
+ * by an `action_type` field, and `traits` is separate. All of this is
+ * mapped directly from a real captured `Adult Red Dragon` response, not
+ * guessed.
  */
-const OPEN5E_ENDPOINTS = ["https://api.open5e.com/monsters/", "https://api.open5e.com/v2/creatures/"];
+const OPEN5E_ORIGIN = "https://api.open5e.com";
+const TARGET_DOCUMENT_KEY = "srd-2024";
 const MAX_RESULTS = 15;
 
 function get(obj: unknown, path: string): unknown {
@@ -44,182 +41,227 @@ function get(obj: unknown, path: string): unknown {
   }, obj);
 }
 
-/** Tries each path in order, returning the first one that resolves to a usable number. Explicit `null` (e.g. a save with no override) is skipped rather than coerced to 0. */
+/** Tries each path in order, returning the first one that resolves to a usable number. Explicit `null` is skipped rather than coerced to 0. */
 function firstNumber(obj: unknown, paths: string[], fallback: number): number {
   for (const path of paths) {
     const raw = get(obj, path);
     if (raw == null) continue;
-    const n = Number(Array.isArray(raw) ? get(raw[0], "value") : raw);
+    const n = Number(raw);
     if (Number.isFinite(n)) return n;
   }
   return fallback;
 }
 
-/** Same as a plain string field, but also accepts an array of strings (joined) — a couple of stat-block fields come back as lists in some schema variants. */
 function firstString(obj: unknown, paths: string[]): string | undefined {
   for (const path of paths) {
     const raw = get(obj, path);
     if (typeof raw === "string" && raw.trim()) return raw.trim();
-    if (Array.isArray(raw) && raw.length > 0 && raw.every((x) => typeof x === "string")) {
-      const joined = (raw as string[]).join(", ").trim();
-      if (joined) return joined;
-    }
   }
   return undefined;
 }
 
-function toSpeed(m: Record<string, unknown>): number {
-  const direct = firstNumber(m, ["speed.walk", "walk_speed", "speed_walk"], NaN);
-  if (Number.isFinite(direct)) return direct;
-  const speed = m.speed;
-  if (typeof speed === "number") return speed;
-  if (typeof speed === "string") {
-    const match = speed.match(/(\d+)\s*ft/);
-    if (match) return Number(match[1]);
-  }
-  return 30;
-}
-
-/** Real API gives challenge rating as display text ("17", "1/4") in `challenge_rating`, with a parallel decimal `cr` (17.0) alongside it — text wins when both are present. */
-function toChallengeRating(m: Record<string, unknown>): string | undefined {
-  const text = firstString(m, ["challenge_rating", "challenge_rating_text"]);
-  if (text) return text;
-  const decimal = firstNumber(m, ["cr", "challenge_rating_decimal"], NaN);
-  if (!Number.isFinite(decimal)) return undefined;
-  const FRACTIONS: Record<number, string> = { 0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2" };
-  return FRACTIONS[decimal] ?? String(decimal);
-}
-
-const ABILITY_PATHS: Record<keyof AbilityScores, string[]> = {
-  str: ["strength", "abilities.strength", "stats.strength"],
-  dex: ["dexterity", "abilities.dexterity", "stats.dexterity"],
-  con: ["constitution", "abilities.constitution", "stats.constitution"],
-  int: ["intelligence", "abilities.intelligence", "stats.intelligence"],
-  wis: ["wisdom", "abilities.wisdom", "stats.wisdom"],
-  cha: ["charisma", "abilities.charisma", "stats.charisma"],
+const ABILITY_KEYS: Record<keyof AbilityScores, string> = {
+  str: "strength",
+  dex: "dexterity",
+  con: "constitution",
+  int: "intelligence",
+  wis: "wisdom",
+  cha: "charisma",
 };
 
-const SAVE_PATHS: Record<keyof AbilityScores, string[]> = {
-  str: ["strength_save", "saving_throws.strength"],
-  dex: ["dexterity_save", "saving_throws.dexterity"],
-  con: ["constitution_save", "saving_throws.constitution"],
-  int: ["intelligence_save", "saving_throws.intelligence"],
-  wis: ["wisdom_save", "saving_throws.wisdom"],
-  cha: ["charisma_save", "saving_throws.charisma"],
-};
-
-/** Candidate source-array keys per stat-block section — tried in order, first non-empty wins. `special_abilities` is the real API's name for what this app calls "traits". */
-const TRAIT_GROUP_PATHS: Record<NonNullable<CreatureTrait["group"]>, string[]> = {
-  trait: ["special_abilities", "traits"],
-  action: ["actions"],
-  bonusAction: ["bonus_actions", "bonusActions"],
-  reaction: ["reactions"],
-  legendary: ["legendary_actions", "legendaryActions"],
-};
-
-function mapTraitGroup(m: Record<string, unknown>, group: NonNullable<CreatureTrait["group"]>): CreatureTrait[] {
-  for (const path of TRAIT_GROUP_PATHS[group]) {
-    const entries = get(m, path);
-    if (!Array.isArray(entries) || entries.length === 0) continue;
-    const mapped = entries
-      .filter((t): t is Record<string, unknown> => typeof (t as { name?: unknown })?.name === "string")
-      .map((t) => ({
-        name: t.name as string,
-        description: firstString(t, ["desc", "description", "text"]),
-        group,
-      }));
-    if (mapped.length > 0) return mapped;
-  }
-  return [];
+/** e.g. "40 ft., fly 80 ft., climb 40 ft." — the walk speed alone is returned separately as `speed` for the numeric field other UI relies on. */
+function mapSpeed(m: Record<string, unknown>): { speed: number; speedDetail?: string } {
+  const speedObj = (get(m, "speed") ?? {}) as Record<string, unknown>;
+  const walk = firstNumber(speedObj, ["walk"], 30);
+  const modes: string[] = [];
+  (["fly", "swim", "climb", "burrow"] as const).forEach((mode) => {
+    const v = Number(speedObj[mode]);
+    if (Number.isFinite(v) && v > 0) modes.push(`${mode} ${v} ft.`);
+  });
+  const speedDetail = [`${walk} ft.`, ...modes].join(", ");
+  return { speed: walk, speedDetail };
 }
 
-function mapOpen5eMonster(m: Record<string, unknown>): CreatureTemplate | null {
+/** Combines the separate darkvision/blindsight/tremorsense/truesight ranges and passive Perception into one line, matching how a real stat block's Senses row reads. */
+function combineSenses(m: Record<string, unknown>): string | undefined {
+  const parts: string[] = [];
+  const ranges: Array<[string, string]> = [
+    ["darkvision_range", "darkvision"],
+    ["blindsight_range", "blindsight"],
+    ["tremorsense_range", "tremorsense"],
+    ["truesight_range", "truesight"],
+  ];
+  ranges.forEach(([path, label]) => {
+    const v = firstNumber(m, [path], NaN);
+    if (Number.isFinite(v) && v > 0) parts.push(`${label} ${v} ft.`);
+  });
+  const passive = firstNumber(m, ["passive_perception"], NaN);
+  if (Number.isFinite(passive)) parts.push(`passive Perception ${passive}`);
+  return parts.length > 0 ? parts.join(", ") : undefined;
+}
+
+function titleCaseSkill(key: string): string {
+  return key
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** e.g. "Perception +13, Stealth +6" from `{perception: 13, stealth: 6}`. */
+function mapSkills(m: Record<string, unknown>): string | undefined {
+  const skills = get(m, "skill_bonuses");
+  if (!skills || typeof skills !== "object") return undefined;
+  const parts = Object.entries(skills as Record<string, unknown>)
+    .filter(([, v]) => typeof v === "number")
+    .map(([k, v]) => `${titleCaseSkill(k)} ${(v as number) >= 0 ? "+" : ""}${v}`);
+  return parts.length > 0 ? parts.join(", ") : undefined;
+}
+
+const CR_FRACTIONS: Record<number, string> = { 0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2" };
+
+function toChallengeRatingText(cr: unknown): string | undefined {
+  if (typeof cr === "string" && cr.trim()) return cr.trim();
+  if (typeof cr === "number" && Number.isFinite(cr)) return CR_FRACTIONS[cr] ?? String(cr);
+  return undefined;
+}
+
+/** `traits` (name/desc) map straight across. `actions` merges what this app models as four separate groups (action/bonusAction/reaction/legendary), disambiguated by `action_type` — grouped first, then ordered by `order_in_statblock` within each group, since that field restarts from 0 per action_type rather than running across the whole array. */
+function mapTraitsAndActions(m: Record<string, unknown>): CreatureTrait[] {
+  const traitsRaw = Array.isArray(m.traits) ? m.traits : [];
+  const traits: CreatureTrait[] = traitsRaw
+    .filter((t): t is Record<string, unknown> => typeof (t as { name?: unknown })?.name === "string")
+    .map((t) => ({
+      name: t.name as string,
+      description: firstString(t, ["desc", "description"]),
+      group: "trait" as const,
+    }));
+
+  const GROUP_BY_TYPE: Record<string, NonNullable<CreatureTrait["group"]>> = {
+    ACTION: "action",
+    BONUS_ACTION: "bonusAction",
+    REACTION: "reaction",
+    LEGENDARY_ACTION: "legendary",
+  };
+  const actionsRaw = Array.isArray(m.actions) ? m.actions : [];
+  const buckets: Partial<Record<string, Array<Record<string, unknown>>>> = {};
+  actionsRaw.forEach((a) => {
+    if (typeof (a as { name?: unknown })?.name !== "string") return;
+    const type = String((a as Record<string, unknown>).action_type ?? "ACTION");
+    (buckets[type] ??= []).push(a as Record<string, unknown>);
+  });
+  Object.values(buckets).forEach((list) =>
+    list?.sort((a, b) => Number(a.order_in_statblock ?? 0) - Number(b.order_in_statblock ?? 0))
+  );
+
+  const actions: CreatureTrait[] = ["ACTION", "BONUS_ACTION", "REACTION", "LEGENDARY_ACTION"].flatMap((type) =>
+    (buckets[type] ?? []).map((a) => ({
+      name: a.name as string,
+      description: firstString(a, ["desc", "description"]),
+      group: GROUP_BY_TYPE[type],
+    }))
+  );
+
+  return [...traits, ...actions].slice(0, 30);
+}
+
+function mapOpen5eV2Creature(m: Record<string, unknown>): CreatureTemplate | null {
   const name = typeof m.name === "string" ? m.name.trim() : "";
   if (!name) return null;
 
+  const abilityScores = (get(m, "ability_scores") ?? {}) as Record<string, unknown>;
   const stats: AbilityScores = {
-    str: firstNumber(m, ABILITY_PATHS.str, 10),
-    dex: firstNumber(m, ABILITY_PATHS.dex, 10),
-    con: firstNumber(m, ABILITY_PATHS.con, 10),
-    int: firstNumber(m, ABILITY_PATHS.int, 10),
-    wis: firstNumber(m, ABILITY_PATHS.wis, 10),
-    cha: firstNumber(m, ABILITY_PATHS.cha, 10),
+    str: firstNumber(abilityScores, [ABILITY_KEYS.str], 10),
+    dex: firstNumber(abilityScores, [ABILITY_KEYS.dex], 10),
+    con: firstNumber(abilityScores, [ABILITY_KEYS.con], 10),
+    int: firstNumber(abilityScores, [ABILITY_KEYS.int], 10),
+    wis: firstNumber(abilityScores, [ABILITY_KEYS.wis], 10),
+    cha: firstNumber(abilityScores, [ABILITY_KEYS.cha], 10),
   };
 
+  // Real API always includes a value per ability (equal to the plain modifier when not
+  // proficient) rather than omitting it — only keep ones that actually differ.
+  const savingThrowsRaw = (get(m, "saving_throws") ?? {}) as Record<string, unknown>;
   const savingThrows: Partial<AbilityScores> = {};
-  (Object.keys(SAVE_PATHS) as Array<keyof AbilityScores>).forEach((key) => {
-    const value = firstNumber(m, SAVE_PATHS[key], NaN);
-    if (Number.isFinite(value)) savingThrows[key] = value;
+  (Object.keys(ABILITY_KEYS) as Array<keyof AbilityScores>).forEach((key) => {
+    const raw = savingThrowsRaw[ABILITY_KEYS[key]];
+    if (typeof raw === "number" && raw !== abilityModifier(stats[key])) savingThrows[key] = raw;
   });
 
-  const traits = [
-    ...mapTraitGroup(m, "trait"),
-    ...mapTraitGroup(m, "action"),
-    ...mapTraitGroup(m, "bonusAction"),
-    ...mapTraitGroup(m, "reaction"),
-    ...mapTraitGroup(m, "legendary"),
-  ].slice(0, 24);
-
-  const slug = typeof m.slug === "string" && m.slug ? m.slug : name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const size = firstString(m, ["size"]);
-  const type = firstString(m, ["type"]);
-  const subtype = firstString(m, ["subtype"]);
+  const { speed, speedDetail } = mapSpeed(m);
+  const rai = (get(m, "resistances_and_immunities") ?? {}) as Record<string, unknown>;
+  const initiativeBonus = firstNumber(m, ["initiative_bonus"], NaN);
+  const experiencePoints = firstNumber(m, ["experience_points"], NaN);
+  const slug = typeof m.key === "string" && m.key ? m.key : name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return {
     id: `srd-${slug}`,
     name,
-    creatureType: [type, subtype].filter(Boolean).join(" ") || undefined,
-    size,
+    creatureType: firstString(m, ["type.name"]),
+    size: firstString(m, ["size.name"]),
     alignment: firstString(m, ["alignment"]),
-    ac: firstNumber(m, ["armor_class", "ac"], 10),
-    maxHp: firstNumber(m, ["hit_points", "hp"], 1),
-    speed: toSpeed(m),
+    ac: firstNumber(m, ["armor_class"], 10),
+    armorDesc: firstString(m, ["armor_detail"]),
+    maxHp: firstNumber(m, ["hit_points"], 1),
+    hitDice: firstString(m, ["hit_dice"]),
+    speed,
+    speedDetail,
+    ...(Number.isFinite(initiativeBonus) ? { initiativeBonus } : {}),
     stats,
     ...(Object.keys(savingThrows).length > 0 ? { savingThrows } : {}),
-    senses: firstString(m, ["senses"]),
-    languages: firstString(m, ["languages"]),
-    challengeRating: toChallengeRating(m),
-    damageVulnerabilities: firstString(m, ["damage_vulnerabilities"]),
-    damageResistances: firstString(m, ["damage_resistances"]),
-    damageImmunities: firstString(m, ["damage_immunities"]),
-    conditionImmunities: firstString(m, ["condition_immunities"]),
-    traits,
+    senses: combineSenses(m),
+    languages: firstString(m, ["languages.as_string"]),
+    challengeRating: toChallengeRatingText(get(m, "challenge_rating")),
+    ...(Number.isFinite(experiencePoints) ? { experiencePoints } : {}),
+    skills: mapSkills(m),
+    damageVulnerabilities: firstString(rai, ["damage_vulnerabilities_display"]),
+    damageResistances: firstString(rai, ["damage_resistances_display"]),
+    damageImmunities: firstString(rai, ["damage_immunities_display"]),
+    conditionImmunities: firstString(rai, ["condition_immunities_display"]),
+    traits: mapTraitsAndActions(m),
     origin: "srd",
   };
 }
 
-/** One filtered request per endpoint — `name__icontains` does the actual filtering server-side now, so there's no need to page through unrelated results hoping for a match. */
-async function fetchOpen5e(base: string, query: string): Promise<Array<Record<string, unknown>>> {
-  const url = `${base}?name__icontains=${encodeURIComponent(query)}`;
+async function fetchJson(url: string): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(url, { cache: "no-store" });
   } catch (err) {
     console.error(`[bestiarySearch] fetch failed for ${url}:`, err);
-    return [];
+    return null;
   }
   if (!res.ok) {
     console.error(`[bestiarySearch] ${url} responded ${res.status} ${res.statusText}`);
-    return [];
+    return null;
   }
-
-  const json: unknown = await res.json().catch((err) => {
+  return res.json().catch((err) => {
     console.error(`[bestiarySearch] failed to parse JSON from ${url}:`, err);
     return null;
   });
-  if (json == null) return [];
-
-  return Array.isArray((json as { results?: unknown }).results)
-    ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
-    : Array.isArray(json)
-      ? (json as Array<Record<string, unknown>>)
-      : [];
 }
 
-/** Belt-and-suspenders re-sort by relevance (exact match, then prefix, then substring) — a no-op re-ordering when the server's own filter already did the work, but keeps results sane if a future endpoint's filter param turns out to be looser than expected. */
-function rankByQuery(templates: CreatureTemplate[], query: string): CreatureTemplate[] {
+async function fetchSearchResults(query: string): Promise<Array<Record<string, unknown>>> {
+  const json = await fetchJson(`${OPEN5E_ORIGIN}/v2/search/?schema=v2&query=${encodeURIComponent(query)}`);
+  return Array.isArray((json as { results?: unknown } | null)?.results)
+    ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
+    : [];
+}
+
+/** Only real creature hits from the 2024 SRD — the same search also returns spells, rules text, other source documents, etc. */
+function isTargetCreatureHit(item: Record<string, unknown>): boolean {
+  return item.object_model === "Creature" && get(item, "document.key") === TARGET_DOCUMENT_KEY;
+}
+
+function detailUrl(item: Record<string, unknown>): string | null {
+  const objectPk = firstString(item, ["object_pk"]);
+  if (!objectPk) return null;
+  const route = (firstString(item, ["route"]) ?? "v2/creatures/").replace(/^\/+/, "").replace(/\/*$/, "/");
+  return `${OPEN5E_ORIGIN}/${route}${objectPk}/`;
+}
+
+function rankByQuery<T extends { name: string }>(items: T[], query: string): T[] {
   const q = query.trim().toLowerCase();
-  return templates
+  return items
     .filter((t) => t.name.toLowerCase().includes(q))
     .sort((a, b) => {
       const an = a.name.toLowerCase();
@@ -234,11 +276,21 @@ export async function searchSrdMonsters(query: string): Promise<CreatureTemplate
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  for (const base of OPEN5E_ENDPOINTS) {
-    const raw = await fetchOpen5e(base, trimmed);
-    const mapped = raw.map(mapOpen5eMonster).filter((t): t is CreatureTemplate => t !== null);
-    const ranked = rankByQuery(mapped, trimmed);
-    if (ranked.length > 0) return ranked.slice(0, MAX_RESULTS);
-  }
-  return [];
+  const hits = (await fetchSearchResults(trimmed)).filter(isTargetCreatureHit);
+  const named = hits
+    .map((item) => ({ item, name: firstString(item, ["object_name"]) ?? "" }))
+    .filter((h) => h.name);
+  const ranked = rankByQuery(named, trimmed).slice(0, MAX_RESULTS);
+
+  const details = await Promise.all(
+    ranked.map(({ item }) => {
+      const url = detailUrl(item);
+      return url ? fetchJson(url) : Promise.resolve(null);
+    })
+  );
+
+  return details
+    .filter((d): d is Record<string, unknown> => d != null && typeof d === "object")
+    .map(mapOpen5eV2Creature)
+    .filter((t): t is CreatureTemplate => t !== null);
 }

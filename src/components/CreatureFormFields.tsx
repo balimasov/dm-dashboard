@@ -10,14 +10,20 @@ export interface CreatureFormValue {
   size: string;
   alignment: string;
   ac: number;
+  armorDesc: string;
   hp: number;
   maxHp: number;
+  hitDice: string;
   speed: number;
+  speedDetail: string;
+  initiativeBonus: string;
   stats: AbilityScores;
   savingThrows: Partial<AbilityScores>;
   senses: string;
   languages: string;
   challengeRating: string;
+  experiencePoints: string;
+  skills: string;
   damageVulnerabilities: string;
   damageResistances: string;
   damageImmunities: string;
@@ -35,14 +41,20 @@ export function emptyCreatureFormValue(): CreatureFormValue {
     size: "",
     alignment: "",
     ac: 10,
+    armorDesc: "",
     hp: 1,
     maxHp: 1,
+    hitDice: "",
     speed: 30,
+    speedDetail: "",
+    initiativeBonus: "",
     stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     savingThrows: {},
     senses: "",
     languages: "",
     challengeRating: "",
+    experiencePoints: "",
+    skills: "",
     damageVulnerabilities: "",
     damageResistances: "",
     damageImmunities: "",
@@ -165,6 +177,33 @@ export function CreatureFormFields({
         </Field>
       </div>
 
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Field label="Armor Detail" hint='e.g. "natural armor"'>
+          <input
+            className={inputCls}
+            value={value.armorDesc}
+            onChange={(e) => onChange({ armorDesc: e.target.value })}
+          />
+        </Field>
+        <Field label="Hit Dice" hint='e.g. "19d12 + 133"'>
+          <input className={inputCls} value={value.hitDice} onChange={(e) => onChange({ hitDice: e.target.value })} />
+        </Field>
+        <Field label="Speed Detail" hint='e.g. "40 ft., fly 80 ft."'>
+          <input
+            className={inputCls}
+            value={value.speedDetail}
+            onChange={(e) => onChange({ speedDetail: e.target.value })}
+          />
+        </Field>
+        <Field label="Initiative Bonus">
+          <input
+            className={inputCls}
+            value={value.initiativeBonus}
+            onChange={(e) => onChange({ initiativeBonus: e.target.value })}
+          />
+        </Field>
+      </div>
+
       <div>
         <div className="mb-1 grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
@@ -199,12 +238,23 @@ export function CreatureFormFields({
             onChange={(e) => onChange({ languages: e.target.value })}
           />
         </Field>
+        <Field label="Skills" hint='e.g. "Perception +13, Stealth +6"'>
+          <input className={inputCls} value={value.skills} onChange={(e) => onChange({ skills: e.target.value })} />
+        </Field>
         <Field label="Challenge Rating">
           <input
             className={inputCls}
             placeholder="1/4"
             value={value.challengeRating}
             onChange={(e) => onChange({ challengeRating: e.target.value })}
+          />
+        </Field>
+        <Field label="Experience Points">
+          <input
+            className={inputCls}
+            placeholder="18000"
+            value={value.experiencePoints}
+            onChange={(e) => onChange({ experiencePoints: e.target.value })}
           />
         </Field>
       </div>

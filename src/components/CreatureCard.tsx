@@ -81,6 +81,7 @@ export function CreatureCard({
           <span className="min-w-0 flex-1">
             <InfoTooltip panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}>
               AC {creature.ac}
+              {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
             </InfoTooltip>
           </span>
         </span>
@@ -88,10 +89,18 @@ export function CreatureCard({
           <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           <span className="min-w-0 flex-1">
             <InfoTooltip panel={<p>Speed — how many feet it can move on its turn.</p>}>
-              Speed {creature.speed}ft
+              Speed {creature.speedDetail ?? `${creature.speed}ft`}
             </InfoTooltip>
           </span>
         </span>
+        {creature.initiativeBonus !== undefined && (
+          <span className="col-span-2 text-slate-300">
+            Initiative Bonus {formatModifier(creature.initiativeBonus)}
+          </span>
+        )}
+        {creature.hitDice && (
+          <span className="col-span-2 text-slate-500">Hit Dice: {creature.hitDice}</span>
+        )}
       </div>
 
       <div>
@@ -122,12 +131,18 @@ export function CreatureCard({
 
       {(creature.senses ||
         creature.languages ||
+        creature.skills ||
         creature.challengeRating ||
         creature.damageVulnerabilities ||
         creature.damageResistances ||
         creature.damageImmunities ||
         creature.conditionImmunities) && (
         <div className="space-y-1 border-t border-slate-800 pt-2 text-sm text-slate-300">
+          {creature.skills && (
+            <p>
+              <span className="text-slate-500">Skills:</span> {creature.skills}
+            </p>
+          )}
           {creature.senses && (
             <p>
               <span className="text-slate-500">Senses:</span> {creature.senses}
@@ -141,6 +156,9 @@ export function CreatureCard({
           {creature.challengeRating && (
             <p>
               <span className="text-slate-500">CR:</span> {creature.challengeRating}
+              {creature.experiencePoints !== undefined && (
+                <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
+              )}
             </p>
           )}
           {creature.damageVulnerabilities && (

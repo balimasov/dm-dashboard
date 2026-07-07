@@ -439,8 +439,15 @@ export interface CreatureTemplate {
   size?: string;
   alignment?: string;
   ac: number;
+  /** e.g. "natural armor" — shown as "19 (natural armor)", same convention as a real stat block's AC line. */
+  armorDesc?: string;
   maxHp: number;
+  /** e.g. "19d12 + 133" — shown as "256 (19d12 + 133)". */
+  hitDice?: string;
   speed: number;
+  /** Full multi-mode speed text, e.g. "40 ft., fly 80 ft., climb 40 ft." — `speed` above stays the plain walk number other UI relies on. */
+  speedDetail?: string;
+  initiativeBonus?: number;
   stats: AbilityScores;
   /** Explicit saving-throw bonus per ability — only ones that differ from the plain ability modifier need to be set; falls back to the modifier when absent for a given ability. */
   savingThrows?: Partial<AbilityScores>;
@@ -449,6 +456,9 @@ export interface CreatureTemplate {
   languages?: string;
   /** e.g. "1/4", "None" — display text, not used in any calculation. */
   challengeRating?: string;
+  experiencePoints?: number;
+  /** e.g. "Perception +13, Stealth +6" — free text, same convention as `senses`/`languages`. */
+  skills?: string;
   /** Free text, e.g. "Bludgeoning, Piercing, and Slashing from Nonmagical Attacks" — same convention as `senses`/`languages`. */
   damageVulnerabilities?: string;
   damageResistances?: string;
@@ -480,15 +490,21 @@ export interface Creature {
   size?: string;
   alignment?: string;
   ac: number;
+  armorDesc?: string;
   hp: number;
   maxHp: number;
+  hitDice?: string;
   tempHp: number;
   speed: number;
+  speedDetail?: string;
+  initiativeBonus?: number;
   stats: AbilityScores;
   savingThrows?: Partial<AbilityScores>;
   senses?: string;
   languages?: string;
   challengeRating?: string;
+  experiencePoints?: number;
+  skills?: string;
   damageVulnerabilities?: string;
   damageResistances?: string;
   damageImmunities?: string;

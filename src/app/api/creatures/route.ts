@@ -14,6 +14,12 @@ function parseSavingThrows(raw: unknown): Partial<AbilityScores> | undefined {
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+function parseOptionalNumber(raw: unknown): number | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export async function GET(req: Request) {
   const campaignId = new URL(req.url).searchParams.get("campaignId");
   if (!campaignId) {
@@ -60,6 +66,12 @@ export async function POST(req: Request) {
   const damageResistances = typeof body?.damageResistances === "string" ? body.damageResistances : undefined;
   const damageImmunities = typeof body?.damageImmunities === "string" ? body.damageImmunities : undefined;
   const conditionImmunities = typeof body?.conditionImmunities === "string" ? body.conditionImmunities : undefined;
+  const armorDesc = typeof body?.armorDesc === "string" ? body.armorDesc : undefined;
+  const hitDice = typeof body?.hitDice === "string" ? body.hitDice : undefined;
+  const speedDetail = typeof body?.speedDetail === "string" ? body.speedDetail : undefined;
+  const skills = typeof body?.skills === "string" ? body.skills : undefined;
+  const initiativeBonus = parseOptionalNumber(body?.initiativeBonus);
+  const experiencePoints = parseOptionalNumber(body?.experiencePoints);
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
 
   const creature = createCreature({
@@ -71,15 +83,21 @@ export async function POST(req: Request) {
     size,
     alignment,
     ac,
+    armorDesc,
     hp: Number(body?.hp) || maxHp,
     maxHp,
+    hitDice,
     tempHp: 0,
     speed,
+    speedDetail,
+    initiativeBonus,
     stats,
     savingThrows,
     senses,
     languages,
     challengeRating,
+    experiencePoints,
+    skills,
     damageVulnerabilities,
     damageResistances,
     damageImmunities,
@@ -100,13 +118,19 @@ export async function POST(req: Request) {
     size,
     alignment,
     ac,
+    armorDesc,
     maxHp,
+    hitDice,
     speed,
+    speedDetail,
+    initiativeBonus,
     stats,
     savingThrows,
     senses,
     languages,
     challengeRating,
+    experiencePoints,
+    skills,
     damageVulnerabilities,
     damageResistances,
     damageImmunities,
