@@ -182,7 +182,7 @@ function CreatureRow({
   return (
     <RosterRow
       id={creature.id}
-      avatar={<Avatar label={creature.name} />}
+      avatar={<Avatar src={creature.avatarUrl} label={creature.name} />}
       actions={
         <>
           <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">

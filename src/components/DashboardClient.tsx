@@ -35,6 +35,22 @@ function CampaignLogo({ campaign }: { campaign: Campaign }) {
   );
 }
 
+/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action, so adding either always starts from the one place both actually live. */
+function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpenSettings: () => void }) {
+  return (
+    <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
+      <p>{message}</p>
+      <button
+        type="button"
+        onClick={onOpenSettings}
+        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+      >
+        Open Settings
+      </button>
+    </div>
+  );
+}
+
 /**
  * Local state + save-on-blur — same lightweight pattern used elsewhere in
  * this app, no dedicated save button. Reports the saved value up via
@@ -183,9 +199,7 @@ export function DashboardClient({
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
         {characters.length === 0 ? (
-          <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
-            <p>No characters yet. Add some by editing this campaign from the Campaigns page.</p>
-          </div>
+          <EmptyRosterState message="No characters yet." onOpenSettings={() => setSettingsOpen(true)} />
         ) : (
           // Status badges straddle each card's *top* border and can bleed
           // sideways too once there are several of them — `overflow-x-auto`
@@ -214,9 +228,7 @@ export function DashboardClient({
           Settings.
         </p>
         {creatures.length === 0 ? (
-          <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
-            <p>No creatures yet. Add some by editing this campaign from Settings.</p>
-          </div>
+          <EmptyRosterState message="No creatures yet." onOpenSettings={() => setSettingsOpen(true)} />
         ) : (
           <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2">
             {creatures.map((creature) => {
