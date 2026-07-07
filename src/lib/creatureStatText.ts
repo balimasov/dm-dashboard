@@ -1,4 +1,4 @@
-import { SKILL_LABELS, SkillName } from "./types";
+import { abilityModifier, SKILL_LABELS, SkillName } from "./types";
 
 const SKILL_NAME_BY_LABEL: Partial<Record<string, SkillName>> = Object.fromEntries(
   (Object.keys(SKILL_LABELS) as SkillName[]).map((name) => [SKILL_LABELS[name].toLowerCase(), name])
@@ -30,6 +30,23 @@ export function parseCreatureSkills(text?: string): ParsedCreatureSkill[] {
       const name = SKILL_NAME_BY_LABEL[rawLabel.toLowerCase()] ?? null;
       return { name, label: name ? SKILL_LABELS[name] : rawLabel, bonus };
     });
+}
+
+/**
+ * A stat block never prints Passive Investigation/Insight the way it does
+ * Passive Perception — a DM is expected to work them out themselves, same as
+ * for a character: 10 + the skill's own listed bonus (already folds in
+ * proficiency) if the creature is trained in it, otherwise just the plain
+ * ability modifier.
+ */
+export function computePassiveSkill(
+  skillName: SkillName,
+  skills: ParsedCreatureSkill[],
+  abilityScore: number
+): number {
+  const listed = skills.find((s) => s.name === skillName && s.bonus !== null);
+  const bonus = listed ? listed.bonus! : abilityModifier(abilityScore);
+  return 10 + bonus;
 }
 
 export interface ParsedCreatureSenses {

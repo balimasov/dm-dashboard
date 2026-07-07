@@ -12,7 +12,12 @@ import {
   creatureInfoLine,
   formatModifier,
 } from "@/lib/types";
-import { ParsedCreatureSkill, parseCreatureSenses, parseCreatureSkills } from "@/lib/creatureStatText";
+import {
+  computePassiveSkill,
+  ParsedCreatureSkill,
+  parseCreatureSenses,
+  parseCreatureSkills,
+} from "@/lib/creatureStatText";
 import { FlaggableRow } from "./CharacterDetailsModal";
 import {
   ChallengeRatingIcon,
@@ -83,6 +88,9 @@ export function CreatureCard({
   const flaggedTraits = creature.flaggedTraits ?? [];
   const skills = parseCreatureSkills(creature.skills);
   const senses = parseCreatureSenses(creature.senses);
+  const passivePerception = senses.passivePerception ?? computePassiveSkill("perception", skills, creature.stats.wis);
+  const passiveInvestigation = computePassiveSkill("investigation", skills, creature.stats.int);
+  const passiveInsight = computePassiveSkill("insight", skills, creature.stats.wis);
 
   function toggleFlag(name: string) {
     if (!onUpdate) return;
@@ -232,30 +240,32 @@ export function CreatureCard({
         </div>
       )}
 
-      {(senses.passivePerception !== null || senses.entries.length > 0) && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
-          {senses.passivePerception !== null && (
-            <div className="w-fit">
-              <Pill
-                panel={
-                  <p>
-                    Passive Perception — the score a hidden creature or object must beat to avoid its notice; also
-                    what Stealth checks are rolled against.
-                  </p>
-                }
-              >
-                {SKILL_ABBR.perception} {senses.passivePerception}
-              </Pill>
-            </div>
-          )}
-          {senses.entries.length > 0 && (
-            <div className={senses.passivePerception !== null ? "mt-3" : ""}>
-              <SenseEntries senses={senses.entries} />
-            </div>
-          )}
+      <div className="border-t border-slate-800 pt-3">
+        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Pill
+            panel={
+              <p>
+                Passive Perception — the score a hidden creature or object must beat to avoid its notice; also what
+                Stealth checks are rolled against.
+              </p>
+            }
+          >
+            {SKILL_ABBR.perception} {passivePerception}
+          </Pill>
+          <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+            {SKILL_ABBR.investigation} {passiveInvestigation}
+          </Pill>
+          <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+            {SKILL_ABBR.insight} {passiveInsight}
+          </Pill>
         </div>
-      )}
+        {senses.entries.length > 0 && (
+          <div className="mt-4">
+            <SenseEntries senses={senses.entries} />
+          </div>
+        )}
+      </div>
 
       {groups.length > 0 && (
         <div className="space-y-3 border-t border-slate-800 pt-2">
