@@ -26,7 +26,7 @@ export function templateToFormValue(template: CreatureTemplate): CreatureFormVal
 /** Seeds an edit draft from an existing creature instance. */
 export function creatureToFormValue(creature: Creature): CreatureFormValue {
   return {
-    templateName: creature.name,
+    templateName: creature.templateName,
     name: creature.name,
     creatureType: creature.creatureType ?? "",
     size: creature.size ?? "",
@@ -53,6 +53,7 @@ function cleanSavingThrows(savingThrows: Partial<AbilityScores>): Partial<Abilit
 /** Everything an edited creature instance needs, shared between the Settings roster editor and the dashboard's own edit modal. */
 export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Creature> {
   return {
+    templateName: value.templateName.trim() || value.name.trim(),
     name: value.name.trim() || value.templateName.trim(),
     creatureType: value.creatureType || undefined,
     size: value.size || undefined,

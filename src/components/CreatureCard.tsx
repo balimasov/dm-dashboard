@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Character, Creature, CreatureTrait, abilityModifier, creatureInfoLine, formatModifier } from "@/lib/types";
 import { FlaggableRow } from "./CharacterDetailsModal";
 import { HpBar, ShieldIcon, SpeedIcon, StatBox, STAT_ORDER } from "./CharacterCard";
@@ -26,21 +27,20 @@ const GROUP_ORDER: Array<NonNullable<CreatureTrait["group"]>> = [
  * combat-stat/tooltip/flame-flag conventions as the character card, but no
  * skills/spells/inventory. `onUpdate` drives both inline HP editing (not yet
  * wired here beyond flags) and the flame-flag toggle on traits/actions;
- * `onEdit` opens the full edit modal, `onRemove` deletes it — same
- * affordances `CharacterCard` exposes at the bottom of its own card.
+ * "Edit" links to a dedicated `/creatures/[id]/edit` page (same convention as
+ * `CharacterCard`'s own Edit link), `onRemove` deletes it — same affordances
+ * `CharacterCard` exposes at the bottom of its own card.
  */
 export function CreatureCard({
   creature,
   owner,
   onUpdate,
   onRemove,
-  onEdit,
 }: {
   creature: Creature;
   owner?: Character;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
   onRemove?: (id: string) => void;
-  onEdit?: () => void;
 }) {
   const isDown = creature.hp <= 0;
   const infoLine = [creatureInfoLine(creature), creature.alignment].filter(Boolean).join(", ");
@@ -159,22 +159,18 @@ export function CreatureCard({
         </div>
       )}
 
-      {(onEdit || onRemove) && (
+      {onRemove && (
         <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 text-xs">
-          {onEdit && (
-            <button type="button" onClick={onEdit} className="text-slate-400 hover:text-slate-200">
-              Edit
-            </button>
-          )}
-          {onRemove && (
-            <button
-              type="button"
-              onClick={() => onRemove(creature.id)}
-              className="text-red-500/80 hover:text-red-400"
-            >
-              Remove
-            </button>
-          )}
+          <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
+            Edit
+          </Link>
+          <button
+            type="button"
+            onClick={() => onRemove(creature.id)}
+            className="text-red-500/80 hover:text-red-400"
+          >
+            Remove
+          </button>
         </div>
       )}
     </div>

@@ -61,6 +61,7 @@ export async function POST(req: Request) {
   const creature = createCreature({
     campaignId,
     templateId,
+    templateName,
     name,
     creatureType,
     size,

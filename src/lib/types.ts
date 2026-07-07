@@ -467,7 +467,9 @@ export interface Creature {
   campaignId: string;
   /** The bestiary entry this was seeded from, if any — absent for a one-off creature typed in without saving it to the shared bestiary. */
   templateId?: string;
-  /** A nickname (e.g. "Thunder") — falls back to showing the template/creature type name if never renamed. */
+  /** The creature's actual species/import name (e.g. "Otherworldly Steed") — stays fixed regardless of `name`, so renaming the in-play nickname never loses track of what it actually is. */
+  templateName: string;
+  /** An in-play nickname (e.g. "Thunder") — falls back to `templateName` if never set. */
   name: string;
   creatureType?: string;
   size?: string;
