@@ -2,33 +2,39 @@ import "server-only";
 import { AbilityScores, CreatureTemplate, CreatureTrait } from "./types";
 
 /**
- * Best-effort SRD stat-block lookup against Open5e's public monster API (no
- * key required). Unverified against a live response — the sandbox this was
- * built in has outbound access to api.open5e.com blocked by its network
- * policy (confirmed: the egress proxy 403s/refuses the CONNECT to that host,
- * same as it does for dndbeyond.com), so every round of this file has been
- * written against remembered/documented shapes rather than a real request.
+ * SRD stat-block lookup against Open5e's public monster API (no key
+ * required). Every earlier version of this file guessed at the filter query
+ * param (`?search=`) without ever seeing a real response — the sandbox this
+ * is built in gets its CONNECT to api.open5e.com refused by network policy,
+ * same as dndbeyond.com. This version is written against an actual response
+ * (a real `GET /v1/monsters/?name__icontains=dragon` result, inspected
+ * directly), which confirmed two things at once:
  *
- * Round 4 confirmed the v1/v2 fallback got *something* responding again, but
- * surfaced two more issues, still without a live response to verify against:
- *  - Results looked alphabetical and unrelated to the query — meaning
- *    whichever endpoint answers may not honor `?search=` as a filter (or
- *    uses a different param name). Since that can't be confirmed, this
- *    version stops trusting the remote "search" to do any filtering at all:
- *    it pages through up to a few hundred candidates and filters/sorts them
- *    itself by name match against the query. If the server *does* filter
- *    correctly this is a no-op (first page already matches); if it doesn't,
- *    this is the only thing standing between the user and a random slice of
- *    the whole bestiary.
- *  - Senses/languages/resistances/immunities/actions were coming back empty
- *    even when other fields worked, meaning those fields live under paths
- *    this mapper wasn't trying. Widened the candidate paths for all of
- *    these and added resistance/immunity/vulnerability fields that didn't
- *    exist in the data model before this round at all.
+ *  1. The real filter param is `name__icontains`, not `search` — Open5e
+ *     silently ignores unrecognized query params rather than erroring, so
+ *     `?search=` was never filtering anything; every request fell back to
+ *     the default unfiltered/paginated listing. That's what caused both
+ *     symptoms reported after the param was still wrong: results looking
+ *     like an alphabetical slice unrelated to the query, and search taking
+ *     15-20 seconds (because with no real filter, finding a match required
+ *     this file's own code to page through hundreds of unrelated creatures
+ *     itself). With the real param, a single request already returns just
+ *     the matching creatures — no multi-page scan needed any more.
+ *  2. The field shapes this file's mapper already assumed (flat
+ *     `armor_class`/`hit_points`/`strength`.../`strength_save`, a nested
+ *     `speed: {walk, fly, ...}`, string `senses`/`languages`/
+ *     `damage_resistances`/`damage_immunities`/`condition_immunities`,
+ *     array `actions`/`special_abilities`/`bonus_actions`/`reactions`/
+ *     `legendary_actions` with `{name, desc}` entries) were already
+ *     correct — the reason "everything but HP/saves/actions" looked empty
+ *     wasn't the mapping, it was that `?search=` requests kept returning
+ *     the wrong creatures (or none) to map in the first place. One real
+ *     bug *was* found this way, though: `strength_save` etc. come back as
+ *     JSON `null` (not absent) when a creature isn't proficient in that
+ *     save — `Number(null)` is `0`, which used to be read as an explicit
+ *     "+0 override" instead of "no override, use the plain modifier".
  */
 const OPEN5E_ENDPOINTS = ["https://api.open5e.com/monsters/", "https://api.open5e.com/v2/creatures/"];
-const MAX_PAGES = 5;
-const PAGE_SIZE = 100;
 const MAX_RESULTS = 15;
 
 function get(obj: unknown, path: string): unknown {
@@ -38,17 +44,18 @@ function get(obj: unknown, path: string): unknown {
   }, obj);
 }
 
-/** Tries each path in order, returning the first one that resolves to a usable number. */
+/** Tries each path in order, returning the first one that resolves to a usable number. Explicit `null` (e.g. a save with no override) is skipped rather than coerced to 0. */
 function firstNumber(obj: unknown, paths: string[], fallback: number): number {
   for (const path of paths) {
     const raw = get(obj, path);
+    if (raw == null) continue;
     const n = Number(Array.isArray(raw) ? get(raw[0], "value") : raw);
     if (Number.isFinite(n)) return n;
   }
   return fallback;
 }
 
-/** Same as a plain string field, but also accepts an array of strings (joined) — several stat-block fields (senses, resistances...) come back as lists in some schema versions. */
+/** Same as a plain string field, but also accepts an array of strings (joined) — a couple of stat-block fields come back as lists in some schema variants. */
 function firstString(obj: unknown, paths: string[]): string | undefined {
   for (const path of paths) {
     const raw = get(obj, path);
@@ -73,41 +80,41 @@ function toSpeed(m: Record<string, unknown>): number {
   return 30;
 }
 
-/** Some schema versions give challenge rating as a decimal number (0.25) instead of display text ("1/4"). */
+/** Real API gives challenge rating as display text ("17", "1/4") in `challenge_rating`, with a parallel decimal `cr` (17.0) alongside it — text wins when both are present. */
 function toChallengeRating(m: Record<string, unknown>): string | undefined {
-  const text = firstString(m, ["challenge_rating", "challenge_rating_text", "cr"]);
+  const text = firstString(m, ["challenge_rating", "challenge_rating_text"]);
   if (text) return text;
-  const decimal = firstNumber(m, ["challenge_rating_decimal", "cr_decimal"], NaN);
+  const decimal = firstNumber(m, ["cr", "challenge_rating_decimal"], NaN);
   if (!Number.isFinite(decimal)) return undefined;
   const FRACTIONS: Record<number, string> = { 0: "0", 0.125: "1/8", 0.25: "1/4", 0.5: "1/2" };
   return FRACTIONS[decimal] ?? String(decimal);
 }
 
 const ABILITY_PATHS: Record<keyof AbilityScores, string[]> = {
-  str: ["strength", "abilities.strength", "stats.strength", "str"],
-  dex: ["dexterity", "abilities.dexterity", "stats.dexterity", "dex"],
-  con: ["constitution", "abilities.constitution", "stats.constitution", "con"],
-  int: ["intelligence", "abilities.intelligence", "stats.intelligence", "int"],
-  wis: ["wisdom", "abilities.wisdom", "stats.wisdom", "wis"],
-  cha: ["charisma", "abilities.charisma", "stats.charisma", "cha"],
+  str: ["strength", "abilities.strength", "stats.strength"],
+  dex: ["dexterity", "abilities.dexterity", "stats.dexterity"],
+  con: ["constitution", "abilities.constitution", "stats.constitution"],
+  int: ["intelligence", "abilities.intelligence", "stats.intelligence"],
+  wis: ["wisdom", "abilities.wisdom", "stats.wisdom"],
+  cha: ["charisma", "abilities.charisma", "stats.charisma"],
 };
 
 const SAVE_PATHS: Record<keyof AbilityScores, string[]> = {
-  str: ["strength_save", "saving_throws.strength", "saves.str"],
-  dex: ["dexterity_save", "saving_throws.dexterity", "saves.dex"],
-  con: ["constitution_save", "saving_throws.constitution", "saves.con"],
-  int: ["intelligence_save", "saving_throws.intelligence", "saves.int"],
-  wis: ["wisdom_save", "saving_throws.wisdom", "saves.wis"],
-  cha: ["charisma_save", "saving_throws.charisma", "saves.cha"],
+  str: ["strength_save", "saving_throws.strength"],
+  dex: ["dexterity_save", "saving_throws.dexterity"],
+  con: ["constitution_save", "saving_throws.constitution"],
+  int: ["intelligence_save", "saving_throws.intelligence"],
+  wis: ["wisdom_save", "saving_throws.wisdom"],
+  cha: ["charisma_save", "saving_throws.charisma"],
 };
 
-/** Candidate source-array keys per stat-block section — tried in order, first non-empty wins. */
+/** Candidate source-array keys per stat-block section — tried in order, first non-empty wins. `special_abilities` is the real API's name for what this app calls "traits". */
 const TRAIT_GROUP_PATHS: Record<NonNullable<CreatureTrait["group"]>, string[]> = {
-  trait: ["special_abilities", "traits", "abilities"],
+  trait: ["special_abilities", "traits"],
   action: ["actions"],
   bonusAction: ["bonus_actions", "bonusActions"],
   reaction: ["reactions"],
-  legendary: ["legendary_actions", "legendaryActions", "legendary_actions_list"],
+  legendary: ["legendary_actions", "legendaryActions"],
 };
 
 function mapTraitGroup(m: Record<string, unknown>, group: NonNullable<CreatureTrait["group"]>): CreatureTrait[] {
@@ -169,58 +176,47 @@ function mapOpen5eMonster(m: Record<string, unknown>): CreatureTemplate | null {
     speed: toSpeed(m),
     stats,
     ...(Object.keys(savingThrows).length > 0 ? { savingThrows } : {}),
-    senses: firstString(m, ["senses", "senses_list"]),
-    languages: firstString(m, ["languages", "languages_list"]),
+    senses: firstString(m, ["senses"]),
+    languages: firstString(m, ["languages"]),
     challengeRating: toChallengeRating(m),
-    damageVulnerabilities: firstString(m, ["damage_vulnerabilities", "vulnerabilities"]),
-    damageResistances: firstString(m, ["damage_resistances", "resistances"]),
-    damageImmunities: firstString(m, ["damage_immunities", "immunities"]),
-    conditionImmunities: firstString(m, ["condition_immunities", "condition_immunities_list"]),
+    damageVulnerabilities: firstString(m, ["damage_vulnerabilities"]),
+    damageResistances: firstString(m, ["damage_resistances"]),
+    damageImmunities: firstString(m, ["damage_immunities"]),
+    conditionImmunities: firstString(m, ["condition_immunities"]),
     traits,
     origin: "srd",
   };
 }
 
-/** Pages through one Open5e endpoint, collecting up to `MAX_PAGES * PAGE_SIZE` raw creature objects — not trusting the server to have actually filtered by `search` (see file-level note). */
+/** One filtered request per endpoint — `name__icontains` does the actual filtering server-side now, so there's no need to page through unrelated results hoping for a match. */
 async function fetchOpen5e(base: string, query: string): Promise<Array<Record<string, unknown>>> {
-  const all: Array<Record<string, unknown>> = [];
-  let url: string | null = `${base}?search=${encodeURIComponent(query)}&limit=${PAGE_SIZE}`;
-
-  for (let page = 0; page < MAX_PAGES && url; page++) {
-    let res: Response;
-    try {
-      res = await fetch(url, { cache: "no-store" });
-    } catch (err) {
-      console.error(`[bestiarySearch] fetch failed for ${url}:`, err);
-      break;
-    }
-    if (!res.ok) {
-      console.error(`[bestiarySearch] ${url} responded ${res.status} ${res.statusText}`);
-      break;
-    }
-
-    const json: unknown = await res.json().catch((err) => {
-      console.error(`[bestiarySearch] failed to parse JSON from ${url}:`, err);
-      return null;
-    });
-    if (json == null) break;
-
-    const results = Array.isArray((json as { results?: unknown }).results)
-      ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
-      : Array.isArray(json)
-        ? (json as Array<Record<string, unknown>>)
-        : [];
-    all.push(...results);
-
-    const next = (json as { next?: unknown }).next;
-    url = typeof next === "string" && next.startsWith("http") ? next : null;
-    if (results.length === 0) break;
+  const url = `${base}?name__icontains=${encodeURIComponent(query)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store" });
+  } catch (err) {
+    console.error(`[bestiarySearch] fetch failed for ${url}:`, err);
+    return [];
+  }
+  if (!res.ok) {
+    console.error(`[bestiarySearch] ${url} responded ${res.status} ${res.statusText}`);
+    return [];
   }
 
-  return all;
+  const json: unknown = await res.json().catch((err) => {
+    console.error(`[bestiarySearch] failed to parse JSON from ${url}:`, err);
+    return null;
+  });
+  if (json == null) return [];
+
+  return Array.isArray((json as { results?: unknown }).results)
+    ? ((json as { results: unknown[] }).results as Array<Record<string, unknown>>)
+    : Array.isArray(json)
+      ? (json as Array<Record<string, unknown>>)
+      : [];
 }
 
-/** Client-side relevance filter/sort — the remote "search" query param may not actually filter (see file-level note), so this is what actually guarantees the query is respected. Exact name match first, then prefix match, then substring, alphabetical within each tier. */
+/** Belt-and-suspenders re-sort by relevance (exact match, then prefix, then substring) — a no-op re-ordering when the server's own filter already did the work, but keeps results sane if a future endpoint's filter param turns out to be looser than expected. */
 function rankByQuery(templates: CreatureTemplate[], query: string): CreatureTemplate[] {
   const q = query.trim().toLowerCase();
   return templates
