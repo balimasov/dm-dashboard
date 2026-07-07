@@ -196,8 +196,8 @@ export function CreatureCard({
         )}
       </div>
 
-      <div>
-        <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Stats</p>
+      <div className="border-t border-slate-800 pt-3">
+        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Stats</h3>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
             <StatBox
@@ -210,7 +210,7 @@ export function CreatureCard({
       </div>
 
       <div>
-        <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Saving Throws</p>
+        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Saving Throws</h3>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
             const plainMod = abilityModifier(creature.stats[key]);
