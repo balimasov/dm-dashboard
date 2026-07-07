@@ -4,6 +4,16 @@ import { AbilityScores, CreatureTrait } from "@/lib/types";
 
 const DEFAULT_STATS: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
 
+function parseSavingThrows(raw: unknown): Partial<AbilityScores> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const result: Partial<AbilityScores> = {};
+  (["str", "dex", "con", "int", "wis", "cha"] as const).forEach((key) => {
+    const value = Number((raw as Record<string, unknown>)[key]);
+    if (Number.isFinite(value)) result[key] = value;
+  });
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 export async function GET(req: Request) {
   const campaignId = new URL(req.url).searchParams.get("campaignId");
   if (!campaignId) {
@@ -36,11 +46,16 @@ export async function POST(req: Request) {
   const maxHp = Number(body?.maxHp) || 1;
   const speed = Number(body?.speed) || 30;
   const stats: AbilityScores = { ...DEFAULT_STATS, ...(body?.stats ?? {}) };
+  const savingThrows = parseSavingThrows(body?.savingThrows);
   const traits: CreatureTrait[] = Array.isArray(body?.traits)
     ? body.traits.filter((t: unknown): t is CreatureTrait => Boolean((t as CreatureTrait)?.name))
     : [];
   const creatureType = typeof body?.creatureType === "string" ? body.creatureType : undefined;
   const size = typeof body?.size === "string" ? body.size : undefined;
+  const alignment = typeof body?.alignment === "string" ? body.alignment : undefined;
+  const senses = typeof body?.senses === "string" ? body.senses : undefined;
+  const languages = typeof body?.languages === "string" ? body.languages : undefined;
+  const challengeRating = typeof body?.challengeRating === "string" ? body.challengeRating : undefined;
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
 
   const creature = createCreature({
@@ -49,12 +64,17 @@ export async function POST(req: Request) {
     name,
     creatureType,
     size,
+    alignment,
     ac,
     hp: Number(body?.hp) || maxHp,
     maxHp,
     tempHp: 0,
     speed,
     stats,
+    savingThrows,
+    senses,
+    languages,
+    challengeRating,
     traits,
     conditions: [],
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
@@ -69,10 +89,15 @@ export async function POST(req: Request) {
     name: templateName,
     creatureType,
     size,
+    alignment,
     ac,
     maxHp,
     speed,
     stats,
+    savingThrows,
+    senses,
+    languages,
+    challengeRating,
     traits,
     origin: templateId?.startsWith("srd-") ? "srd" : "custom",
   });

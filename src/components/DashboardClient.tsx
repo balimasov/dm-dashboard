@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
+import { useCreatures } from "@/hooks/useCreatures";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
+import { CreatureEditModal } from "@/components/CreatureEditModal";
 import { HeaderPortal } from "@/components/HeaderPortal";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
@@ -66,14 +68,12 @@ export function DashboardClient({
   initialCreatures: Creature[];
 }) {
   const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
-  // No live-update hook needed here (unlike characters) — the dashboard's
-  // CreatureCard is read-only, all creature edits happen in the Settings
-  // modal, which triggers a full reload on close when anything changed.
-  const creatures = initialCreatures;
+  const { creatures, updateCreature, removeCreature } = useCreatures(campaign.id, initialCreatures);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editingCreature, setEditingCreature] = useState<Creature | null>(null);
 
   async function patchCampaign(id: string, updates: Partial<Campaign>) {
     setCampaignState((c) => ({ ...c, ...updates }));
@@ -225,7 +225,13 @@ export function DashboardClient({
               const owner = characters.find((c) => c.id === creature.ownerCharacterId);
               return (
                 <div key={creature.id} className="w-[300px] shrink-0">
-                  <CreatureCard creature={creature} owner={owner} />
+                  <CreatureCard
+                    creature={creature}
+                    owner={owner}
+                    onUpdate={updateCreature}
+                    onRemove={removeCreature}
+                    onEdit={() => setEditingCreature(creature)}
+                  />
                 </div>
               );
             })}
@@ -247,6 +253,15 @@ export function DashboardClient({
           initialCreatures={creatures}
           actions={{ updateCampaign: patchCampaign }}
           onClose={closeSettings}
+        />
+      )}
+
+      {editingCreature && (
+        <CreatureEditModal
+          creature={editingCreature}
+          characters={characters}
+          onSave={(updates) => updateCreature(editingCreature.id, updates)}
+          onClose={() => setEditingCreature(null)}
         />
       )}
     </div>

@@ -184,7 +184,8 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
 }
 
 /** Shared row shell for anything the DM can flag with a reminder flame (features, spells) — kept as one component so the two never drift out of sync in how a flagged row looks, the way they once did. */
-function FlaggableRow({
+/** Exported so `CreatureCard` renders its own flaggable traits/actions identically instead of a second hand-rolled copy. */
+export function FlaggableRow({
   flagged,
   onToggleFlag,
   children,

@@ -4,40 +4,7 @@ import { useEffect, useState } from "react";
 import { useCreatures } from "@/hooks/useCreatures";
 import { Character, Creature, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { CreatureFormFields, CreatureFormValue, emptyCreatureFormValue } from "@/components/CreatureFormFields";
-
-function templateToFormValue(template: CreatureTemplate): CreatureFormValue {
-  return {
-    templateName: template.name,
-    name: "",
-    creatureType: template.creatureType ?? "",
-    size: template.size ?? "",
-    ac: template.ac,
-    hp: template.maxHp,
-    maxHp: template.maxHp,
-    speed: template.speed,
-    stats: template.stats,
-    traits: template.traits,
-    ownerCharacterId: "",
-    source: "",
-  };
-}
-
-function creatureToFormValue(creature: Creature): CreatureFormValue {
-  return {
-    templateName: creature.name,
-    name: creature.name,
-    creatureType: creature.creatureType ?? "",
-    size: creature.size ?? "",
-    ac: creature.ac,
-    hp: creature.hp,
-    maxHp: creature.maxHp,
-    speed: creature.speed,
-    stats: creature.stats,
-    traits: creature.traits,
-    ownerCharacterId: creature.ownerCharacterId ?? "",
-    source: creature.source ?? "",
-  };
-}
+import { creatureToFormValue, formValueToAddCreatureInput, formValueToCreatureUpdates, templateToFormValue } from "@/lib/creatureForm";
 
 function AddCreaturePanel({
   characters,
@@ -218,19 +185,7 @@ function CreatureRow({
     e.preventDefault();
     setSaving(true);
     try {
-      await onUpdate(creature.id, {
-        name: draft.name.trim() || draft.templateName.trim(),
-        creatureType: draft.creatureType || undefined,
-        size: draft.size || undefined,
-        ac: draft.ac,
-        hp: draft.hp,
-        maxHp: draft.maxHp,
-        speed: draft.speed,
-        stats: draft.stats,
-        traits: draft.traits,
-        ownerCharacterId: draft.ownerCharacterId || undefined,
-        source: draft.source || undefined,
-      });
+      await onUpdate(creature.id, formValueToCreatureUpdates(draft));
       setEditing(false);
     } finally {
       setSaving(false);
@@ -305,21 +260,7 @@ export function CreatureRosterEditor({
   }, [creatures.length]);
 
   async function handleAdd(value: CreatureFormValue, templateId?: string) {
-    await addCreature({
-      templateName: value.templateName.trim(),
-      name: value.name.trim() || undefined,
-      creatureType: value.creatureType || undefined,
-      size: value.size || undefined,
-      ac: value.ac,
-      hp: value.hp,
-      maxHp: value.maxHp,
-      speed: value.speed,
-      stats: value.stats,
-      traits: value.traits,
-      ownerCharacterId: value.ownerCharacterId || undefined,
-      source: value.source || undefined,
-      templateId,
-    });
+    await addCreature(formValueToAddCreatureInput(value, templateId));
   }
 
   return (

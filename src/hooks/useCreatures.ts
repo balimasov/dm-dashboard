@@ -16,11 +16,16 @@ export interface AddCreatureInput {
   name?: string;
   creatureType?: string;
   size?: string;
+  alignment?: string;
   ac: number;
   hp: number;
   maxHp: number;
   speed: number;
   stats: AbilityScores;
+  savingThrows?: Partial<AbilityScores>;
+  senses?: string;
+  languages?: string;
+  challengeRating?: string;
   traits: CreatureTrait[];
   ownerCharacterId?: string;
   source?: string;

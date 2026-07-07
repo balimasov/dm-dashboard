@@ -416,6 +416,12 @@ export interface Character {
 export interface CreatureTrait {
   name: string;
   description?: string;
+  /**
+   * Mirrors a standard 5e stat block's own sections (Traits/Actions/Bonus
+   * Actions/Reactions/Legendary Actions) — absent (defaults to "trait" when
+   * rendered) on anything saved before this field existed.
+   */
+  group?: "trait" | "action" | "bonusAction" | "reaction" | "legendary";
 }
 
 /**
@@ -431,10 +437,18 @@ export interface CreatureTemplate {
   creatureType?: string;
   /** e.g. "Large" */
   size?: string;
+  alignment?: string;
   ac: number;
   maxHp: number;
   speed: number;
   stats: AbilityScores;
+  /** Explicit saving-throw bonus per ability — only ones that differ from the plain ability modifier need to be set; falls back to the modifier when absent for a given ability. */
+  savingThrows?: Partial<AbilityScores>;
+  /** Free text, e.g. "Passive Perception 13, Darkvision 60 ft." — kept as one field like a real stat block's Senses line, rather than modeled after `Character.senses`. */
+  senses?: string;
+  languages?: string;
+  /** e.g. "1/4", "None" — display text, not used in any calculation. */
+  challengeRating?: string;
   traits: CreatureTrait[];
   /** Where the stat block came from — an SRD search result, or typed in by hand. */
   origin: "srd" | "custom";
@@ -457,12 +471,17 @@ export interface Creature {
   name: string;
   creatureType?: string;
   size?: string;
+  alignment?: string;
   ac: number;
   hp: number;
   maxHp: number;
   tempHp: number;
   speed: number;
   stats: AbilityScores;
+  savingThrows?: Partial<AbilityScores>;
+  senses?: string;
+  languages?: string;
+  challengeRating?: string;
   traits: CreatureTrait[];
   conditions: string[];
   /** Which character summons/commands this creature — purely informational (shown as a tag on the card), not a game-mechanical link. */
@@ -470,6 +489,8 @@ export interface Creature {
   /** How it entered play, e.g. "Find Steed", "Wild Shape", "Familiar". */
   source?: string;
   notes?: string;
+  /** Same convention as `Character.flaggedAbilities` — names of traits/actions the DM has flagged as a reminder, shown with a flame icon and amber highlight. */
+  flaggedTraits?: string[];
 }
 
 /** e.g. "Large Celestial" — mirrors `characterInfoLine`'s "Race · Class" convention for the compact creature card. */
