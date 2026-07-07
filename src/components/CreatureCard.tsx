@@ -1,10 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { Character, Creature, CreatureTrait, abilityModifier, creatureInfoLine, formatModifier } from "@/lib/types";
+import {
+  Character,
+  Creature,
+  CreatureTrait,
+  SKILL_ABBR,
+  SKILL_ABILITY,
+  SKILL_DESCRIPTIONS,
+  abilityModifier,
+  creatureInfoLine,
+  formatModifier,
+} from "@/lib/types";
+import { ParsedCreatureSkill, parseCreatureSenses, parseCreatureSkills } from "@/lib/creatureStatText";
 import { FlaggableRow } from "./CharacterDetailsModal";
-import { HpBar, InitiativeIcon, Pill, ShieldIcon, SpeedIcon, StatBox, STAT_ORDER } from "./CharacterCard";
-import { InfoTooltip } from "./InfoTooltip";
+import {
+  ChallengeRatingIcon,
+  HpBar,
+  IconStat,
+  InitiativeIcon,
+  LanguageIcon,
+  Pill,
+  SenseEntries,
+  ShieldIcon,
+  SpeedIcon,
+  StatBox,
+  STAT_ORDER,
+} from "./CharacterCard";
 import { RichText } from "./RichText";
 
 const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -21,6 +43,19 @@ const GROUP_ORDER: Array<NonNullable<CreatureTrait["group"]>> = [
   "reaction",
   "legendary",
 ];
+
+/** Same hover-hint shape as a character's `SkillPanel`, adapted for a skill parsed from a stat block's free-text Skills line instead of a structured `SkillProficiency`. */
+function CreatureSkillPanel({ skill }: { skill: ParsedCreatureSkill }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">
+        {skill.label}
+        {skill.name && <span className="text-slate-500"> ({SKILL_ABILITY[skill.name].toUpperCase()})</span>}
+      </p>
+      {skill.name && <p>{SKILL_DESCRIPTIONS[skill.name]}</p>}
+    </div>
+  );
+}
 
 /**
  * A deliberately lighter sibling of `CharacterCard` for companions/summoned
@@ -46,6 +81,8 @@ export function CreatureCard({
   const isDown = creature.hp <= 0;
   const infoLine = [creatureInfoLine(creature), creature.alignment].filter(Boolean).join(", ");
   const flaggedTraits = creature.flaggedTraits ?? [];
+  const skills = parseCreatureSkills(creature.skills);
+  const senses = parseCreatureSenses(creature.senses);
 
   function toggleFlag(name: string) {
     if (!onUpdate) return;
@@ -78,40 +115,53 @@ export function CreatureCard({
       {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
 
       <div className="space-y-1.5 text-sm text-slate-300">
-        <span className="flex items-center gap-1.5">
-          <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-          <span className="min-w-0 flex-1">
-            <InfoTooltip panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}>
-              AC {creature.ac}
-              {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
-            </InfoTooltip>
-          </span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-          <span className="min-w-0 flex-1">
-            <InfoTooltip panel={<p>Speed — how many feet it can move on its turn.</p>}>
-              Speed {creature.speedDetail ?? `${creature.speed}ft`}
-            </InfoTooltip>
-          </span>
-        </span>
+        <IconStat
+          icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+          panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}
+        >
+          AC {creature.ac}
+          {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
+        </IconStat>
+        <IconStat
+          icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+          panel={<p>Speed — how many feet it can move on its turn.</p>}
+        >
+          Speed {creature.speedDetail ?? `${creature.speed}ft`}
+        </IconStat>
         {creature.initiativeBonus !== undefined && (
-          <span className="flex items-center gap-1.5">
-            <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
-              <InfoTooltip
-                panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
-              >
-                Initiative {formatModifier(creature.initiativeBonus)}
-              </InfoTooltip>
-            </span>
-          </span>
+          <IconStat
+            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+          >
+            Initiative {formatModifier(creature.initiativeBonus)}
+          </IconStat>
+        )}
+        {creature.languages && (
+          <IconStat
+            icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
+          >
+            {creature.languages}
+          </IconStat>
+        )}
+        {creature.challengeRating && (
+          <IconStat
+            icon={<ChallengeRatingIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={
+              <p>Challenge Rating — a rough gauge of how tough this creature is in a fight, and the XP it&apos;s worth when defeated.</p>
+            }
+          >
+            CR {creature.challengeRating}
+            {creature.experiencePoints !== undefined && (
+              <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
+            )}
+          </IconStat>
         )}
       </div>
 
       <div>
         <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Stats</p>
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+        <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
             <StatBox
               key={key}
@@ -124,7 +174,7 @@ export function CreatureCard({
 
       <div>
         <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Saving Throws</p>
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+        <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
             const plainMod = abilityModifier(creature.stats[key]);
             const save = creature.savingThrows?.[key] ?? plainMod;
@@ -163,40 +213,42 @@ export function CreatureCard({
         </div>
       )}
 
-      {creature.skills && (
+      {skills.length > 0 && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Skills</h3>
           <div className="flex flex-wrap gap-1.5">
-            {creature.skills
-              .split(",")
-              .map((entry) => entry.trim())
-              .filter(Boolean)
-              .map((entry) => (
-                <Pill key={entry}>{entry}</Pill>
-              ))}
+            {skills.map((skill, index) => (
+              <Pill key={`${skill.label}-${index}`} panel={<CreatureSkillPanel skill={skill} />} color="amber">
+                {skill.bonus !== null && `${formatModifier(skill.bonus)} `}
+                {skill.name ? SKILL_ABBR[skill.name] : skill.label}
+              </Pill>
+            ))}
           </div>
         </div>
       )}
 
-      {(creature.senses || creature.languages || creature.challengeRating) && (
+      {(senses.passivePerception !== null || senses.entries.length > 0) && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
-          <div className="space-y-1 text-sm text-slate-300">
-            {creature.senses && <p>{creature.senses}</p>}
-            {creature.languages && (
-              <p>
-                <span className="text-slate-500">Languages:</span> {creature.languages}
-              </p>
-            )}
-            {creature.challengeRating && (
-              <p>
-                <span className="text-slate-500">CR:</span> {creature.challengeRating}
-                {creature.experiencePoints !== undefined && (
-                  <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
-                )}
-              </p>
-            )}
-          </div>
+          {senses.passivePerception !== null && (
+            <div className="w-fit">
+              <Pill
+                panel={
+                  <p>
+                    Passive Perception — the score a hidden creature or object must beat to avoid its notice; also
+                    what Stealth checks are rolled against.
+                  </p>
+                }
+              >
+                {SKILL_ABBR.perception} {senses.passivePerception}
+              </Pill>
+            </div>
+          )}
+          {senses.entries.length > 0 && (
+            <div className={senses.passivePerception !== null ? "mt-3" : ""}>
+              <SenseEntries senses={senses.entries} />
+            </div>
+          )}
         </div>
       )}
 

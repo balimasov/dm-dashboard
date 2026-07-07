@@ -73,6 +73,28 @@ export function ProficiencyIcon({ className }: { className?: string }) {
   );
 }
 
+export function LanguageIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M4 5h16v10H8l-4 4V5z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ChallengeRatingIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M12 3c-4 0-7 3-7 7 0 2.5 1.2 4.2 2.5 5.3V19h2.5v-2h4v2H17v-3.7c1.3-1.1 2.5-2.8 2.5-5.3 0-4-3-7-7-7z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.5" cy="10" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="14.5" cy="10" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function ExhaustionIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
@@ -365,6 +387,58 @@ export function SkillPanel({ skill }: { skill: SkillProficiency }) {
           {skill.advantageNote ? `: ${skill.advantageNote}` : ""}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * One icon + hover-hint + text row — the shared shape behind every quick
+ * combat stat (AC/Speed/Initiative/Prof for a character; AC/Speed/
+ * Initiative/Languages/CR for a creature). Both cards build their own stack
+ * of these rather than each hand-rolling the icon/tooltip/truncate markup
+ * per stat, so a future change to how one of these rows looks (spacing,
+ * icon size, tooltip behavior) only has to happen here.
+ */
+export function IconStat({
+  icon,
+  panel,
+  children,
+  className = "",
+}: {
+  icon: React.ReactNode;
+  panel: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={`flex items-center gap-1.5 ${className}`}>
+      {icon}
+      <span className="min-w-0 flex-1">
+        <InfoTooltip panel={panel}>{children}</InfoTooltip>
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The flex-wrap row of named senses (Darkvision: 60 ft, Blindsight: 30 ft...)
+ * shown under the passive-skill pills — shared between a character's
+ * structured `Sense[]` and a creature's stat block, which only has this same
+ * shape once its free-text Senses line has been parsed back into it.
+ */
+export function SenseEntries({ senses }: { senses: Array<{ name: string; range: number }> }) {
+  if (senses.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
+      {senses.map((s) => {
+        const info = getSenseInfo(s.name);
+        const label = (
+          <>
+            <span className="text-slate-500">{s.name}:</span> {s.range} ft
+          </>
+        );
+        return <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>;
+      })}
     </div>
   );
 }
@@ -681,44 +755,34 @@ export function CharacterCard({
           deathSaves={c.combat.deathSaves}
         />
         <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
-          <span className="flex items-center gap-1.5">
-            <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
-              <InfoTooltip panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}>
-                AC {c.combat.ac}
-              </InfoTooltip>
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5 pl-2">
-            <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
-              <InfoTooltip panel={<p>Speed — how many feet you can move on your turn.</p>}>
-                Speed {c.combat.speed}ft
-              </InfoTooltip>
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
-              <InfoTooltip
-                panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
-              >
-                Initiative {formatModifier(c.initiative)}
-              </InfoTooltip>
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5 pl-2">
-            <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <span className="min-w-0 flex-1">
-              <InfoTooltip
-                panel={
-                  <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
-                }
-              >
-                Prof {formatModifier(proficiencyBonus(c.level))}
-              </InfoTooltip>
-            </span>
-          </span>
+          <IconStat
+            icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}
+          >
+            AC {c.combat.ac}
+          </IconStat>
+          <IconStat
+            className="pl-2"
+            icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Speed — how many feet you can move on your turn.</p>}
+          >
+            Speed {c.combat.speed}ft
+          </IconStat>
+          <IconStat
+            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+          >
+            Initiative {formatModifier(c.initiative)}
+          </IconStat>
+          <IconStat
+            className="pl-2"
+            icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={
+              <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
+            }
+          >
+            Prof {formatModifier(proficiencyBonus(c.level))}
+          </IconStat>
         </div>
       </div>
 
@@ -737,18 +801,8 @@ export function CharacterCard({
           </Pill>
         </div>
         {c.senses.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
-            {c.senses.map((s) => {
-              const info = getSenseInfo(s.name);
-              const label = (
-                <>
-                  <span className="text-slate-500">{s.name}:</span> {s.range} ft
-                </>
-              );
-              return (
-                <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>
-              );
-            })}
+          <div className="mt-4">
+            <SenseEntries senses={c.senses} />
           </div>
         )}
       </div>
