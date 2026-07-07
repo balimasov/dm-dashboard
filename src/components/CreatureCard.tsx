@@ -118,28 +118,32 @@ export function CreatureCard({
         <IconStat
           icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
           panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}
+          label="AC"
         >
-          AC {creature.ac}
+          {creature.ac}
           {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
         </IconStat>
         <IconStat
           icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
           panel={<p>Speed — how many feet it can move on its turn.</p>}
+          label="Speed"
         >
-          Speed {creature.speedDetail ?? `${creature.speed}ft`}
+          {creature.speedDetail ?? `${creature.speed}ft`}
         </IconStat>
         {creature.initiativeBonus !== undefined && (
           <IconStat
             icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+            label="Initiative"
           >
-            Initiative {formatModifier(creature.initiativeBonus)}
+            {formatModifier(creature.initiativeBonus)}
           </IconStat>
         )}
         {creature.languages && (
           <IconStat
             icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
+            label="Languages:"
           >
             {creature.languages}
           </IconStat>
@@ -150,8 +154,9 @@ export function CreatureCard({
             panel={
               <p>Challenge Rating — a rough gauge of how tough this creature is in a fight, and the XP it&apos;s worth when defeated.</p>
             }
+            label="CR"
           >
-            CR {creature.challengeRating}
+            {creature.challengeRating}
             {creature.experiencePoints !== undefined && (
               <span className="text-slate-500"> ({creature.experiencePoints.toLocaleString()} XP)</span>
             )}

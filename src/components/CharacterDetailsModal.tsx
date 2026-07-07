@@ -21,10 +21,12 @@ import {
 import {
   CharacterHeader,
   HpBar,
+  IconStat,
   InitiativeIcon,
   ordinalLevel,
   Pill,
   ProficiencyIcon,
+  SenseEntries,
   ShieldIcon,
   SkillPanel,
   SpeedIcon,
@@ -36,7 +38,6 @@ import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { SyncTimestamp } from "./SyncTimestamp";
-import { getSenseInfo } from "@/lib/senseInfo";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -353,44 +354,38 @@ export function CharacterDetailsModal({
             deathSaves={c.combat.deathSaves}
           />
           <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              <span className="min-w-0 flex-1">
-                <InfoTooltip panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}>
-                  AC {c.combat.ac}
-                </InfoTooltip>
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5 pl-2">
-              <SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              <span className="min-w-0 flex-1">
-                <InfoTooltip panel={<p>Speed — how many feet you can move on your turn.</p>}>
-                  Speed {c.combat.speed}ft
-                </InfoTooltip>
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              <span className="min-w-0 flex-1">
-                <InfoTooltip
-                  panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
-                >
-                  Initiative {formatModifier(c.initiative)}
-                </InfoTooltip>
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5 pl-2">
-              <ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              <span className="min-w-0 flex-1">
-                <InfoTooltip
-                  panel={
-                    <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
-                  }
-                >
-                  Prof {formatModifier(proficiencyBonus(c.level))}
-                </InfoTooltip>
-              </span>
-            </span>
+            <IconStat
+              icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}
+              label="AC"
+            >
+              {c.combat.ac}
+            </IconStat>
+            <IconStat
+              className="pl-2"
+              icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Speed — how many feet you can move on your turn.</p>}
+              label="Speed"
+            >
+              {c.combat.speed}ft
+            </IconStat>
+            <IconStat
+              icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+              label="Initiative"
+            >
+              {formatModifier(c.initiative)}
+            </IconStat>
+            <IconStat
+              className="pl-2"
+              icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={
+                <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
+              }
+              label="Prof"
+            >
+              {formatModifier(proficiencyBonus(c.level))}
+            </IconStat>
           </div>
         </div>
 
@@ -409,18 +404,8 @@ export function CharacterDetailsModal({
             </Pill>
           </div>
           {c.senses.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
-              {c.senses.map((s) => {
-                const info = getSenseInfo(s.name);
-                const label = (
-                  <>
-                    <span className="text-slate-500">{s.name}:</span> {s.range} ft
-                  </>
-                );
-                return (
-                  <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>
-                );
-              })}
+            <div className="mt-4">
+              <SenseEntries senses={c.senses} />
             </div>
           )}
         </div>

@@ -398,23 +398,31 @@ export function SkillPanel({ skill }: { skill: SkillProficiency }) {
  * of these rather than each hand-rolling the icon/tooltip/truncate markup
  * per stat, so a future change to how one of these rows looks (spacing,
  * icon size, tooltip behavior) only has to happen here.
+ *
+ * The hint anchors to `label` only (e.g. just "AC"), not the value next to
+ * it — consistent with every other hint in these cards except the ones on
+ * skills/passive-perception/resources/spells/features, which hint the whole
+ * pill or row since there's no separate "name" part to isolate there.
  */
 export function IconStat({
   icon,
   panel,
+  label,
   children,
   className = "",
 }: {
   icon: React.ReactNode;
   panel: React.ReactNode;
-  children: React.ReactNode;
+  label: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }) {
   return (
     <span className={`flex items-center gap-1.5 ${className}`}>
       {icon}
-      <span className="min-w-0 flex-1">
-        <InfoTooltip panel={panel}>{children}</InfoTooltip>
+      <span className="flex min-w-0 flex-1 items-baseline gap-1">
+        <InfoTooltip panel={panel}>{label}</InfoTooltip>
+        <span className="min-w-0 flex-1 truncate">{children}</span>
       </span>
     </span>
   );
@@ -424,7 +432,8 @@ export function IconStat({
  * The flex-wrap row of named senses (Darkvision: 60 ft, Blindsight: 30 ft...)
  * shown under the passive-skill pills — shared between a character's
  * structured `Sense[]` and a creature's stat block, which only has this same
- * shape once its free-text Senses line has been parsed back into it.
+ * shape once its free-text Senses line has been parsed back into it. The
+ * hint anchors to the sense's name only, not the range next to it.
  */
 export function SenseEntries({ senses }: { senses: Array<{ name: string; range: number }> }) {
   if (senses.length === 0) return null;
@@ -432,12 +441,13 @@ export function SenseEntries({ senses }: { senses: Array<{ name: string; range: 
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
       {senses.map((s) => {
         const info = getSenseInfo(s.name);
-        const label = (
-          <>
-            <span className="text-slate-500">{s.name}:</span> {s.range} ft
-          </>
+        const nameLabel = <span className="text-slate-500">{s.name}:</span>;
+        return (
+          <span key={s.name} className="flex items-baseline gap-1">
+            {info ? <InfoTooltip panel={<p>{info}</p>}>{nameLabel}</InfoTooltip> : nameLabel}
+            <span>{s.range} ft</span>
+          </span>
         );
-        return <span key={s.name}>{info ? <InfoTooltip panel={<p>{info}</p>}>{label}</InfoTooltip> : label}</span>;
       })}
     </div>
   );
@@ -758,21 +768,24 @@ export function CharacterCard({
           <IconStat
             icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}
+            label="AC"
           >
-            AC {c.combat.ac}
+            {c.combat.ac}
           </IconStat>
           <IconStat
             className="pl-2"
             icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Speed — how many feet you can move on your turn.</p>}
+            label="Speed"
           >
-            Speed {c.combat.speed}ft
+            {c.combat.speed}ft
           </IconStat>
           <IconStat
             icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+            label="Initiative"
           >
-            Initiative {formatModifier(c.initiative)}
+            {formatModifier(c.initiative)}
           </IconStat>
           <IconStat
             className="pl-2"
@@ -780,8 +793,9 @@ export function CharacterCard({
             panel={
               <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
             }
+            label="Prof"
           >
-            Prof {formatModifier(proficiencyBonus(c.level))}
+            {formatModifier(proficiencyBonus(c.level))}
           </IconStat>
         </div>
       </div>
