@@ -191,10 +191,7 @@ export function DashboardClient({
       </CollapsibleSection>
 
       <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open">
-        <p className="mb-4 px-3 text-sm text-slate-500">
-          {characters.length} {characters.length === 1 ? "character" : "characters"} — combat state, resources,
-          and notes for each.
-        </p>
+        <p className="mb-4 px-3 text-sm text-slate-500">Combat state, resources, and notes for each.</p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 

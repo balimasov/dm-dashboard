@@ -13,10 +13,26 @@ type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
   addCampaign?: ReturnType<typeof useCampaigns>["addCampaign"];
 };
 
-/** One titled block of the modal — keeps every section's heading/spacing identical instead of each field row inventing its own label style. */
-function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+/**
+ * One titled block of the modal — keeps every section's heading/spacing
+ * identical instead of each field row inventing its own label style.
+ * `divider` defaults on (a border-top separating it from the section
+ * before), but Notes sits right under the name/logo row with its own
+ * heading already doing the separating, so a line there read as redundant.
+ */
+function Section({
+  title,
+  description,
+  children,
+  divider = true,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  divider?: boolean;
+}) {
   return (
-    <section className="border-t border-slate-800/80 pt-5 first:border-t-0 first:pt-0">
+    <section className={`pt-5 first:pt-0 ${divider ? "border-t border-slate-800/80 first:border-t-0" : ""}`}>
       <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
       {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
       <div className="mt-3">{children}</div>
@@ -106,7 +122,7 @@ export function CampaignFormModal({
           </button>
         </div>
 
-        <div className="scrollbar-themed overflow-y-auto pr-1">
+        <div className="scrollbar-themed overflow-y-auto px-1">
           <form onSubmit={handleCreate}>
             <Section title="Details">
               <div className="flex items-center gap-3">
@@ -138,7 +154,7 @@ export function CampaignFormModal({
               </div>
             </Section>
 
-            <Section title="Notes">
+            <Section title="Notes" divider={false}>
               <NotesEditor
                 value={notes}
                 onChange={setNotes}

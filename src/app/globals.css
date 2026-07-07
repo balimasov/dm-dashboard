@@ -216,6 +216,10 @@ body {
   content: attr(data-placeholder);
   float: left;
   height: 0;
-  color: #475569;
+  /* Was a hardcoded default-Tailwind slate-600 (#475569, cool blue-gray) —
+     stood out against every other placeholder, which picks up this theme's
+     warm-reskinned slate-600 automatically via the `placeholder:text-slate-600`
+     utility class. */
+  color: var(--color-slate-600);
   pointer-events: none;
 }
