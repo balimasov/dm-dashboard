@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCampaign, listCharacters } from "@/lib/db";
+import { getCampaign, listCharacters, listCreatures } from "@/lib/db";
 import { DashboardClient } from "@/components/DashboardClient";
 
 // Campaign/character data changes at runtime and lives in a local SQLite
@@ -16,5 +16,6 @@ export default async function CampaignDashboardPage({
   if (!campaign) notFound();
 
   const characters = listCharacters(id);
-  return <DashboardClient campaign={campaign} initialCharacters={characters} />;
+  const creatures = listCreatures(id);
+  return <DashboardClient campaign={campaign} initialCharacters={characters} initialCreatures={creatures} />;
 }

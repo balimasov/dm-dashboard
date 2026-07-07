@@ -2,7 +2,16 @@ import "server-only";
 import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
-import { Campaign, CampaignSummary, Character, extractDndBeyondCharacterId, ItemCategory, ItemRarity } from "./types";
+import {
+  Campaign,
+  CampaignSummary,
+  Character,
+  Creature,
+  CreatureTemplate,
+  extractDndBeyondCharacterId,
+  ItemCategory,
+  ItemRarity,
+} from "./types";
 import { demoCharacters } from "./mockData";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at
@@ -34,6 +43,27 @@ function openDb(): Database.Database {
       data TEXT NOT NULL
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS creatures (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  // The shared bestiary — reusable stat-block templates, deliberately not
+  // scoped to a campaign (that's the entire point: enter "Unicorn" once and
+  // it's available for any future character/campaign too). Looked up by
+  // name, hence the dedicated indexed column instead of reading it back out
+  // of `data` on every search.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bestiary_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_bestiary_templates_name ON bestiary_templates (name)`);
 
   // `characters` predates campaigns — `CREATE TABLE IF NOT EXISTS` above
   // doesn't retrofit a column onto an already-existing table, so an existing
@@ -171,11 +201,12 @@ export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign
   return updated;
 }
 
-/** Cascades: a campaign's characters have nowhere else to belong, so removing it takes its whole roster with it. */
+/** Cascades: a campaign's characters and creatures have nowhere else to belong, so removing it takes its whole roster with it. Bestiary templates are untouched — they're shared across campaigns, not owned by any one of them. */
 export function deleteCampaign(id: string): void {
   const db = getDb();
   const transaction = db.transaction(() => {
     db.prepare("DELETE FROM characters WHERE campaign_id = ?").run(id);
+    db.prepare("DELETE FROM creatures WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM campaigns WHERE id = ?").run(id);
   });
   transaction();
@@ -275,4 +306,90 @@ export function reorderCharacters(orderedIds: string[]): void {
     ids.forEach((id, index) => update.run(index, id));
   });
   transaction(orderedIds);
+}
+
+/** Rows saved before `conditions`/`tempHp` existed on Creature won't have them in their stored JSON. */
+function rowToCreature(row: { data: string }): Creature {
+  const parsed = JSON.parse(row.data) as Creature;
+  return {
+    ...parsed,
+    tempHp: parsed.tempHp ?? 0,
+    conditions: parsed.conditions ?? [],
+    traits: parsed.traits ?? [],
+  };
+}
+
+export function listCreatures(campaignId: string): Creature[] {
+  const rows = getDb()
+    .prepare("SELECT data FROM creatures WHERE campaign_id = ? ORDER BY position ASC")
+    .all(campaignId) as Array<{ data: string }>;
+  return rows.map(rowToCreature);
+}
+
+export function getCreature(id: string): Creature | null {
+  const row = getDb().prepare("SELECT data FROM creatures WHERE id = ?").get(id) as { data: string } | undefined;
+  return row ? rowToCreature(row) : null;
+}
+
+export function createCreature(input: Omit<Creature, "id">): Creature {
+  const db = getDb();
+  const creature: Creature = { ...input, id: `creature-${Date.now()}` };
+  const maxPosition = db
+    .prepare("SELECT MAX(position) AS maxPosition FROM creatures WHERE campaign_id = ?")
+    .get(creature.campaignId) as { maxPosition: number | null };
+  const position = (maxPosition.maxPosition ?? -1) + 1;
+  db.prepare("INSERT INTO creatures (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
+    creature.id,
+    creature.campaignId,
+    position,
+    JSON.stringify(creature)
+  );
+  return creature;
+}
+
+export function updateCreature(id: string, updates: Partial<Creature>): Creature | null {
+  const existing = getCreature(id);
+  if (!existing) return null;
+  const updated: Creature = { ...existing, ...updates, id: existing.id };
+  getDb().prepare("UPDATE creatures SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
+  return updated;
+}
+
+export function removeCreature(id: string): void {
+  getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
+}
+
+/** Case-insensitive substring match on name, most-recently-added first (a DM re-searching mid-session is more likely after the one they just added than an old unrelated entry). */
+export function searchBestiary(query: string): CreatureTemplate[] {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const rows = getDb()
+    .prepare("SELECT data FROM bestiary_templates WHERE name LIKE ? COLLATE NOCASE ORDER BY rowid DESC LIMIT 20")
+    .all(`%${trimmed}%`) as Array<{ data: string }>;
+  return rows.map((row) => JSON.parse(row.data) as CreatureTemplate);
+}
+
+/**
+ * Keyed by name (case-insensitive) rather than id — the point of the shared
+ * bestiary is that entering/importing "Unicorn" once is enough, regardless
+ * of whether the next character to use it came from a fresh SRD search or
+ * picked the saved entry, so a second save under the same name overwrites
+ * the existing template instead of creating a duplicate.
+ */
+export function upsertBestiaryTemplate(input: Omit<CreatureTemplate, "id">): CreatureTemplate {
+  const db = getDb();
+  const existing = db
+    .prepare("SELECT id FROM bestiary_templates WHERE name = ? COLLATE NOCASE")
+    .get(input.name) as { id: string } | undefined;
+  const template: CreatureTemplate = { ...input, id: existing?.id ?? `bestiary-${Date.now()}` };
+  if (existing) {
+    db.prepare("UPDATE bestiary_templates SET data = ? WHERE id = ?").run(JSON.stringify(template), existing.id);
+  } else {
+    db.prepare("INSERT INTO bestiary_templates (id, name, data) VALUES (?, ?, ?)").run(
+      template.id,
+      template.name,
+      JSON.stringify(template)
+    );
+  }
+  return template;
 }

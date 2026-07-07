@@ -6,13 +6,14 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
+import { CreatureCard } from "@/components/CreatureCard";
 import { HeaderPortal } from "@/components/HeaderPortal";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
-import { Campaign, CampaignSummary, Character } from "@/lib/types";
+import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
 
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
@@ -58,11 +59,17 @@ function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (no
 export function DashboardClient({
   campaign,
   initialCharacters,
+  initialCreatures,
 }: {
   campaign: Campaign;
   initialCharacters: Character[];
+  initialCreatures: Creature[];
 }) {
   const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
+  // No live-update hook needed here (unlike characters) — the dashboard's
+  // CreatureCard is read-only, all creature edits happen in the Settings
+  // modal, which triggers a full reload on close when anything changed.
+  const creatures = initialCreatures;
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
@@ -77,15 +84,17 @@ export function DashboardClient({
     });
   }
 
-  function closeSettings(updated?: CampaignSummary) {
+  function closeSettings(updated?: CampaignSummary, creatureCount?: number) {
     setSettingsOpen(false);
     if (!updated) return;
     setCampaignState((c) => ({ ...c, name: updated.name, notes: updated.notes, logoUrl: updated.logoUrl }));
-    // The roster editor inside the modal keeps its own character list state,
-    // separate from this page's — a simple reload is the least-risky way to
-    // reflect any add/remove/sync that happened in there, without wiring two
-    // independent `useCharacters` instances together.
-    if (updated.characterCount !== characters.length) window.location.reload();
+    // The roster editors inside the modal keep their own character/creature
+    // list state, separate from this page's — a simple reload is the
+    // least-risky way to reflect any add/remove/sync that happened in
+    // there, without wiring independent hook instances together.
+    if (updated.characterCount !== characters.length || creatureCount !== creatures.length) {
+      window.location.reload();
+    }
   }
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
@@ -201,6 +210,29 @@ export function DashboardClient({
         )}
       </CollapsibleSection>
 
+      <CollapsibleSection title="Creatures" storageKey="dm-dashboard-creatures-open">
+        <p className="mb-4 px-3 text-sm text-slate-500">
+          Companions and summons — mounts, Wild Shape forms, familiars, and the like. Add or edit them from
+          Settings.
+        </p>
+        {creatures.length === 0 ? (
+          <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
+            <p>No creatures yet. Add some by editing this campaign from Settings.</p>
+          </div>
+        ) : (
+          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2">
+            {creatures.map((creature) => {
+              const owner = characters.find((c) => c.id === creature.ownerCharacterId);
+              return (
+                <div key={creature.id} className="w-[300px] shrink-0">
+                  <CreatureCard creature={creature} owner={owner} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CollapsibleSection>
+
       <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open">
         <div className="px-3">
           <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
@@ -212,6 +244,7 @@ export function DashboardClient({
         <CampaignFormModal
           campaign={{ ...campaignState, characterCount: characters.length }}
           initialCharacters={characters}
+          initialCreatures={creatures}
           actions={{ updateCampaign: patchCampaign }}
           onClose={closeSettings}
         />

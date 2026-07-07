@@ -413,6 +413,70 @@ export interface Character {
   lastSyncedAt?: string;
 }
 
+export interface CreatureTrait {
+  name: string;
+  description?: string;
+}
+
+/**
+ * A reusable stat-block — the shared "bestiary" — independent of any
+ * campaign or character. Entering a creature's stats once (by hand, or
+ * picked from an SRD search result) makes it instantly available again next
+ * time, for any character in any campaign, without retyping a stat block.
+ */
+export interface CreatureTemplate {
+  id: string;
+  name: string;
+  /** e.g. "Celestial", "Beast" */
+  creatureType?: string;
+  /** e.g. "Large" */
+  size?: string;
+  ac: number;
+  maxHp: number;
+  speed: number;
+  stats: AbilityScores;
+  traits: CreatureTrait[];
+  /** Where the stat block came from — an SRD search result, or typed in by hand. */
+  origin: "srd" | "custom";
+}
+
+/**
+ * A companion or summoned creature actually at the table in a specific
+ * campaign (a mount from Find Steed, a Wild Shape form, a familiar, a
+ * Ranger's beast companion...) — a live instance seeded from a
+ * `CreatureTemplate`, with its own current HP/conditions that can drift from
+ * the template as the fight goes on.
+ */
+export interface Creature {
+  id: string;
+  /** Every creature belongs to exactly one campaign, same as `Character.campaignId`. */
+  campaignId: string;
+  /** The bestiary entry this was seeded from, if any — absent for a one-off creature typed in without saving it to the shared bestiary. */
+  templateId?: string;
+  /** A nickname (e.g. "Thunder") — falls back to showing the template/creature type name if never renamed. */
+  name: string;
+  creatureType?: string;
+  size?: string;
+  ac: number;
+  hp: number;
+  maxHp: number;
+  tempHp: number;
+  speed: number;
+  stats: AbilityScores;
+  traits: CreatureTrait[];
+  conditions: string[];
+  /** Which character summons/commands this creature — purely informational (shown as a tag on the card), not a game-mechanical link. */
+  ownerCharacterId?: string;
+  /** How it entered play, e.g. "Find Steed", "Wild Shape", "Familiar". */
+  source?: string;
+  notes?: string;
+}
+
+/** e.g. "Large Celestial" — mirrors `characterInfoLine`'s "Race · Class" convention for the compact creature card. */
+export function creatureInfoLine(creature: Pick<Creature, "size" | "creatureType">): string {
+  return [creature.size, creature.creatureType].filter(Boolean).join(" ");
+}
+
 export function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
 }

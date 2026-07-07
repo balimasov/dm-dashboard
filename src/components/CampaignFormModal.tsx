@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
+import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
 import { NotesEditor } from "@/components/NotesEditor";
-import { Campaign, CampaignSummary, Character } from "@/lib/types";
+import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
 
 type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
   /** Omitted by callers that only ever open this modal in edit mode (e.g. the dashboard's Settings button) — there's no campaign-less create path there. */
@@ -24,13 +25,15 @@ type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
 export function CampaignFormModal({
   campaign,
   initialCharacters,
+  initialCreatures,
   actions,
   onClose,
 }: {
   campaign: CampaignSummary | null;
   initialCharacters: Character[];
+  initialCreatures: Creature[];
   actions: Actions;
-  onClose: (updated?: CampaignSummary) => void;
+  onClose: (updated?: CampaignSummary, creatureCount?: number) => void;
 }) {
   const [current, setCurrent] = useState<CampaignSummary | null>(campaign);
   const [name, setName] = useState(campaign?.name ?? "");
@@ -38,13 +41,14 @@ export function CampaignFormModal({
   const [logoUrl, setLogoUrl] = useState(campaign?.logoUrl);
   const [characters, setCharacters] = useState(initialCharacters);
   const [characterCount, setCharacterCount] = useState(campaign?.characterCount ?? 0);
+  const [creatureCount, setCreatureCount] = useState(initialCreatures.length);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = current !== null;
 
   function close() {
-    onClose(current ? { ...current, characterCount } : undefined);
+    onClose(current ? { ...current, characterCount } : undefined, creatureCount);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -153,6 +157,20 @@ export function CampaignFormModal({
                 campaignId={current.id}
                 initialCharacters={characters}
                 onCountChange={setCharacterCount}
+              />
+            </div>
+          )}
+
+          {isEditing && (
+            <div className="mt-6 border-t border-slate-800 pt-6">
+              <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
+                Creatures (companions &amp; summons)
+              </label>
+              <CreatureRosterEditor
+                campaignId={current.id}
+                initialCreatures={initialCreatures}
+                characters={characters}
+                onCountChange={setCreatureCount}
               />
             </div>
           )}

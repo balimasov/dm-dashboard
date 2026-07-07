@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
-import { CampaignSummary, Character } from "@/lib/types";
+import { CampaignSummary, Character, Creature } from "@/lib/types";
 
 function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
   if (campaign.logoUrl) {
@@ -88,17 +88,23 @@ function Hero() {
 export function CampaignsClient({ initialCampaigns }: { initialCampaigns: CampaignSummary[] }) {
   const { campaigns, addCampaign, updateCampaign, removeCampaign, setCampaignSummary } =
     useCampaigns(initialCampaigns);
-  const [modalState, setModalState] = useState<{ campaign: CampaignSummary | null; characters: Character[] } | null>(
-    null
-  );
+  const [modalState, setModalState] = useState<{
+    campaign: CampaignSummary | null;
+    characters: Character[];
+    creatures: Creature[];
+  } | null>(null);
   const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
 
   async function openEdit(campaign: CampaignSummary) {
     setLoadingEdit(campaign.id);
     try {
-      const res = await fetch(`/api/characters?campaignId=${campaign.id}`);
-      const characters = res.ok ? ((await res.json()) as Character[]) : [];
-      setModalState({ campaign, characters });
+      const [charactersRes, creaturesRes] = await Promise.all([
+        fetch(`/api/characters?campaignId=${campaign.id}`),
+        fetch(`/api/creatures?campaignId=${campaign.id}`),
+      ]);
+      const characters = charactersRes.ok ? ((await charactersRes.json()) as Character[]) : [];
+      const creatures = creaturesRes.ok ? ((await creaturesRes.json()) as Creature[]) : [];
+      setModalState({ campaign, characters, creatures });
     } finally {
       setLoadingEdit(null);
     }
@@ -117,7 +123,7 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
         <h2 className="text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
         <button
           type="button"
-          onClick={() => setModalState({ campaign: null, characters: [] })}
+          onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}
           className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
         >
           + New Campaign
@@ -144,6 +150,7 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
         <CampaignFormModal
           campaign={modalState.campaign}
           initialCharacters={modalState.characters}
+          initialCreatures={modalState.creatures}
           actions={{ addCampaign, updateCampaign }}
           onClose={closeModal}
         />
