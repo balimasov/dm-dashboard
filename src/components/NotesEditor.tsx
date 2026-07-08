@@ -75,7 +75,37 @@ export function NotesEditor({
     [placeholder]
   );
 
-  if (!editor) return null;
+  // `immediatelyRender: false` (required so Next.js doesn't hydration-mismatch
+  // on Tiptap's own SSR output) means `editor` is null for one render on
+  // every mount — returning `null` here left a visible gap where the
+  // toolbar/textbox briefly vanished and popped back in a moment later.
+  // Rendering a static, non-editable stand-in of the exact same shape (same
+  // toolbar buttons, same `.notes-editor-content` box with the same content
+  // or placeholder) means that moment is invisible: it's plain HTML, so the
+  // server and the pre-mount client render identically, and the real editor
+  // then swaps in without shifting anything.
+  if (!editor) {
+    return (
+      <div>
+        <div className="mb-1.5 flex flex-wrap items-center gap-1">
+          {TOOLBAR_BUTTONS.map(({ key, label, cls }) => (
+            <span key={key} aria-hidden className={`rounded px-2 py-1 text-xs text-slate-400 ${cls}`}>
+              {label}
+            </span>
+          ))}
+          <span aria-hidden className="rounded px-2 py-1 text-xs text-slate-400 underline">
+            Link
+          </span>
+        </div>
+        <div
+          className="notes-editor-content min-h-24 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+          dangerouslySetInnerHTML={{
+            __html: value || `<p class="is-editor-empty" data-placeholder="${placeholder ?? ""}"></p>`,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
