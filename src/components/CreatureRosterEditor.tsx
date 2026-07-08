@@ -43,7 +43,12 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
   const [searched, setSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [results, setResults] = useState<CreatureSearchHit[]>([]);
-  const [adding, setAdding] = useState(false);
+  // Which single row is in flight — a hit's own id, or "manual" for the
+  // no-results "Add it anyway" fallback — rather than one shared flag, so
+  // adding one hit doesn't relabel every other "Add" button in the list as
+  // "Adding...". Still non-null (and so disabling every button) for the
+  // whole request, to avoid firing a second add before the first resolves.
+  const [addingId, setAddingId] = useState<string | null>(null);
 
   async function handleSearch() {
     const trimmed = query.trim();
@@ -65,29 +70,33 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
   }
 
   async function addHit(hit: CreatureSearchHit) {
-    setAdding(true);
+    setAddingId(hit.id);
     try {
       const res = await fetch(`/api/bestiary/resolve?id=${encodeURIComponent(hit.id)}`);
       if (!res.ok) throw new Error("Failed to load stat block.");
       const template = (await res.json()) as CreatureTemplate;
       await onAdd(formValueToAddCreatureInput(templateToFormValue(template), template.id));
-      reset();
+      // Deliberately not resetting the search here — the results list stays
+      // put so adding a second creature from the same search (e.g. both the
+      // "Owl" and "Giant Owl" hits) doesn't require re-searching from
+      // scratch. The roster list below still updates immediately via
+      // `onAdd`/`useCreatures`, same as before.
     } catch {
       setSearchError(`Failed to load "${hit.name}"'s stat block — try again.`);
     } finally {
-      setAdding(false);
+      setAddingId(null);
     }
   }
 
   async function addManual() {
     const trimmed = query.trim();
     if (!trimmed) return;
-    setAdding(true);
+    setAddingId("manual");
     try {
       await onAdd(formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }));
       reset();
     } finally {
-      setAdding(false);
+      setAddingId(null);
     }
   }
 
@@ -144,10 +153,10 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
               <button
                 type="button"
                 onClick={() => addHit(t)}
-                disabled={adding}
+                disabled={addingId !== null}
                 className="shrink-0 text-sm text-sky-400 hover:underline disabled:opacity-50"
               >
-                {adding ? "Adding..." : "Use"}
+                {addingId === t.id ? "Adding..." : "Add"}
               </button>
             </li>
           ))}
@@ -156,8 +165,13 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
       {searched && results.length === 0 && (
         <p className="text-sm text-slate-600">
           No matches for &quot;{query.trim()}&quot; — likely not free SRD content (e.g. a Monster Manual exclusive).{" "}
-          <button type="button" onClick={addManual} disabled={adding} className="text-sky-400 hover:underline disabled:opacity-50">
-            {adding ? "Adding..." : "Add it anyway"}
+          <button
+            type="button"
+            onClick={addManual}
+            disabled={addingId !== null}
+            className="text-sky-400 hover:underline disabled:opacity-50"
+          >
+            {addingId === "manual" ? "Adding..." : "Add it anyway"}
           </button>
           , then fill in its stat block on its own edit page.
         </p>
