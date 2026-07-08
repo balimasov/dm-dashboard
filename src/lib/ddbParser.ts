@@ -1394,12 +1394,16 @@ function computeFeatures(
  * export to contain spells entirely absent from `classSpells`). Within
  * `spells.*`, `countsAsKnownSpell` is uniformly false even for genuinely-
  * granted spells, so presence there is itself taken as the inclusion signal;
- * the same group can also list the same spell twice differing only in
- * `limitedUse` (an at-will/charges casting mode vs. a spell-slot mode) —
- * confirmed on a real export the entry actually carrying charge data can
- * appear in either array position, so a later duplicate that has
- * `limitedUse` upgrades an earlier duplicate that lacked it, rather than
- * always keeping whichever copy came first.
+ * the same group can also list the same spell twice, differing only in
+ * `limitedUse` — a feat like Fey Touched grants both an at-will-ish free
+ * cast (its own charge pool, e.g. once per Long Rest) *and* the ability to
+ * cast the same spell normally using a spell slot, and D&D Beyond represents
+ * that as two separate entries (`usesSpellSlot`/`alwaysPrepared` true on one,
+ * `limitedUse` set on the other). These used to be merged into one row under
+ * the assumption they were the same grant listed twice — confirmed on a real
+ * export that they're two genuinely different casting modes the player can
+ * choose between, so both are kept as separate spells (keyed on name *and*
+ * whether the entry actually resolves to a charge pool, not name alone).
  *
  * `countsAsKnownSpell` only covers "fixed spellbook" casters (Wizard-style —
  * every spell copied into the book is known regardless of what's prepared
@@ -1414,19 +1418,20 @@ const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
 function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): KnownSpell[] {
   const spells: KnownSpell[] = [];
-  const byName = new Map<string, KnownSpell>();
+  const seenKeys = new Set<string>();
 
   function add(entry: any, source: string) {
     const df = entry?.definition;
-    const key = (df?.name || "").trim().toLowerCase();
-    if (!key) return;
+    const name = (df?.name || "").trim().toLowerCase();
+    if (!name) return;
     const charges = computeLimitedUseCharges(entry?.limitedUse, abilities, profBonus);
-
-    const existing = byName.get(key);
-    if (existing) {
-      if (charges && existing.max === undefined) Object.assign(existing, charges);
-      return;
-    }
+    // Keyed on name *and* casting mode, not name alone — a free-cast/charge
+    // entry and a spell-slot entry for the same spell are different modes to
+    // show separately, but two identical-mode entries (e.g. the same known
+    // spell appearing in more than one source group) still collapse to one.
+    const key = `${name}|${charges ? "limited" : "slot"}`;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
 
     const rawDescription = shortDescription(df.snippet, df.description);
     const components: number[] = df.components ?? [];
@@ -1445,7 +1450,6 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
       ...(df.componentsDescription ? { materialComponent: df.componentsDescription.trim() } : {}),
       ...(charges ? charges : {}),
     };
-    byName.set(key, spell);
     spells.push(spell);
   }
 
