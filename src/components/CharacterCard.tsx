@@ -164,8 +164,11 @@ export function HpBar({
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-sm text-slate-300">HP</span>
         {isDown && deathSaves ? (
-          <span className="text-sm font-medium text-red-400">
-            Death Saves: ✅ {deathSaves.successes}/3 · ❌ {deathSaves.failures}/3
+          <span className="text-sm font-medium">
+            <span className="text-slate-400">Death Saves:</span>{" "}
+            <span className="text-emerald-400">✅ {deathSaves.successes}/3</span>
+            <span className="text-slate-600"> · </span>
+            <span className="text-red-400">❌ {deathSaves.failures}/3</span>
           </span>
         ) : (
           <span className="text-sm font-medium text-slate-100">
