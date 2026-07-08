@@ -125,9 +125,32 @@ function titleCase(kebab: string): string {
     .join(" ");
 }
 
+/**
+ * `modifiers.item` lists every grant from every item in the inventory, worn
+ * or not — confirmed on a real export where a carried-but-unequipped item's
+ * conditional "disadvantage on Strength/Dexterity checks and saves while
+ * poisoned" showed up as an active skill badge despite D&D Beyond's own
+ * sheet (which does gate item effects on `equipped`) showing nothing. Every
+ * other equipment-derived value in this file (AC, HP, limited-use charges)
+ * already checks `.equipped` before counting an item's contribution; this
+ * bulk modifier list was the one place still trusting the raw list. A
+ * modifier whose `componentId` doesn't match any known inventory item
+ * (e.g. it's actually granted by something else) is kept rather than
+ * dropped, so an unrecognized source doesn't silently disappear.
+ */
 function collectModifiers(data: any): any[] {
   const groups = ["race", "class", "background", "item", "feat", "condition"];
-  return groups.flatMap((g) => data.modifiers?.[g] ?? []);
+  const inventoryById = new Map<number | undefined, any>(
+    (data.inventory ?? []).map((i: any) => [i.definition?.id, i])
+  );
+  return groups.flatMap((g) => {
+    const mods = data.modifiers?.[g] ?? [];
+    if (g !== "item") return mods;
+    return mods.filter((m: any) => {
+      const item = inventoryById.get(m.componentId);
+      return !item || item.equipped;
+    });
+  });
 }
 
 function computeAbilityScores(data: any, mods: any[]): AbilityScores {
