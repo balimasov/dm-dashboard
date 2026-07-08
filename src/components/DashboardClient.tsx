@@ -15,6 +15,9 @@ import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
 
+/** Flip back to `true` to restore the "Campaigns / [name]" breadcrumb trail above the dashboard's action row. */
+const SHOW_BREADCRUMBS = false;
+
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
   if (campaign.logoUrl) {
@@ -158,15 +161,18 @@ export function DashboardClient({
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="mb-4 space-y-2">
-        <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {linkedCharacters.length > 0 && lastSyncedAt && (
-            <span className="whitespace-nowrap text-xs text-slate-500">
-              Synced: <SyncTimestamp iso={lastSyncedAt} />
-            </span>
-          )}
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            {linkedCharacters.length > 0 && (
+        {/* Temporarily hidden to test the dashboard without them — code kept intact to switch back easily. */}
+        {SHOW_BREADCRUMBS && (
+          <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
+        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {linkedCharacters.length > 0 && (
+            <>
+              {lastSyncedAt && (
+                <span className="whitespace-nowrap text-xs text-slate-500">
+                  Synced: <SyncTimestamp iso={lastSyncedAt} />
+                </span>
+              )}
               <button
                 onClick={handleSyncAll}
                 disabled={syncingAll}
@@ -174,17 +180,17 @@ export function DashboardClient({
               >
                 {syncingAll ? "Syncing..." : "Sync All"}
               </button>
-            )}
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
-              >
-                Settings
-              </button>
-              <CampaignLogo campaign={campaignState} />
-            </div>
+            </>
+          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
+            >
+              Settings
+            </button>
+            <CampaignLogo campaign={campaignState} />
           </div>
         </div>
       </div>
