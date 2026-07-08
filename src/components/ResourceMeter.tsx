@@ -36,6 +36,7 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
           <InfoTooltip
             panel={
               <div className="space-y-1">
+                <p className="font-medium text-slate-100">{resource.name}</p>
                 {resource.source && (
                   <p className="text-xs uppercase tracking-wide text-slate-500">{resource.source}</p>
                 )}
