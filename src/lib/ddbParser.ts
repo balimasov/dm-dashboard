@@ -35,9 +35,6 @@ import {
  *   base (e.g. Draconic Sorcery's 13 + Dex) — those aren't modeled the same
  *   way by D&D Beyond and would need separate handling. Natural armor races,
  *   dragon hide, and dual-wielding AC bonuses also aren't accounted for.
- * - Third-caster subclasses (Eldritch Knight, Arcane Trickster) aren't
- *   detected — only classes whose base `definition.canCastSpells` is true
- *   contribute spell slots.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -1475,6 +1472,19 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
 }
 
 /**
+ * A third-caster subclass (Arcane Trickster, Eldritch Knight) is where
+ * `canCastSpells` actually lives — the base class definition (Rogue,
+ * Fighter) has it `false`, since a Rogue without that subclass casts
+ * nothing. Confirmed on a real level 8 Arcane Trickster export: reading
+ * only `definition.canCastSpells` excluded the class entirely, showing no
+ * spell slots at all despite `definition.spellRules.levelSpellSlots` (still
+ * on the base class) already having the correct third-caster progression.
+ */
+function classCastsSpells(c: any): boolean {
+  return Boolean(c.definition?.canCastSpells || c.subclassDefinition?.canCastSpells);
+}
+
+/**
  * D&D Beyond's `spellSlots[].available` is NOT "slots remaining" — in every
  * real export it's 0 regardless of how many slots are actually free, while
  * `used` tracks consumption against the class's own slot table. The real
@@ -1489,7 +1499,7 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
 function computeSpellSlots(data: any): SpellSlotLevel[] {
   const casterClasses = (data.classes ?? []).filter(
     (c: any) =>
-      c.definition?.canCastSpells &&
+      classCastsSpells(c) &&
       c.definition?.name !== "Warlock" &&
       Array.isArray(c.definition?.spellRules?.levelSpellSlots)
   );
@@ -1541,9 +1551,12 @@ function computeSpellcastingStats(
   abilities: AbilityScores,
   profBonus: number
 ): { modifier: number; attack: number; saveDc: number } | undefined {
-  const casterClass = (data.classes ?? []).find((c: any) => c.definition?.canCastSpells && c.definition?.spellCastingAbilityId);
+  const casterClass = (data.classes ?? []).find(
+    (c: any) => classCastsSpells(c) && (c.definition?.spellCastingAbilityId || c.subclassDefinition?.spellCastingAbilityId)
+  );
   if (!casterClass) return undefined;
-  const ability = ABILITY_BY_ID[casterClass.definition.spellCastingAbilityId];
+  const abilityId = casterClass.definition?.spellCastingAbilityId ?? casterClass.subclassDefinition?.spellCastingAbilityId;
+  const ability = ABILITY_BY_ID[abilityId];
   if (!ability) return undefined;
   const modifier = abilityModifier(abilities[ability]);
   return { modifier, attack: modifier + profBonus, saveDc: 8 + modifier + profBonus };
