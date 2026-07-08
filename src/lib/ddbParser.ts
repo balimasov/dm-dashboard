@@ -857,7 +857,7 @@ function computeLimitedUseCharges(
  * attack), unrelated to the resource's own charge count.
  */
 function diceTypeNote(name: string, dice: any): string {
-  if (!dice?.diceValue || !/\bdice?\b/i.test(name)) return "";
+  if (!dice?.diceValue || !/\b(die|dice)\b/i.test(name)) return "";
   return ` Each die is a d${dice.diceValue}.`;
 }
 
