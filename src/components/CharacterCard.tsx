@@ -170,6 +170,10 @@ export function HpBar({
         <span className="text-sm text-slate-300">HP</span>
         {isDown && deathSaves ? (
           <span className="text-sm font-medium">
+            {/* Zero-width but text-2xl-sized, so this line's shared baseline sits at the same depth as the normal HP display below — a real character here would need width:0 tricks that break the baseline math (an inline-block clipped to 0 width computes its baseline from its bottom margin edge, not its text), but U+200B has zero advance width on its own. */}
+            <span aria-hidden className="text-2xl">
+              {"​"}
+            </span>
             <span className="text-slate-400">Death Saves:</span>{" "}
             <span className="text-emerald-400">✅ {deathSaves.successes}/3</span>
             <span className="text-slate-600"> · </span>
