@@ -1131,7 +1131,8 @@ function computeFeatures(
     source: string,
     group: Feature["group"],
     originType: Feature["originType"],
-    explicitCharges?: { current: number; max: number; recovery: RecoveryType }
+    explicitCharges?: { current: number; max: number; recovery: RecoveryType },
+    dice?: any
   ) {
     const trimmedName = (name || "").trim();
     // The exact (non-normalized) name is the de-dupe key — normalizing away a
@@ -1147,7 +1148,9 @@ function computeFeatures(
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === normalizeFeatureName(trimmedName));
     const charges = explicitCharges ?? matchedResource;
     const description = rawDescription
-      ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
+      ? (resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed) +
+          diceTypeNote(trimmedName, dice)
+        ).trim()
       : undefined;
 
     if (description) {
@@ -1189,7 +1192,8 @@ function computeFeatures(
         source,
         activationGroup(action.activation?.activationType),
         originType,
-        charges
+        charges,
+        action.dice
       );
     }
   }
