@@ -312,6 +312,8 @@ export interface SkillProficiency {
   advantage?: "advantage" | "disadvantage";
   /** The condition text, if any (e.g. "that involves you dancing"). */
   advantageNote?: string;
+  /** Extra flat bonus on top of ability mod + proficiency (e.g. a feature that adds a second ability's modifier to this one skill). */
+  bonus?: number;
 }
 
 export interface CombatState {
@@ -574,12 +576,13 @@ export function savingThrowBonus(character: Character, ability: keyof AbilitySco
 /** Ability-mod + proficiency bonus (doubled for expertise) — plain ability mod if not actually proficient. */
 export function skillBonus(character: Character, skill: SkillProficiency): number {
   const mod = abilityModifier(character.stats[SKILL_ABILITY[skill.name]]);
+  const extra = skill.bonus ?? 0;
   if (skill.proficient || skill.expertise) {
     const multiplier = skill.expertise ? 2 : 1;
-    return mod + proficiencyBonus(character.level) * multiplier;
+    return mod + proficiencyBonus(character.level) * multiplier + extra;
   }
-  if (skill.halfProficiency) return mod + Math.floor(proficiencyBonus(character.level) / 2);
-  return mod;
+  if (skill.halfProficiency) return mod + Math.floor(proficiencyBonus(character.level) / 2) + extra;
+  return mod + extra;
 }
 
 /** e.g. "Orc · Barbarian/Path of the Berserker" (level shown separately) */

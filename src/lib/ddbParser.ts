@@ -252,7 +252,11 @@ function computeCurrency(data: any): Currency {
  * showing up here (previously only proficient/expertise/advantage skills
  * were surfaced at all, silently dropping this bonus everywhere).
  */
-function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolean): SkillProficiency[] {
+function computeSkillProficiencies(
+  mods: any[],
+  armorStealthDisadvantage: boolean,
+  abilities: AbilityScores
+): SkillProficiency[] {
   const jackOfAllTrades = mods.some(
     (m) => m.type === "half-proficiency" && m.subType === "ability-checks" && m.isGranted
   );
@@ -267,7 +271,17 @@ function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolea
     const advMod = mods.find((m) => m.type === "advantage" && m.subType === name && m.isGranted);
     const disadvMod = mods.find((m) => m.type === "disadvantage" && m.subType === name && m.isGranted);
     const fromArmor = name === "stealth" && armorStealthDisadvantage;
-    if (!proficient && !expertise && !halfProficiency && !advMod && !disadvMod && !fromArmor) continue;
+    // A flat number (`value`) or "add this other ability's modifier"
+    // (`statId`, e.g. a feature that adds Wisdom on top of Nature's normal
+    // Intelligence check) — confirmed on a real export granting the latter.
+    const bonus = mods
+      .filter((m) => m.type === "bonus" && m.subType === name && m.isGranted)
+      .reduce((sum, m) => {
+        if (typeof m.value === "number") return sum + m.value;
+        const ability = m.statId ? ABILITY_BY_ID[m.statId] : undefined;
+        return ability ? sum + abilityModifier(abilities[ability]) : sum;
+      }, 0);
+    if (!proficient && !expertise && !halfProficiency && !advMod && !disadvMod && !fromArmor && !bonus) continue;
 
     let advantage: "advantage" | "disadvantage" | undefined;
     let advantageNote: string | undefined;
@@ -285,6 +299,7 @@ function computeSkillProficiencies(mods: any[], armorStealthDisadvantage: boolea
       expertise,
       ...(halfProficiency ? { halfProficiency: true } : {}),
       ...(advantage ? { advantage, ...(advantageNote ? { advantageNote } : {}) } : {}),
+      ...(bonus ? { bonus } : {}),
     });
   }
   return skills;
@@ -494,8 +509,15 @@ function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): nu
 }
 
 function computePassiveSkill(abilityMod: number, profBonus: number, skill: string, mods: any[]): number {
-  const proficient = mods.some((m) => m.type === "proficiency" && m.subType === skill && m.isGranted);
-  const expert = mods.some((m) => m.type === "expertise" && m.subType === skill && m.isGranted);
+  // No `isGranted` filter on proficiency/expertise — same reasoning as
+  // `computeSkillProficiencies` below: confirmed on real exports that a
+  // skill's own proficiency modifier can be genuinely active with
+  // `isGranted: false` (the flag is unreliable for flexible/choice-driven
+  // grants), and this function used to disagree with that one about whether
+  // the same skill counted as proficient, undercounting the passive score
+  // for any skill made proficient that way.
+  const proficient = mods.some((m) => m.type === "proficiency" && m.subType === skill);
+  const expert = mods.some((m) => m.type === "expertise" && m.subType === skill);
   const profMultiplier = expert ? 2 : proficient ? 1 : 0;
   const flatBonus = mods
     .filter((m) => m.type === "bonus" && m.subType === `passive-${skill}` && m.isGranted)
@@ -503,11 +525,17 @@ function computePassiveSkill(abilityMod: number, profBonus: number, skill: strin
   return 10 + abilityMod + profBonus * profMultiplier + flatBonus;
 }
 
-function computeInitiative(dexMod: number, mods: any[]): number {
-  const flatBonus = mods
+/**
+ * The Alert feat's 2024 "add your Proficiency Bonus to Initiative" grant is
+ * modeled with `value: null` (there's no flat number to read) and instead
+ * `bonusTypes: [1]` marking it as a proficiency-bonus-based bonus — confirmed
+ * on a real export where reading only `value` silently treated this as +0.
+ */
+function computeInitiative(dexMod: number, profBonus: number, mods: any[]): number {
+  const bonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "initiative" && m.isGranted)
-    .reduce((sum, m) => sum + (m.value ?? 0), 0);
-  return dexMod + flatBonus;
+    .reduce((sum, m) => sum + (m.value ?? (m.bonusTypes?.includes(1) ? profBonus : 0)), 0);
+  return dexMod + bonus;
 }
 
 /**
@@ -1400,10 +1428,16 @@ function computeSpellSlots(data: any): SpellSlotLevel[] {
   );
   if (casterClasses.length === 0) return [];
 
+  // The divisor only applies when actually combining *multiple* casting
+  // classes — a solo Artificer (divisor 2, since that's its contribution
+  // when multiclassed with something else) was getting its own level halved
+  // against its own single-class table, undercounting every slot level and
+  // dropping some entirely (e.g. a level 8 Artificer solo was computed as
+  // level 4, losing its 2nd-level slots outright).
   let combinedLevel = 0;
   let table: number[][] = casterClasses[0].definition.spellRules.levelSpellSlots;
   for (const c of casterClasses) {
-    const divisor = c.definition.spellRules.multiClassSpellSlotDivisor || 1;
+    const divisor = casterClasses.length > 1 ? c.definition.spellRules.multiClassSpellSlotDivisor || 1 : 1;
     combinedLevel += Math.floor((c.level ?? 0) / divisor);
     if (c.definition.spellRules.levelSpellSlots.length > table.length) {
       table = c.definition.spellRules.levelSpellSlots;
@@ -1480,7 +1514,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     subclass,
     level: level || existing.level,
     heroicInspiration: Boolean(data.inspiration),
-    initiative: computeInitiative(dexMod, mods),
+    initiative: computeInitiative(dexMod, profBonus, mods),
     combat: {
       hp,
       maxHp,
@@ -1507,7 +1541,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     knownSpells: computeSpells(data, abilities, profBonus, level, speed),
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
-    skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data)),
+    skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data), abilities),
     ...computeDamageModifiers(mods),
     advantages: computeAdvantages(mods),
     senses,
