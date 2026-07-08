@@ -34,16 +34,8 @@ export default async function RootLayout({
               <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
               DM Dashboard
             </Link>
-            {/* Sync/settings actions and logout are one flex item together, so
-                they wrap onto their own line as a whole on narrow screens
-                instead of splitting from each other — but stay on the same
-                row as the logo whenever there's room (e.g. desktop). Only
-                rendered when authenticated, since header-actions is otherwise
-                always empty too (you can't reach any portaling page
-                unauthenticated) — so there's never an empty slot to collapse. */}
             {authenticated && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <div id="header-actions" className="flex flex-wrap items-center gap-2 empty:hidden" />
                 <form action={logout}>
                   <button
                     type="submit"
