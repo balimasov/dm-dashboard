@@ -842,22 +842,23 @@ function computeLimitedUseCharges(
 }
 
 /**
- * D&D Beyond names the resource itself after its die (e.g. "Superiority
- * Dice", a Battle Master carries "4d8" of them) but that die type only shows
- * up on the *action* node's own `dice` field (`{ diceCount: 1, diceValue: 8,
- * diceString: "1d8" }`) — `limitedUse.maxUses` only has the count ("4"), and
- * the snippet's `{{scalevalue}}` placeholder resolves to that same count, so
- * without this the die size (d6 vs d8 vs d10...) never appears anywhere,
- * even though D&D Beyond's own UI always states it. Scoped to names that say
- * "die"/"dice" (Superiority Dice, Bardic Inspiration Die...) rather than
- * every resource with a `dice` field, since for most actions that field is
- * the action's *damage* roll (e.g. a weapon attack), unrelated to the
- * resource's own charge count.
+ * D&D Beyond's own hint text states the die type (e.g. "You have 4
+ * Superiority Dice, which are d8s") but that only lives in the *long*
+ * `description` field — the short `snippet` this app prefers for resource
+ * hints is a generic templated blurb ("You have {{scalevalue}} Superiority
+ * Dice...") that never mentions the die size at all, and the die type itself
+ * only shows up separately on the *action* node's own `dice` field (`{
+ * diceValue: 8, ... }`), not in either text field. So rather than trying to
+ * splice "d8" into whichever wording a given feature's snippet happens to
+ * use, this appends one short, standalone sentence stating it plainly.
+ * Scoped to names that say "die"/"dice" (Superiority Dice, Bardic
+ * Inspiration Die...) rather than every resource with a `dice` field, since
+ * for most actions that field is the action's *damage* roll (e.g. a weapon
+ * attack), unrelated to the resource's own charge count.
  */
-function diceResourceSuffix(name: string, dice: any): string {
+function diceTypeNote(name: string, dice: any): string {
   if (!dice?.diceValue || !/\bdice?\b/i.test(name)) return "";
-  const count = dice.diceCount && dice.diceCount > 1 ? dice.diceCount : "";
-  return ` (${count}d${dice.diceValue})`;
+  return ` Each die is a d${dice.diceValue}.`;
 }
 
 function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
@@ -872,12 +873,13 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
   ): Resource | null {
     const charges = computeLimitedUseCharges(lu, abilities, profBonus);
     if (!charges) return null;
-    const description = rawDescription
+    const baseDescription = rawDescription
       ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges.max, speed)
-      : undefined;
+      : "";
+    const description = (baseDescription + diceTypeNote(name ?? "", dice)).trim() || undefined;
     return {
       id: `${keyPrefix}-${idx}`,
-      name: (name || "Resource") + diceResourceSuffix(name ?? "", dice),
+      name: name || "Resource",
       current: charges.current,
       max: charges.max,
       recovery: charges.recovery,
