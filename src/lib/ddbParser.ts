@@ -841,6 +841,25 @@ function computeLimitedUseCharges(
   };
 }
 
+/**
+ * D&D Beyond names the resource itself after its die (e.g. "Superiority
+ * Dice", a Battle Master carries "4d8" of them) but that die type only shows
+ * up on the *action* node's own `dice` field (`{ diceCount: 1, diceValue: 8,
+ * diceString: "1d8" }`) — `limitedUse.maxUses` only has the count ("4"), and
+ * the snippet's `{{scalevalue}}` placeholder resolves to that same count, so
+ * without this the die size (d6 vs d8 vs d10...) never appears anywhere,
+ * even though D&D Beyond's own UI always states it. Scoped to names that say
+ * "die"/"dice" (Superiority Dice, Bardic Inspiration Die...) rather than
+ * every resource with a `dice` field, since for most actions that field is
+ * the action's *damage* roll (e.g. a weapon attack), unrelated to the
+ * resource's own charge count.
+ */
+function diceResourceSuffix(name: string, dice: any): string {
+  if (!dice?.diceValue || !/\bdice?\b/i.test(name)) return "";
+  const count = dice.diceCount && dice.diceCount > 1 ? dice.diceCount : "";
+  return ` (${count}d${dice.diceValue})`;
+}
+
 function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
   function fromLimitedUse(
     name: string,
@@ -848,7 +867,8 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
     keyPrefix: string,
     idx: number,
     rawDescription: string | undefined,
-    source: string
+    source: string,
+    dice?: any
   ): Resource | null {
     const charges = computeLimitedUseCharges(lu, abilities, profBonus);
     if (!charges) return null;
@@ -857,7 +877,7 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
       : undefined;
     return {
       id: `${keyPrefix}-${idx}`,
-      name: name || "Resource",
+      name: (name || "Resource") + diceResourceSuffix(name ?? "", dice),
       current: charges.current,
       max: charges.max,
       recovery: charges.recovery,
@@ -880,7 +900,8 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
         `action-${group}`,
         idx,
         shortDescription(action.snippet, action.description),
-        source
+        source,
+        action.dice
       );
       if (resource) resources.push(resource);
     });
