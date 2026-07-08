@@ -1,61 +1,47 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState } from "react";
 
 /**
- * A minimal external store over localStorage so the open/closed state can go
- * through useSyncExternalStore instead of useState+useEffect — calling
- * setState directly inside an effect (to sync from localStorage after mount)
- * trips this repo's react-hooks/set-state-in-effect lint rule with no clean
- * escape hatch, the same issue solved elsewhere via SyncTimestamp. This is
- * the fully reactive version: toggling notifies subscribers, so any other
- * mounted section reading the same key would also update.
+ * Open/closed state is seeded from a cookie read server-side (see
+ * `initialOpen`) rather than `localStorage`, specifically so the very first
+ * server-rendered HTML already reflects the user's real preference — a
+ * `localStorage`-only approach can't be read during SSR, so the server has
+ * to guess a default, and every page load then shows a visible flash the
+ * moment the client corrects it to the real (different) value. Toggling
+ * writes back to the same cookie so the next full page load starts correct
+ * too.
  */
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function getSnapshot(storageKey: string): boolean {
-  return localStorage.getItem(storageKey) !== "0";
-}
-
-function getServerSnapshot(): boolean {
-  return true;
-}
-
-function setOpenState(storageKey: string, open: boolean) {
-  localStorage.setItem(storageKey, open ? "1" : "0");
-  listeners.forEach((listener) => listener());
+function persistOpenCookie(storageKey: string, open: boolean) {
+  document.cookie = `${storageKey}=${open ? "1" : "0"}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
 export function CollapsibleSection({
   title,
   actions,
   storageKey,
+  initialOpen,
   children,
 }: {
   title: React.ReactNode;
   actions?: React.ReactNode;
   storageKey: string;
+  /** The section's real open/closed preference, read from a cookie on the server so this component's very first render already matches it. */
+  initialOpen: boolean;
   children: React.ReactNode;
 }) {
-  const open = useSyncExternalStore(
-    subscribe,
-    () => getSnapshot(storageKey),
-    getServerSnapshot
-  );
+  const [open, setOpen] = useState(initialOpen);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    persistOpenCookie(storageKey, next);
+  }
 
   return (
     <section className="mb-8">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setOpenState(storageKey, !open)}
-          className="group flex items-start gap-2 text-left"
-        >
+        <button type="button" onClick={toggle} className="group flex items-start gap-2 text-left">
           <span
             className={`mt-1 shrink-0 text-slate-500 transition-transform group-hover:text-slate-300 ${open ? "rotate-90" : ""}`}
           >

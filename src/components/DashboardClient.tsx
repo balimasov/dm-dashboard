@@ -73,14 +73,24 @@ function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (no
   return <NotesEditor value={notes} onChange={setNotes} onBlur={saveNotes} placeholder="Campaign notes..." />;
 }
 
+/** Open/closed state for each collapsible section, read from cookies on the server so the first paint already matches the user's real preference — see `CollapsibleSection`. */
+export interface OpenSections {
+  campaign: boolean;
+  characters: boolean;
+  creatures: boolean;
+  inventory: boolean;
+}
+
 export function DashboardClient({
   campaign,
   initialCharacters,
   initialCreatures,
+  initialOpen,
 }: {
   campaign: Campaign;
   initialCharacters: Character[];
   initialCreatures: Creature[];
+  initialOpen: OpenSections;
 }) {
   const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
   const { creatures, updateCreature, removeCreature } = useCreatures(campaign.id, initialCreatures);
@@ -181,7 +191,11 @@ export function DashboardClient({
         </HeaderPortal>
       )}
 
-      <CollapsibleSection title={`Campaign: "${campaignState.name}"`} storageKey="dm-dashboard-campaign-open">
+      <CollapsibleSection
+        title={`Campaign: "${campaignState.name}"`}
+        storageKey="dm-dashboard-campaign-open"
+        initialOpen={initialOpen.campaign}
+      >
         <div className="px-3">
           <p className="mb-4 text-sm text-slate-500">Overview and notes for this campaign.</p>
           <CampaignNotes
@@ -191,7 +205,7 @@ export function DashboardClient({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open">
+      <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open" initialOpen={initialOpen.characters}>
         <p className="mb-4 px-3 text-sm text-slate-500">Combat state, resources, and notes for each.</p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
@@ -220,7 +234,7 @@ export function DashboardClient({
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Creatures" storageKey="dm-dashboard-creatures-open">
+      <CollapsibleSection title="Creatures" storageKey="dm-dashboard-creatures-open" initialOpen={initialOpen.creatures}>
         <p className="mb-4 px-3 text-sm text-slate-500">
           Companions and summons — mounts, Wild Shape forms, familiars, and the like. Add or edit them from
           Settings.
@@ -246,7 +260,7 @@ export function DashboardClient({
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open">
+      <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open" initialOpen={initialOpen.inventory}>
         <div className="px-3">
           <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
           <InventoryOverview characters={characters} />
