@@ -60,7 +60,7 @@ export function CampaignFormModal({
   initialCharacters: Character[];
   initialCreatures: Creature[];
   actions: Actions;
-  onClose: (updated?: CampaignSummary, creatureCount?: number) => void;
+  onClose: (updated?: CampaignSummary, creatureCount?: number, rosterOrderChanged?: boolean) => void;
 }) {
   const [current, setCurrent] = useState<CampaignSummary | null>(campaign);
   const [name, setName] = useState(campaign?.name ?? "");
@@ -69,6 +69,7 @@ export function CampaignFormModal({
   const [characters, setCharacters] = useState(initialCharacters);
   const [characterCount, setCharacterCount] = useState(campaign?.characterCount ?? 0);
   const [creatureCount, setCreatureCount] = useState(initialCreatures.length);
+  const [rosterOrderChanged, setRosterOrderChanged] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,7 +89,7 @@ export function CampaignFormModal({
   }, []);
 
   function close() {
-    onClose(current ? { ...current, characterCount } : undefined, creatureCount);
+    onClose(current ? { ...current, characterCount } : undefined, creatureCount, rosterOrderChanged);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -197,6 +198,7 @@ export function CampaignFormModal({
                 campaignId={current.id}
                 initialCharacters={characters}
                 onCountChange={setCharacterCount}
+                onReorder={() => setRosterOrderChanged(true)}
               />
             </Section>
           )}
@@ -211,6 +213,7 @@ export function CampaignFormModal({
                 initialCreatures={initialCreatures}
                 characters={characters}
                 onCountChange={setCreatureCount}
+                onReorder={() => setRosterOrderChanged(true)}
               />
             </Section>
           )}

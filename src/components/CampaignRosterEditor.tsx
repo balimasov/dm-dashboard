@@ -26,11 +26,14 @@ export function CampaignRosterEditor({
   campaignId,
   initialCharacters,
   onCountChange,
+  onReorder,
 }: {
   campaignId: string;
   initialCharacters: Character[];
   /** Roster edits happen inside this component's own `useCharacters` state — this reports count changes up so an enclosing modal can keep a stale `characterCount` in sync without lifting the whole list. */
   onCountChange?: (count: number) => void;
+  /** Fires after a successful drag reorder — the enclosing modal uses this to know the dashboard's own (separately-fetched) character list is now stale, since reordering doesn't change `characters.length` and so wouldn't otherwise trigger a refresh. */
+  onReorder?: () => void;
 }) {
   const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } =
     useCharacters(initialCharacters);
@@ -122,6 +125,7 @@ export function CampaignRosterEditor({
 
     const reordered = arrayMove(characters, oldIndex, newIndex);
     reorderCharacters(reordered.map((c) => c.id));
+    onReorder?.();
   }
 
   return (

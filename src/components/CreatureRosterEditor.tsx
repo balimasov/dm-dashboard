@@ -218,11 +218,14 @@ export function CreatureRosterEditor({
   initialCreatures,
   characters,
   onCountChange,
+  onReorder,
 }: {
   campaignId: string;
   initialCreatures: Creature[];
   characters: Character[];
   onCountChange?: (count: number) => void;
+  /** Fires after a successful drag reorder — the enclosing modal uses this to know the dashboard's own (separately-fetched) creature list is now stale, since reordering doesn't change `creatures.length` and so wouldn't otherwise trigger a refresh. */
+  onReorder?: () => void;
 }) {
   const { creatures, addCreature, removeCreature, reorderCreatures } = useCreatures(campaignId, initialCreatures);
 
@@ -246,6 +249,7 @@ export function CreatureRosterEditor({
 
     const reordered = arrayMove(creatures, oldIndex, newIndex);
     reorderCreatures(reordered.map((c) => c.id));
+    onReorder?.();
   }
 
   return (

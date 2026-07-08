@@ -98,15 +98,16 @@ export function DashboardClient({
     });
   }
 
-  function closeSettings(updated?: CampaignSummary, creatureCount?: number) {
+  function closeSettings(updated?: CampaignSummary, creatureCount?: number, rosterOrderChanged?: boolean) {
     setSettingsOpen(false);
     if (!updated) return;
     setCampaignState((c) => ({ ...c, name: updated.name, notes: updated.notes, logoUrl: updated.logoUrl }));
     // The roster editors inside the modal keep their own character/creature
     // list state, separate from this page's — a simple reload is the
-    // least-risky way to reflect any add/remove/sync that happened in
-    // there, without wiring independent hook instances together.
-    if (updated.characterCount !== characters.length || creatureCount !== creatures.length) {
+    // least-risky way to reflect any add/remove/sync/reorder that happened
+    // in there, without wiring independent hook instances together. A
+    // reorder alone doesn't change either count, so it's tracked separately.
+    if (updated.characterCount !== characters.length || creatureCount !== creatures.length || rosterOrderChanged) {
       window.location.reload();
     }
   }
