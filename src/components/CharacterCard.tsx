@@ -7,6 +7,7 @@ import {
   abilityModifier,
   formatModifier,
   characterInfoLine,
+  ordinalLevel,
   proficiencyBonus,
   QuickNote,
   savingThrowBonus,
@@ -34,12 +35,7 @@ export const STAT_ORDER: Array<keyof Character["stats"]> = [
   "cha",
 ];
 
-export function ordinalLevel(level: number): string {
-  if (level % 10 === 1 && level % 100 !== 11) return `${level}st`;
-  if (level % 10 === 2 && level % 100 !== 12) return `${level}nd`;
-  if (level % 10 === 3 && level % 100 !== 13) return `${level}rd`;
-  return `${level}th`;
-}
+export { ordinalLevel };
 
 export function ShieldIcon({ className }: { className?: string }) {
   return (

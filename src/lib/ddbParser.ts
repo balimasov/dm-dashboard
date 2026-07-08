@@ -8,6 +8,7 @@ import {
   ItemCategory,
   ItemRarity,
   KnownSpell,
+  ordinalLevel,
   proficiencyBonus,
   RecoveryType,
   Resource,
@@ -904,6 +905,38 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
         shortDescription(action.snippet, action.description),
         source,
         action.dice
+      );
+      if (resource) resources.push(resource);
+    });
+  }
+
+  // Innate spells with their own charge pool (e.g. a Drow's Faerie Fire/
+  // Darkness, a Tiefling's Hellish Rebuke, a feat-granted Spider Climb) —
+  // same `spells.{race,class,background,item,feat}` groups `computeSpells`
+  // reads, so a spell shows up there *and* here whenever it actually tracks
+  // charges, matching D&D Beyond's own character sheet (which lists these
+  // under both Spells and the Limited Uses/resources tracker). The spell's
+  // level is folded into the name (`Faerie Fire (1st)`) since `Resource` has
+  // no separate level field to hang it off of.
+  const spellResourceGroups: Array<[string, string]> = [
+    ["race", "Race"],
+    ["class", "Class"],
+    ["background", "Background"],
+    ["item", "Item"],
+    ["feat", "Feat"],
+  ];
+  for (const [key, source] of spellResourceGroups) {
+    (data.spells?.[key] ?? []).forEach((entry: any, idx: number) => {
+      const df = entry?.definition;
+      if (!df?.name) return;
+      const name = df.level > 0 ? `${df.name} (${ordinalLevel(df.level)})` : df.name;
+      const resource = fromLimitedUse(
+        name,
+        entry.limitedUse,
+        `spell-${key}`,
+        idx,
+        shortDescription(df.snippet, df.description),
+        source
       );
       if (resource) resources.push(resource);
     });

@@ -552,6 +552,13 @@ export function formatModifier(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
+export function ordinalLevel(level: number): string {
+  if (level % 10 === 1 && level % 100 !== 11) return `${level}st`;
+  if (level % 10 === 2 && level % 100 !== 12) return `${level}nd`;
+  if (level % 10 === 3 && level % 100 !== 13) return `${level}rd`;
+  return `${level}th`;
+}
+
 export function proficiencyBonus(level: number): number {
   return 2 + Math.floor((Math.max(level, 1) - 1) / 4);
 }
