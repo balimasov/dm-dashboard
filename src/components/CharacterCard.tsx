@@ -166,8 +166,8 @@ export function HpBar({
 
   return (
     <div>
-      <div className="mb-1 flex min-h-8 items-end justify-between">
-        <span className="relative -top-[5px] text-sm text-slate-300">HP</span>
+      <div className="mb-1 flex min-h-8 items-baseline justify-between">
+        <span className="text-sm text-slate-300">HP</span>
         {isDown && deathSaves ? (
           <span className="text-sm font-medium">
             <span className="text-slate-400">Death Saves:</span>{" "}
