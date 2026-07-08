@@ -154,10 +154,19 @@ export function HpBar({
   isDown: boolean;
   deathSaves?: { successes: number; failures: number };
 }) {
-  const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0;
-  const tempPct = maxHp > 0 ? Math.max(0, Math.min(100 - hpPct, (tempHp / maxHp) * 100)) : 0;
-  const hpColor = hpPct > 50 ? "bg-emerald-500" : hpPct > 25 ? "bg-amber-500" : "bg-red-600";
-  const hpTextColor = hpPct > 50 ? "text-emerald-400" : hpPct > 25 ? "text-amber-400" : "text-red-400";
+  // Percentage-of-maxHp drives the danger-color thresholds (a character at
+  // full real HP should never read as anything but healthy, regardless of
+  // temp HP). Bar *widths* use a separate scale that grows past maxHp
+  // whenever temp HP doesn't fit in the remaining headroom — e.g. at full
+  // HP the "remaining room" is 0, so without this the temp segment would
+  // get zero width and silently vanish instead of showing up as extra bar
+  // stacked on past the end.
+  const hpRatio = maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0;
+  const barScale = Math.max(maxHp, hp + tempHp, 1);
+  const hpBarPct = (hp / barScale) * 100;
+  const tempBarPct = (tempHp / barScale) * 100;
+  const hpColor = hpRatio > 50 ? "bg-emerald-500" : hpRatio > 25 ? "bg-amber-500" : "bg-red-600";
+  const hpTextColor = hpRatio > 50 ? "text-emerald-400" : hpRatio > 25 ? "text-amber-400" : "text-red-400";
 
   return (
     <div>
@@ -179,8 +188,8 @@ export function HpBar({
         )}
       </div>
       <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full ${hpColor}`} style={{ width: `${hpPct}%` }} />
-        <div className="h-full bg-amber-400" style={{ width: `${tempPct}%` }} />
+        <div className={`h-full ${hpColor}`} style={{ width: `${hpBarPct}%` }} />
+        <div className="h-full bg-amber-400" style={{ width: `${tempBarPct}%` }} />
       </div>
     </div>
   );
