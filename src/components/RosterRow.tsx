@@ -33,7 +33,7 @@ export function RosterRow({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 ${
+      className={`flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${
         isDragging ? "opacity-50" : ""
       }`}
     >
@@ -50,7 +50,7 @@ export function RosterRow({
         {avatar}
         <div className="min-w-0">{children}</div>
       </div>
-      <div className="flex shrink-0 items-center gap-3 text-sm">{actions}</div>
+      <div className="flex shrink-0 items-center justify-end gap-3 text-sm">{actions}</div>
     </li>
   );
 }

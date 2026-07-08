@@ -37,7 +37,14 @@ import { RosterRow } from "@/components/RosterRow";
  * block is only fetched (`/api/bestiary/resolve`) for the one actually
  * picked, not for every row in the list.
  */
-function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promise<Creature> }) {
+function AddCreaturePanel({
+  onAdd,
+  addedTemplateIds,
+}: {
+  onAdd: (input: AddCreatureInput) => Promise<Creature>;
+  /** Bestiary template ids already present in this campaign's roster — lets a search hit show "(Added)" instead of leaving no trace of a creature the DM already added a minute ago (e.g. while adding several different hits from one search). */
+  addedTemplateIds: Set<string>;
+}) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -156,7 +163,7 @@ function AddCreaturePanel({ onAdd }: { onAdd: (input: AddCreatureInput) => Promi
                 disabled={addingId !== null}
                 className="shrink-0 text-sm text-sky-400 hover:underline disabled:opacity-50"
               >
-                {addingId === t.id ? "Adding..." : "Add"}
+                {addingId === t.id ? "Adding..." : addedTemplateIds.has(t.id) ? "Add (Added)" : "Add"}
               </button>
             </li>
           ))}
@@ -266,9 +273,13 @@ export function CreatureRosterEditor({
     onReorder?.();
   }
 
+  const addedTemplateIds = new Set(
+    creatures.map((c) => c.templateId).filter((id): id is string => Boolean(id))
+  );
+
   return (
     <div>
-      <AddCreaturePanel onAdd={addCreature} />
+      <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} />
 
       <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">
         Added Creatures ({creatures.length})

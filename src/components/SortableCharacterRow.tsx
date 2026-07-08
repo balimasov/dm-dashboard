@@ -22,23 +22,47 @@ export function SortableCharacterRow({
       id={character.id}
       avatar={<CharacterAvatar character={character} />}
       actions={
-        <>
-          {character.dndBeyondUrl && (
-            <button
-              onClick={() => onResync(character.id)}
-              disabled={syncing}
-              className="text-sky-400 hover:text-sky-300 disabled:opacity-50"
-            >
-              Sync
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-3">
+            {character.dndBeyondUrl && (
+              <button
+                onClick={() => onResync(character.id)}
+                disabled={syncing}
+                className="text-sky-400 hover:text-sky-300 disabled:opacity-50"
+              >
+                Sync
+              </button>
+            )}
+            <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
+              Edit
+            </Link>
+            <button onClick={() => onRemove(character.id)} className="text-red-500/80 hover:text-red-400">
+              Remove
             </button>
+          </div>
+          {character.dndBeyondUrl && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <a
+                href={character.dndBeyondUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 text-slate-500 hover:text-slate-300 hover:underline"
+              >
+                D&D Beyond ↗
+              </a>
+              <span className="text-slate-700">·</span>
+              {syncing ? (
+                <span className="text-sky-400">Syncing...</span>
+              ) : character.lastSyncedAt ? (
+                <span className="text-slate-600">
+                  Synced <SyncTimestamp iso={character.lastSyncedAt} />
+                </span>
+              ) : (
+                <span className="text-amber-500">Not synced yet</span>
+              )}
+            </div>
           )}
-          <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
-            Edit
-          </Link>
-          <button onClick={() => onRemove(character.id)} className="text-red-500/80 hover:text-red-400">
-            Remove
-          </button>
-        </>
+        </div>
       }
     >
       <p
@@ -54,28 +78,6 @@ export function SortableCharacterRow({
         {characterInfoLine(character)}
       </p>
       <p className="text-xs text-slate-600">Lvl {character.level}</p>
-      {character.dndBeyondUrl && (
-        <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-          <a
-            href={character.dndBeyondUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 text-sky-400 hover:underline"
-          >
-            D&D Beyond ↗
-          </a>
-          <span className="text-slate-700">·</span>
-          {syncing ? (
-            <span className="text-sky-400">Syncing...</span>
-          ) : character.lastSyncedAt ? (
-            <span className="truncate text-slate-600">
-              Synced <SyncTimestamp iso={character.lastSyncedAt} />
-            </span>
-          ) : (
-            <span className="truncate text-amber-500">Not synced yet</span>
-          )}
-        </div>
-      )}
     </RosterRow>
   );
 }
