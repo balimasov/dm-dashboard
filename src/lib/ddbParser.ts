@@ -334,18 +334,29 @@ function computeAdvantages(mods: any[]): string[] {
 
 /**
  * Additional senses (Darkvision, Blindsight, Tremorsense, Truesight) appear as
- * modifiers keyed by `subType`, but the `type` field is inconsistent across
- * real character exports (`"set-base"` in one sample, `"sense"` in another)
- * — so both are accepted, keying only off the known `subType` names. When
- * more than one source grants the same sense (e.g. race + an item), the
- * larger range wins.
+ * modifiers keyed by `subType`, split across two distinct `type`s that must
+ * be combined differently:
+ *  - `"set-base"` — a flat grant (race, feat...); when more than one source
+ *    sets the same sense, the largest one wins (they're alternatives, not
+ *    stacking).
+ *  - `"sense"` — an *additive* bonus on top of an existing sense, e.g. the
+ *    Goggles of Night ("if you already have darkvision, increases its range
+ *    by 60 feet") or the Gloom Stalker's Umbral Sight. These stack with the
+ *    base grant instead of replacing it — treating them as another
+ *    max-candidate (as an earlier version of this code did) silently drops
+ *    the bonus whenever it's less-or-equal to the base range, e.g. an Elf's
+ *    innate 60 ft plus a 60 ft item bonus should read 120 ft, not 60 ft.
  */
 function computeSenses(mods: any[]): Sense[] {
   const senses: Sense[] = [];
   for (const subType of SENSE_SUBTYPES) {
-    const range = mods
-      .filter((m) => (m.type === "sense" || m.type === "set-base") && m.subType === subType && m.isGranted)
+    const base = mods
+      .filter((m) => m.type === "set-base" && m.subType === subType && m.isGranted)
       .reduce((max, m) => Math.max(max, m.value ?? 0), 0);
+    const bonus = mods
+      .filter((m) => m.type === "sense" && m.subType === subType && m.isGranted)
+      .reduce((sum, m) => sum + (m.value ?? 0), 0);
+    const range = base + bonus;
     if (range > 0) senses.push({ name: titleCase(subType), range });
   }
   return senses;
