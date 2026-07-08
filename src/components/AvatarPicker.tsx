@@ -105,7 +105,7 @@ export function AvatarPicker({
           onClick={() => setPendingImage(null)}
         >
           <div
-            className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4"
+            className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative h-64 w-full overflow-hidden rounded-md bg-slate-950">

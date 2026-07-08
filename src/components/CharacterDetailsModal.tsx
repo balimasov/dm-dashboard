@@ -301,7 +301,7 @@ export function CharacterDetailsModal({
       onClick={onClose}
     >
       <div
-        className="relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-black/40"
+        className="relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
         <StatusRail
