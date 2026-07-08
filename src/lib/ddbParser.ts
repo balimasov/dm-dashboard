@@ -60,6 +60,22 @@ const ABILITY_SUBTYPE: Record<keyof AbilityScores, string> = {
   cha: "charisma-score",
 };
 
+/**
+ * A whole-ability grant (e.g. a Changeling's advantage "on Charisma ability
+ * checks" — confirmed on a real export) is a single modifier keyed by the
+ * *ability*, not any one skill, so it never matches a per-skill subType like
+ * "deception" directly. Every skill under that ability (Deception,
+ * Intimidation, Performance, Persuasion for Charisma) needs to inherit it.
+ */
+const ABILITY_CHECK_SUBTYPE: Record<keyof AbilityScores, string> = {
+  str: "strength-ability-checks",
+  dex: "dexterity-ability-checks",
+  con: "constitution-ability-checks",
+  int: "intelligence-ability-checks",
+  wis: "wisdom-ability-checks",
+  cha: "charisma-ability-checks",
+};
+
 const CONDITION_LABELS: Record<number, string> = {
   1: "Blinded",
   2: "Charmed",
@@ -268,8 +284,13 @@ function computeSkillProficiencies(
       !proficient &&
       !expertise &&
       (jackOfAllTrades || mods.some((m) => m.type === "half-proficiency" && m.subType === name && m.isGranted));
-    const advMod = mods.find((m) => m.type === "advantage" && m.subType === name && m.isGranted);
-    const disadvMod = mods.find((m) => m.type === "disadvantage" && m.subType === name && m.isGranted);
+    const abilityCheckSubType = ABILITY_CHECK_SUBTYPE[SKILL_ABILITY[name]];
+    const advMod = mods.find(
+      (m) => m.type === "advantage" && (m.subType === name || m.subType === abilityCheckSubType) && m.isGranted
+    );
+    const disadvMod = mods.find(
+      (m) => m.type === "disadvantage" && (m.subType === name || m.subType === abilityCheckSubType) && m.isGranted
+    );
     const fromArmor = name === "stealth" && armorStealthDisadvantage;
     // A flat number (`value`) or "add this other ability's modifier"
     // (`statId`, e.g. a feature that adds Wisdom on top of Nature's normal
@@ -425,12 +446,35 @@ function computeClassSummary(data: any) {
  * conditional bonus like this currently applies (e.g. the Heavy-armor
  * restriction), the same flag Unarmored Defense's bonus relies on above.
  */
+/**
+ * A Monk's Unarmored Movement (2024: +10 ft at level 2, scaling up to +30 ft
+ * at 18, only while not wearing armor or wielding a shield) isn't exposed as
+ * a `type: "bonus"` modifier at all — confirmed on a real level 8 Monk
+ * export where `modifiers.*` had no "speed" entry whatsoever despite the
+ * feature being active, undercounting speed by the full 15 ft it should
+ * have added. The current value is already resolved for this character's
+ * level on the class feature's own `levelScale.fixedValue`, the same
+ * generic per-level-scaling field D&D Beyond attaches to any class feature
+ * that scales this way (rather than hardcoding the level breakpoints here).
+ */
+function computeUnarmoredMovementBonus(data: any): number {
+  const wearingArmorOrShield = (data.inventory ?? []).some(
+    (i: any) => i.equipped && i.definition?.filterType === "Armor"
+  );
+  if (wearingArmorOrShield) return 0;
+  for (const c of data.classes ?? []) {
+    const feature = (c.classFeatures ?? []).find((f: any) => f.definition?.name === "Unarmored Movement");
+    if (feature?.levelScale?.fixedValue) return feature.levelScale.fixedValue;
+  }
+  return 0;
+}
+
 function computeSpeed(data: any, mods: any[]): number {
   const base = data.race?.weightSpeeds?.normal?.walk ?? 30;
   const bonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "speed" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0), 0);
-  return base + bonus;
+  return base + bonus + computeUnarmoredMovementBonus(data);
 }
 
 /**
