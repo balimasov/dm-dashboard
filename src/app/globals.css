@@ -167,6 +167,15 @@ body {
    installed for just this one editor). */
 .notes-editor-content p {
   margin: 0;
+  /* ProseMirror inserts a `<br class="ProseMirror-trailingBreak">` into any
+     empty paragraph once mounted, specifically so it doesn't collapse to
+     zero height — the pre-mount static stand-in this editor briefly shows
+     (see `NotesEditor`) renders a plain empty `<p>` with no such `<br>`.
+     Without this, the stand-in's empty paragraph is shorter than the real
+     mounted one, and the box visibly grows the instant Tiptap takes over.
+     Matching the line-height here directly makes both versions the same
+     height regardless of whether the `<br>` is present. */
+  min-height: 1.25rem;
 }
 .notes-editor-content p + p {
   margin-top: 0.5em;

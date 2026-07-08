@@ -157,34 +157,34 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 space-y-2">
         <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
-          {linkedCharacters.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-              {lastSyncedAt && (
-                <span className="hidden whitespace-nowrap text-xs text-slate-500 sm:inline">
-                  Synced: <SyncTimestamp iso={lastSyncedAt} />
-                </span>
-              )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {linkedCharacters.length > 0 && lastSyncedAt && (
+            <span className="whitespace-nowrap text-xs text-slate-500">
+              Synced: <SyncTimestamp iso={lastSyncedAt} />
+            </span>
+          )}
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {linkedCharacters.length > 0 && (
               <button
                 onClick={handleSyncAll}
                 disabled={syncingAll}
-                className="min-w-[102px] rounded-lg bg-sky-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+                className="flex h-9 min-w-[102px] items-center justify-center rounded-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
               >
                 {syncingAll ? "Syncing..." : "Sync All"}
               </button>
+            )}
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Settings
+              </button>
+              <CampaignLogo campaign={campaignState} />
             </div>
-          )}
-          <div className="flex shrink-0 items-center gap-2">
-            <CampaignLogo campaign={campaignState} />
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-            >
-              Settings
-            </button>
           </div>
         </div>
       </div>
