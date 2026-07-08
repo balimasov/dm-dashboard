@@ -159,15 +159,13 @@ export function CreatureCard({
               {formatModifier(creature.initiativeBonus)}
             </IconStat>
           )}
-          {creature.languages && (
-            <IconStat
-              icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
-              label="Languages:"
-            >
-              {creature.languages}
-            </IconStat>
-          )}
+          <IconStat
+            icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
+            label="Languages:"
+          >
+            {creature.languages || "—"}
+          </IconStat>
         </div>
       </div>
 
