@@ -439,6 +439,18 @@ export function CharacterDetailsModal({
           </div>
         </div>
 
+        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. */}
+        {c.advantages.length > 0 && (
+          <div>
+            <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Advantages</h3>
+            <ul className="space-y-1 text-sm text-slate-300">
+              {c.advantages.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
         <DamageInfoList
           entries={[
