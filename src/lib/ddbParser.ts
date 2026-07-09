@@ -347,23 +347,67 @@ function computeSkillProficiencies(
 }
 
 /**
+ * `customDefenseAdjustments` (D&D Beyond's "Damage & Condition Adjustments"
+ * picker under Extras — resistances/immunities/vulnerabilities typed in
+ * manually rather than granted by a race/class/feat) is a completely
+ * separate array from `modifiers`, keyed by a numeric `adjustmentId` with no
+ * name anywhere in this endpoint's response and no public documentation of
+ * what the IDs mean. Reverse-engineered from real characters: `type: 2`
+ * entries are damage-type-based (as opposed to condition-based, which isn't
+ * modeled here — no confirmed examples yet), and the ID space is laid out as
+ * three 13-wide blocks matching the 13 official 5e damage types — IDs 1-13
+ * are Resistance, 14-26 Immunity, 27-39 Vulnerability. Confirmed against a
+ * real Sorcerer export ("Yorun") cross-checked with her actual D&D Beyond
+ * sheet: id 9 = Fire (Resistance), id 24 = Radiant (Immunity), id 36 =
+ * Lightning (Vulnerability) — the exact damage type for any other ID isn't
+ * confirmed yet, but the *category* (which of the three lists it belongs in)
+ * still resolves correctly from the block alone, so an unrecognized id shows
+ * up as "Custom" in the right list instead of silently not appearing at all.
+ */
+const CUSTOM_DAMAGE_TYPE_NAMES: Record<number, string> = {
+  9: "Fire",
+  24: "Radiant",
+  36: "Lightning",
+};
+
+function customDamageAdjustmentCategory(adjustmentId: number): "resistance" | "immunity" | "vulnerability" | undefined {
+  if (adjustmentId >= 1 && adjustmentId <= 13) return "resistance";
+  if (adjustmentId >= 14 && adjustmentId <= 26) return "immunity";
+  if (adjustmentId >= 27 && adjustmentId <= 39) return "vulnerability";
+  return undefined;
+}
+
+/**
  * D&D Beyond doesn't reliably distinguish damage resistances from condition
  * immunities in this endpoint (e.g. immunity to a *condition* like
  * magical-sleep shows up under the same `type: "immunity"` as a damage-type
  * immunity would) — both are surfaced here at face value, matching what the
  * app's Resistances/Immunities/Vulnerabilities section is meant to list.
  */
-function computeDamageModifiers(mods: any[]) {
+function computeDamageModifiers(mods: any[], customDefenseAdjustments: any[]) {
   function namesFor(type: string): string[] {
     const names = mods
       .filter((m) => m.type === type && m.isGranted && m.subType)
       .map((m) => titleCase(m.subType));
     return Array.from(new Set(names));
   }
+
+  const custom: Record<"resistance" | "immunity" | "vulnerability", string[]> = {
+    resistance: [],
+    immunity: [],
+    vulnerability: [],
+  };
+  for (const adj of customDefenseAdjustments ?? []) {
+    if (adj.type !== 2) continue;
+    const category = customDamageAdjustmentCategory(adj.adjustmentId);
+    if (!category) continue;
+    custom[category].push(CUSTOM_DAMAGE_TYPE_NAMES[adj.adjustmentId] ?? "Custom");
+  }
+
   return {
-    resistances: namesFor("resistance"),
-    immunities: namesFor("immunity"),
-    vulnerabilities: namesFor("vulnerability"),
+    resistances: Array.from(new Set([...namesFor("resistance"), ...custom.resistance])),
+    immunities: Array.from(new Set([...namesFor("immunity"), ...custom.immunity])),
+    vulnerabilities: Array.from(new Set([...namesFor("vulnerability"), ...custom.vulnerability])),
   };
 }
 
@@ -1691,7 +1735,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data), abilities),
-    ...computeDamageModifiers(mods),
+    ...computeDamageModifiers(mods, data.customDefenseAdjustments),
     advantages: computeAdvantages(mods),
     senses,
     inventory: computeInventory(data),
