@@ -193,7 +193,10 @@ export function CampaignFormModal({
           </form>
 
           {isEditing && (
-            <Section title="Characters" description="Add D&D Beyond character links to have them show up on the dashboard.">
+            <Section
+              title="Characters"
+              description="Add D&D Beyond character links to have them show up on the dashboard. The character's D&D Beyond sharing setting must be Public, or syncing will fail."
+            >
               <CampaignRosterEditor
                 campaignId={current.id}
                 initialCharacters={characters}
