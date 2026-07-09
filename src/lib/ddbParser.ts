@@ -582,11 +582,23 @@ function computePassiveSkill(abilityMod: number, profBonus: number, skill: strin
   // for any skill made proficient that way.
   const proficient = mods.some((m) => m.type === "proficiency" && m.subType === skill);
   const expert = mods.some((m) => m.type === "expertise" && m.subType === skill);
-  const profMultiplier = expert ? 2 : proficient ? 1 : 0;
+  // Jack of All Trades / half-proficiency — same detection as
+  // `computeSkillProficiencies` above: a blanket `subType: "ability-checks"`
+  // grant (e.g. Bard's Jack of All Trades) or a skill-specific one, only
+  // relevant when not already proficient/expert. Confirmed on a real Bard
+  // export that omitting this undercounted passive Perception/Investigation/
+  // Insight by exactly `Math.floor(profBonus / 2)`.
+  const halfProficient =
+    !proficient &&
+    !expert &&
+    mods.some(
+      (m) => m.type === "half-proficiency" && (m.subType === "ability-checks" || m.subType === skill) && m.isGranted
+    );
+  const profContribution = expert ? profBonus * 2 : proficient ? profBonus : halfProficient ? Math.floor(profBonus / 2) : 0;
   const flatBonus = mods
     .filter((m) => m.type === "bonus" && m.subType === `passive-${skill}` && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0), 0);
-  return 10 + abilityMod + profBonus * profMultiplier + flatBonus;
+  return 10 + abilityMod + profContribution + flatBonus;
 }
 
 /**
