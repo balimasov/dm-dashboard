@@ -352,49 +352,95 @@ function computeSkillProficiencies(
  * manually rather than granted by a race/class/feat) is a completely
  * separate array from `modifiers`, keyed by a numeric `adjustmentId` with no
  * name and no category anywhere in this endpoint's response, and no public
- * documentation of what the IDs mean — `type: 2` just marks it as
- * damage-type-based (condition-based adjustments aren't modeled here; no
- * confirmed examples yet). There is NO arithmetic relationship between an
- * id's category and its number — confirmed by cross-referencing a real
- * character's raw export against her actual D&D Beyond sheet both before
- * and after she added every entry in her Resistances picker: e.g. Radiant
- * is id 8 as a resistance but id 24 as an immunity, and the resistance list
- * alone spans everything from 1 to 93+ (an ever-growing catalog of specific
- * items/sources, not just the 13 base damage types) — so an earlier version
- * of this code that guessed category from three ID ranges was simply wrong
- * (e.g. it would've called id 47 unrecognized, or worse, misfiled some
- * unconfirmed id in the wrong list). Each id below is individually
- * confirmed; anything not in this table is skipped rather than guessed.
+ * documentation of what the IDs mean. There is NO arithmetic relationship
+ * between an id's category and its number, confirmed by cross-referencing a
+ * real character's raw export against her actual D&D Beyond sheet across
+ * three rounds (adding every entry in her Resistances picker, then every
+ * entry in her Immunities picker): e.g. Radiant is id 8 as a resistance but
+ * id 24 as an immunity, and the basic 12 damage types shift by a consistent
+ * +16 between the Resistance and Immunity pickers (1→17, 2→18, ...) — except
+ * Force, which doesn't (47→48) — so nothing here can be derived by formula,
+ * only confirmed one id at a time.
+ *
+ * `type` splits the id space in two, each independently numbered: `type: 2`
+ * is damage-type-based (id 1 = "Bludgeoning" resistance); `type: 1` is
+ * condition-based (id 1 = "Blinded" immunity — ids 1-15 are exactly the 15
+ * standard 5e conditions in PHB order). A plain `adjustmentId` lookup would
+ * collide across these two id spaces, so this is keyed by `type` first.
+ * Condition-based entries have only ever been observed as Immunity — D&D
+ * Beyond doesn't offer a "resistant/vulnerable to a condition" picker.
+ *
+ * Every id below is individually confirmed against a real character; an id
+ * not in this table is skipped rather than guessed.
  */
-const CUSTOM_DEFENSE_ADJUSTMENTS: Record<number, { name: string; category: "resistance" | "immunity" | "vulnerability" }> = {
-  1: { name: "Bludgeoning", category: "resistance" },
-  2: { name: "Piercing", category: "resistance" },
-  3: { name: "Slashing", category: "resistance" },
-  4: { name: "Lightning", category: "resistance" },
-  5: { name: "Thunder", category: "resistance" },
-  6: { name: "Poison", category: "resistance" },
-  7: { name: "Cold", category: "resistance" },
-  8: { name: "Radiant", category: "resistance" },
-  9: { name: "Fire", category: "resistance" },
-  10: { name: "Necrotic", category: "resistance" },
-  11: { name: "Acid", category: "resistance" },
-  12: { name: "Psychic", category: "resistance" },
-  24: { name: "Radiant", category: "immunity" },
-  36: { name: "Lightning", category: "vulnerability" },
-  47: { name: "Force", category: "resistance" },
-  51: { name: "Ranged Attacks", category: "resistance" },
-  52: { name: "Damage Dealt By Traps", category: "resistance" },
-  54: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
-  57: { name: "Damage from Spells", category: "resistance" },
-  65: { name: "Animated Breath (Acid, Cold, Fire, Lightning, or Poison)", category: "resistance" },
-  66: { name: "Psychic (Ruidium Armor)", category: "resistance" },
-  68: { name: "Acid, Cold, Fire, Lightning, or Poison (choice)", category: "resistance" },
-  69: { name: "Lightning (Darksteel Greataxe)", category: "resistance" },
-  77: { name: "Slashing from Nonmagical Attacks", category: "resistance" },
-  78: { name: "Piercing from Nonmagical Attacks", category: "resistance" },
-  81: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
-  92: { name: "Necrotic (Emerald Fulcrum Lens)", category: "resistance" },
-  93: { name: "Sneak Attack / Critical Hit Extra Damage", category: "resistance" },
+const CUSTOM_DEFENSE_ADJUSTMENTS: Record<
+  number,
+  Record<number, { name: string; category: "resistance" | "immunity" | "vulnerability" }>
+> = {
+  // type 1 — condition-based (the 15 standard 5e conditions, all Immunity).
+  1: {
+    1: { name: "Blinded", category: "immunity" },
+    2: { name: "Charmed", category: "immunity" },
+    3: { name: "Deafened", category: "immunity" },
+    4: { name: "Exhaustion", category: "immunity" },
+    5: { name: "Frightened", category: "immunity" },
+    6: { name: "Grappled", category: "immunity" },
+    7: { name: "Incapacitated", category: "immunity" },
+    8: { name: "Invisible", category: "immunity" },
+    9: { name: "Paralyzed", category: "immunity" },
+    10: { name: "Petrified", category: "immunity" },
+    11: { name: "Poisoned", category: "immunity" },
+    12: { name: "Prone", category: "immunity" },
+    13: { name: "Restrained", category: "immunity" },
+    14: { name: "Stunned", category: "immunity" },
+    15: { name: "Unconscious", category: "immunity" },
+  },
+  // type 2 — damage-type-based.
+  2: {
+    1: { name: "Bludgeoning", category: "resistance" },
+    2: { name: "Piercing", category: "resistance" },
+    3: { name: "Slashing", category: "resistance" },
+    4: { name: "Lightning", category: "resistance" },
+    5: { name: "Thunder", category: "resistance" },
+    6: { name: "Poison", category: "resistance" },
+    7: { name: "Cold", category: "resistance" },
+    8: { name: "Radiant", category: "resistance" },
+    9: { name: "Fire", category: "resistance" },
+    10: { name: "Necrotic", category: "resistance" },
+    11: { name: "Acid", category: "resistance" },
+    12: { name: "Psychic", category: "resistance" },
+    17: { name: "Bludgeoning", category: "immunity" },
+    18: { name: "Piercing", category: "immunity" },
+    19: { name: "Slashing", category: "immunity" },
+    20: { name: "Lightning", category: "immunity" },
+    21: { name: "Thunder", category: "immunity" },
+    22: { name: "Poison", category: "immunity" },
+    23: { name: "Cold", category: "immunity" },
+    24: { name: "Radiant", category: "immunity" },
+    25: { name: "Fire", category: "immunity" },
+    26: { name: "Necrotic", category: "immunity" },
+    27: { name: "Acid", category: "immunity" },
+    28: { name: "Psychic", category: "immunity" },
+    36: { name: "Lightning", category: "vulnerability" },
+    47: { name: "Force", category: "resistance" },
+    48: { name: "Force", category: "immunity" },
+    51: { name: "Ranged Attacks", category: "resistance" },
+    52: { name: "Damage Dealt By Traps", category: "resistance" },
+    54: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
+    57: { name: "Damage from Spells", category: "resistance" },
+    63: { name: "Petrified (Aberrant Armor Only)", category: "immunity" },
+    65: { name: "Animated Breath (Acid, Cold, Fire, Lightning, or Poison)", category: "resistance" },
+    66: { name: "Psychic (Ruidium Armor)", category: "resistance" },
+    68: { name: "Acid, Cold, Fire, Lightning, or Poison (choice)", category: "resistance" },
+    69: { name: "Lightning (Darksteel Greataxe)", category: "resistance" },
+    74: { name: "Bludgeoning from Nonmagical Attacks", category: "immunity" },
+    77: { name: "Slashing from Nonmagical Attacks", category: "resistance" },
+    78: { name: "Piercing from Nonmagical Attacks", category: "resistance" },
+    81: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
+    84: { name: "Bludgeoning Damage from Falling", category: "immunity" },
+    92: { name: "Necrotic (Emerald Fulcrum Lens)", category: "resistance" },
+    93: { name: "Sneak Attack / Critical Hit Extra Damage", category: "resistance" },
+  },
 };
 
 /**
@@ -418,8 +464,7 @@ function computeDamageModifiers(mods: any[], customDefenseAdjustments: any[]) {
     vulnerability: [],
   };
   for (const adj of customDefenseAdjustments ?? []) {
-    if (adj.type !== 2) continue;
-    const known = CUSTOM_DEFENSE_ADJUSTMENTS[adj.adjustmentId];
+    const known = CUSTOM_DEFENSE_ADJUSTMENTS[adj.type]?.[adj.adjustmentId];
     if (!known) continue;
     custom[known.category].push(known.name);
   }
