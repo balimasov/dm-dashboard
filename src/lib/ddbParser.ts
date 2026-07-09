@@ -1060,18 +1060,15 @@ function computeResources(data: any, abilities: AbilityScores, profBonus: number
       if (resource) resources.push(resource);
     });
 
-  (data.pactMagic ?? []).forEach((pact: any) => {
-    const max = (pact.available ?? 0) + (pact.used ?? 0);
-    if (max > 0) {
-      resources.push({
-        id: `pact-${pact.level}`,
-        name: `Pact Magic Slot L${pact.level}`,
-        current: pact.available ?? 0,
-        max,
-        source: "Pact Magic",
-        recovery: "short-rest",
-      });
-    }
+  computePactMagicSlots(data).forEach((slot) => {
+    resources.push({
+      id: `pact-${slot.level}`,
+      name: `Pact Magic Slot L${slot.level}`,
+      current: slot.current,
+      max: slot.max,
+      source: "Pact Magic",
+      recovery: "short-rest",
+    });
   });
 
   return dedupeResourcesByName(resources);
@@ -1519,7 +1516,7 @@ function computeSpellSlots(data: any): SpellSlotLevel[] {
       c.definition?.name !== "Warlock" &&
       Array.isArray(c.definition?.spellRules?.levelSpellSlots)
   );
-  if (casterClasses.length === 0) return [];
+  if (casterClasses.length === 0) return computePactMagicSlots(data);
 
   // The divisor only applies when actually combining *multiple* casting
   // classes — a solo Artificer (divisor 2, since that's its contribution
@@ -1552,7 +1549,44 @@ function computeSpellSlots(data: any): SpellSlotLevel[] {
       slots.push({ level, current: Math.max(0, max - used), max });
     }
   });
-  return slots;
+  return [...slots, ...computePactMagicSlots(data)];
+}
+
+/**
+ * Warlocks don't use the normal per-level spell slot pool at all — Pact
+ * Magic is a single, separate pool that's always at the character's current
+ * max slot level (e.g. two 3rd-level slots at character level 6, not a
+ * blend of 1st/2nd/3rd like a full caster). D&D Beyond exposes the Warlock
+ * class's own progression through the exact same `spellRules.levelSpellSlots`
+ * table read above, just scoped to the Warlock class/level alone rather than
+ * combined with any other class. We deliberately don't read
+ * `data.pactMagic[].available` for the same reason `spellSlots[].available`
+ * isn't trusted anywhere else in this file — it's 0 in every real export;
+ * only `used` against the table is reliable. The table only ever has one
+ * non-zero level per row (the current pact slot level), so this always
+ * returns at most one entry.
+ */
+function computePactMagicSlots(data: any): SpellSlotLevel[] {
+  const warlock = (data.classes ?? []).find(
+    (c: any) => c.definition?.name === "Warlock" && Array.isArray(c.definition?.spellRules?.levelSpellSlots)
+  );
+  if (!warlock) return [];
+  const table: number[][] = warlock.definition.spellRules.levelSpellSlots;
+  const charLevel = Math.min(warlock.level ?? 0, table.length - 1);
+  const maxes: number[] = table[charLevel] ?? [];
+
+  let slotLevel = 0;
+  let max = 0;
+  maxes.forEach((count, idx) => {
+    if (count > 0) {
+      slotLevel = idx + 1;
+      max = count;
+    }
+  });
+  if (max === 0) return [];
+
+  const used = (data.pactMagic ?? []).find((p: any) => p.level === slotLevel)?.used ?? 0;
+  return [{ level: slotLevel, current: Math.max(0, max - used), max }];
 }
 
 /**
