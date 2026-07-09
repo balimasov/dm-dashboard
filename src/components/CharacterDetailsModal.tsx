@@ -445,7 +445,11 @@ export function CharacterDetailsModal({
             <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Advantages</h3>
             <ul className="space-y-1 text-sm text-slate-300">
               {c.advantages.map((a) => (
-                <li key={a}>{a}</li>
+                // The section header already says "Advantages" — repeating
+                // "Advantage: " on every plain-advantage line is redundant.
+                // "Disadvantage: " stays, since that's the exception worth
+                // calling out against the section's own default.
+                <li key={a}>{a.replace(/^Advantage: /, "")}</li>
               ))}
             </ul>
           </div>
