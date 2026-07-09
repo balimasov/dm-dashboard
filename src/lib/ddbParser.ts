@@ -351,31 +351,51 @@ function computeSkillProficiencies(
  * picker under Extras — resistances/immunities/vulnerabilities typed in
  * manually rather than granted by a race/class/feat) is a completely
  * separate array from `modifiers`, keyed by a numeric `adjustmentId` with no
- * name anywhere in this endpoint's response and no public documentation of
- * what the IDs mean. Reverse-engineered from real characters: `type: 2`
- * entries are damage-type-based (as opposed to condition-based, which isn't
- * modeled here — no confirmed examples yet), and the ID space is laid out as
- * three 13-wide blocks matching the 13 official 5e damage types — IDs 1-13
- * are Resistance, 14-26 Immunity, 27-39 Vulnerability. Confirmed against a
- * real Sorcerer export ("Yorun") cross-checked with her actual D&D Beyond
- * sheet: id 9 = Fire (Resistance), id 24 = Radiant (Immunity), id 36 =
- * Lightning (Vulnerability) — the exact damage type for any other ID isn't
- * confirmed yet, but the *category* (which of the three lists it belongs in)
- * still resolves correctly from the block alone, so an unrecognized id shows
- * up as "Custom" in the right list instead of silently not appearing at all.
+ * name and no category anywhere in this endpoint's response, and no public
+ * documentation of what the IDs mean — `type: 2` just marks it as
+ * damage-type-based (condition-based adjustments aren't modeled here; no
+ * confirmed examples yet). There is NO arithmetic relationship between an
+ * id's category and its number — confirmed by cross-referencing a real
+ * character's raw export against her actual D&D Beyond sheet both before
+ * and after she added every entry in her Resistances picker: e.g. Radiant
+ * is id 8 as a resistance but id 24 as an immunity, and the resistance list
+ * alone spans everything from 1 to 93+ (an ever-growing catalog of specific
+ * items/sources, not just the 13 base damage types) — so an earlier version
+ * of this code that guessed category from three ID ranges was simply wrong
+ * (e.g. it would've called id 47 unrecognized, or worse, misfiled some
+ * unconfirmed id in the wrong list). Each id below is individually
+ * confirmed; anything not in this table is skipped rather than guessed.
  */
-const CUSTOM_DAMAGE_TYPE_NAMES: Record<number, string> = {
-  9: "Fire",
-  24: "Radiant",
-  36: "Lightning",
+const CUSTOM_DEFENSE_ADJUSTMENTS: Record<number, { name: string; category: "resistance" | "immunity" | "vulnerability" }> = {
+  1: { name: "Bludgeoning", category: "resistance" },
+  2: { name: "Piercing", category: "resistance" },
+  3: { name: "Slashing", category: "resistance" },
+  4: { name: "Lightning", category: "resistance" },
+  5: { name: "Thunder", category: "resistance" },
+  6: { name: "Poison", category: "resistance" },
+  7: { name: "Cold", category: "resistance" },
+  8: { name: "Radiant", category: "resistance" },
+  9: { name: "Fire", category: "resistance" },
+  10: { name: "Necrotic", category: "resistance" },
+  11: { name: "Acid", category: "resistance" },
+  12: { name: "Psychic", category: "resistance" },
+  24: { name: "Radiant", category: "immunity" },
+  36: { name: "Lightning", category: "vulnerability" },
+  47: { name: "Force", category: "resistance" },
+  51: { name: "Ranged Attacks", category: "resistance" },
+  52: { name: "Damage Dealt By Traps", category: "resistance" },
+  54: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
+  57: { name: "Damage from Spells", category: "resistance" },
+  65: { name: "Animated Breath (Acid, Cold, Fire, Lightning, or Poison)", category: "resistance" },
+  66: { name: "Psychic (Ruidium Armor)", category: "resistance" },
+  68: { name: "Acid, Cold, Fire, Lightning, or Poison (choice)", category: "resistance" },
+  69: { name: "Lightning (Darksteel Greataxe)", category: "resistance" },
+  77: { name: "Slashing from Nonmagical Attacks", category: "resistance" },
+  78: { name: "Piercing from Nonmagical Attacks", category: "resistance" },
+  81: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
+  92: { name: "Necrotic (Emerald Fulcrum Lens)", category: "resistance" },
+  93: { name: "Sneak Attack / Critical Hit Extra Damage", category: "resistance" },
 };
-
-function customDamageAdjustmentCategory(adjustmentId: number): "resistance" | "immunity" | "vulnerability" | undefined {
-  if (adjustmentId >= 1 && adjustmentId <= 13) return "resistance";
-  if (adjustmentId >= 14 && adjustmentId <= 26) return "immunity";
-  if (adjustmentId >= 27 && adjustmentId <= 39) return "vulnerability";
-  return undefined;
-}
 
 /**
  * D&D Beyond doesn't reliably distinguish damage resistances from condition
@@ -399,9 +419,9 @@ function computeDamageModifiers(mods: any[], customDefenseAdjustments: any[]) {
   };
   for (const adj of customDefenseAdjustments ?? []) {
     if (adj.type !== 2) continue;
-    const category = customDamageAdjustmentCategory(adj.adjustmentId);
-    if (!category) continue;
-    custom[category].push(CUSTOM_DAMAGE_TYPE_NAMES[adj.adjustmentId] ?? "Custom");
+    const known = CUSTOM_DEFENSE_ADJUSTMENTS[adj.adjustmentId];
+    if (!known) continue;
+    custom[known.category].push(known.name);
   }
 
   return {
