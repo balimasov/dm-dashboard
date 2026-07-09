@@ -589,7 +589,9 @@ export function CharacterHeader({
       </div>
       <span
         title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
-        className={`shrink-0 text-3xl leading-none ${c.heroicInspiration ? "text-amber-400" : "text-slate-700"}`}
+        className={`shrink-0 text-3xl leading-none ${
+          c.heroicInspiration ? "inspiration-star text-amber-400" : "text-slate-700"
+        }`}
       >
         ★
       </span>

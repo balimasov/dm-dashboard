@@ -120,6 +120,23 @@ body {
   animation: status-glow-red 2s ease-in-out infinite;
 }
 
+/* Heroic Inspiration star — a minimal pulsing glow (text-shadow, not the
+   box-shadow ring used elsewhere, since this is a bare glyph with no card
+   edge to trace) so an available inspiration point catches the eye instead
+   of blending into the rest of the header. */
+@keyframes inspiration-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 11px rgba(251, 191, 36, 0.95);
+  }
+}
+.inspiration-star {
+  animation: inspiration-glow 2s ease-in-out infinite;
+}
+
 /* Conditions badges get a per-condition color (computed from the condition
    name, see `conditionHue` in CharacterCard.tsx) instead of one fixed hue —
    the glow reads the four --glow-N custom properties the badge sets inline
