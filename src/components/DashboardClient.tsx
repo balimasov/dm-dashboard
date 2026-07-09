@@ -10,6 +10,7 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
+import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -173,13 +174,7 @@ export function DashboardClient({
                   Synced: <SyncTimestamp iso={lastSyncedAt} />
                 </span>
               )}
-              <button
-                onClick={handleSyncAll}
-                disabled={syncingAll}
-                className="flex h-9 min-w-[102px] items-center justify-center rounded-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
-              >
-                {syncingAll ? "Syncing..." : "Sync All"}
-              </button>
+              <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
             </>
           )}
           <div className="flex shrink-0 items-center gap-2">
