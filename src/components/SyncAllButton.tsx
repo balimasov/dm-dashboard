@@ -79,9 +79,17 @@ export function SyncAllButton({
       <button
         onClick={onSync}
         disabled={syncing}
-        className="flex h-9 min-w-[102px] items-center justify-center rounded-l-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+        title={autoSyncMinutes > 0 ? `Sync All (auto-syncing every ${autoSyncMinutes} min)` : "Sync All"}
+        className="flex h-9 min-w-[102px] items-center justify-center gap-1.5 rounded-l-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
       >
-        {syncing ? "Syncing..." : "Sync All"}
+        {syncing ? (
+          "Syncing..."
+        ) : (
+          <>
+            Sync All
+            {autoSyncMinutes > 0 && <span className="font-normal text-amber-200">· {autoSyncMinutes}m</span>}
+          </>
+        )}
       </button>
       <button
         type="button"
