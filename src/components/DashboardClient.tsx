@@ -235,8 +235,7 @@ export function DashboardClient({
 
       <CollapsibleSection title="Creatures" storageKey="dm-dashboard-creatures-open" initialOpen={initialOpen.creatures}>
         <p className="mb-4 px-3 text-sm text-slate-500">
-          Companions and summons — mounts, Wild Shape forms, familiars, and the like. Add or edit them from
-          Settings.
+          Companions and summons — mounts, Wild Shape forms, familiars, and the like.
         </p>
         {creatures.length === 0 ? (
           <EmptyRosterState message="No creatures yet." onOpenSettings={() => setSettingsOpen(true)} />

@@ -946,7 +946,9 @@ export function CharacterCard({
       {/* Spell slots */}
       {(c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Spell Slots</h3>
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">
+            Spell Slots{c.className.includes("Warlock") ? " (Pact)" : ""}
+          </h3>
           <div className="space-y-1">
             {c.spellSlots
               .slice()
