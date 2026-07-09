@@ -1425,7 +1425,14 @@ function computeFeatures(
  */
 const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
-function computeSpells(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): KnownSpell[] {
+function computeSpells(
+  data: any,
+  abilities: AbilityScores,
+  profBonus: number,
+  level: number,
+  speed: number,
+  spellSlots: SpellSlotLevel[]
+): KnownSpell[] {
   const spells: KnownSpell[] = [];
   const seenKeys = new Set<string>();
 
@@ -1434,6 +1441,17 @@ function computeSpells(data: any, abilities: AbilityScores, profBonus: number, l
     const name = (df?.name || "").trim().toLowerCase();
     if (!name) return;
     const charges = computeLimitedUseCharges(entry?.limitedUse, abilities, profBonus);
+    // An entry with `usesSpellSlot: true` and no charge pool of its own means
+    // "cast this using one of your normal spell slots" — meaningless for a
+    // character with no spell slots at all (e.g. a non-caster race granted
+    // an innate spell like Darkness that D&D Beyond also lists a
+    // spell-slot-cast variant of, alongside the 1/day charge variant).
+    // Confirmed on a real non-caster Fighter export ("Alor"): without this
+    // check, the card offered a "cast as a spell" option that could never
+    // actually be used. At-will entries (`usesSpellSlot: false`, also no
+    // charges — e.g. Dancing Lights) are unaffected, since they never needed
+    // a slot to begin with.
+    if (entry?.usesSpellSlot && spellSlots.length === 0) return;
     // Keyed on name *and* casting mode, not name alone — a free-cast/charge
     // entry and a spell-slot entry for the same spell are different modes to
     // show separately, but two identical-mode entries (e.g. the same known
@@ -1634,6 +1652,7 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
   const speed = computeSpeed(data, mods);
   const resources = computeResources(data, abilities, profBonus, level, speed);
   const senses = computeSenses(mods);
+  const spellSlots = computeSpellSlots(data);
 
   return {
     ...existing,
@@ -1666,9 +1685,9 @@ export function parseDdbCharacter(rawResponse: any, existing: Character): Charac
     },
     stats: abilities,
     resources,
-    spellSlots: computeSpellSlots(data),
+    spellSlots,
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
-    knownSpells: computeSpells(data, abilities, profBonus, level, speed),
+    knownSpells: computeSpells(data, abilities, profBonus, level, speed, spellSlots),
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data), abilities),
