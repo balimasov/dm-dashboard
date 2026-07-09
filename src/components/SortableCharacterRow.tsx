@@ -36,7 +36,13 @@ export function SortableCharacterRow({
             <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
               Edit
             </Link>
-            <button onClick={() => onRemove(character.id)} className="text-red-500/80 hover:text-red-400">
+            <button
+              onClick={() => {
+                const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
+                if (confirmed) onRemove(character.id);
+              }}
+              className="text-red-500/80 hover:text-red-400"
+            >
               Remove
             </button>
           </div>

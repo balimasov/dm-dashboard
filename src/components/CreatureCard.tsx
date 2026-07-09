@@ -287,7 +287,10 @@ export function CreatureCard({
           </Link>
           <button
             type="button"
-            onClick={() => onRemove(creature.id)}
+            onClick={() => {
+              const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
+              if (confirmed) onRemove(creature.id);
+            }}
             className="text-red-500/80 hover:text-red-400"
           >
             Remove

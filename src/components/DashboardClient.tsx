@@ -178,6 +178,13 @@ export function DashboardClient({
             </>
           )}
           <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={`/api/campaigns/${campaign.id}/export`}
+              title="Download this campaign (and its characters/creatures) as JSON"
+              className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
+            >
+              Export
+            </a>
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}

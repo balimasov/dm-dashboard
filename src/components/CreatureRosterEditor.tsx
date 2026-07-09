@@ -209,7 +209,14 @@ function CreatureRow({
           <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
             Edit
           </Link>
-          <button type="button" onClick={() => onRemove(creature.id)} className="text-red-500/80 hover:text-red-400">
+          <button
+            type="button"
+            onClick={() => {
+              const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
+              if (confirmed) onRemove(creature.id);
+            }}
+            className="text-red-500/80 hover:text-red-400"
+          >
             Remove
           </button>
         </>

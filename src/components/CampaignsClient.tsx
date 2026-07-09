@@ -47,6 +47,13 @@ function CampaignRow({
           {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
         </p>
       </div>
+      <a
+        href={`/api/campaigns/${campaign.id}/export`}
+        title="Download this campaign (and its characters/creatures) as JSON"
+        className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+      >
+        Export
+      </a>
       <button
         type="button"
         onClick={() => onEdit(campaign)}
