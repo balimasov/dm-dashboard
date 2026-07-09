@@ -355,12 +355,15 @@ function computeSkillProficiencies(
  * documentation of what the IDs mean. There is NO arithmetic relationship
  * between an id's category and its number, confirmed by cross-referencing a
  * real character's raw export against her actual D&D Beyond sheet across
- * three rounds (adding every entry in her Resistances picker, then every
- * entry in her Immunities picker): e.g. Radiant is id 8 as a resistance but
- * id 24 as an immunity, and the basic 12 damage types shift by a consistent
- * +16 between the Resistance and Immunity pickers (1→17, 2→18, ...) — except
- * Force, which doesn't (47→48) — so nothing here can be derived by formula,
- * only confirmed one id at a time.
+ * four rounds (adding every entry in her Resistances picker, then every
+ * entry in her Immunities picker, then every entry in her Vulnerabilities
+ * picker): e.g. Radiant is id 8 as a resistance but id 24 as an immunity,
+ * and the basic 12 damage types shift by a consistent +16 between the
+ * Resistance and Immunity pickers (1→17, 2→18, ...) and +32 between
+ * Resistance and Vulnerability (1→33, 2→34, ...) — except Force, which
+ * follows neither offset (47 resist → 48 immune → 49 vulnerable, +1 each
+ * time instead) — so nothing here can be derived by formula, only confirmed
+ * one id at a time.
  *
  * `type` splits the id space in two, each independently numbered: `type: 2`
  * is damage-type-based (id 1 = "Bludgeoning" resistance); `type: 1` is
@@ -421,14 +424,27 @@ const CUSTOM_DEFENSE_ADJUSTMENTS: Record<
     26: { name: "Necrotic", category: "immunity" },
     27: { name: "Acid", category: "immunity" },
     28: { name: "Psychic", category: "immunity" },
+    33: { name: "Bludgeoning", category: "vulnerability" },
+    34: { name: "Piercing", category: "vulnerability" },
+    35: { name: "Slashing", category: "vulnerability" },
     36: { name: "Lightning", category: "vulnerability" },
+    37: { name: "Thunder", category: "vulnerability" },
+    38: { name: "Poison", category: "vulnerability" },
+    39: { name: "Cold", category: "vulnerability" },
+    40: { name: "Radiant", category: "vulnerability" },
+    41: { name: "Fire", category: "vulnerability" },
+    42: { name: "Necrotic", category: "vulnerability" },
+    43: { name: "Acid", category: "vulnerability" },
+    44: { name: "Psychic", category: "vulnerability" },
     47: { name: "Force", category: "resistance" },
     48: { name: "Force", category: "immunity" },
+    49: { name: "Force", category: "vulnerability" },
     51: { name: "Ranged Attacks", category: "resistance" },
     52: { name: "Damage Dealt By Traps", category: "resistance" },
     54: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
     57: { name: "Damage from Spells", category: "resistance" },
     63: { name: "Petrified (Aberrant Armor Only)", category: "immunity" },
+    64: { name: "Slashing from a Vorpal Sword", category: "vulnerability" },
     65: { name: "Animated Breath (Acid, Cold, Fire, Lightning, or Poison)", category: "resistance" },
     66: { name: "Psychic (Ruidium Armor)", category: "resistance" },
     68: { name: "Acid, Cold, Fire, Lightning, or Poison (choice)", category: "resistance" },
@@ -438,6 +454,7 @@ const CUSTOM_DEFENSE_ADJUSTMENTS: Record<
     78: { name: "Piercing from Nonmagical Attacks", category: "resistance" },
     81: { name: "Bludgeoning from Nonmagical Attacks", category: "resistance" },
     84: { name: "Bludgeoning Damage from Falling", category: "immunity" },
+    87: { name: "Piercing from Weapons Wielded by Creatures under Bless", category: "vulnerability" },
     92: { name: "Necrotic (Emerald Fulcrum Lens)", category: "resistance" },
     93: { name: "Sneak Attack / Critical Hit Extra Damage", category: "resistance" },
   },
