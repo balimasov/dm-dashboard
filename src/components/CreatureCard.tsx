@@ -19,8 +19,8 @@ import {
   parseCreatureSenses,
   parseCreatureSkills,
 } from "@/lib/creatureStatText";
-import { FlaggableRow } from "./CharacterDetailsModal";
 import { DamageInfoList } from "./ui/DamageInfoList";
+import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";

@@ -12,6 +12,16 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.71.2] - 2026-07-10
+
+### Changed
+- `FlaggableRow`/`FlameToggle`/`FlameIcon` винесені з `CharacterDetailsModal.tsx`
+  в `src/components/ui/FlaggableRow.tsx` — `CreatureCard.tsx` більше не
+  імпортує їх крізь модалку персонажа (той самий cross-import, який минулого
+  разу прибрали для решти спільних UI-примітивів `CharacterCard.tsx`).
+- README оновлено під поточний вигляд продукту (мультикампанії, Creatures/
+  бестіарій, Settings-модалка замість старої сторінки `/settings`).
+
 ## [0.71.1] - 2026-07-10
 
 ### Changed
