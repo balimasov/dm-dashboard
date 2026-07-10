@@ -600,15 +600,18 @@ export function characterInfoLine(character: Character): string {
  * Formats an ISO timestamp using the viewer's own local timezone (not the
  * server's) — this app is used from wherever the DM happens to be, so the
  * displayed time has to track the browser's real zone rather than a fixed
- * one. `SyncTimestamp` renders nothing until mounted in the browser to avoid
- * a server/client hydration mismatch (the server can't know the viewer's
- * zone), then fills in the real value. Omits the year (e.g. "5 Jul, 14:32")
- * — this is always a recent sync, so the year is dead weight that's a
- * common culprit for text overflow next to the header's sync button on
- * narrow mobile viewports.
+ * one. `timeZone` lets `SyncTimestamp` force a deterministic zone (UTC) for
+ * its very first render, matching what the server rendered, before
+ * correcting to the real local zone right after mounting — omitted, this
+ * defaults to the runtime's own ambient zone (the browser's real one, once
+ * called client-side). Omits the year (e.g. "5 Jul, 14:32") — this is
+ * always a recent sync, so the year is dead weight that's a common culprit
+ * for text overflow next to the header's sync button on narrow mobile
+ * viewports.
  */
-export function formatSyncTimestamp(iso: string): string {
+export function formatSyncTimestamp(iso: string, timeZone?: string): string {
   return new Date(iso).toLocaleString("en-GB", {
+    ...(timeZone ? { timeZone } : {}),
     day: "numeric",
     month: "short",
     hour: "2-digit",
