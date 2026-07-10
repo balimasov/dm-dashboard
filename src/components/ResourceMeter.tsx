@@ -19,12 +19,12 @@ export function DotMeter({
     <span className="flex items-center gap-1">
       {Array.from({ length: max }).map((_, i) => {
         const filled = i < current;
-        const dot = (
-          <span
-            className={`h-2.5 w-2.5 rounded-full border ${filled ? `${colorClass} border-transparent` : "border-slate-600"}`}
-          />
-        );
-        return onSetCount ? (
+        const dotClassName = `h-2.5 w-2.5 rounded-full border ${filled ? `${colorClass} border-transparent` : "border-slate-600"}`;
+        // A dot only sizes correctly (w-2.5/h-2.5 apply) as a *direct* flex child — nesting it one
+        // level deeper inside a plain (non-flex) wrapper collapses it back to an inline box, where
+        // width/height are ignored and it renders as a thin vertical sliver instead of a circle.
+        if (!onSetCount) return <span key={i} className={dotClassName} />;
+        return (
           <button
             key={i}
             type="button"
@@ -32,10 +32,8 @@ export function DotMeter({
             onClick={() => onSetCount(current === i + 1 ? i : i + 1)}
             className="flex h-4 w-4 -m-[3px] items-center justify-center rounded-full hover:bg-slate-700/60"
           >
-            {dot}
+            <span className={dotClassName} />
           </button>
-        ) : (
-          <span key={i}>{dot}</span>
         );
       })}
     </span>
