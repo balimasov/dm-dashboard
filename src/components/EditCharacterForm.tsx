@@ -387,6 +387,31 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
                 }
               />
             </Field>
+            {/* Only ever populated by a D&D Beyond sync while the character was at 0 HP — there's
+                no way to record rolls made live at the table otherwise, so these two fields are
+                always editable here regardless of current HP. */}
+            <Field label="Death Save Successes">
+              <NumberInput
+                min={0}
+                max={3}
+                className={inputCls}
+                value={draft.combat.deathSaves?.successes ?? 0}
+                onChange={(n) =>
+                  setCombat("deathSaves", { failures: draft.combat.deathSaves?.failures ?? 0, successes: n })
+                }
+              />
+            </Field>
+            <Field label="Death Save Failures">
+              <NumberInput
+                min={0}
+                max={3}
+                className={inputCls}
+                value={draft.combat.deathSaves?.failures ?? 0}
+                onChange={(n) =>
+                  setCombat("deathSaves", { successes: draft.combat.deathSaves?.successes ?? 0, failures: n })
+                }
+              />
+            </Field>
           </div>
         </section>
 
