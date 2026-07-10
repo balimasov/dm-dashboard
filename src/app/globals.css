@@ -79,51 +79,87 @@ body {
   background-color: rgba(148, 163, 184, 0.55);
 }
 
+/* One pulsing box-shadow keyframe shared by every glowing ring in the app
+   (the concentrating-card border, and the Exhaustion/overflow/per-condition
+   status badges) — each `.status-ring-*`/`.concentrating-ring` class just
+   supplies its own `--glow-base`/`--glow-peak` box-shadow value, so adding a
+   new glow color never means copy-pasting another near-identical @keyframes
+   block. `.status-ring-dynamic` is the one variant that can't hardcode its
+   color up front (see `ConditionBadge` in `ui/StatusRail.tsx`, which sets a
+   *different* per-condition hue via inline `--glow-1..4`), so it composes
+   its own base/peak from those instead. */
+@keyframes ring-glow {
+  0%,
+  100% {
+    box-shadow: var(--glow-base);
+  }
+  50% {
+    box-shadow: var(--glow-peak);
+  }
+}
+
 /* Concentrating card highlight — a static ring reads as just another border
    at a glance across a row of cards, easy to miss exactly when it matters
    most (mid-combat). Pulsing box-shadow (not `animate-pulse`'s opacity,
    which would fade the card's own content too) keeps the glow itself
-   breathing without touching anything inside the card. */
-@keyframes concentrating-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px rgba(139, 92, 246, 0.55),
-      0 0 14px 3px rgba(139, 92, 246, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(139, 92, 246, 0.95),
-      0 0 26px 8px rgba(139, 92, 246, 0.6);
-  }
-}
+   breathing without touching anything inside the card. Wraps the whole
+   card, so its glow radius is deliberately larger than the status badges'. */
 .concentrating-ring {
-  animation: concentrating-glow 2s ease-in-out infinite;
+  --glow-base:
+    0 0 0 3px rgba(139, 92, 246, 0.55),
+    0 0 14px 3px rgba(139, 92, 246, 0.3);
+  --glow-peak:
+    0 0 0 3px rgba(139, 92, 246, 0.95),
+    0 0 26px 8px rgba(139, 92, 246, 0.6);
+  animation: ring-glow 2s ease-in-out infinite;
 }
 
 /* Same pulsing-glow treatment as `.concentrating-ring`, for the
    Exhaustion status badge pinned to a card's edge. */
-@keyframes status-glow-red {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px rgba(239, 68, 68, 0.55),
-      0 0 12px 2px rgba(239, 68, 68, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(239, 68, 68, 0.95),
-      0 0 20px 6px rgba(239, 68, 68, 0.6);
-  }
-}
 .status-ring-red {
-  animation: status-glow-red 2s ease-in-out infinite;
+  --glow-base:
+    0 0 0 3px rgba(239, 68, 68, 0.55),
+    0 0 12px 2px rgba(239, 68, 68, 0.3);
+  --glow-peak:
+    0 0 0 3px rgba(239, 68, 68, 0.95),
+    0 0 20px 6px rgba(239, 68, 68, 0.6);
+  animation: ring-glow 2s ease-in-out infinite;
+}
+
+/* Conditions badges get a per-condition color (computed from the condition
+   name, see `ConditionBadge` in `ui/StatusRail.tsx`) instead of one fixed
+   hue — the four --glow-N custom properties are set inline by the badge
+   itself, one per color stop, then folded into the same --glow-base/-peak
+   shape every other ring uses. */
+.status-ring-dynamic {
+  --glow-base:
+    0 0 0 3px var(--glow-1),
+    0 0 12px 2px var(--glow-2);
+  --glow-peak:
+    0 0 0 3px var(--glow-3),
+    0 0 20px 6px var(--glow-4);
+  animation: ring-glow 2s ease-in-out infinite;
+}
+
+/* Same pulsing-glow treatment again, neutral gray — for the overflow ("•••")
+   badge that stands in for whichever conditions didn't fit, so it reads as
+   its own distinct (non-condition) color. */
+.status-ring-gray {
+  --glow-base:
+    0 0 0 3px rgba(148, 163, 184, 0.55),
+    0 0 12px 2px rgba(148, 163, 184, 0.3);
+  --glow-peak:
+    0 0 0 3px rgba(148, 163, 184, 0.95),
+    0 0 20px 6px rgba(148, 163, 184, 0.6);
+  animation: ring-glow 2s ease-in-out infinite;
 }
 
 /* Heroic Inspiration star — a minimal pulsing glow (text-shadow, not the
-   box-shadow ring used elsewhere, since this is a bare glyph with no card
-   edge to trace) so an available inspiration point catches the eye instead
-   of blending into the rest of the header. */
+   box-shadow ring used above, since this is a bare glyph with no card edge
+   to trace) so an available inspiration point catches the eye instead of
+   blending into the rest of the header. Animates a different CSS property
+   than `ring-glow`, so it stays its own keyframe rather than being forced
+   into that one. */
 @keyframes inspiration-glow {
   0%,
   100% {
@@ -135,47 +171,6 @@ body {
 }
 .inspiration-star {
   animation: inspiration-glow 2s ease-in-out infinite;
-}
-
-/* Conditions badges get a per-condition color (computed from the condition
-   name, see `conditionHue` in CharacterCard.tsx) instead of one fixed hue —
-   the glow reads the four --glow-N custom properties the badge sets inline
-   so one keyframe works for any color. */
-@keyframes status-glow-dynamic {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px var(--glow-1),
-      0 0 12px 2px var(--glow-2);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px var(--glow-3),
-      0 0 20px 6px var(--glow-4);
-  }
-}
-.status-ring-dynamic {
-  animation: status-glow-dynamic 2s ease-in-out infinite;
-}
-
-/* Same pulsing-glow treatment again, neutral gray — for the overflow ("•••")
-   badge that stands in for whichever conditions didn't fit, so it reads as
-   its own distinct (non-condition) color. */
-@keyframes status-glow-gray {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 3px rgba(148, 163, 184, 0.55),
-      0 0 12px 2px rgba(148, 163, 184, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(148, 163, 184, 0.95),
-      0 0 20px 6px rgba(148, 163, 184, 0.6);
-  }
-}
-.status-ring-gray {
-  animation: status-glow-gray 2s ease-in-out infinite;
 }
 
 /* `NotesEditor`'s Tiptap content area — ProseMirror emits plain <h1>-<h3>/

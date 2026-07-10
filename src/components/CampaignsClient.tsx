@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
+import { apiFetch } from "@/lib/apiClient";
 import { CampaignSummary, Character, Creature } from "@/lib/types";
 
 function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
@@ -106,8 +107,8 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
     setLoadingEdit(campaign.id);
     try {
       const [charactersRes, creaturesRes] = await Promise.all([
-        fetch(`/api/characters?campaignId=${campaign.id}`),
-        fetch(`/api/creatures?campaignId=${campaign.id}`),
+        apiFetch(`/api/characters?campaignId=${campaign.id}`),
+        apiFetch(`/api/creatures?campaignId=${campaign.id}`),
       ]);
       const characters = charactersRes.ok ? ((await charactersRes.json()) as Character[]) : [];
       const creatures = creaturesRes.ok ? ((await creaturesRes.json()) as Creature[]) : [];

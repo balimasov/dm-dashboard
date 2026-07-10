@@ -126,6 +126,9 @@ export interface AbilityScores {
   cha: number;
 }
 
+/** Canonical stat-block display order — shared by the character and creature cards. */
+export const STAT_ORDER: Array<keyof AbilityScores> = ["str", "dex", "con", "int", "wis", "cha"];
+
 export interface Sense {
   name: string;
   range: number;

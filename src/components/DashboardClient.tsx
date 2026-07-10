@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
@@ -14,10 +13,8 @@ import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
+import { apiFetch } from "@/lib/apiClient";
 import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
-
-/** Flip back to `true` to restore the "Campaigns / [name]" breadcrumb trail above the dashboard's action row. */
-const SHOW_BREADCRUMBS = false;
 
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
@@ -65,7 +62,7 @@ function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (no
 
   async function saveNotes() {
     if (notes === campaign.notes) return;
-    await fetch(`/api/campaigns/${campaign.id}`, {
+    await apiFetch(`/api/campaigns/${campaign.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes }),
@@ -95,8 +92,10 @@ export function DashboardClient({
   initialCreatures: Creature[];
   initialOpen: OpenSections;
 }) {
-  const { characters, removeCharacter, updateCharacter } = useCharacters(initialCharacters);
-  const { creatures, updateCreature, removeCreature } = useCreatures(campaign.id, initialCreatures);
+  const charactersState = useCharacters(initialCharacters);
+  const creaturesState = useCreatures(campaign.id, initialCreatures);
+  const { characters, removeCharacter, updateCharacter } = charactersState;
+  const { creatures, updateCreature, removeCreature } = creaturesState;
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
@@ -104,25 +103,20 @@ export function DashboardClient({
 
   async function patchCampaign(id: string, updates: Partial<Campaign>) {
     setCampaignState((c) => ({ ...c, ...updates }));
-    await fetch(`/api/campaigns/${id}`, {
+    await apiFetch(`/api/campaigns/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
   }
 
-  function closeSettings(updated?: CampaignSummary, creatureCount?: number, rosterOrderChanged?: boolean) {
+  // The Settings modal shares this page's own `charactersState`/`creaturesState`
+  // instances (passed down below), so roster edits made in there already show
+  // up here live — only the campaign's own name/notes/logo need copying back.
+  function closeSettings(updated?: CampaignSummary) {
     setSettingsOpen(false);
     if (!updated) return;
     setCampaignState((c) => ({ ...c, name: updated.name, notes: updated.notes, logoUrl: updated.logoUrl }));
-    // The roster editors inside the modal keep their own character/creature
-    // list state, separate from this page's — a simple reload is the
-    // least-risky way to reflect any add/remove/sync/reorder that happened
-    // in there, without wiring independent hook instances together. A
-    // reorder alone doesn't change either count, so it's tracked separately.
-    if (updated.characterCount !== characters.length || creatureCount !== creatures.length || rosterOrderChanged) {
-      window.location.reload();
-    }
   }
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
@@ -162,10 +156,6 @@ export function DashboardClient({
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="mb-4 space-y-2">
-        {/* Temporarily hidden to test the dashboard without them — code kept intact to switch back easily. */}
-        {SHOW_BREADCRUMBS && (
-          <Breadcrumbs items={[{ label: "Campaigns", href: "/" }, { label: campaignState.name }]} />
-        )}
         <div className="flex flex-wrap items-center justify-end gap-2">
           {linkedCharacters.length > 0 && (
             <>
@@ -275,8 +265,8 @@ export function DashboardClient({
       {settingsOpen && (
         <CampaignFormModal
           campaign={{ ...campaignState, characterCount: characters.length }}
-          initialCharacters={characters}
-          initialCreatures={creatures}
+          charactersState={charactersState}
+          creaturesState={creaturesState}
           actions={{ updateCampaign: patchCampaign }}
           onClose={closeSettings}
         />

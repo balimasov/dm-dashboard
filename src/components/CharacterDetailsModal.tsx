@@ -7,6 +7,7 @@ import {
   Feature,
   formatModifier,
   KnownSpell,
+  ordinalLevel,
   proficiencyBonus,
   RECOVERY_LABELS,
   RECOVERY_SHORT_LABELS,
@@ -17,24 +18,18 @@ import {
   SkillProficiency,
   skillBonus,
   SkillName,
-} from "@/lib/types";
-import {
-  CharacterHeader,
-  DamageInfoList,
-  HpBar,
-  IconStat,
-  InitiativeIcon,
-  ordinalLevel,
-  Pill,
-  ProficiencyIcon,
-  SenseEntries,
-  ShieldIcon,
-  SkillPanel,
-  SpeedIcon,
   STAT_ORDER,
-  StatBox,
-  StatusRail,
-} from "./CharacterCard";
+} from "@/lib/types";
+import { CharacterHeader } from "./CharacterHeader";
+import { SkillPanel } from "./SkillPanel";
+import { DamageInfoList } from "./ui/DamageInfoList";
+import { HpBar } from "./ui/HpBar";
+import { IconStat } from "./ui/IconStat";
+import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { Pill } from "./ui/Pill";
+import { SenseEntries } from "./ui/SenseEntries";
+import { StatBox } from "./ui/StatBox";
+import { StatusRail } from "./ui/StatusRail";
 import { DotMeter } from "./ResourceMeter";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";

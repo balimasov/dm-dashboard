@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
+import { apiFetch } from "@/lib/apiClient";
 import { Character, Creature, CreatureSearchHit, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
@@ -63,7 +64,7 @@ function AddCreaturePanel({
     setSearching(true);
     setSearchError(null);
     try {
-      const res = await fetch(`/api/bestiary?q=${encodeURIComponent(trimmed)}`);
+      const res = await apiFetch(`/api/bestiary?q=${encodeURIComponent(trimmed)}`);
       const data = (await res.json()) as CreatureSearchHit[];
       setResults(data);
       setSearched(true);
@@ -79,7 +80,7 @@ function AddCreaturePanel({
   async function addHit(hit: CreatureSearchHit) {
     setAddingId(hit.id);
     try {
-      const res = await fetch(`/api/bestiary/resolve?id=${encodeURIComponent(hit.id)}`);
+      const res = await apiFetch(`/api/bestiary/resolve?id=${encodeURIComponent(hit.id)}`);
       if (!res.ok) throw new Error("Failed to load stat block.");
       const template = (await res.json()) as CreatureTemplate;
       await onAdd(formValueToAddCreatureInput(templateToFormValue(template), template.id));
@@ -242,25 +243,14 @@ function CreatureRow({
 
 /** The add/edit/remove creature-companion UI, embedded inside `CampaignFormModal` below the character roster editor — same shape as `CampaignRosterEditor`, but for companions/summons instead of player characters. */
 export function CreatureRosterEditor({
-  campaignId,
-  initialCreatures,
+  creaturesState,
   characters,
-  onCountChange,
-  onReorder,
 }: {
-  campaignId: string;
-  initialCreatures: Creature[];
+  /** Owned by the caller (`CampaignFormModal`) — either its own `useCreatures()` instance, or one lifted from a page that already renders this same roster elsewhere (e.g. the dashboard), so edits made here apply to that same state instead of a disconnected copy. */
+  creaturesState: ReturnType<typeof useCreatures>;
   characters: Character[];
-  onCountChange?: (count: number) => void;
-  /** Fires after a successful drag reorder — the enclosing modal uses this to know the dashboard's own (separately-fetched) creature list is now stale, since reordering doesn't change `creatures.length` and so wouldn't otherwise trigger a refresh. */
-  onReorder?: () => void;
 }) {
-  const { creatures, addCreature, removeCreature, reorderCreatures } = useCreatures(campaignId, initialCreatures);
-
-  useEffect(() => {
-    onCountChange?.(creatures.length);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creatures.length]);
+  const { creatures, addCreature, removeCreature, reorderCreatures } = creaturesState;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -277,7 +267,6 @@ export function CreatureRosterEditor({
 
     const reordered = arrayMove(creatures, oldIndex, newIndex);
     reorderCreatures(reordered.map((c) => c.id));
-    onReorder?.();
   }
 
   const addedTemplateIds = new Set(

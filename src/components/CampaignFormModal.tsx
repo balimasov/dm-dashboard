@@ -2,6 +2,8 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { useCharacters } from "@/hooks/useCharacters";
+import { useCreatures } from "@/hooks/useCreatures";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
@@ -51,27 +53,35 @@ function Section({
  */
 export function CampaignFormModal({
   campaign,
-  initialCharacters,
-  initialCreatures,
+  initialCharacters = [],
+  initialCreatures = [],
+  charactersState: externalCharactersState,
+  creaturesState: externalCreaturesState,
   actions,
   onClose,
 }: {
   campaign: CampaignSummary | null;
-  initialCharacters: Character[];
-  initialCreatures: Creature[];
+  initialCharacters?: Character[];
+  initialCreatures?: Creature[];
+  /** When the caller already renders this same roster elsewhere on the page (e.g. the dashboard's Party/Creatures sections), pass its own `useCharacters()`/`useCreatures()` return value here so edits made inside this modal apply to that same state instead of a disconnected copy — this is what keeps the page in sync without a reload. Callers with no such state of their own (e.g. the campaigns list page) omit these and the modal manages its own, seeded from `initialCharacters`/`initialCreatures`. */
+  charactersState?: ReturnType<typeof useCharacters>;
+  creaturesState?: ReturnType<typeof useCreatures>;
   actions: Actions;
-  onClose: (updated?: CampaignSummary, creatureCount?: number, rosterOrderChanged?: boolean) => void;
+  onClose: (updated?: CampaignSummary) => void;
 }) {
   const [current, setCurrent] = useState<CampaignSummary | null>(campaign);
   const [name, setName] = useState(campaign?.name ?? "");
   const [notes, setNotes] = useState(campaign?.notes ?? "");
   const [logoUrl, setLogoUrl] = useState(campaign?.logoUrl);
-  const [characters, setCharacters] = useState(initialCharacters);
-  const [characterCount, setCharacterCount] = useState(campaign?.characterCount ?? 0);
-  const [creatureCount, setCreatureCount] = useState(initialCreatures.length);
-  const [rosterOrderChanged, setRosterOrderChanged] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Always called (rules of hooks) — unused whenever the caller supplies its
+  // own live state above, in which case this "own" instance just sits idle.
+  const ownCharactersState = useCharacters(initialCharacters);
+  const ownCreaturesState = useCreatures(current?.id ?? "", initialCreatures);
+  const charactersState = externalCharactersState ?? ownCharactersState;
+  const creaturesState = externalCreaturesState ?? ownCreaturesState;
 
   const isEditing = current !== null;
 
@@ -89,7 +99,7 @@ export function CampaignFormModal({
   }, []);
 
   function close() {
-    onClose(current ? { ...current, characterCount } : undefined, creatureCount, rosterOrderChanged);
+    onClose(current ? { ...current, characterCount: charactersState.characters.length } : undefined);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -104,7 +114,6 @@ export function CampaignFormModal({
     try {
       const created = await actions.addCampaign({ name: trimmed, notes, logoUrl });
       setCurrent({ ...created, characterCount: 0 });
-      setCharacters([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign.");
     } finally {
@@ -197,12 +206,7 @@ export function CampaignFormModal({
               title="Characters"
               description="Add D&D Beyond character links to have them show up on the dashboard. The character's D&D Beyond sharing setting must be Public, or syncing will fail."
             >
-              <CampaignRosterEditor
-                campaignId={current.id}
-                initialCharacters={characters}
-                onCountChange={setCharacterCount}
-                onReorder={() => setRosterOrderChanged(true)}
-              />
+              <CampaignRosterEditor campaignId={current.id} charactersState={charactersState} />
             </Section>
           )}
 
@@ -211,13 +215,7 @@ export function CampaignFormModal({
               title="Creatures"
               description="Companions & summons — search the bestiary by name, or add one blank and fill in its stat block afterwards."
             >
-              <CreatureRosterEditor
-                campaignId={current.id}
-                initialCreatures={initialCreatures}
-                characters={characters}
-                onCountChange={setCreatureCount}
-                onReorder={() => setRosterOrderChanged(true)}
-              />
+              <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
             </Section>
           )}
         </div>

@@ -8,6 +8,7 @@ import {
   SKILL_ABBR,
   SKILL_ABILITY,
   SKILL_DESCRIPTIONS,
+  STAT_ORDER,
   abilityModifier,
   creatureInfoLine,
   formatModifier,
@@ -19,19 +20,13 @@ import {
   parseCreatureSkills,
 } from "@/lib/creatureStatText";
 import { FlaggableRow } from "./CharacterDetailsModal";
-import {
-  DamageInfoList,
-  HpBar,
-  IconStat,
-  InitiativeIcon,
-  LanguageIcon,
-  Pill,
-  SenseEntries,
-  ShieldIcon,
-  SpeedIcon,
-  StatBox,
-  STAT_ORDER,
-} from "./CharacterCard";
+import { DamageInfoList } from "./ui/DamageInfoList";
+import { HpBar } from "./ui/HpBar";
+import { IconStat } from "./ui/IconStat";
+import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { Pill } from "./ui/Pill";
+import { SenseEntries } from "./ui/SenseEntries";
+import { StatBox } from "./ui/StatBox";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";

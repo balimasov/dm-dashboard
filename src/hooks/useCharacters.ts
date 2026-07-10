@@ -3,25 +3,18 @@
 import { useCallback, useState } from "react";
 import { Character } from "@/lib/types";
 import { patchCharacter } from "@/lib/characterApi";
-
-async function parseJsonOrThrow(res: Response, fallbackMessage: string): Promise<unknown> {
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error((data as { error?: string } | null)?.error || fallbackMessage);
-  }
-  return data;
-}
+import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 
 export function useCharacters(initialCharacters: Character[]) {
   const [characters, setCharacters] = useState<Character[]>(initialCharacters);
 
   const addFromUrl = useCallback(async (url: string, campaignId: string): Promise<Character> => {
-    const res = await fetch("/api/characters", {
+    const res = await apiFetch("/api/characters", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, campaignId }),
     });
-    const character = (await parseJsonOrThrow(res, "Failed to add character.")) as Character;
+    const character = await parseJsonOrThrow<Character>(res, "Failed to add character.");
     setCharacters((prev) => [...prev, character]);
     return character;
   }, []);
@@ -34,7 +27,7 @@ export function useCharacters(initialCharacters: Character[]) {
 
   const removeCharacter = useCallback(async (id: string) => {
     setCharacters((prev) => prev.filter((c) => c.id !== id));
-    await fetch(`/api/characters/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/characters/${id}`, { method: "DELETE" });
   }, []);
 
   const reorderCharacters = useCallback(async (orderedIds: string[]) => {
@@ -42,7 +35,7 @@ export function useCharacters(initialCharacters: Character[]) {
       const byId = new Map(prev.map((c) => [c.id, c]));
       return orderedIds.map((id) => byId.get(id)).filter((c): c is Character => Boolean(c));
     });
-    await fetch("/api/characters/reorder", {
+    await apiFetch("/api/characters/reorder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedIds }),

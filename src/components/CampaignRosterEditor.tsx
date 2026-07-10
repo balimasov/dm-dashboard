@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -17,31 +17,21 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
-import { Character, extractDndBeyondCharacterId } from "@/lib/types";
+import { extractDndBeyondCharacterId } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 
 /** The add/sync/reorder roster UI, without any page-level chrome — embedded inside `CampaignFormModal`. */
 export function CampaignRosterEditor({
   campaignId,
-  initialCharacters,
-  onCountChange,
-  onReorder,
+  charactersState,
 }: {
   campaignId: string;
-  initialCharacters: Character[];
-  /** Roster edits happen inside this component's own `useCharacters` state — this reports count changes up so an enclosing modal can keep a stale `characterCount` in sync without lifting the whole list. */
-  onCountChange?: (count: number) => void;
-  /** Fires after a successful drag reorder — the enclosing modal uses this to know the dashboard's own (separately-fetched) character list is now stale, since reordering doesn't change `characters.length` and so wouldn't otherwise trigger a refresh. */
-  onReorder?: () => void;
+  /** Owned by the caller (`CampaignFormModal`) — either its own `useCharacters()` instance, or one lifted from a page that already renders this same roster elsewhere (e.g. the dashboard), so edits made here apply to that same state instead of a disconnected copy. */
+  charactersState: ReturnType<typeof useCharacters>;
 }) {
-  const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } =
-    useCharacters(initialCharacters);
+  const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } = charactersState;
 
-  useEffect(() => {
-    onCountChange?.(characters.length);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characters.length]);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -125,7 +115,6 @@ export function CampaignRosterEditor({
 
     const reordered = arrayMove(characters, oldIndex, newIndex);
     reorderCharacters(reordered.map((c) => c.id));
-    onReorder?.();
   }
 
   return (

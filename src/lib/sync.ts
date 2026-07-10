@@ -1,5 +1,6 @@
 import { Character, extractDndBeyondCharacterId } from "./types";
 import { parseDdbCharacter } from "./ddbParser";
+import { apiFetch } from "./apiClient";
 
 export async function fetchAndParseDdbCharacter(character: Character): Promise<Character> {
   const ddbId = character.dndBeyondUrl ? extractDndBeyondCharacterId(character.dndBeyondUrl) : null;
@@ -7,7 +8,7 @@ export async function fetchAndParseDdbCharacter(character: Character): Promise<C
     throw new Error("This character doesn't have a valid D&D Beyond link.");
   }
 
-  const res = await fetch(`/api/ddb/${ddbId}`);
+  const res = await apiFetch(`/api/ddb/${ddbId}`);
   const json = await res.json();
   if (!res.ok) {
     throw new Error(json?.error || `Sync error (${res.status}).`);
