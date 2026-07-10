@@ -156,15 +156,26 @@ export function DashboardClient({
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <div className="mb-4 space-y-2">
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* Below `sm`, the timestamp + all four actions don't fit one line at
+            once and used to wrap onto a second row — same fix already applied
+            to the Party/Creatures card rows: scroll sideways instead of
+            wrapping, so it's always one row. `justify-end` (the normal,
+            everything-fits desktop layout) and horizontal scroll don't mix
+            well — an overflowing `justify-end` row can leave content
+            unreachable by scrolling in some browsers — so the scrollable
+            mobile layout starts left-aligned instead, and only switches back
+            to `justify-end`/wrapping once `sm:` has room to spare. */}
+        <div className="flex flex-nowrap items-center justify-start gap-2 overflow-x-auto scrollbar-themed sm:flex-wrap sm:justify-end sm:overflow-visible">
           {linkedCharacters.length > 0 && (
             <>
               {lastSyncedAt && (
-                <span className="whitespace-nowrap text-xs text-slate-500">
+                <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">
                   Synced: <SyncTimestamp iso={lastSyncedAt} />
                 </span>
               )}
-              <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+              <div className="shrink-0">
+                <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+              </div>
             </>
           )}
           <div className="flex shrink-0 items-center gap-2">
