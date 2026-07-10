@@ -1,12 +1,27 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import { formatSyncTimestamp } from "@/lib/types";
 
+function subscribe() {
+  return () => {};
+}
+
 /**
- * Renders a sync timestamp. `formatSyncTimestamp` uses a fixed timezone, so
- * this is a pure function of `iso` — server and client always render the
- * same text, and it can go straight to the DOM with no mount-then-fill-in
- * step (that step used to render nothing for a moment, causing a visible
- * pop-in next to the header's sync button on every page load).
+ * Renders a sync timestamp using the viewer's own local timezone. The server
+ * has no way to know that timezone, so instead of formatting during SSR
+ * (which would mismatch the client and produce a hydration warning), this
+ * renders nothing on the server and fills in the real value once mounted in
+ * the browser — the sanctioned pattern (via useSyncExternalStore's separate
+ * server/client snapshots) for values that only exist on the client.
  */
 export function SyncTimestamp({ iso }: { iso: string }) {
-  return <>{formatSyncTimestamp(iso)}</>;
+  const formatted = useSyncExternalStore(
+    subscribe,
+    () => formatSyncTimestamp(iso),
+    () => null
+  );
+
+  if (!formatted) return null;
+  return <>{formatted}</>;
 }
