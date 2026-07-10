@@ -7,21 +7,37 @@ export function DotMeter({
   current,
   max,
   colorClass = "bg-amber-400",
+  onSetCount,
 }: {
   current: number;
   max: number;
   colorClass?: string;
+  /** Makes dots clickable — clicking dot `i` sets the count to `i + 1`, or to `i` if that dot was already the last filled one (so re-clicking the same dot un-fills it). */
+  onSetCount?: (count: number) => void;
 }) {
   return (
     <span className="flex items-center gap-1">
-      {Array.from({ length: max }).map((_, i) => (
-        <span
-          key={i}
-          className={`h-2.5 w-2.5 rounded-full border ${
-            i < current ? `${colorClass} border-transparent` : "border-slate-600"
-          }`}
-        />
-      ))}
+      {Array.from({ length: max }).map((_, i) => {
+        const filled = i < current;
+        const dot = (
+          <span
+            className={`h-2.5 w-2.5 rounded-full border ${filled ? `${colorClass} border-transparent` : "border-slate-600"}`}
+          />
+        );
+        return onSetCount ? (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Set to ${i + 1}`}
+            onClick={() => onSetCount(current === i + 1 ? i : i + 1)}
+            className="flex h-4 w-4 -m-[3px] items-center justify-center rounded-full hover:bg-slate-700/60"
+          >
+            {dot}
+          </button>
+        ) : (
+          <span key={i}>{dot}</span>
+        );
+      })}
     </span>
   );
 }

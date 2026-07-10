@@ -18,6 +18,7 @@ export function NumberInput({
   min,
   max,
   placeholder,
+  selectOnFocus,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -25,6 +26,8 @@ export function NumberInput({
   min?: number;
   max?: number;
   placeholder?: string;
+  /** Selects the whole value on focus — for fields typically replaced wholesale (e.g. HP) rather than appended to. */
+  selectOnFocus?: boolean;
 }) {
   const [text, setText] = useState(String(value));
   const [prevValue, setPrevValue] = useState(value);
@@ -47,6 +50,7 @@ export function NumberInput({
       placeholder={placeholder}
       className={className}
       value={text}
+      onFocus={selectOnFocus ? (e) => e.target.select() : undefined}
       onChange={(e) => {
         const raw = e.target.value;
         if (!/^-?\d*$/.test(raw)) return;

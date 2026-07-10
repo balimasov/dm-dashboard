@@ -97,6 +97,8 @@ export function CreatureCard({
     onUpdate(creature.id, { flaggedTraits: next });
   }
 
+  const deathSaves = creature.deathSaves ?? { successes: 0, failures: 0 };
+
   const groups = GROUP_ORDER.map((group) => ({
     group,
     items: creature.traits.filter((t) => (t.group ?? "trait") === group),
@@ -125,7 +127,16 @@ export function CreatureCard({
       </div>
 
       <div className="space-y-2">
-        <HpBar hp={creature.hp} maxHp={creature.maxHp} tempHp={creature.tempHp} isDown={isDown} />
+        <HpBar
+          hp={creature.hp}
+          maxHp={creature.maxHp}
+          tempHp={creature.tempHp}
+          isDown={isDown}
+          deathSaves={deathSaves}
+          onHpChange={onUpdate ? (hp) => onUpdate(creature.id, { hp }) : undefined}
+          onTempHpChange={onUpdate ? (tempHp) => onUpdate(creature.id, { tempHp }) : undefined}
+          onDeathSavesChange={onUpdate ? (next) => onUpdate(creature.id, { deathSaves: next }) : undefined}
+        />
         {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
         {creature.source && <p className="text-xs text-slate-500">Source: {creature.source}</p>}
 

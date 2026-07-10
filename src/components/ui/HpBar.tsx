@@ -1,15 +1,25 @@
+import { NumberInput } from "@/components/NumberInput";
+import { DotMeter } from "@/components/ResourceMeter";
+
 export function HpBar({
   hp,
   maxHp,
   tempHp,
   isDown,
   deathSaves,
+  onHpChange,
+  onTempHpChange,
+  onDeathSavesChange,
 }: {
   hp: number;
   maxHp: number;
   tempHp: number;
   isDown: boolean;
   deathSaves?: { successes: number; failures: number };
+  /** Passing these turns HP/temp HP/death saves into click-to-edit fields — omit to keep the bar read-only (e.g. on `CharacterCard`, not wired up yet). */
+  onHpChange?: (hp: number) => void;
+  onTempHpChange?: (tempHp: number) => void;
+  onDeathSavesChange?: (deathSaves: { successes: number; failures: number }) => void;
 }) {
   // Percentage-of-maxHp drives the danger-color thresholds (a character at
   // full real HP should never read as anything but healthy, regardless of
@@ -36,15 +46,58 @@ export function HpBar({
               {"​"}
             </span>
             <span className="text-slate-400">Death Saves:</span>{" "}
-            <span className="text-emerald-400">✅ {deathSaves.successes}/3</span>
+            <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
+              ✅
+              <DotMeter
+                current={deathSaves.successes}
+                max={3}
+                colorClass="bg-emerald-500"
+                onSetCount={
+                  onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
+                }
+              />
+            </span>
             <span className="text-slate-600"> · </span>
-            <span className="text-red-400">❌ {deathSaves.failures}/3</span>
+            <span className="inline-flex items-center gap-1 align-middle text-red-400">
+              ❌
+              <DotMeter
+                current={deathSaves.failures}
+                max={3}
+                colorClass="bg-red-500"
+                onSetCount={onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined}
+              />
+            </span>
           </span>
         ) : (
-          <span className="text-sm font-medium text-slate-100">
-            <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
+          <span className="flex items-baseline text-sm font-medium text-slate-100">
+            {onHpChange ? (
+              <NumberInput
+                value={hp}
+                onChange={onHpChange}
+                min={0}
+                max={maxHp}
+                selectOnFocus
+                className={`w-11 rounded bg-transparent text-right text-2xl font-bold outline-none focus:bg-slate-800 focus:ring-1 focus:ring-slate-600 ${hpTextColor}`}
+              />
+            ) : (
+              <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
+            )}
             <span className="text-slate-500"> / {maxHp}</span>
-            {tempHp > 0 && <span className="text-amber-400"> (+{tempHp} temp)</span>}
+            {onTempHpChange ? (
+              <span className={`ml-1 flex items-baseline ${tempHp > 0 ? "text-amber-400" : "text-slate-600"}`}>
+                (+
+                <NumberInput
+                  value={tempHp}
+                  onChange={onTempHpChange}
+                  min={0}
+                  selectOnFocus
+                  className="w-7 rounded bg-transparent text-center outline-none focus:bg-slate-800 focus:ring-1 focus:ring-amber-700/50"
+                />
+                temp)
+              </span>
+            ) : (
+              tempHp > 0 && <span className="text-amber-400"> (+{tempHp} temp)</span>
+            )}
           </span>
         )}
       </div>
