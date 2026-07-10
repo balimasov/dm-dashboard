@@ -12,6 +12,42 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.71.1] - 2026-07-10
+
+### Changed
+- Внутрішній рефакторинг без зміни поведінки застосунку:
+  - `ddbParser.ts` (1828 рядків в одному файлі) розбитий на модулі за
+    доменом — `src/lib/ddbParser/{shared,abilities,combat,damage,inventory,
+    resources,features,spells}.ts`, сам `ddbParser.ts` тепер тонкий
+    оркестратор. Публічний імпорт (`parseDdbCharacter`, `DdbParseError`) не
+    змінився, тож жоден інший файл торкатись не довелось.
+  - Додано `vitest` + 19 тестів на `ddbParser.ts` поверх реальних експортів
+    з D&D Beyond (`src/lib/__fixtures__/`) — регресійна страховка на
+    кожен виправлений цією сесією баг парсингу.
+  - Спільний `src/lib/apiClient.ts`: один `parseJsonOrThrow`/`apiFetch`
+    замість трьох копій `parseJsonOrThrow` (`characterApi.ts`,
+    `creatureApi.ts`, `useCreatures.ts`) і чотирьох (`useCampaigns.ts`).
+  - Прибрано глобальний патч `window.fetch` у `GlobalLoadingIndicator.tsx` —
+    індикатор завантаження тепер підписується на явний лічильник у
+    `apiClient.ts`, який інкрементує сам `apiFetch` на кожному запиті.
+  - `DashboardClient`/`CampaignFormModal`/`CampaignRosterEditor`/
+    `CreatureRosterEditor` тепер ділять один інстанс
+    `useCharacters`/`useCreatures` замість кожен свого — редагування
+    ростера у Settings одразу відображається на дашборді без
+    `window.location.reload()`.
+  - Спільні UI-примітиви `CharacterCard.tsx` (іконки, `Pill`, `StatBox`,
+    `IconStat`, `SenseEntries`, `DamageInfoList`, `HpBar`, `StatusRail`)
+    винесені в `src/components/ui/`, а `CharacterHeader`/`SkillPanel` —
+    в окремі файли; `CreatureCard.tsx`/`CharacterDetailsModal.tsx` більше
+    не імпортують їх крізь `CharacterCard.tsx`.
+  - П'ять майже однакових `@keyframes` пульсуючого світіння в `globals.css`
+    об'єднані в один `ring-glow`, параметризований `--glow-base`/
+    `--glow-peak` — той самий підхід, що вже використовував
+    `status-glow-dynamic`.
+  - Прибрано мертвий прапорець `SHOW_BREADCRUMBS` і його вимкнений блок у
+    `DashboardClient.tsx` (сам `Breadcrumbs.tsx` лишився — він активно
+    використовується на сторінках редагування персонажа й істоти).
+
 ## [0.71.0] - 2026-07-09
 
 ### Added
