@@ -141,7 +141,12 @@ export function HpBar({
                 THP)
               </span>
             ) : (
-              tempHp > 0 && <span className="text-amber-400"> (+{tempHp} THP)</span>
+              // A leading space in a flex item's own text gets trimmed by the
+              // browser (each flex item starts its own inline formatting
+              // context, and CSS collapses whitespace at the start of a line)
+              // — margin instead of a literal space, same as the editable
+              // branch above already does for the same reason.
+              tempHp > 0 && <span className="ml-1 text-amber-400">(+{tempHp} THP)</span>
             )}
           </span>
         )}
