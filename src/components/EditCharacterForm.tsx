@@ -333,7 +333,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
             <Field label="Max HP" hint="Recalculated automatically on the next sync.">
               <NumberInput className={inputCls} value={draft.combat.maxHp} onChange={(n) => setCombat("maxHp", n)} />
             </Field>
-            <Field label="Temp HP">
+            <Field label="THP">
               <NumberInput className={inputCls} value={draft.combat.tempHp} onChange={(n) => setCombat("tempHp", n)} />
             </Field>
             <Field label="AC">

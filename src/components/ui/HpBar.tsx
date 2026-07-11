@@ -117,10 +117,10 @@ export function HpBar({
                   commitOnBlur
                   className="w-8 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-center leading-none outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
                 />
-                temp)
+                THP)
               </span>
             ) : (
-              tempHp > 0 && <span className="text-amber-400"> (+{tempHp} temp)</span>
+              tempHp > 0 && <span className="text-amber-400"> (+{tempHp} THP)</span>
             )}
           </span>
         )}
