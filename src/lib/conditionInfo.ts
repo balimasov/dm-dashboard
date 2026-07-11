@@ -18,7 +18,6 @@ export const CONDITION_INFO: Record<string, string> = {
   restrained: "Speed becomes 0. Attacks against it have advantage, its own attacks have disadvantage. Disadvantage on Dexterity saves.",
   stunned: "Incapacitated, can't move, speaks only falteringly. Automatically fails Strength and Dexterity saves. Attacks against it have advantage.",
   unconscious: "Incapacitated, can't move or speak, unaware of surroundings. Drops what it's holding, falls prone. Fails Strength and Dexterity saves. Attacks against it have advantage; hits from within 5 ft are critical.",
-  diseased: "Generic term — actual symptoms depend on the specific disease.",
 };
 
 export function getConditionInfo(name: string): string | undefined {

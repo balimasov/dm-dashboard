@@ -1,5 +1,15 @@
 import { NumberInput } from "@/components/NumberInput";
 import { DotMeter } from "@/components/ResourceMeter";
+import { InfoTooltip } from "@/components/InfoTooltip";
+
+/** A drop, not a heart — "bloodied" is blood, not health. */
+function BloodDropIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2.5c-.4.6-1.6 2.3-2.8 4.4C7.4 10.2 6 13 6 15.2 6 18.9 8.7 22 12 22s6-3.1 6-6.8c0-2.2-1.4-5-3.2-8.3-1.2-2.1-2.4-3.8-2.8-4.4Z" />
+    </svg>
+  );
+}
 
 export function HpBar({
   hp,
@@ -34,11 +44,22 @@ export function HpBar({
   const tempBarPct = (tempHp / barScale) * 100;
   const hpColor = hpRatio > 50 ? "bg-emerald-500" : hpRatio > 25 ? "bg-amber-500" : "bg-red-600";
   const hpTextColor = hpRatio > 50 ? "text-emerald-400" : hpRatio > 25 ? "text-amber-400" : "text-red-400";
+  // "Bloodied" is a passive threshold (half max HP or less), not something the
+  // DM sets — it's derived here rather than stored so it never drifts out of
+  // sync with hp/maxHp the way a manually-toggled flag could.
+  const bloodied = maxHp > 0 && hp > 0 && hp <= maxHp / 2;
 
   return (
     <div>
       <div className="mb-1 flex min-h-8 items-baseline justify-between">
-        <span className="text-sm text-slate-300">HP</span>
+        <span className="flex items-center gap-1 text-sm text-slate-300">
+          HP
+          {bloodied && (
+            <InfoTooltip hoverOnly panel={<p>Bloodied — at half its max HP or less.</p>}>
+              <BloodDropIcon className="h-3 w-3 shrink-0 text-red-500" />
+            </InfoTooltip>
+          )}
+        </span>
         {isDown && deathSaves ? (
           // A 300px card has no room for the HP input *and* the full "Death
           // Saves: ..." phrase on one line — shortened to "Saves" so this
