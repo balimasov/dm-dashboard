@@ -27,6 +27,7 @@ import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons"
 import { Pill } from "./ui/Pill";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
+import { StatusRail } from "./ui/StatusRail";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
@@ -105,7 +106,14 @@ export function CreatureCard({
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div className="relative flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <StatusRail
+        conditions={creature.conditions}
+        exhaustion={creature.exhaustion}
+        onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
+        onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
+      />
+
       <div className="flex items-start gap-3">
         <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
         <div className="min-w-0 flex-1">

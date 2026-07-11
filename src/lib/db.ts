@@ -308,13 +308,14 @@ export function reorderCharacters(orderedIds: string[]): void {
   transaction(orderedIds);
 }
 
-/** Rows saved before `conditions`/`tempHp`/`templateName` existed on Creature won't have them in their stored JSON. */
+/** Rows saved before `conditions`/`exhaustion`/`tempHp`/`templateName` existed on Creature won't have them in their stored JSON. */
 function rowToCreature(row: { data: string }): Creature {
   const parsed = JSON.parse(row.data) as Creature;
   return {
     ...parsed,
     tempHp: parsed.tempHp ?? 0,
     conditions: parsed.conditions ?? [],
+    exhaustion: parsed.exhaustion ?? 0,
     traits: parsed.traits ?? [],
     templateName: parsed.templateName ?? parsed.name,
   };

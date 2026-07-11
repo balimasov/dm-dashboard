@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
+import { DotMeter } from "@/components/ResourceMeter";
+import { CONDITION_INFO, getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 
 function ExhaustionIcon({ className }: { className?: string }) {
   return (
@@ -137,7 +141,94 @@ function OverflowBadge({ conditions }: { conditions: string[] }) {
   );
 }
 
-/** Total badge slots (concentration + exhaustion + conditions + the overflow badge itself) a card has room for before it gets crowded. */
+/**
+ * The only entry point for adding a condition or raising/lowering
+ * exhaustion — neither has any other inline editing surface anywhere in the
+ * app (only a free-text "Conditions" field and a 0-6 number input on the
+ * full edit page). Deliberately generic (plain string/number props and
+ * callbacks, no `Character`/`Creature` import) so wiring it into
+ * `CharacterCard` later is just passing the same two callbacks `CreatureCard`
+ * already does.
+ */
+function AddStatusBadge({
+  conditions,
+  exhaustion,
+  onConditionsChange,
+  onExhaustionChange,
+}: {
+  conditions: string[];
+  exhaustion: number;
+  onConditionsChange?: (conditions: string[]) => void;
+  onExhaustionChange?: (level: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  function toggleCondition(name: string) {
+    if (!onConditionsChange) return;
+    const next = conditions.includes(name) ? conditions.filter((c) => c !== name) : [...conditions, name];
+    onConditionsChange(next);
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Add condition or set exhaustion"
+        aria-expanded={open}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
+      >
+        +
+      </button>
+      {open && (
+        <div className="absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-3 text-left shadow-lg shadow-black/40">
+          {onExhaustionChange && (
+            <div>
+              <p className="mb-1.5 text-[10px] uppercase tracking-wide text-slate-500">Exhaustion</p>
+              <DotMeter current={exhaustion} max={6} colorClass="bg-red-500" onSetCount={onExhaustionChange} />
+            </div>
+          )}
+          {onConditionsChange && (
+            <div>
+              <p className="mb-1.5 text-[10px] uppercase tracking-wide text-slate-500">Conditions</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.keys(CONDITION_INFO).map((name) => {
+                  const active = conditions.includes(name);
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => toggleCondition(name)}
+                      className={`rounded-full border px-2 py-0.5 text-xs capitalize ${
+                        active
+                          ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                          : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Total badge slots (concentration + exhaustion + conditions + the overflow/add badges) a card has room for before it gets crowded. */
 const MAX_BADGES = 6;
 
 function StatusBadges({
@@ -145,13 +236,18 @@ function StatusBadges({
   exhaustion,
   concentrating,
   onToggleConcentration,
+  onConditionsChange,
+  onExhaustionChange,
 }: {
   conditions: string[];
   exhaustion: number;
-  concentrating: boolean;
+  concentrating?: boolean;
   onToggleConcentration?: () => void;
+  onConditionsChange?: (conditions: string[]) => void;
+  onExhaustionChange?: (level: number) => void;
 }) {
-  const fixedCount = 1 + (exhaustion > 0 ? 1 : 0);
+  const showAdd = Boolean(onConditionsChange || onExhaustionChange);
+  const fixedCount = (concentrating !== undefined ? 1 : 0) + (exhaustion > 0 ? 1 : 0) + (showAdd ? 1 : 0);
   const availableForConditions = MAX_BADGES - fixedCount;
   const overflowing = conditions.length > availableForConditions;
   const visibleConditions = overflowing ? conditions.slice(0, Math.max(0, availableForConditions - 1)) : conditions;
@@ -159,12 +255,20 @@ function StatusBadges({
 
   return (
     <>
-      <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />
+      {concentrating !== undefined && <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />}
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
       {visibleConditions.map((condition, index) => (
         <ConditionBadge key={condition} condition={condition} index={index} />
       ))}
       {overflowConditions.length > 0 && <OverflowBadge conditions={overflowConditions} />}
+      {showAdd && (
+        <AddStatusBadge
+          conditions={conditions}
+          exhaustion={exhaustion}
+          onConditionsChange={onConditionsChange}
+          onExhaustionChange={onExhaustionChange}
+        />
+      )}
     </>
   );
 }
@@ -174,11 +278,16 @@ export function StatusRail({
   exhaustion,
   concentrating,
   onToggleConcentration,
+  onConditionsChange,
+  onExhaustionChange,
 }: {
   conditions: string[];
   exhaustion: number;
-  concentrating: boolean;
+  /** Omit entirely to hide the Concentration badge — creatures don't have a concentration concept, only characters do. */
+  concentrating?: boolean;
   onToggleConcentration?: () => void;
+  onConditionsChange?: (conditions: string[]) => void;
+  onExhaustionChange?: (level: number) => void;
 }) {
   return (
     // Straddles the *top* border (row, centered, shifted up by half its own
@@ -205,6 +314,8 @@ export function StatusRail({
         exhaustion={exhaustion}
         concentrating={concentrating}
         onToggleConcentration={onToggleConcentration}
+        onConditionsChange={onConditionsChange}
+        onExhaustionChange={onExhaustionChange}
       />
     </div>
   );

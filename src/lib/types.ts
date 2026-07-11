@@ -535,6 +535,7 @@ export interface Creature {
   conditionImmunities?: string;
   traits: CreatureTrait[];
   conditions: string[];
+  exhaustion: number;
   /** Same shape as `CombatState.deathSaves` — only meaningful once `hp` hits 0, tracked separately so stabilizing and dropping again doesn't require guessing a reset. */
   deathSaves?: { successes: number; failures: number };
   /** Which character summons/commands this creature — purely informational (shown as a tag on the card), not a game-mechanical link. */

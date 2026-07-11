@@ -107,6 +107,7 @@ export async function POST(req: Request) {
     conditionImmunities,
     traits,
     conditions: [],
+    exhaustion: 0,
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
     source: typeof body?.source === "string" ? body.source : undefined,
   });
