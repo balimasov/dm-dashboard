@@ -40,14 +40,13 @@ export function HpBar({
       <div className="mb-1 flex min-h-8 items-baseline justify-between">
         <span className="text-sm text-slate-300">HP</span>
         {isDown && deathSaves ? (
-          // `flex-wrap`, and the label+dots grouped into one `whitespace-nowrap`
-          // unit: a narrow card can't always fit the HP input *and* "Death
-          // Saves: ..." on one line, but wrapping *within* that phrase (plain
-          // text reflow splitting "Death" from "Saves:") reads as broken, not
-          // as an intentional two-line layout. Wrapping the whole labeled unit
-          // as one atomic block instead means the worst case is a clean two
-          // lines: HP on top, "Death Saves: ..." below.
-          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm font-medium">
+          // A 300px card has no room for the HP input *and* the full "Death
+          // Saves: ..." phrase on one line — shortened to "Saves" so this
+          // never wraps: wrapping would grow this row (and therefore the
+          // whole card) taller only while a creature happens to be down,
+          // shifting everything below it and misaligning the card against
+          // its neighbors in the same row.
+          <span className="flex items-baseline gap-1.5 text-sm font-medium">
             {/* Still editable, not just a static "0" — a heal (or enough death-save
                 successes to stabilize) needs some way to bring HP back up without
                 leaving the card, and once it's positive `isDown` flips on its own,
@@ -62,36 +61,32 @@ export function HpBar({
                 min={0}
                 max={maxHp}
                 selectOnFocus
-                className={`w-9 rounded border border-slate-700 bg-transparent text-right text-2xl font-bold outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
+                className={`w-10 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
               <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
             )}
-            <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-              <span className="text-slate-400">Death Saves:</span>
-              <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
-                ✅
-                <DotMeter
-                  current={deathSaves.successes}
-                  max={3}
-                  colorClass="bg-emerald-500"
-                  onSetCount={
-                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
-                  }
-                />
-              </span>
-              <span className="text-slate-600">·</span>
-              <span className="inline-flex items-center gap-1 align-middle text-red-400">
-                ❌
-                <DotMeter
-                  current={deathSaves.failures}
-                  max={3}
-                  colorClass="bg-red-500"
-                  onSetCount={
-                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined
-                  }
-                />
-              </span>
+            <span className="text-slate-400">Saves</span>
+            <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
+              ✅
+              <DotMeter
+                current={deathSaves.successes}
+                max={3}
+                colorClass="bg-emerald-500"
+                onSetCount={
+                  onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
+                }
+              />
+            </span>
+            <span className="text-slate-600">·</span>
+            <span className="inline-flex items-center gap-1 align-middle text-red-400">
+              ❌
+              <DotMeter
+                current={deathSaves.failures}
+                max={3}
+                colorClass="bg-red-500"
+                onSetCount={onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined}
+              />
             </span>
           </span>
         ) : (
@@ -103,7 +98,7 @@ export function HpBar({
                 min={0}
                 max={maxHp}
                 selectOnFocus
-                className={`w-11 rounded border border-slate-700 bg-transparent text-right text-2xl font-bold outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
+                className={`w-12 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
               <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
@@ -117,7 +112,7 @@ export function HpBar({
                   onChange={onTempHpChange}
                   min={0}
                   selectOnFocus
-                  className="w-7 rounded border border-slate-700 bg-transparent text-center outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
+                  className="w-8 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-center leading-none outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
                 />
                 temp)
               </span>
