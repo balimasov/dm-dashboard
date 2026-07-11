@@ -19,6 +19,7 @@ export function NumberInput({
   max,
   placeholder,
   selectOnFocus,
+  commitOnBlur,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -28,6 +29,15 @@ export function NumberInput({
   placeholder?: string;
   /** Selects the whole value on focus — for fields typically replaced wholesale (e.g. HP) rather than appended to. */
   selectOnFocus?: boolean;
+  /**
+   * Waits until blur (or Enter) to call `onChange`, instead of on every
+   * keystroke — for fields that drive something highly visible elsewhere
+   * (e.g. the HP bar), where updating per-keystroke means that visual
+   * flickers through every intermediate value while still mid-type. The
+   * typed text itself still updates immediately either way; this only
+   * delays when the *parent* (and anything reading its state) finds out.
+   */
+  commitOnBlur?: boolean;
 }) {
   const [text, setText] = useState(String(value));
   const [prevValue, setPrevValue] = useState(value);
@@ -55,13 +65,14 @@ export function NumberInput({
         const raw = e.target.value;
         if (!/^-?\d*$/.test(raw)) return;
         setText(raw);
-        if (raw !== "" && raw !== "-") onChange(clamp(Number(raw)));
+        if (!commitOnBlur && raw !== "" && raw !== "-") onChange(clamp(Number(raw)));
       }}
       onBlur={() => {
         const normalized = clamp(Number(text) || 0);
         setText(String(normalized));
         onChange(normalized);
       }}
+      onKeyDown={commitOnBlur ? (e) => e.key === "Enter" && e.currentTarget.blur() : undefined}
     />
   );
 }

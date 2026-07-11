@@ -61,6 +61,7 @@ export function HpBar({
                 min={0}
                 max={maxHp}
                 selectOnFocus
+                commitOnBlur
                 className={`w-10 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
@@ -98,6 +99,7 @@ export function HpBar({
                 min={0}
                 max={maxHp}
                 selectOnFocus
+                commitOnBlur
                 className={`w-12 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
@@ -112,6 +114,7 @@ export function HpBar({
                   onChange={onTempHpChange}
                   min={0}
                   selectOnFocus
+                  commitOnBlur
                   className="w-8 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-center leading-none outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
                 />
                 temp)
