@@ -100,6 +100,15 @@ export function CreatureCard({
 
   const deathSaves = creature.deathSaves ?? { successes: 0, failures: 0 };
 
+  // A heal (or DM correction) back above 0 clears any death-save progress —
+  // otherwise a creature that gets knocked down again later would reopen the
+  // tracker showing whatever partial successes/failures it had last time,
+  // which is stale, not carried-over state.
+  function handleHpChange(hp: number) {
+    if (!onUpdate) return;
+    onUpdate(creature.id, hp > 0 ? { hp, deathSaves: { successes: 0, failures: 0 } } : { hp });
+  }
+
   const groups = GROUP_ORDER.map((group) => ({
     group,
     items: creature.traits.filter((t) => (t.group ?? "trait") === group),
@@ -141,7 +150,7 @@ export function CreatureCard({
           tempHp={creature.tempHp}
           isDown={isDown}
           deathSaves={deathSaves}
-          onHpChange={onUpdate ? (hp) => onUpdate(creature.id, { hp }) : undefined}
+          onHpChange={onUpdate ? handleHpChange : undefined}
           onTempHpChange={onUpdate ? (tempHp) => onUpdate(creature.id, { tempHp }) : undefined}
           onDeathSavesChange={onUpdate ? (next) => onUpdate(creature.id, { deathSaves: next }) : undefined}
         />
