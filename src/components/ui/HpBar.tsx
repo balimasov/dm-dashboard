@@ -77,7 +77,7 @@ export function HpBar({
                 min={0}
                 max={maxHp}
                 selectOnFocus
-                className={`w-11 rounded bg-transparent text-right text-2xl font-bold outline-none focus:bg-slate-800 focus:ring-1 focus:ring-slate-600 ${hpTextColor}`}
+                className={`w-11 rounded border border-slate-700 bg-transparent text-right text-2xl font-bold outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
               <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
@@ -91,7 +91,7 @@ export function HpBar({
                   onChange={onTempHpChange}
                   min={0}
                   selectOnFocus
-                  className="w-7 rounded bg-transparent text-center outline-none focus:bg-slate-800 focus:ring-1 focus:ring-amber-700/50"
+                  className="w-7 rounded border border-slate-700 bg-transparent text-center outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
                 />
                 temp)
               </span>
