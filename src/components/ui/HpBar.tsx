@@ -40,32 +40,58 @@ export function HpBar({
       <div className="mb-1 flex min-h-8 items-baseline justify-between">
         <span className="text-sm text-slate-300">HP</span>
         {isDown && deathSaves ? (
-          <span className="text-sm font-medium">
-            {/* Zero-width but text-2xl-sized, so this line's shared baseline sits at the same depth as the normal HP display below — a real character here would need width:0 tricks that break the baseline math (an inline-block clipped to 0 width computes its baseline from its bottom margin edge, not its text), but U+200B has zero advance width on its own. */}
-            <span aria-hidden className="text-2xl">
-              {"​"}
-            </span>
-            <span className="text-slate-400">Death Saves:</span>{" "}
-            <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
-              ✅
-              <DotMeter
-                current={deathSaves.successes}
-                max={3}
-                colorClass="bg-emerald-500"
-                onSetCount={
-                  onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
-                }
+          // `flex-wrap`, and the label+dots grouped into one `whitespace-nowrap`
+          // unit: a narrow card can't always fit the HP input *and* "Death
+          // Saves: ..." on one line, but wrapping *within* that phrase (plain
+          // text reflow splitting "Death" from "Saves:") reads as broken, not
+          // as an intentional two-line layout. Wrapping the whole labeled unit
+          // as one atomic block instead means the worst case is a clean two
+          // lines: HP on top, "Death Saves: ..." below.
+          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm font-medium">
+            {/* Still editable, not just a static "0" — a heal (or enough death-save
+                successes to stabilize) needs some way to bring HP back up without
+                leaving the card, and once it's positive `isDown` flips on its own,
+                switching this row back to the normal HP display. Also what
+                establishes this row's baseline now (used to be a zero-width
+                placeholder span, back when this branch had no 2xl-sized content
+                of its own to match the other branch's baseline depth). */}
+            {onHpChange ? (
+              <NumberInput
+                value={hp}
+                onChange={onHpChange}
+                min={0}
+                max={maxHp}
+                selectOnFocus
+                className={`w-9 rounded border border-slate-700 bg-transparent text-right text-2xl font-bold outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
-            </span>
-            <span className="text-slate-600"> · </span>
-            <span className="inline-flex items-center gap-1 align-middle text-red-400">
-              ❌
-              <DotMeter
-                current={deathSaves.failures}
-                max={3}
-                colorClass="bg-red-500"
-                onSetCount={onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined}
-              />
+            ) : (
+              <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
+            )}
+            <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+              <span className="text-slate-400">Death Saves:</span>
+              <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
+                ✅
+                <DotMeter
+                  current={deathSaves.successes}
+                  max={3}
+                  colorClass="bg-emerald-500"
+                  onSetCount={
+                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
+                  }
+                />
+              </span>
+              <span className="text-slate-600">·</span>
+              <span className="inline-flex items-center gap-1 align-middle text-red-400">
+                ❌
+                <DotMeter
+                  current={deathSaves.failures}
+                  max={3}
+                  colorClass="bg-red-500"
+                  onSetCount={
+                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined
+                  }
+                />
+              </span>
             </span>
           </span>
         ) : (

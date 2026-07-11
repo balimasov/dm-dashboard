@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     alignment,
     ac,
     armorDesc,
-    hp: Number(body?.hp) || maxHp,
+    hp: parseOptionalNumber(body?.hp) ?? maxHp,
     maxHp,
     hitDice,
     tempHp: 0,
