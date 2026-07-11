@@ -248,7 +248,11 @@ export function DashboardClient({
         {creatures.length === 0 ? (
           <EmptyRosterState message="No creatures yet." onOpenSettings={() => setSettingsOpen(true)} />
         ) : (
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2">
+          // Same `pt-8`/`px-3` reservation as the Party row above, for the
+          // same reason — CreatureCard's own StatusRail badges bleed above
+          // and sideways of the card's border and get clipped by this row's
+          // own overflow-x-auto without the extra room.
+          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
             {creatures.map((creature) => {
               const owner = characters.find((c) => c.id === creature.ownerCharacterId);
               return (
