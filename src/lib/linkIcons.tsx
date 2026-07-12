@@ -59,7 +59,7 @@ function SlidesIcon({ className }: { className?: string }) {
 function DriveIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M9 3h6l7 12-3 5H5l-3-5Zm1.7 2 5.6 9.7h3L14 5Zm-3.6 1L2.9 15l1.5 2.6L9.1 9Z" />
+      <path d="M9 3h6l7 12-3 5H5l-3-5Z" />
     </svg>
   );
 }
