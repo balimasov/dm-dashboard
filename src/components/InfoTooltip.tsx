@@ -41,11 +41,11 @@ export function InfoTooltip({
   /** Skips the tap-to-toggle affordance and the dotted-underline hint styling — for wrapping an element that already has its own onClick (e.g. a toggle button), so a click there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS. */
   hoverOnly?: boolean;
   /**
-   * For a short label (e.g. "Resist:") that needs to sit on the same line as
-   * plain text right after it — the default trigger is `block`/`truncate`
-   * for standalone use (a whole pill, a whole row), which forces a line
-   * break before any inline sibling. `inline` skips both, since a short
-   * label never needs truncation anyway.
+   * The trigger is always `inline-block` (sits on the same line as
+   * surrounding text either way) — `inline` only skips the inner span's
+   * `block`/`truncate`, for a short label (e.g. "Resist:") that's never
+   * going to overflow its container and so doesn't need the ellipsis
+   * machinery at all.
    */
   inline?: boolean;
 }) {
@@ -113,7 +113,13 @@ export function InfoTooltip({
   return (
     <span
       ref={wrapperRef}
-      className={`group/tooltip relative inline-block max-w-full ${hoverOnly ? "" : "cursor-help"}`}
+      // `inline-block` (not `block`) so the hover/click target hugs the text
+      // instead of stretching to fill a flex/block container. `align-top` is
+      // load-bearing: an inline-block's default `vertical-align: baseline`
+      // reserves extra space below it for descenders in the surrounding line
+      // box, which was inflating every row that used this component (most
+      // visibly the Inventory item list, where it added ~5px per row).
+      className={`group/tooltip relative inline-block max-w-full align-top ${hoverOnly ? "" : "cursor-help"}`}
       onClick={
         hoverOnly
           ? undefined
