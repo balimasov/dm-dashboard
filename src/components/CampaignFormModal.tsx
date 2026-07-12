@@ -379,7 +379,7 @@ export function CampaignFormModal({
         </div>
 
         {isEditing && (
-          <div className="mt-4 flex justify-end border-t border-slate-800 pt-4">
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={close}
