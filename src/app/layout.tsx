@@ -3,7 +3,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import "./globals.css";
 import packageJson from "../../package.json";
-import { FeedbackFab } from "@/components/FeedbackFab";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import { AUTH_COOKIE_NAME, isValidSessionToken } from "@/lib/auth";
 import { logout } from "@/app/login/actions";
@@ -68,7 +67,6 @@ export default async function RootLayout({
         <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
           DM Dashboard · v{APP_VERSION} · dwarfbalin
         </footer>
-        <FeedbackFab />
       </body>
     </html>
   );

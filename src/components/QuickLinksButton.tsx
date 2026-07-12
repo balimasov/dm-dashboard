@@ -5,9 +5,10 @@ import { getLinkVisual, LinkIcon } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
 
 /**
- * A `position: fixed` trigger pinned to the right edge of the viewport, so
- * it stays reachable at any scroll position during a session — the whole
- * point is looking something up mid-game without hunting for it. Same
+ * A `position: fixed` trigger pinned to the bottom-right corner of the
+ * viewport (the same spot the old `FeedbackFab` occupied), so it stays
+ * reachable at any scroll position during a session — the whole point is
+ * looking something up mid-game without hunting for it. Same
  * click-outside-to-close popover pattern as `SyncAllButton`'s auto-sync menu
  * and `StatusRail`'s "+" add-status trigger.
  */
@@ -27,22 +28,22 @@ export function QuickLinksButton({ links }: { links: QuickLink[] }) {
   if (links.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="fixed right-3 top-1/2 z-40 -translate-y-1/2 sm:right-4">
+    <div ref={containerRef} className="fixed bottom-5 right-5 z-40">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick links"
         aria-expanded={open}
         title="Quick links"
-        className={`flex h-11 w-11 items-center justify-center rounded-full border bg-slate-900 shadow-lg shadow-black/40 hover:bg-slate-800 ${
-          open ? "border-sky-500 text-sky-400" : "border-slate-700 text-slate-300"
+        className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg shadow-black/40 transition hover:scale-105 ${
+          open ? "border-sky-400 bg-sky-500 text-white" : "border-sky-600 bg-sky-600 text-white hover:bg-sky-500"
         }`}
       >
-        <LinkIcon className="h-5 w-5" />
+        <LinkIcon className="h-6 w-6" />
       </button>
 
       {open && (
-        <div className="scrollbar-themed absolute right-0 top-full mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
+        <div className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
           <p className="px-3 pb-1 pt-0.5 text-[10px] uppercase tracking-wide text-slate-500">Quick Links</p>
           {links.map((link) => {
             const visual = getLinkVisual(link.url);
