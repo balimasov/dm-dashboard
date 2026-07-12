@@ -28,7 +28,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
 
-const MAX_QUICK_LINKS = 10;
+const MAX_QUICK_LINKS = 15;
 
 /** Fixed-size slot for the icon/fallback badge — the two used to render at different sizes (16px icon vs. 20px fallback circle), which shifted every field to its right depending on whether a link's domain was recognized. */
 function QuickLinkIcon({ url }: { url: string }) {

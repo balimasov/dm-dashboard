@@ -113,7 +113,7 @@ export function InfoTooltip({
   return (
     <span
       ref={wrapperRef}
-      className={`group/tooltip relative ${inline ? "inline-block" : "block max-w-full"} ${hoverOnly ? "" : "cursor-help"}`}
+      className={`group/tooltip relative inline-block max-w-full ${hoverOnly ? "" : "cursor-help"}`}
       onClick={
         hoverOnly
           ? undefined

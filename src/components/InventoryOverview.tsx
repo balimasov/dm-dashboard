@@ -275,7 +275,9 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <InfoTooltip panel={<CurrencyConversionPanel />}>Coins</InfoTooltip>
+            <InfoTooltip panel={<CurrencyConversionPanel />} inline>
+              Coins
+            </InfoTooltip>
           </h3>
           {rightCurrency.length > 0 ? (
             <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
