@@ -438,7 +438,7 @@ export interface CreatureTrait {
 }
 
 /**
- * A lightweight bestiary search result — shown in the "Add Creature" picker
+ * A lightweight Open5e SRD search result — shown in the "Add Creature" picker
  * list without fetching a full stat block for every hit (a popular query
  * can return upwards of a hundred matches; fetching each one's full detail
  * up front would mean that many extra requests before the DM has even
@@ -451,14 +451,14 @@ export interface CreatureSearchHit {
   creatureType?: string;
   size?: string;
   challengeRating?: string;
-  origin: "srd" | "custom";
 }
 
 /**
- * A reusable stat-block — the shared "bestiary" — independent of any
- * campaign or character. Entering a creature's stats once (by hand, or
- * picked from an SRD search result) makes it instantly available again next
- * time, for any character in any campaign, without retyping a stat block.
+ * A full creature stat block resolved from one Open5e SRD search hit — not
+ * stored anywhere on its own (there's deliberately no shared/cross-campaign
+ * bestiary: re-adding the same creature just searches Open5e again, or a
+ * custom/homebrew one is re-imported from its own saved YAML file), just the
+ * shape used to prefill the "Add Creature" form for the hit the DM picked.
  */
 export interface CreatureTemplate {
   id: string;
@@ -495,8 +495,6 @@ export interface CreatureTemplate {
   damageImmunities?: string;
   conditionImmunities?: string;
   traits: CreatureTrait[];
-  /** Where the stat block came from — an SRD search result, or typed in by hand. */
-  origin: "srd" | "custom";
 }
 
 /**
@@ -510,7 +508,7 @@ export interface Creature {
   id: string;
   /** Every creature belongs to exactly one campaign, same as `Character.campaignId`. */
   campaignId: string;
-  /** The bestiary entry this was seeded from, if any — absent for a one-off creature typed in without saving it to the shared bestiary. */
+  /** The Open5e SRD search hit this was seeded from, if any — absent for a creature added blank or via YAML import. Purely so a repeat search in this campaign can grey out "Add" as "(Added)"; nothing else reads it. */
   templateId?: string;
   /** The creature's actual species/import name (e.g. "Otherworldly Steed") — stays fixed regardless of `name`, so renaming the in-play nickname never loses track of what it actually is. */
   templateName: string;

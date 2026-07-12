@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createCreature, listCreatures, upsertBestiaryTemplate } from "@/lib/db";
+import { createCreature, listCreatures } from "@/lib/db";
 import { AbilityScores, CreatureTrait } from "@/lib/types";
 
 const DEFAULT_STATS: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
@@ -110,37 +110,6 @@ export async function POST(req: Request) {
     exhaustion: 0,
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
     source: typeof body?.source === "string" ? body.source : undefined,
-  });
-
-  // Saving the stat block to the shared bestiary is automatic, not a
-  // separate step — whether these stats came from a fresh SRD search or
-  // were typed in by hand, the next time any character needs this creature
-  // it should already be there.
-  upsertBestiaryTemplate({
-    name: templateName,
-    creatureType,
-    size,
-    alignment,
-    ac,
-    armorDesc,
-    maxHp,
-    hitDice,
-    speed,
-    speedDetail,
-    initiativeBonus,
-    stats,
-    savingThrows,
-    senses,
-    languages,
-    challengeRating,
-    experiencePoints,
-    skills,
-    damageVulnerabilities,
-    damageResistances,
-    damageImmunities,
-    conditionImmunities,
-    traits,
-    origin: templateId?.startsWith("srd-") ? "srd" : "custom",
   });
 
   return NextResponse.json(creature, { status: 201 });

@@ -223,7 +223,6 @@ function mapOpen5eV2Creature(m: Record<string, unknown>): CreatureTemplate | nul
     damageImmunities: firstString(rai, ["damage_immunities_display"]),
     conditionImmunities: firstString(rai, ["condition_immunities_display"]),
     traits: mapTraitsAndActions(m),
-    origin: "srd",
   };
 }
 
@@ -305,7 +304,6 @@ export async function searchSrdCreatures(query: string): Promise<CreatureSearchH
         creatureType: firstString(preview, ["type"]),
         size: firstString(preview, ["size"]),
         challengeRating: toChallengeRatingText(preview.cr),
-        origin: "srd",
       };
     })
     .filter((h): h is CreatureSearchHit => h !== null);

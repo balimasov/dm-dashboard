@@ -157,7 +157,6 @@ function AddCreaturePanel({
                 <p className="truncate text-xs text-slate-500">
                   {creatureInfoLine(t)}
                   {t.challengeRating && ` · CR ${t.challengeRating}`}
-                  <span className="ml-1.5 text-slate-600">{t.origin === "srd" ? "(SRD)" : "(Saved)"}</span>
                 </p>
               </div>
               <button

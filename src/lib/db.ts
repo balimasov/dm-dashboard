@@ -7,7 +7,6 @@ import {
   CampaignSummary,
   Character,
   Creature,
-  CreatureTemplate,
   extractDndBeyondCharacterId,
   ItemCategory,
   ItemRarity,
@@ -51,19 +50,14 @@ function openDb(): Database.Database {
       data TEXT NOT NULL
     )
   `);
-  // The shared bestiary — reusable stat-block templates, deliberately not
-  // scoped to a campaign (that's the entire point: enter "Unicorn" once and
-  // it's available for any future character/campaign too). Looked up by
-  // name, hence the dedicated indexed column instead of reading it back out
-  // of `data` on every search.
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS bestiary_templates (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      data TEXT NOT NULL
-    )
-  `);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_bestiary_templates_name ON bestiary_templates (name)`);
+  // The shared cross-campaign bestiary this project shipped earlier turned
+  // out to cause more problems than it solved: an invisible cache with no
+  // way to view/edit it directly, silently drifting from a creature's actual
+  // stats the moment that creature was edited (only adding one wrote back to
+  // it). Dropped in favor of just re-searching Open5e or re-importing a
+  // saved YAML file for something reused — both are explicit, DM-controlled
+  // actions instead of a hidden synced table.
+  db.exec(`DROP TABLE IF EXISTS bestiary_templates`);
 
   // `characters` predates campaigns — `CREATE TABLE IF NOT EXISTS` above
   // doesn't retrofit a column onto an already-existing table, so an existing
@@ -201,7 +195,7 @@ export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign
   return updated;
 }
 
-/** Cascades: a campaign's characters and creatures have nowhere else to belong, so removing it takes its whole roster with it. Bestiary templates are untouched — they're shared across campaigns, not owned by any one of them. */
+/** Cascades: a campaign's characters and creatures have nowhere else to belong, so removing it takes its whole roster with it. */
 export function deleteCampaign(id: string): void {
   const db = getDb();
   const transaction = db.transaction(() => {
@@ -357,27 +351,8 @@ export function updateCreature(id: string, updates: Partial<Creature>): Creature
   return updated;
 }
 
-/**
- * Also purges the shared bestiary entry for this creature's `templateName`
- * once no other creature (in any campaign) references it any more —
- * otherwise a stale/incorrect cached stat block (e.g. from an early,
- * wrongly-parsed import) would sit in the bestiary forever, permanently
- * shadowing a fresh re-import of the same name with no way to fix it short
- * of manually editing the saved entry.
- */
 export function removeCreature(id: string): void {
-  const db = getDb();
-  const existing = getCreature(id);
-  db.prepare("DELETE FROM creatures WHERE id = ?").run(id);
-  if (!existing) return;
-
-  const remaining = db.prepare("SELECT data FROM creatures").all() as Array<{ data: string }>;
-  const stillReferenced = remaining.some(
-    (row) => (JSON.parse(row.data) as Creature).templateName?.toLowerCase() === existing.templateName.toLowerCase()
-  );
-  if (!stillReferenced) {
-    db.prepare("DELETE FROM bestiary_templates WHERE name = ? COLLATE NOCASE").run(existing.templateName);
-  }
+  getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
 }
 
 export function reorderCreatures(orderedIds: string[]): void {
@@ -387,46 +362,4 @@ export function reorderCreatures(orderedIds: string[]): void {
     ids.forEach((id, index) => update.run(index, id));
   });
   transaction(orderedIds);
-}
-
-export function getBestiaryTemplateById(id: string): CreatureTemplate | null {
-  const row = getDb().prepare("SELECT data FROM bestiary_templates WHERE id = ?").get(id) as
-    | { data: string }
-    | undefined;
-  return row ? (JSON.parse(row.data) as CreatureTemplate) : null;
-}
-
-/** Case-insensitive substring match on name, most-recently-added first (a DM re-searching mid-session is more likely after the one they just added than an old unrelated entry). */
-export function searchBestiary(query: string): CreatureTemplate[] {
-  const trimmed = query.trim();
-  if (!trimmed) return [];
-  const rows = getDb()
-    .prepare("SELECT data FROM bestiary_templates WHERE name LIKE ? COLLATE NOCASE ORDER BY rowid DESC LIMIT 20")
-    .all(`%${trimmed}%`) as Array<{ data: string }>;
-  return rows.map((row) => JSON.parse(row.data) as CreatureTemplate);
-}
-
-/**
- * Keyed by name (case-insensitive) rather than id — the point of the shared
- * bestiary is that entering/importing "Unicorn" once is enough, regardless
- * of whether the next character to use it came from a fresh SRD search or
- * picked the saved entry, so a second save under the same name overwrites
- * the existing template instead of creating a duplicate.
- */
-export function upsertBestiaryTemplate(input: Omit<CreatureTemplate, "id">): CreatureTemplate {
-  const db = getDb();
-  const existing = db
-    .prepare("SELECT id FROM bestiary_templates WHERE name = ? COLLATE NOCASE")
-    .get(input.name) as { id: string } | undefined;
-  const template: CreatureTemplate = { ...input, id: existing?.id ?? `bestiary-${Date.now()}` };
-  if (existing) {
-    db.prepare("UPDATE bestiary_templates SET data = ? WHERE id = ?").run(JSON.stringify(template), existing.id);
-  } else {
-    db.prepare("INSERT INTO bestiary_templates (id, name, data) VALUES (?, ?, ?)").run(
-      template.id,
-      template.name,
-      JSON.stringify(template)
-    );
-  }
-  return template;
 }
