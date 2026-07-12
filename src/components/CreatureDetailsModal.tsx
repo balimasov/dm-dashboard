@@ -4,18 +4,23 @@ import { useEffect } from "react";
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { NotesSection } from "./ui/NotesSection";
+import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 
 /**
  * Same shape as `CharacterDetailsModal` — opened by clicking a creature's
  * header, same shell (top-aligned scroll container, Escape-to-close,
- * backdrop-scroll lock). Unlike the character modal, this isn't a superset of
- * the compact card's content: a creature's card already shows its full stat
- * block with nothing hidden, so `CreatureStatBlock` is the exact same shared
- * body in both places — this modal just gives it more room. Notes/Quick
- * Notes stay card-only, same as `Character.notes`/`quickNotes` never show up
- * in the character modal either.
+ * backdrop-scroll lock). Unlike the character modal, the stat-block part
+ * isn't a superset of the compact card's content: a creature's card already
+ * shows its full stat block with nothing hidden, so `CreatureStatBlock` is
+ * the exact same shared body in both places — this modal just gives it more
+ * room. Notes/Quick Notes do appear in both places (same as
+ * `CharacterDetailsModal`) — the compact card keeps its own copies (Notes
+ * read-only, Quick Notes editable) for a quick glance/jot without opening
+ * anything, while this modal makes Notes itself editable too, a faster path
+ * than the full `/creatures/[id]/edit` page for a quick mid-session update.
  */
 export function CreatureDetailsModal({
   creature,
@@ -77,6 +82,15 @@ export function CreatureDetailsModal({
         </div>
 
         <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
+
+        <NotesSection
+          notes={creature.notes ?? ""}
+          onChange={onUpdate ? (notes) => onUpdate(creature.id, { notes }) : undefined}
+        />
+        <QuickNotesSection
+          notes={creature.quickNotes ?? []}
+          onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
+        />
       </div>
     </div>
   );

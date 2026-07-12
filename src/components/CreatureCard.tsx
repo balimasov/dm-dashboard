@@ -6,6 +6,7 @@ import { Character, Creature } from "@/lib/types";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 
@@ -45,12 +46,7 @@ export function CreatureCard({
 
       <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
 
-      {creature.notes && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Notes</h3>
-          <p className="text-sm text-slate-400 leading-snug">{creature.notes}</p>
-        </div>
-      )}
+      <NotesSection notes={creature.notes ?? ""} />
 
       <QuickNotesSection
         notes={creature.quickNotes ?? []}

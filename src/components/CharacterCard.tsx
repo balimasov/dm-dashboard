@@ -27,6 +27,7 @@ import { DamageInfoList } from "./ui/DamageInfoList";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
+import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 
 export function CharacterCard({
@@ -239,13 +240,7 @@ export function CharacterCard({
         </div>
       )}
 
-      {/* Notes */}
-      {c.notes && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Notes</h3>
-          <p className="text-sm text-slate-400 leading-snug">{c.notes}</p>
-        </div>
-      )}
+      <NotesSection notes={c.notes} />
 
       <QuickNotesSection
         notes={c.quickNotes ?? []}

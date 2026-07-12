@@ -27,7 +27,9 @@ import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
+import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
@@ -547,6 +549,15 @@ export function CharacterDetailsModal({
             No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
           </p>
         )}
+
+        {/* Notes/Quick Notes — same fields as the compact card, but Notes is
+            editable here (save-on-blur) instead of read-only; the edit page
+            remains an option too, this is just the faster path mid-session. */}
+        <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} />
+        <QuickNotesSection
+          notes={c.quickNotes ?? []}
+          onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
+        />
       </div>
     </div>
   );

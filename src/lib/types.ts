@@ -398,10 +398,10 @@ export interface Character {
   notes: string;
   /**
    * Short, dashboard-added reminders (a sentence or two) — separate from the
-   * single long-form `notes` field above, which is only edited on the
-   * character's edit page. Meant to be jotted down and cleared quickly
-   * mid-session, so each is its own entry rather than one shared block of
-   * text.
+   * single long-form `notes` field above (editable on the character's edit
+   * page and, more quickly, in `CharacterDetailsModal`). Meant to be jotted
+   * down and cleared quickly mid-session, so each is its own entry rather
+   * than one shared block of text.
    */
   quickNotes: QuickNote[];
   /**
