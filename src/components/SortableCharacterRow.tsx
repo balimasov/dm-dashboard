@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { Character, characterInfoLine } from "@/lib/types";
-import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
+import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 
 export function SortableCharacterRow({
   character,
@@ -22,52 +22,19 @@ export function SortableCharacterRow({
       id={character.id}
       avatar={<CharacterAvatar character={character} />}
       actions={
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex items-center gap-3">
-            {character.dndBeyondUrl && (
-              <button
-                onClick={() => onResync(character.id)}
-                disabled={syncing}
-                className="text-sky-400 hover:text-sky-300 disabled:opacity-50"
-              >
-                Sync
-              </button>
-            )}
-            <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
-              Edit
-            </Link>
-            <button
-              onClick={() => {
-                const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
-                if (confirmed) onRemove(character.id);
-              }}
-              className="text-red-500/80 hover:text-red-400"
-            >
-              Remove
-            </button>
-          </div>
-          {character.dndBeyondUrl && (
-            <div className="flex items-center gap-1.5 text-xs">
-              <a
-                href={character.dndBeyondUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="shrink-0 text-slate-500 hover:text-slate-300 hover:underline"
-              >
-                D&D Beyond ↗
-              </a>
-              <span className="text-slate-700">·</span>
-              {syncing ? (
-                <span className="text-sky-400">Syncing...</span>
-              ) : character.lastSyncedAt ? (
-                <span className="text-slate-600">
-                  Synced <SyncTimestamp iso={character.lastSyncedAt} />
-                </span>
-              ) : (
-                <span className="text-amber-500">Not synced yet</span>
-              )}
-            </div>
-          )}
+        <div className="flex items-center gap-3">
+          <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
+            Edit
+          </Link>
+          <button
+            onClick={() => {
+              const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
+              if (confirmed) onRemove(character.id);
+            }}
+            className="text-red-500/80 hover:text-red-400"
+          >
+            Remove
+          </button>
         </div>
       }
     >
@@ -84,6 +51,15 @@ export function SortableCharacterRow({
         {characterInfoLine(character)}
       </p>
       <p className="text-xs text-slate-600">Lvl {character.level}</p>
+      <div className="mt-1">
+        <DdbSyncStatus
+          dndBeyondUrl={character.dndBeyondUrl}
+          synced={character.synced}
+          lastSyncedAt={character.lastSyncedAt}
+          syncing={syncing}
+          onSync={() => onResync(character.id)}
+        />
+      </div>
     </RosterRow>
   );
 }

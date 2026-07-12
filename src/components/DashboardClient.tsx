@@ -188,7 +188,7 @@ export function DashboardClient({
             <>
               {lastSyncedAt && (
                 <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">
-                  Synced: <SyncTimestamp iso={lastSyncedAt} />
+                  Synced <SyncTimestamp iso={lastSyncedAt} />
                 </span>
               )}
               <div className="shrink-0">

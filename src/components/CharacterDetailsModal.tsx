@@ -277,8 +277,8 @@ export function CharacterDetailsModal({
           onSync={onUpdate ? sync : undefined}
         />
 
-        {/* Combat state — same block as the main card, so this modal is a superset of it rather than a different view. */}
-        <div className="border-t border-slate-800 pt-3">
+        {/* Combat state — same block as the main card (no divider above it, matching the card's own spacing between this and the sync block), so this modal is a superset of it rather than a different view. */}
+        <div>
           <HpBar
             hp={c.combat.hp}
             maxHp={c.combat.maxHp}
