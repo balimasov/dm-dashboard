@@ -37,7 +37,7 @@ export function RosterRow({
         isDragging ? "opacity-50" : ""
       }`}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
           {...attributes}
@@ -48,7 +48,7 @@ export function RosterRow({
           ⠿
         </button>
         {avatar}
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
       <div className="flex shrink-0 items-center justify-end gap-3 text-sm">{actions}</div>
     </li>

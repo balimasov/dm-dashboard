@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { getLinkVisual, LinkIcon } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
 
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19 3 20l1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /**
  * A `position: fixed` trigger pinned to the bottom-right corner of the
  * viewport (the same spot the old `FeedbackFab` occupied), so it stays
@@ -12,7 +20,7 @@ import { QuickLink } from "@/lib/types";
  * click-outside-to-close popover pattern as `SyncAllButton`'s auto-sync menu
  * and `StatusRail`'s "+" add-status trigger.
  */
-export function QuickLinksButton({ links }: { links: QuickLink[] }) {
+export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onManage?: () => void }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +52,23 @@ export function QuickLinksButton({ links }: { links: QuickLink[] }) {
 
       {open && (
         <div className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
-          <p className="px-3 pb-1 pt-0.5 text-[10px] uppercase tracking-wide text-slate-500">Quick Links</p>
+          <div className="flex items-center justify-between px-3 pb-1 pt-0.5">
+            <p className="text-[10px] uppercase tracking-wide text-slate-500">Quick Links</p>
+            {onManage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onManage();
+                }}
+                aria-label="Edit quick links"
+                title="Edit quick links"
+                className="rounded p-0.5 text-slate-600 hover:text-sky-400"
+              >
+                <PencilIcon className="h-3 w-3" />
+              </button>
+            )}
+          </div>
           {links.map((link) => {
             const visual = getLinkVisual(link.url);
             return (

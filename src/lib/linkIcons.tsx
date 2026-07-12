@@ -177,6 +177,28 @@ function OneDriveIcon({ className }: { className?: string }) {
   );
 }
 
+/** A d20, reduced to its outer hexagonal silhouette plus the facet lines meeting at its center — stands in for D&D Beyond's own shield/dragon mark. */
+function DndBeyondIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className}>
+      <path
+        d="M12 2.5 21 8v8l-9 5.5L3 16V8l9-5.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 2.5v9M12 11.5 21 8M12 11.5 3 8M12 11.5l-9 8M12 11.5l9 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Fallback trigger + default row icon — a plain chain link. */
 export function LinkIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -196,6 +218,7 @@ interface RegistryEntry {
 }
 
 const REGISTRY: RegistryEntry[] = [
+  { name: "D&D Beyond", match: (h) => h === "dndbeyond.com" || h.endsWith(".dndbeyond.com"), Icon: DndBeyondIcon, colorClass: "text-orange-400" },
   { name: "Google Docs", match: (h, p) => h === "docs.google.com" && p.includes("/document"), Icon: DocsIcon, colorClass: "text-blue-400" },
   { name: "Google Sheets", match: (h, p) => h === "docs.google.com" && p.includes("/spreadsheets"), Icon: SheetsIcon, colorClass: "text-green-400" },
   { name: "Google Slides", match: (h, p) => h === "docs.google.com" && p.includes("/presentation"), Icon: SlidesIcon, colorClass: "text-amber-400" },

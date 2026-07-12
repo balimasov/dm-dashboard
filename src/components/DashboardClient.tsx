@@ -171,7 +171,7 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
-      <QuickLinksButton links={campaignState.quickLinks ?? []} />
+      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings("campaign")} />
 
       <div className="mb-4 space-y-2">
         {/* Below `sm`, the timestamp + all four actions don't fit one line at
