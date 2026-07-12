@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -22,6 +22,8 @@ import { apiFetch } from "@/lib/apiClient";
 import { Character, Creature, CreatureSearchHit, CreatureTemplate, creatureInfoLine } from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
+import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
+import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
 import { RosterRow } from "@/components/RosterRow";
 
@@ -188,6 +190,141 @@ function AddCreaturePanel({
   );
 }
 
+function downloadTemplate() {
+  const blob = new Blob([buildCreatureImportTemplate()], { type: "text/yaml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "creature-template.yaml";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Alternative to `AddCreaturePanel`'s Open5e search — for a creature/NPC that
+ * isn't free SRD content (a homebrew monster, a published-book exclusive, an
+ * NPC the DM wrote up by hand or with an AI's help). The downloadable
+ * template is generated from the same schema the parser validates against
+ * (`creatureImportSchema.ts`), so the two can never silently drift apart.
+ */
+function ImportCreaturePanel({
+  onAdd,
+  characters,
+}: {
+  onAdd: (input: AddCreatureInput) => Promise<Creature>;
+  /** Resolves the template's plain-text `ownerCharacter: "Aria"` field to an id — the parser itself only knows the schema, not any particular campaign's roster. */
+  characters: Character[];
+}) {
+  const [text, setText] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => setText(String(reader.result ?? ""));
+    reader.readAsText(file);
+  }
+
+  async function handleImport() {
+    if (!text.trim()) return;
+    setImporting(true);
+    setErrors([]);
+    setWarnings([]);
+    try {
+      const outcome = parseCreatureImportYaml(text);
+      if (!outcome.ok) {
+        setErrors(outcome.errors);
+        setWarnings(outcome.warnings);
+        return;
+      }
+      const { input, ownerCharacterName } = outcome.result;
+      let ownerCharacterId: string | undefined;
+      if (ownerCharacterName) {
+        const match = characters.find((c) => c.name.toLowerCase() === ownerCharacterName.toLowerCase());
+        if (match) {
+          ownerCharacterId = match.id;
+        } else {
+          outcome.warnings.push(`Персонажа "${ownerCharacterName}" не знайдено в цій кампанії — прив'язку до власника пропущено.`);
+        }
+      }
+      await onAdd({ ...input, ownerCharacterId });
+      setWarnings(outcome.warnings);
+      setText("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={downloadTemplate}
+          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+        >
+          Download template (.yaml)
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+        >
+          Upload file...
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".yaml,.yml,.txt"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }}
+        />
+      </div>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Встав заповнений YAML-шаблон сюди, або завантаж файл вище..."
+        rows={8}
+        className="scrollbar-themed w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+      />
+
+      {errors.length > 0 && (
+        <div className="rounded-lg border border-red-900/60 bg-red-950/30 p-3">
+          <p className="mb-1 text-sm font-medium text-red-400">Не вдалося імпортувати — виправ і спробуй ще раз:</p>
+          <ul className="list-disc space-y-0.5 pl-4 text-xs text-red-300">
+            {errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <ul className="list-disc space-y-0.5 pl-4 text-xs text-amber-400">
+          {warnings.map((w, i) => (
+            <li key={i}>{w}</li>
+          ))}
+        </ul>
+      )}
+
+      <button
+        type="button"
+        onClick={handleImport}
+        disabled={!text.trim() || importing}
+        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+      >
+        {importing ? "Importing..." : "Import"}
+      </button>
+    </div>
+  );
+}
+
 function CreatureRow({
   creature,
   characters,
@@ -273,9 +410,27 @@ export function CreatureRosterEditor({
     creatures.map((c) => c.templateId).filter((id): id is string => Boolean(id))
   );
 
+  const [addMode, setAddMode] = useState<"search" | "import">("search");
+  const tabCls = (active: boolean) =>
+    `rounded-md px-3 py-1.5 text-sm font-medium ${
+      active ? "bg-slate-800 text-slate-100" : "text-slate-500 hover:text-slate-300"
+    }`;
+
   return (
     <div>
-      <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} />
+      <div className="mb-3 flex gap-1">
+        <button type="button" className={tabCls(addMode === "search")} onClick={() => setAddMode("search")}>
+          Search SRD
+        </button>
+        <button type="button" className={tabCls(addMode === "import")} onClick={() => setAddMode("import")}>
+          Import from file
+        </button>
+      </div>
+      {addMode === "search" ? (
+        <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} />
+      ) : (
+        <ImportCreaturePanel onAdd={addCreature} characters={characters} />
+      )}
 
       <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">
         Added Creatures ({creatures.length})
