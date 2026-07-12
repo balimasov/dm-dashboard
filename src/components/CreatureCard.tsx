@@ -25,6 +25,7 @@ import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { Pill } from "./ui/Pill";
+import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
@@ -186,6 +187,7 @@ export function CreatureCard({
             icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
             label="Languages:"
+            valueTitle={creature.languages}
           >
             {creature.languages || "—"}
           </IconStat>
@@ -302,6 +304,18 @@ export function CreatureCard({
           ))}
         </div>
       )}
+
+      {creature.notes && (
+        <div className="border-t border-slate-800 pt-3">
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Notes</h3>
+          <p className="text-sm text-slate-400 leading-snug">{creature.notes}</p>
+        </div>
+      )}
+
+      <QuickNotesSection
+        notes={creature.quickNotes ?? []}
+        onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
+      />
 
       {onRemove && (
         <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 text-xs">

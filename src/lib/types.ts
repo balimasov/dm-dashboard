@@ -549,6 +549,8 @@ export interface Creature {
   /** How it entered play, e.g. "Find Steed", "Wild Shape", "Familiar". */
   source?: string;
   notes?: string;
+  /** Same convention as `Character.quickNotes` — short reminders added/edited/removed straight from the dashboard card, separate from the long-form `notes` field above. */
+  quickNotes?: QuickNote[];
   /** Same convention as `Character.flaggedAbilities` — names of traits/actions the DM has flagged as a reminder, shown with a flame icon and amber highlight. */
   flaggedTraits?: string[];
 }

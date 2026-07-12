@@ -27,7 +27,9 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
       aria-label={active ? "Remove reminder" : "Flag as a reminder"}
       aria-pressed={active}
       title={active ? "Remove reminder" : "Flag as a reminder"}
-      className={`shrink-0 rounded p-0.5 ${active ? "text-amber-300" : "text-slate-600 hover:text-amber-400"}`}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+        active ? "text-amber-300 hover:bg-amber-500/10" : "text-slate-600 hover:bg-slate-800 hover:text-amber-400"
+      }`}
     >
       <FlameIcon className="h-3.5 w-3.5" filled={active} />
     </button>

@@ -64,6 +64,7 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
     traits: creature.traits,
     ownerCharacterId: creature.ownerCharacterId ?? "",
     source: creature.source ?? "",
+    notes: creature.notes ?? "",
   };
 }
 
@@ -109,6 +110,7 @@ export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Cr
     traits: value.traits,
     ownerCharacterId: value.ownerCharacterId || undefined,
     source: value.source || undefined,
+    notes: value.notes || undefined,
   };
 }
 

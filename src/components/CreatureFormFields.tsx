@@ -33,6 +33,7 @@ export interface CreatureFormValue {
   traits: CreatureTrait[];
   ownerCharacterId: string;
   source: string;
+  notes: string;
 }
 
 export function emptyCreatureFormValue(): CreatureFormValue {
@@ -65,6 +66,7 @@ export function emptyCreatureFormValue(): CreatureFormValue {
     traits: [],
     ownerCharacterId: "",
     source: "",
+    notes: "",
   };
 }
 
@@ -364,6 +366,15 @@ export function CreatureFormFields({
           </div>
         ))}
       </div>
+
+      <Field label="Notes">
+        <textarea
+          className={`${inputCls} w-full`}
+          rows={3}
+          value={value.notes}
+          onChange={(e) => onChange({ notes: e.target.value })}
+        />
+      </Field>
     </div>
   );
 }
