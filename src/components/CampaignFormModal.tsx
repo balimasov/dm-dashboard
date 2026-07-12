@@ -8,7 +8,106 @@ import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
 import { NotesEditor } from "@/components/NotesEditor";
-import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
+import { getLinkVisual } from "@/lib/linkIcons";
+import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
+
+const MAX_QUICK_LINKS = 10;
+
+/** Local draft for label/url so typing doesn't PATCH on every keystroke — only committed (via `onSave`) on blur, same convention as the campaign Name field just above it in this same modal. */
+function QuickLinkRow({
+  link,
+  onSave,
+  onDelete,
+}: {
+  link: QuickLink;
+  onSave: (updates: Partial<Pick<QuickLink, "label" | "url">>) => void;
+  onDelete: () => void;
+}) {
+  const [label, setLabel] = useState(link.label);
+  const [url, setUrl] = useState(link.url);
+  const visual = url ? getLinkVisual(url) : null;
+
+  return (
+    <div className="flex items-center gap-2">
+      {visual?.kind === "known" ? (
+        <visual.Icon className={`h-4 w-4 shrink-0 ${visual.colorClass}`} />
+      ) : (
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
+          style={
+            visual
+              ? {
+                  color: `hsl(${visual.hue}, 80%, 78%)`,
+                  backgroundColor: `hsla(${visual.hue}, 70%, 50%, 0.18)`,
+                  border: `1px solid hsl(${visual.hue}, 70%, 50%)`,
+                }
+              : undefined
+          }
+        />
+      )}
+      <input
+        type="text"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        onBlur={() => {
+          if (label !== link.label) onSave({ label });
+        }}
+        placeholder="Label"
+        className="w-28 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+      />
+      <input
+        type="text"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        onBlur={() => {
+          if (url !== link.url) onSave({ url });
+        }}
+        placeholder="https://..."
+        className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+      />
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label="Remove link"
+        className="shrink-0 rounded p-1 text-slate-500 hover:text-red-400"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function QuickLinksSection({
+  quickLinks,
+  onChange,
+}: {
+  quickLinks: QuickLink[];
+  onChange: (next: QuickLink[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {quickLinks.map((link) => (
+        <QuickLinkRow
+          key={link.id}
+          link={link}
+          onSave={(updates) => onChange(quickLinks.map((l) => (l.id === link.id ? { ...l, ...updates } : l)))}
+          onDelete={() => onChange(quickLinks.filter((l) => l.id !== link.id))}
+        />
+      ))}
+      {quickLinks.length < MAX_QUICK_LINKS ? (
+        <button
+          type="button"
+          onClick={() => onChange([...quickLinks, { id: `link-${Date.now()}`, label: "", url: "" }])}
+          className="text-sm text-sky-400 hover:text-sky-300"
+        >
+          + Add Link
+        </button>
+      ) : (
+        <p className="text-xs text-slate-600">Max {MAX_QUICK_LINKS} links.</p>
+      )}
+    </div>
+  );
+}
 
 type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
   /** Omitted by callers that only ever open this modal in edit mode (e.g. the dashboard's Settings button) — there's no campaign-less create path there. */
@@ -200,6 +299,18 @@ export function CampaignFormModal({
               </button>
             )}
           </form>
+
+          {isEditing && (
+            <Section
+              title="Quick Links"
+              description="Reference docs/links you want reachable mid-session — shown behind a floating button on every page of this campaign."
+            >
+              <QuickLinksSection
+                quickLinks={current.quickLinks ?? []}
+                onChange={(next) => saveField({ quickLinks: next })}
+              />
+            </Section>
+          )}
 
           {isEditing && (
             <Section

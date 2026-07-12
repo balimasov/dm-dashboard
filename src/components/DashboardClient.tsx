@@ -9,6 +9,7 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
+import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
@@ -112,11 +113,18 @@ export function DashboardClient({
 
   // The Settings modal shares this page's own `charactersState`/`creaturesState`
   // instances (passed down below), so roster edits made in there already show
-  // up here live — only the campaign's own name/notes/logo need copying back.
+  // up here live — only the campaign's own name/notes/logo/quickLinks need
+  // copying back.
   function closeSettings(updated?: CampaignSummary) {
     setSettingsOpen(false);
     if (!updated) return;
-    setCampaignState((c) => ({ ...c, name: updated.name, notes: updated.notes, logoUrl: updated.logoUrl }));
+    setCampaignState((c) => ({
+      ...c,
+      name: updated.name,
+      notes: updated.notes,
+      logoUrl: updated.logoUrl,
+      quickLinks: updated.quickLinks,
+    }));
   }
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
@@ -155,6 +163,8 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 py-8">
+      <QuickLinksButton links={campaignState.quickLinks ?? []} />
+
       <div className="mb-4 space-y-2">
         {/* Below `sm`, the timestamp + all four actions don't fit one line at
             once and used to wrap onto a second row — same fix already applied
