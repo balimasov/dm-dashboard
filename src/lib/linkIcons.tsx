@@ -201,7 +201,18 @@ const REGISTRY: RegistryEntry[] = [
   { name: "Google Slides", match: (h, p) => h === "docs.google.com" && p.includes("/presentation"), Icon: SlidesIcon, colorClass: "text-amber-400" },
   { name: "NotebookLM", match: (h) => h === "notebooklm.google.com", Icon: NotebookLMIcon, colorClass: "text-purple-400" },
   { name: "Google Drive", match: (h) => h === "drive.google.com", Icon: DriveIcon, colorClass: "text-yellow-500" },
-  { name: "Notion", match: (h) => h === "notion.so" || h.endsWith(".notion.so") || h === "notion.site" || h.endsWith(".notion.site"), Icon: NotionIcon, colorClass: "text-slate-100" },
+  {
+    name: "Notion",
+    match: (h) =>
+      h === "notion.so" ||
+      h.endsWith(".notion.so") ||
+      h === "notion.site" ||
+      h.endsWith(".notion.site") ||
+      h === "notion.com" ||
+      h.endsWith(".notion.com"),
+    Icon: NotionIcon,
+    colorClass: "text-slate-100",
+  },
   { name: "YouTube", match: (h) => h === "youtube.com" || h === "youtu.be" || h.endsWith(".youtube.com"), Icon: YouTubeIcon, colorClass: "text-red-500" },
   { name: "Discord", match: (h) => h === "discord.com" || h === "discord.gg" || h.endsWith(".discord.com"), Icon: DiscordIcon, colorClass: "text-indigo-400" },
   { name: "GitHub", match: (h) => h === "github.com" || h.endsWith(".github.com"), Icon: GitHubIcon, colorClass: "text-slate-300" },

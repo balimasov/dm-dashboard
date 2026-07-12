@@ -1,6 +1,21 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
@@ -8,10 +23,38 @@ import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
 import { NotesEditor } from "@/components/NotesEditor";
+import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
 
 const MAX_QUICK_LINKS = 10;
+
+/** Fixed-size slot for the icon/fallback badge — the two used to render at different sizes (16px icon vs. 20px fallback circle), which shifted every field to its right depending on whether a link's domain was recognized. */
+function QuickLinkIcon({ url }: { url: string }) {
+  const visual = url ? getLinkVisual(url) : null;
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+      {visual?.kind === "known" ? (
+        <visual.Icon className={`h-4 w-4 ${visual.colorClass}`} />
+      ) : (
+        <span
+          className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
+          style={
+            visual
+              ? {
+                  color: `hsl(${visual.hue}, 80%, 78%)`,
+                  backgroundColor: `hsla(${visual.hue}, 70%, 50%, 0.18)`,
+                  border: `1px solid hsl(${visual.hue}, 70%, 50%)`,
+                }
+              : undefined
+          }
+        >
+          {visual?.kind === "fallback" ? visual.abbr : null}
+        </span>
+      )}
+    </span>
+  );
+}
 
 /** Local draft for label/url so typing doesn't PATCH on every keystroke — only committed (via `onSave`) on blur, same convention as the campaign Name field just above it in this same modal. */
 function QuickLinkRow({
@@ -25,55 +68,45 @@ function QuickLinkRow({
 }) {
   const [label, setLabel] = useState(link.label);
   const [url, setUrl] = useState(link.url);
-  const visual = url ? getLinkVisual(url) : null;
 
   return (
-    <div className="flex items-center gap-2">
-      {visual?.kind === "known" ? (
-        <visual.Icon className={`h-4 w-4 shrink-0 ${visual.colorClass}`} />
-      ) : (
-        <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-          style={
-            visual
-              ? {
-                  color: `hsl(${visual.hue}, 80%, 78%)`,
-                  backgroundColor: `hsla(${visual.hue}, 70%, 50%, 0.18)`,
-                  border: `1px solid hsl(${visual.hue}, 70%, 50%)`,
-                }
-              : undefined
-          }
+    <RosterRow
+      id={link.id}
+      avatar={<QuickLinkIcon url={url} />}
+      actions={
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Remove link"
+          className="shrink-0 rounded p-1 text-slate-500 hover:text-red-400"
+        >
+          ✕
+        </button>
+      }
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onBlur={() => {
+            if (label !== link.label) onSave({ label });
+          }}
+          placeholder="Label"
+          className="w-56 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
         />
-      )}
-      <input
-        type="text"
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        onBlur={() => {
-          if (label !== link.label) onSave({ label });
-        }}
-        placeholder="Label"
-        className="w-28 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
-      />
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        onBlur={() => {
-          if (url !== link.url) onSave({ url });
-        }}
-        placeholder="https://..."
-        className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
-      />
-      <button
-        type="button"
-        onClick={onDelete}
-        aria-label="Remove link"
-        className="shrink-0 rounded p-1 text-slate-500 hover:text-red-400"
-      >
-        ✕
-      </button>
-    </div>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onBlur={() => {
+            if (url !== link.url) onSave({ url });
+          }}
+          placeholder="https://..."
+          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+        />
+      </div>
+    </RosterRow>
   );
 }
 
@@ -84,16 +117,38 @@ function QuickLinksSection({
   quickLinks: QuickLink[];
   onChange: (next: QuickLink[]) => void;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = quickLinks.findIndex((l) => l.id === active.id);
+    const newIndex = quickLinks.findIndex((l) => l.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    onChange(arrayMove(quickLinks, oldIndex, newIndex));
+  }
+
   return (
     <div className="space-y-2">
-      {quickLinks.map((link) => (
-        <QuickLinkRow
-          key={link.id}
-          link={link}
-          onSave={(updates) => onChange(quickLinks.map((l) => (l.id === link.id ? { ...l, ...updates } : l)))}
-          onDelete={() => onChange(quickLinks.filter((l) => l.id !== link.id))}
-        />
-      ))}
+      <DndContext id="quick-links-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={quickLinks.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+          <ul className="space-y-2">
+            {quickLinks.map((link) => (
+              <QuickLinkRow
+                key={link.id}
+                link={link}
+                onSave={(updates) => onChange(quickLinks.map((l) => (l.id === link.id ? { ...l, ...updates } : l)))}
+                onDelete={() => onChange(quickLinks.filter((l) => l.id !== link.id))}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
       {quickLinks.length < MAX_QUICK_LINKS ? (
         <button
           type="button"
