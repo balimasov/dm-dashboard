@@ -26,7 +26,7 @@ import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { NumberInput } from "./NumberInput";
-import { SyncTimestamp } from "./SyncTimestamp";
+import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
 
@@ -51,7 +51,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
       const synced = await fetchAndParseDdbCharacter(draft);
       setDraft(synced);
     } catch (err) {
-      setSyncError(err instanceof Error ? err.message : "Unknown sync error.");
+      setSyncError(`Sync failed: ${err instanceof Error ? err.message : "Unknown error."}`);
     } finally {
       setSyncing(false);
     }
@@ -263,24 +263,16 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
         </Link>
       </div>
 
-      {draft.dndBeyondUrl && (
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            type="button"
-            onClick={handleSync}
-            disabled={syncing}
-            className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-          >
-            {syncing ? "Syncing..." : "Sync with D&D Beyond"}
-          </button>
-          {draft.lastSyncedAt && (
-            <span className="text-xs text-slate-500">
-              Last synced: <SyncTimestamp iso={draft.lastSyncedAt} />
-            </span>
-          )}
-        </div>
-      )}
-      {syncError && <p className="text-sm text-red-400 mb-6">{syncError}</p>}
+      <div className="mb-6">
+        <DdbSyncStatus
+          dndBeyondUrl={draft.dndBeyondUrl}
+          synced={draft.synced}
+          lastSyncedAt={draft.lastSyncedAt}
+          syncing={syncing}
+          error={syncError}
+          onSync={handleSync}
+        />
+      </div>
 
       <form onSubmit={handleSave} className="space-y-8">
         {/* Basic info */}

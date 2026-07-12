@@ -37,3 +37,12 @@ export function LanguageIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function RefreshIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 15a8 8 0 0 0 13.9 3M18.5 9A8 8 0 0 0 4.6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

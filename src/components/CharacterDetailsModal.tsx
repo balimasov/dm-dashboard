@@ -31,10 +31,11 @@ import { Pill } from "./ui/Pill";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
+import { useDdbSync } from "@/hooks/useDdbSync";
 import { DotMeter } from "./ResourceMeter";
+import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
-import { SyncTimestamp } from "./SyncTimestamp";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -169,6 +170,7 @@ export function CharacterDetailsModal({
   onUpdate?: (id: string, updates: Partial<Character>) => void;
 }) {
   const c = character;
+  const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
 
   const flaggedAbilities = c.flaggedAbilities ?? [];
   function toggleFlag(name: string) {
@@ -265,24 +267,15 @@ export function CharacterDetailsModal({
           </button>
         </div>
 
-        {/* Sync — same block as the main card's footer, so this modal doesn't hide whether the data on screen is fresh. */}
-        {!c.synced && c.dndBeyondUrl && (
-          <div className="rounded-md border border-amber-900 bg-amber-950/40 px-2 py-1 text-xs text-amber-300">
-            Not synced with D&D Beyond — fill in manually.
-          </div>
-        )}
-        {c.dndBeyondUrl && (
-          <div className="text-xs">
-            <a href={c.dndBeyondUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-              D&D Beyond ↗
-            </a>
-            {c.lastSyncedAt && (
-              <span className="ml-2 text-slate-500">
-                Synced: <SyncTimestamp iso={c.lastSyncedAt} />
-              </span>
-            )}
-          </div>
-        )}
+        {/* Sync — same shared block used by the main card and the edit page, so this modal doesn't hide whether the data on screen is fresh. */}
+        <DdbSyncStatus
+          dndBeyondUrl={c.dndBeyondUrl}
+          synced={c.synced}
+          lastSyncedAt={c.lastSyncedAt}
+          syncing={syncing}
+          error={syncError}
+          onSync={onUpdate ? sync : undefined}
+        />
 
         {/* Combat state — same block as the main card, so this modal is a superset of it rather than a different view. */}
         <div className="border-t border-slate-800 pt-3">

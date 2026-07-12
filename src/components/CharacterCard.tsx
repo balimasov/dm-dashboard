@@ -14,8 +14,8 @@ import {
   SKILL_ABBR,
   STAT_ORDER,
 } from "@/lib/types";
+import { useDdbSync } from "@/hooks/useDdbSync";
 import { DotMeter, ResourceMeter } from "./ResourceMeter";
-import { SyncTimestamp } from "./SyncTimestamp";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
@@ -25,6 +25,7 @@ import { StatBox } from "./ui/StatBox";
 import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
 import { DamageInfoList } from "./ui/DamageInfoList";
+import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 
@@ -210,6 +211,7 @@ export function CharacterCard({
   const c = character;
   const isDown = c.combat.hp <= 0;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
 
   return (
@@ -230,11 +232,14 @@ export function CharacterCard({
       {/* Header */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
 
-      {!c.synced && c.dndBeyondUrl && (
-        <div className="rounded-md bg-amber-950/40 border border-amber-900 px-2 py-1 text-xs text-amber-300">
-          Not synced with D&D Beyond — fill in manually.
-        </div>
-      )}
+      <DdbSyncStatus
+        dndBeyondUrl={c.dndBeyondUrl}
+        synced={c.synced}
+        lastSyncedAt={c.lastSyncedAt}
+        syncing={syncing}
+        error={syncError}
+        onSync={onUpdate ? sync : undefined}
+      />
 
       {/* Combat state */}
       <div>
@@ -414,42 +419,21 @@ export function CharacterCard({
 
       <QuickNotesSection character={c} onUpdate={onUpdate} />
 
-      <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
-        {c.dndBeyondUrl ? (
-          <div>
-            <a
-              href={c.dndBeyondUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sky-400 hover:underline"
-            >
-              D&D Beyond ↗
-            </a>
-            {c.lastSyncedAt && (
-              <p className="text-slate-500">
-                Synced: <SyncTimestamp iso={c.lastSyncedAt} />
-              </p>
-            )}
-          </div>
-        ) : (
-          <span />
+      <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 text-xs">
+        <Link href={`/characters/${c.id}/edit`} className="text-slate-400 hover:text-slate-200">
+          Edit
+        </Link>
+        {onRemove && (
+          <button
+            onClick={() => {
+              const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
+              if (confirmed) onRemove(c.id);
+            }}
+            className="text-red-500/80 hover:text-red-400"
+          >
+            Remove
+          </button>
         )}
-        <div className="flex gap-3">
-          <Link href={`/characters/${c.id}/edit`} className="text-slate-400 hover:text-slate-200">
-            Edit
-          </Link>
-          {onRemove && (
-            <button
-              onClick={() => {
-                const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
-                if (confirmed) onRemove(c.id);
-              }}
-              className="text-red-500/80 hover:text-red-400"
-            >
-              Remove
-            </button>
-          )}
-        </div>
       </div>
 
       {detailsOpen && (
