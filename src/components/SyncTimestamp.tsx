@@ -2,23 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { formatSyncTimestamp } from "@/lib/types";
+import { useTimeZone } from "./TimezoneProvider";
 
 /**
- * Renders a sync timestamp in the viewer's own local timezone. The server
- * can't know that timezone, so the very first render (both the server's and
- * the client's pre-hydration pass) uses a fixed UTC formatting — the two
- * always agree, so no hydration mismatch — then a `useEffect` immediately
- * corrects it to the browser's real local zone once mounted. This avoids the
- * older "render nothing until mounted" approach's visible empty-then-text
- * pop-in (a real timestamp is on screen from the first paint, it just gets
- * corrected a beat later) while still ending up right for wherever the
- * viewer actually is.
+ * Renders a sync timestamp in the viewer's own local timezone. `TimezoneSync`
+ * remembers that zone in a cookie after the first visit, and `TimezoneProvider`
+ * (seeded from that same cookie, read server-side in `layout.tsx`) hands it
+ * to this component identically on the server's render and the client's
+ * pre-hydration pass — so a *returning* visitor sees the correct local time
+ * from the very first paint, no correction needed. Only a visitor's very
+ * first-ever page load (no cookie yet) falls back to a fixed UTC guess that
+ * a `useEffect` corrects a beat later, same as before this cookie existed.
  */
 export function SyncTimestamp({ iso }: { iso: string }) {
-  const [formatted, setFormatted] = useState(() => formatSyncTimestamp(iso, "UTC"));
+  const cookieTimeZone = useTimeZone();
+  const [formatted, setFormatted] = useState(() => formatSyncTimestamp(iso, cookieTimeZone ?? "UTC"));
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- correcting a UTC-guess bootstrap to the browser's real timezone, not derived state
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- self-heals if the real local zone ever differs from the cookie's (stale cookie, first-ever visit, traveled since)
     setFormatted(formatSyncTimestamp(iso));
   }, [iso]);
 
