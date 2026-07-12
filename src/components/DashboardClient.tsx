@@ -17,6 +17,8 @@ import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
 
+type SettingsTab = "campaign" | "roster";
+
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
   if (campaign.logoUrl) {
@@ -36,7 +38,7 @@ function CampaignLogo({ campaign }: { campaign: Campaign }) {
   );
 }
 
-/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action, so adding either always starts from the one place both actually live. */
+/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action (jumping straight to the roster tab), so adding either always starts from the one place both actually live. */
 function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpenSettings: () => void }) {
   return (
     <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
@@ -101,6 +103,12 @@ export function DashboardClient({
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("campaign");
+
+  function openSettings(tab: SettingsTab = "campaign") {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+  }
 
   async function patchCampaign(id: string, updates: Partial<Campaign>) {
     setCampaignState((c) => ({ ...c, ...updates }));
@@ -198,7 +206,7 @@ export function DashboardClient({
             </a>
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => openSettings("campaign")}
               className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
             >
               Settings
@@ -228,7 +236,7 @@ export function DashboardClient({
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
         {characters.length === 0 ? (
-          <EmptyRosterState message="No characters yet." onOpenSettings={() => setSettingsOpen(true)} />
+          <EmptyRosterState message="No characters yet." onOpenSettings={() => openSettings("roster")} />
         ) : (
           // Status badges straddle each card's *top* border and can bleed
           // sideways too once there are several of them — `overflow-x-auto`
@@ -256,7 +264,7 @@ export function DashboardClient({
           Companions and summons — mounts, Wild Shape forms, familiars, and the like.
         </p>
         {creatures.length === 0 ? (
-          <EmptyRosterState message="No creatures yet." onOpenSettings={() => setSettingsOpen(true)} />
+          <EmptyRosterState message="No creatures yet." onOpenSettings={() => openSettings("roster")} />
         ) : (
           // Same `pt-8`/`px-3` reservation as the Party row above, for the
           // same reason — CreatureCard's own StatusRail badges bleed above
@@ -290,6 +298,7 @@ export function DashboardClient({
       {settingsOpen && (
         <CampaignFormModal
           campaign={{ ...campaignState, characterCount: characters.length }}
+          initialTab={settingsTab}
           charactersState={charactersState}
           creaturesState={creaturesState}
           actions={{ updateCampaign: patchCampaign }}

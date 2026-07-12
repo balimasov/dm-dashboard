@@ -141,17 +141,44 @@ function Section({
   );
 }
 
+type ModalTab = "campaign" | "roster";
+
+/**
+ * Segmented control, not a full ARIA tabs pattern — this modal has no other
+ * tab-like widget to be consistent with, so it borrows the app's existing
+ * button styling (sky-600 active fill) instead of inventing a new look.
+ */
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+        active ? "bg-sky-600 text-white" : "text-slate-400 hover:text-slate-200"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * Create mode (`campaign === null`): name/notes/logo only — no roster section
  * since the campaign doesn't exist yet. On successful create, switches to
  * edit mode in place instead of closing, so the roster editor for the new
- * campaign appears immediately.
+ * campaign appears immediately — and jumps straight to the Roster tab, since
+ * adding characters is the obvious next step right after creating.
  *
  * Edit mode: same fields, each field saves individually via `updateCampaign`
  * (blur/change), plus the roster editor with characters already loaded.
+ * Split across two tabs (Campaign / Characters & Creatures) since the combined
+ * single-page version grew too tall to navigate comfortably. Callers that link
+ * here with a specific intent (e.g. the "No characters yet" empty state) pass
+ * `initialTab="roster"` so the modal opens already on the relevant tab.
  */
 export function CampaignFormModal({
   campaign,
+  initialTab = "campaign",
   initialCharacters = [],
   initialCreatures = [],
   charactersState: externalCharactersState,
@@ -160,6 +187,8 @@ export function CampaignFormModal({
   onClose,
 }: {
   campaign: CampaignSummary | null;
+  /** Which tab to open on — irrelevant in create mode (no tabs shown until the campaign exists). Defaults to "campaign". */
+  initialTab?: ModalTab;
   initialCharacters?: Character[];
   initialCreatures?: Creature[];
   /** When the caller already renders this same roster elsewhere on the page (e.g. the dashboard's Party/Creatures sections), pass its own `useCharacters()`/`useCreatures()` return value here so edits made inside this modal apply to that same state instead of a disconnected copy — this is what keeps the page in sync without a reload. Callers with no such state of their own (e.g. the campaigns list page) omit these and the modal manages its own, seeded from `initialCharacters`/`initialCreatures`. */
@@ -169,6 +198,7 @@ export function CampaignFormModal({
   onClose: (updated?: CampaignSummary) => void;
 }) {
   const [current, setCurrent] = useState<CampaignSummary | null>(campaign);
+  const [tab, setTab] = useState<ModalTab>(initialTab);
   const [name, setName] = useState(campaign?.name ?? "");
   const [notes, setNotes] = useState(campaign?.notes ?? "");
   const [logoUrl, setLogoUrl] = useState(campaign?.logoUrl);
@@ -213,6 +243,7 @@ export function CampaignFormModal({
     try {
       const created = await actions.addCampaign({ name: trimmed, notes, logoUrl });
       setCurrent({ ...created, characterCount: 0 });
+      setTab("roster");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign.");
     } finally {
@@ -244,90 +275,105 @@ export function CampaignFormModal({
           </button>
         </div>
 
+        {isEditing && (
+          <div className="mb-4 flex gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
+            <TabButton active={tab === "campaign"} onClick={() => setTab("campaign")}>
+              Campaign
+            </TabButton>
+            <TabButton active={tab === "roster"} onClick={() => setTab("roster")}>
+              Characters & Creatures
+            </TabButton>
+          </div>
+        )}
+
         <div className="scrollbar-themed overflow-y-auto px-1">
-          <form onSubmit={handleCreate}>
-            <Section title="Details">
-              <div className="flex items-center gap-3">
-                <CampaignLogoPicker
-                  logoUrl={logoUrl}
-                  name={name}
-                  onChange={(dataUrl) => {
-                    setLogoUrl(dataUrl);
-                    if (isEditing) saveField({ logoUrl: dataUrl });
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setError(null);
-                    }}
+          {(!isEditing || tab === "campaign") && (
+            <>
+              <form onSubmit={handleCreate}>
+                <Section title="Details">
+                  <div className="flex items-center gap-3">
+                    <CampaignLogoPicker
+                      logoUrl={logoUrl}
+                      name={name}
+                      onChange={(dataUrl) => {
+                        setLogoUrl(dataUrl);
+                        if (isEditing) saveField({ logoUrl: dataUrl });
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">Name</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setError(null);
+                        }}
+                        onBlur={() => {
+                          const trimmed = name.trim();
+                          if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
+                        }}
+                        placeholder="Campaign name"
+                        className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                      />
+                    </div>
+                  </div>
+                </Section>
+
+                <Section title="Notes" divider={false}>
+                  <NotesEditor
+                    value={notes}
+                    onChange={setNotes}
                     onBlur={() => {
-                      const trimmed = name.trim();
-                      if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
+                      if (isEditing) saveField({ notes });
                     }}
-                    placeholder="Campaign name"
-                    className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                    placeholder="Campaign notes..."
                   />
-                </div>
-              </div>
-            </Section>
+                </Section>
 
-            <Section title="Notes" divider={false}>
-              <NotesEditor
-                value={notes}
-                onChange={setNotes}
-                onBlur={() => {
-                  if (isEditing) saveField({ notes });
-                }}
-                placeholder="Campaign notes..."
-              />
-            </Section>
+                {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
-            {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+                {!isEditing && (
+                  <button
+                    type="submit"
+                    disabled={!name.trim() || creating}
+                    className="mt-5 w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+                  >
+                    {creating ? "Creating..." : "Create Campaign"}
+                  </button>
+                )}
+              </form>
 
-            {!isEditing && (
-              <button
-                type="submit"
-                disabled={!name.trim() || creating}
-                className="mt-5 w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              {isEditing && (
+                <Section
+                  title="Quick Links"
+                  description="Reference docs/links you want reachable mid-session — shown behind a floating button on every page of this campaign."
+                >
+                  <QuickLinksSection
+                    quickLinks={current.quickLinks ?? []}
+                    onChange={(next) => saveField({ quickLinks: next })}
+                  />
+                </Section>
+              )}
+            </>
+          )}
+
+          {isEditing && tab === "roster" && (
+            <>
+              <Section
+                title="Characters"
+                description="Add D&D Beyond character links to have them show up on the dashboard. The character's D&D Beyond sharing setting must be Public, or syncing will fail."
               >
-                {creating ? "Creating..." : "Create Campaign"}
-              </button>
-            )}
-          </form>
+                <CampaignRosterEditor campaignId={current.id} charactersState={charactersState} />
+              </Section>
 
-          {isEditing && (
-            <Section
-              title="Quick Links"
-              description="Reference docs/links you want reachable mid-session — shown behind a floating button on every page of this campaign."
-            >
-              <QuickLinksSection
-                quickLinks={current.quickLinks ?? []}
-                onChange={(next) => saveField({ quickLinks: next })}
-              />
-            </Section>
-          )}
-
-          {isEditing && (
-            <Section
-              title="Characters"
-              description="Add D&D Beyond character links to have them show up on the dashboard. The character's D&D Beyond sharing setting must be Public, or syncing will fail."
-            >
-              <CampaignRosterEditor campaignId={current.id} charactersState={charactersState} />
-            </Section>
-          )}
-
-          {isEditing && (
-            <Section
-              title="Creatures"
-              description="Companions & summons — search the bestiary by name, or add one blank and fill in its stat block afterwards."
-            >
-              <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
-            </Section>
+              <Section
+                title="Creatures"
+                description="Companions & summons — search the bestiary by name, or add one blank and fill in its stat block afterwards."
+              >
+                <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
+              </Section>
+            </>
           )}
         </div>
 
