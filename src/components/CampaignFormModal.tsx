@@ -19,6 +19,7 @@ import {
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
@@ -285,6 +286,8 @@ export function CampaignFormModal({
   function close() {
     onClose(current ? { ...current, characterCount: charactersState.characters.length } : undefined);
   }
+
+  useEscapeToClose(close);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

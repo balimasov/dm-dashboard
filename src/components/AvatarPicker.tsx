@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Avatar } from "./Avatar";
 
 const OUTPUT_SIZE = 200;
@@ -76,6 +77,8 @@ export function AvatarPicker({
   const handleCropComplete = useCallback((_area: Area, areaPixels: Area) => {
     setCroppedAreaPixels(areaPixels);
   }, []);
+
+  useEscapeToClose(() => setPendingImage(null), pendingImage !== null);
 
   async function applyCrop() {
     if (!pendingImage || !croppedAreaPixels) return;

@@ -32,6 +32,7 @@ import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { useDdbSync } from "@/hooks/useDdbSync";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { DotMeter } from "./ResourceMeter";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
@@ -180,13 +181,7 @@ export function CharacterDetailsModal({
     onUpdate?.(c.id, { flaggedAbilities: next });
   }
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useEscapeToClose(onClose);
 
   // Without this, touch-scrolling the modal's backdrop on mobile also scrolls
   // the dashboard page underneath it — the backdrop is `fixed`, but the body

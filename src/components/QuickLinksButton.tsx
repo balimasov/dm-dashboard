@@ -53,7 +53,7 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
       {open && (
         <div className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
           <div className="flex items-center justify-between px-3 pb-1 pt-0.5">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Quick Links</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Quick Links</p>
             {onManage && (
               <button
                 type="button"
@@ -63,9 +63,9 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
                 }}
                 aria-label="Edit quick links"
                 title="Edit quick links"
-                className="rounded p-0.5 text-slate-600 hover:text-sky-400"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-sky-400"
               >
-                <PencilIcon className="h-3 w-3" />
+                <PencilIcon className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
