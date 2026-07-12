@@ -73,6 +73,7 @@ function QuickLinkRow({
   return (
     <RosterRow
       id={link.id}
+      singleRow
       avatar={<QuickLinkIcon url={url} />}
       actions={
         <button
@@ -94,7 +95,7 @@ function QuickLinkRow({
             if (label !== link.label) onSave({ label });
           }}
           placeholder="Label"
-          className="w-56 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className="w-20 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56"
         />
         <input
           type="text"

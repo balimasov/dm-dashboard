@@ -16,11 +16,20 @@ export function RosterRow({
   avatar,
   actions,
   children,
+  singleRow,
 }: {
   id: string;
   avatar: ReactNode;
   actions: ReactNode;
   children: ReactNode;
+  /**
+   * Keeps the row on one line at every width instead of stacking the
+   * actions onto their own line below `sm` — for rows whose `children` is
+   * already a single flex line meant to shrink (like Quick Links' label+url
+   * inputs), where wrapping just pushes the delete button onto a lonely
+   * second row instead of anything actually getting more room.
+   */
+  singleRow?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -33,9 +42,11 @@ export function RosterRow({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      className={`flex rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 ${
+        singleRow
+          ? "flex-row items-center gap-3"
+          : "flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+      } ${isDragging ? "opacity-50" : ""}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
