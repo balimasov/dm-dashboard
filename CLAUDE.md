@@ -1,5 +1,10 @@
 @AGENTS.md
 
+# Мова спілкування
+
+Відповідай у чаті українською мовою завжди, незалежно від мови коду,
+UI застосунку чи комітів/CHANGELOG.
+
 # Git workflow
 
 Work happens on `claude/dm-character-dashboard-1ti81k`. Once a round of
