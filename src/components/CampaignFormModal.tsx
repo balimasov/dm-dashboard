@@ -348,6 +348,7 @@ export function CampaignFormModal({
                 <Section
                   title="Quick Links"
                   description="Reference docs/links you want reachable mid-session — shown behind a floating button on every page of this campaign."
+                  divider={false}
                 >
                   <QuickLinksSection
                     quickLinks={current.quickLinks ?? []}
