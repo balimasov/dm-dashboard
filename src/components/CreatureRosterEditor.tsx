@@ -23,6 +23,7 @@ import {
   CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_ORDER,
+  CREATURE_CATEGORY_SINGULAR_LABELS,
   Character,
   Creature,
   CreatureCategory,
@@ -36,7 +37,12 @@ import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
 import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
 import { RosterRow } from "@/components/RosterRow";
+import { Toast } from "@/components/Toast";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
+import { SelectMenu } from "@/components/ui/SelectMenu";
+
+/** Reports one add/import attempt's outcome up to the shared toast in `CreatureRosterEditor` — success or failure, same convention as the sync-summary toast on the dashboard. */
+type ResultReporter = (message: string, variant: "success" | "error") => void;
 
 /**
  * Deliberately minimal, same weight as the character roster's "paste a
@@ -55,12 +61,14 @@ function AddCreaturePanel({
   onAdd,
   addedTemplateIds,
   category,
+  onResult,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Bestiary template ids already present in this campaign's roster — lets a search hit show "(Added)" instead of leaving no trace of a creature the DM already added a minute ago (e.g. while adding several different hits from one search). */
   addedTemplateIds: Set<string>;
   /** Current value of the shared category selector rendered above this panel — applied to whatever gets added, whether resolved from a search hit or added blank via "Add it anyway". */
   category: CreatureCategory;
+  onResult: ResultReporter;
 }) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -105,8 +113,10 @@ function AddCreaturePanel({
       // "Owl" and "Giant Owl" hits) doesn't require re-searching from
       // scratch. The roster list below still updates immediately via
       // `onAdd`/`useCreatures`, same as before.
+      onResult(`Added "${template.name}" as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`, "success");
     } catch {
       setSearchError(`Failed to load "${hit.name}"'s stat block — try again.`);
+      onResult(`Failed to add "${hit.name}".`, "error");
     } finally {
       setAddingId(null);
     }
@@ -118,7 +128,10 @@ function AddCreaturePanel({
     setAddingId("manual");
     try {
       await onAdd({ ...formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }), category });
+      onResult(`Added "${trimmed}" as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`, "success");
       reset();
+    } catch {
+      onResult(`Failed to add "${trimmed}".`, "error");
     } finally {
       setAddingId(null);
     }
@@ -231,6 +244,7 @@ function ImportCreaturePanel({
   characters,
   category,
   onCategoryDetected,
+  onResult,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Resolves the template's plain-text `ownerCharacter: "Aria"` field to an id — the parser itself only knows the schema, not any particular campaign's roster. */
@@ -238,11 +252,13 @@ function ImportCreaturePanel({
   /** Current value of the shared category selector rendered above this panel — wins over whatever the imported file itself says, so loading a file only pre-fills the selector rather than locking it. */
   category: CreatureCategory;
   onCategoryDetected: (category: CreatureCategory) => void;
+  onResult: ResultReporter;
 }) {
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateText(next: string) {
@@ -279,10 +295,16 @@ function ImportCreaturePanel({
           outcome.warnings.push(`Персонажа "${ownerCharacterName}" не знайдено в цій кампанії — прив'язку до власника пропущено.`);
         }
       }
-      await onAdd({ ...input, ownerCharacterId, category });
+      try {
+        await onAdd({ ...input, ownerCharacterId, category });
+      } catch {
+        onResult(`Failed to import "${input.templateName}".`, "error");
+        return;
+      }
       setWarnings(outcome.warnings);
       setText("");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      onResult(`Added "${input.templateName}" as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`, "success");
     } finally {
       setImporting(false);
     }
@@ -290,36 +312,54 @@ function ImportCreaturePanel({
 
   return (
     <div className="space-y-3">
-      {/* Lightweight text links instead of two bordered buttons — this is a
-          one-time helper action (grab a blank template) and an alternative
-          to pasting text directly, neither needs the visual weight of its
-          own button competing with the textarea and Import button below. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <button type="button" onClick={downloadTemplate} className="text-sky-400 hover:underline">
-          Download template (.yaml)
-        </button>
-        <span className="text-slate-700">·</span>
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sky-400 hover:underline">
-          Upload file...
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".yaml,.yml,.txt"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-          }}
-        />
-      </div>
+      <button type="button" onClick={downloadTemplate} className="text-sm text-sky-400 hover:underline">
+        Download template (.yaml)
+      </button>
 
-      <textarea
-        value={text}
-        onChange={(e) => updateText(e.target.value)}
-        placeholder="Встав заповнений YAML-шаблон сюди, або завантаж файл вище..."
-        rows={8}
-        className="scrollbar-themed w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+      {/* One bordered box instead of an "Upload file..." button sitting
+          above a separate textarea — those read as two competing ways in,
+          when they're really just two ways to fill this one box (typed/
+          pasted text, a click-to-browse file, or a dropped file all land
+          in the same place). */}
+      <div
+        className={`overflow-hidden rounded-lg border transition-colors ${
+          dragOver ? "border-sky-600 bg-sky-950/20" : "border-slate-800 bg-slate-900"
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) handleFile(file);
+        }}
+      >
+        <textarea
+          value={text}
+          onChange={(e) => updateText(e.target.value)}
+          placeholder="Встав заповнений YAML-шаблон сюди..."
+          rows={7}
+          className="scrollbar-themed w-full resize-none bg-transparent px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none"
+        />
+        <div className="flex items-center justify-between gap-2 border-t border-slate-800 bg-slate-950/40 px-3 py-1.5 text-xs text-slate-500">
+          <span>Drag &amp; drop a .yaml file here</span>
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-sky-400 hover:underline">
+            or upload...
+          </button>
+        </div>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".yaml,.yml,.txt"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
       />
 
       {errors.length > 0 && (
@@ -449,45 +489,52 @@ export function CreatureRosterEditor({
   // (looking up a monster to throw at the party) — the DM can still switch
   // it before adding.
   const [category, setCategory] = useState<CreatureCategory>("enemy");
-  const selectCls =
-    "min-w-0 shrink rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm font-semibold text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
 
   return (
     <div>
       {/* Two compact dropdowns instead of a button row — guarantees both
           controls stay on one line at any width, mobile included, instead
-          of a button row that either wraps or needs horizontal scrolling. */}
+          of a button row that either wraps or needs horizontal scrolling.
+          Custom `SelectMenu` rather than a native <select>: the popup is
+          browser/OS-drawn chrome that `color-scheme: dark` only half-fixes
+          in practice (still flashed light, still used the browser's own
+          blue highlight instead of this app's own colors). */}
       <div className="mb-3 flex items-center gap-2">
-        <select
+        <SelectMenu
           value={category}
-          onChange={(e) => setCategory(e.target.value as CreatureCategory)}
-          className={selectCls}
-        >
-          {CREATURE_CATEGORY_ORDER.map((c) => (
-            <option key={c} value={c}>
-              {CREATURE_CATEGORY_EMOJI[c]} {CREATURE_CATEGORY_LABELS[c]}
-            </option>
-          ))}
-        </select>
-        <select
+          onChange={setCategory}
+          options={CREATURE_CATEGORY_ORDER.map((c) => ({
+            value: c,
+            label: `${CREATURE_CATEGORY_EMOJI[c]} ${CREATURE_CATEGORY_LABELS[c]}`,
+          }))}
+        />
+        <SelectMenu
           value={addMode}
-          onChange={(e) => setAddMode(e.target.value as "search" | "import")}
-          className={selectCls}
-        >
-          <option value="search">🔍 Search SRD</option>
-          <option value="import">📄 Import from file</option>
-        </select>
+          onChange={setAddMode}
+          options={[
+            { value: "search", label: "🔍 Search SRD" },
+            { value: "import", label: "📄 Import from file" },
+          ]}
+        />
       </div>
       {addMode === "search" ? (
-        <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} category={category} />
+        <AddCreaturePanel
+          onAdd={addCreature}
+          addedTemplateIds={addedTemplateIds}
+          category={category}
+          onResult={(message, variant) => setToast({ message, variant })}
+        />
       ) : (
         <ImportCreaturePanel
           onAdd={addCreature}
           characters={characters}
           category={category}
           onCategoryDetected={setCategory}
+          onResult={(message, variant) => setToast({ message, variant })}
         />
       )}
+      {toast && <Toast message={toast.message} variant={toast.variant} onDismiss={() => setToast(null)} />}
 
       <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">
         Added Creatures ({creatures.length})
