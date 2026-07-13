@@ -874,7 +874,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
           No known spells or abilities match a tracked coverage category yet.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {columns.map(
             (column, i) =>
               column.length > 0 && (
