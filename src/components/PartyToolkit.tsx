@@ -684,7 +684,7 @@ function CoverageHintPanel({ group }: { group: CoverageNameGroup }) {
 function CoveragePill({ group }: { group: CoverageNameGroup }) {
   if (group.holders.length === 1 && !group.holders[0].characterId) {
     return (
-      <div className="flex items-center justify-between gap-3 text-sm">
+      <div className="flex items-center justify-between gap-3 py-1 text-sm">
         <div className="min-w-0 flex-1">
           <InfoTooltip panel={<HintPanel title={group.name} description={HEROIC_INSPIRATION_DESCRIPTION} />}>
             <span className="text-slate-300">{group.name}</span>
@@ -695,7 +695,7 @@ function CoveragePill({ group }: { group: CoverageNameGroup }) {
     );
   }
   return (
-    <div className="flex items-center justify-between gap-3 text-sm">
+    <div className="flex items-center justify-between gap-3 py-1 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<CoverageHintPanel group={group} />}>
           <span className="text-slate-300">{group.name}</span>
@@ -714,7 +714,7 @@ function CoverageCategoryBlock({ category, entries }: { category: CoverageCatego
       {groups.length === 0 ? (
         <p className="text-sm text-slate-600">none</p>
       ) : (
-        <div className="space-y-0.5">
+        <div className="divide-y divide-slate-800/60">
           {groups.map((g) => (
             <CoveragePill key={g.name} group={g} />
           ))}

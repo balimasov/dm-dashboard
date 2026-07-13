@@ -1,7 +1,7 @@
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
-import { CharacterChipRow } from "./ui/CharacterChip";
+import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { ToolkitCard } from "./ui/ToolkitCard";
 
 const RARITY_COLOR: Record<ItemRarity, string> = {
@@ -170,8 +170,12 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
           );
         }
         const { item } = row;
+        const continuesGroup = rows[idx - 1]?.kind === "item";
         return (
-          <div key={`${row.category}-${item.name}`} className="flex items-center gap-3 py-0.5">
+          <div
+            key={`${row.category}-${item.name}`}
+            className={`flex items-center gap-3 py-1 ${continuesGroup ? "border-t border-slate-800/60" : ""}`}
+          >
             <span className="min-w-0 flex-1">
               <ItemName item={item} />
             </span>
@@ -227,21 +231,28 @@ function CoinChip({
   );
 }
 
-function CurrencyRow({ character }: { character: Character }) {
+/**
+ * One character's coins as a self-contained bordered pill (avatar + their
+ * coin chips) instead of "Name: chips" plain text — swapping the name for
+ * an avatar chip (consistent with every other holder in this app) loses the
+ * one thing plain text gave for free: an obvious boundary between one
+ * character's coins and the next when several sit on the same wrapped line.
+ * A bounded box gives that boundary back without relying on a divider line,
+ * which can't be drawn reliably between items that wrap across rows.
+ */
+function CurrencyGroup({ character }: { character: Character }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-medium text-slate-300">{character.name}</span>
-      <div className="flex flex-wrap gap-1.5">
-        {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
-          <CoinChip
-            key={k}
-            code={k.toUpperCase()}
-            value={character.currency[k]}
-            chipClass={COIN_CHIP_CLASS[k]}
-            codeClass={COIN_CODE_CLASS[k]}
-          />
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950/40 py-1 pl-1 pr-2">
+      <CharacterChip name={character.name} avatarUrl={character.avatarUrl} />
+      {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
+        <CoinChip
+          key={k}
+          code={k.toUpperCase()}
+          value={character.currency[k]}
+          chipClass={COIN_CHIP_CLASS[k]}
+          codeClass={COIN_CODE_CLASS[k]}
+        />
+      ))}
     </div>
   );
 }
@@ -273,12 +284,12 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
 
 /**
  * Party gold — a single wide strip instead of a narrow standalone card:
- * each character's coin chips wrap inline in one flowing row (`CurrencyRow`
- * is itself a flex-wrap unit), so the panel is exactly as tall as it needs
- * to be regardless of party size, with the party total pinned to the
- * header's `actions` slot instead of a separate footer row. A short,
- * mostly-empty panel like this reads badly squeezed into a grid column
- * next to something taller — full-width and content-height avoids that.
+ * each character's coins are one `CurrencyGroup` pill that wraps as a unit,
+ * so the panel is exactly as tall as it needs to be regardless of party
+ * size, with the party total pinned to the header's `actions` slot instead
+ * of a separate footer row. A short, mostly-empty panel like this reads
+ * badly squeezed into a grid column next to something taller — full-width
+ * and content-height avoids that.
  */
 export function CoinsPanel({ characters }: { characters: Character[] }) {
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
@@ -308,9 +319,9 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length === 0 ? (
         <p className="text-sm text-slate-500">No gold on any character.</p>
       ) : (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-center gap-2">
           {charactersWithCurrency.map((c) => (
-            <CurrencyRow key={c.id} character={c} />
+            <CurrencyGroup key={c.id} character={c} />
           ))}
         </div>
       )}
