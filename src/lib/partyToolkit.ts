@@ -280,7 +280,7 @@ export interface HeroicInspirationSummary {
   withInspiration: number;
   partySize: number;
   /** Who currently has it — the row's hover hint, same pattern as a defense/language/tool row. */
-  holders: DefenseHolder[];
+  holders: CoverageHolder[];
 }
 
 /** Counted separately from `resources` below — it lives on `Character.heroicInspiration` (a plain boolean), not in the `resources` array like class/feat resources. */
@@ -531,22 +531,29 @@ export function computeUtilitySpellAvailability(characters: Character[]): Utilit
   });
 }
 
-export interface DefenseHolder {
+export interface CoverageHolder {
   characterId: string;
   characterName: string;
   avatarUrl?: string;
 }
 
-export interface DefenseCoverageEntry {
+/**
+ * Shared shape for every "name → who has it" coverage row — resistances,
+ * immunities, languages, and tools all reduce to the same
+ * `{name, count, partySize, holders}` structure (see `coverageFromField`
+ * below), so they share one type and one row component instead of three
+ * near-identical ones.
+ */
+export interface NamedCoverageEntry {
   name: string;
   count: number;
   partySize: number;
   /** Who actually has it — the row's hover hint, same idea as a skill row's per-character breakdown. */
-  holders: DefenseHolder[];
+  holders: CoverageHolder[];
 }
 
-function coverageFromField(characters: Character[], field: (c: Character) => string[]): DefenseCoverageEntry[] {
-  const byName = new Map<string, DefenseCoverageEntry>();
+function coverageFromField(characters: Character[], field: (c: Character) => string[]): NamedCoverageEntry[] {
+  const byName = new Map<string, NamedCoverageEntry>();
   for (const c of characters) {
     for (const name of field(c)) {
       if (!byName.has(name)) byName.set(name, { name, count: 0, partySize: characters.length, holders: [] });
@@ -559,38 +566,22 @@ function coverageFromField(characters: Character[], field: (c: Character) => str
 }
 
 /** Only resistance types the party actually has — no fixed pinned list. A DM already knows which damage types matter for the current campaign; showing every possible type at 0 just added noise. */
-export function computeResistanceCoverage(characters: Character[]): DefenseCoverageEntry[] {
+export function computeResistanceCoverage(characters: Character[]): NamedCoverageEntry[] {
   return coverageFromField(characters, (c) => c.resistances);
 }
 
 /** Only immunity types the party actually has — same "present only" rule as resistances. Deliberately drops the old fuzzy "Advantage vs Frightened" text-matched row: it wasn't backed by a clean list like `immunities`, and folding it into a "these are simplified to what's actually there" view isn't a natural fit for a derived, imprecise signal. */
-export function computeConditionProtectionCoverage(characters: Character[]): DefenseCoverageEntry[] {
+export function computeConditionProtectionCoverage(characters: Character[]): NamedCoverageEntry[] {
   return coverageFromField(characters, (c) => c.immunities);
 }
 
-export interface LanguageCoverageEntry {
-  name: string;
-  count: number;
-  partySize: number;
-  /** Who speaks it — the row's hover hint. */
-  holders: DefenseHolder[];
-}
-
 /** Only languages actually present in the party — there's no fixed "campaign-relevant" language list to pin at 0 without DM input. */
-export function computeLanguageCoverage(characters: Character[]): LanguageCoverageEntry[] {
+export function computeLanguageCoverage(characters: Character[]): NamedCoverageEntry[] {
   return coverageFromField(characters, (c) => c.languages);
 }
 
-export interface ToolCoverageEntry {
-  name: string;
-  count: number;
-  partySize: number;
-  /** Who has it — the row's hover hint. */
-  holders: DefenseHolder[];
-}
-
 /** Only tools actually present in the party — same "present only" rule as languages/defenses; no more pinning a fixed tool list at 0. */
-export function computeToolCoverage(characters: Character[]): ToolCoverageEntry[] {
+export function computeToolCoverage(characters: Character[]): NamedCoverageEntry[] {
   return coverageFromField(characters, (c) => c.toolProficiencies);
 }
 

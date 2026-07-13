@@ -12,6 +12,26 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.103.1] - 2026-07-13
+
+### Changed
+- **Внутрішній рефакторинг Party Toolkit/Inventory без зміни поведінки**:
+  сім майже однакових хінт-панелей (`SkillAllScoresPanel`,
+  `PassiveAllScoresPanel`, `SpellSlotLevelPanel`, `SenseHolderPanel`,
+  `UtilitySpellHintPanel`, `HolderListPanel`, `CoverageHintPanel`) звели до
+  одного спільного `HintPanel`; три однакові за формою рядки
+  (`DefenseRow`/`LanguageRow`/`ToolRow`) — до одного `CoverageCountRow`;
+  три однакові типи (`DefenseCoverageEntry`/`LanguageCoverageEntry`/
+  `ToolCoverageEntry`) в `partyToolkit.ts` — до одного `NamedCoverageEntry`.
+  Кластери аватарок-чіпів (Critical Items, Coverage, Senses, Inventory)
+  тепер один спільний `CharacterChipRow` в `components/ui/CharacterChip.tsx`
+  замість дубльованого `.map()` в чотирьох місцях (заразом вирівняв
+  відступи в хінті Detect Magic/See Invisibility, які трохи відрізнялись
+  від решти). Картка-обгортка (`rounded-xl border ...`) і підзаголовок
+  секції — тепер `ToolkitCard`/`SectionLabel` замість однакового JSX,
+  повтореного 7+10 разів. Поведінка й вигляд не змінились — перевірено
+  візуально по всьому блоку.
+
 ## [0.103.0] - 2026-07-13
 
 ### Added

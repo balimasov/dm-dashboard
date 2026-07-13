@@ -51,3 +51,31 @@ export function CharacterChip({ name, avatarUrl, title }: { name: string; avatar
     </span>
   );
 }
+
+interface ChipHolder {
+  characterId?: string;
+  characterName: string;
+  avatarUrl?: string;
+}
+
+/**
+ * A row of `CharacterChip`s for the "who has this" cluster — item holders,
+ * coverage/ability owners, spell-slot holders, all render the same tight
+ * chip-row shape. `chipTitle` overrides the default hover label per holder
+ * (e.g. "Name x2" for a stacked inventory item).
+ */
+export function CharacterChipRow<T extends ChipHolder>({
+  holders,
+  chipTitle,
+}: {
+  holders: T[];
+  chipTitle?: (holder: T) => string;
+}) {
+  return (
+    <span className="flex shrink-0 items-center gap-0.5">
+      {holders.map((h) => (
+        <CharacterChip key={h.characterId ?? h.characterName} name={h.characterName} avatarUrl={h.avatarUrl} title={chipTitle?.(h)} />
+      ))}
+    </span>
+  );
+}

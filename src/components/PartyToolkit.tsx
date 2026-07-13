@@ -11,16 +11,16 @@ import {
   formatModifier,
   ordinalLevel,
 } from "@/lib/types";
+import { ReactNode } from "react";
 import {
   COVERAGE_CATEGORY_ORDER,
   CoverageCategory,
   CoverageEntry,
+  CoverageHolder,
   CriticalItemCategory,
   CriticalItemEntry,
-  DefenseCoverageEntry,
-  DefenseHolder,
   HeroicInspirationSummary,
-  LanguageCoverageEntry,
+  NamedCoverageEntry,
   PartyPassiveSummary,
   PartyResourceEntry,
   PartySpellSlotHolder,
@@ -32,7 +32,6 @@ import {
   SkillCharacterScore,
   SkillCoverageStatus,
   SkillOverviewEntry,
-  ToolCoverageEntry,
   UtilitySpellAvailability,
   computeConditionProtectionCoverage,
   computeCriticalInventoryHighlights,
@@ -50,7 +49,7 @@ import {
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
-import { CharacterChip } from "./ui/CharacterChip";
+import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
 /** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value in this file that doesn't already have its own status coloring (spell slots, Heroic Inspiration). */
@@ -73,6 +72,67 @@ const STATUS_LABEL: Record<SkillCoverageStatus, string> = {
   Weak: "Weak coverage",
 };
 
+/** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coverage's "Show all" toggle). */
+function ToolkitCard({ title, actions, children }: { title: ReactNode; actions?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+        {actions}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** The small uppercase subsection label used inside a `ToolkitCard` (Passives/Skills, Resistances/Immunities, ...) — `className` extends spacing per call site (e.g. `mt-4` before a second subsection). */
+function SectionLabel({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ${className}`}>{children}</p>;
+}
+
+/**
+ * The shared shape behind every hover-hint panel in this file: a title, an
+ * optional description (rules text or a short explainer), then an optional
+ * `<ul>` of rows — same "description first, then who has it" order the DM
+ * asked for everywhere. `emptyText` covers the few panels that show a
+ * fallback line instead of an empty list ("No one currently has it.").
+ */
+function HintPanel<T>({
+  title,
+  description,
+  rows,
+  rowKey,
+  renderRow,
+  rowClassName = "",
+  emptyText,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  rows: T[];
+  rowKey: (row: T) => string;
+  renderRow: (row: T) => ReactNode;
+  rowClassName?: string;
+  emptyText?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{title}</p>
+      {description && <p className="text-slate-300">{description}</p>}
+      {rows.length > 0 ? (
+        <ul className="space-y-0.5 pt-1">
+          {rows.map((row) => (
+            <li key={rowKey(row)} className={rowClassName}>
+              {renderRow(row)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        emptyText && <p className="text-slate-100">{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
 /**
  * Replaces the old Strong/Medium/Weak text chip (too wide) and the dot that
  * replaced it (too small to read anything from at a glance) — the actual
@@ -92,26 +152,34 @@ function CoverageBadge({ proficientCount, partySize, status }: { proficientCount
   );
 }
 
+/** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives): white name, green when proficient/expertise, with a trailing label. */
+function scoreRowClass(proficient: boolean): string {
+  return `shrink-0 whitespace-nowrap ${proficient ? "text-emerald-400" : "text-slate-100"}`;
+}
+
 /** The hover hint's content for a skill row — same short description shown on the character's own card (`SKILL_DESCRIPTIONS`, see `SkillPanel`), then every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
 function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillCharacterScore[] }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">
-        {SKILL_LABELS[skill]} <span className="text-slate-500">({SKILL_ABILITY[skill].toUpperCase()})</span>
-      </p>
-      <p className="text-slate-300">{SKILL_DESCRIPTIONS[skill]}</p>
-      <ul className="space-y-0.5 pt-1">
-        {all.map((s) => (
-          <li key={s.characterId} className="flex items-center justify-between gap-4">
-            <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
-            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
-              {formatModifier(s.modifier)}
-              {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <HintPanel
+      title={
+        <>
+          {SKILL_LABELS[skill]} <span className="text-slate-500">({SKILL_ABILITY[skill].toUpperCase()})</span>
+        </>
+      }
+      description={SKILL_DESCRIPTIONS[skill]}
+      rows={all}
+      rowKey={(s) => s.characterId}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(s) => (
+        <>
+          <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
+          <span className={scoreRowClass(s.proficient)}>
+            {formatModifier(s.modifier)}
+            {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
+          </span>
+        </>
+      )}
+    />
   );
 }
 
@@ -150,21 +218,22 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
 /** Same hover-hint idea as `SkillAllScoresPanel`, for a passive stat — leads with the underlying skill's own description (proficiency here means proficient in that skill, not in the passive stat itself, which isn't a real game concept), plus a one-line reminder of how a passive score is derived. */
 function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: SkillName; all: PassiveCharacterScore[] }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{label}</p>
-      <p className="text-slate-300">{SKILL_DESCRIPTIONS[skill]} Equal to 10 + the modifier, with no roll.</p>
-      <ul className="space-y-0.5 pt-1">
-        {all.map((s) => (
-          <li key={s.characterName} className="flex items-center justify-between gap-4">
-            <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
-            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
-              {s.value}
-              {s.proficient ? " · proficient" : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <HintPanel
+      title={label}
+      description={`${SKILL_DESCRIPTIONS[skill]} Equal to 10 + the modifier, with no roll.`}
+      rows={all}
+      rowKey={(s) => s.characterName}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(s) => (
+        <>
+          <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
+          <span className={scoreRowClass(s.proficient)}>
+            {s.value}
+            {s.proficient ? " · proficient" : ""}
+          </span>
+        </>
+      )}
+    />
   );
 }
 
@@ -211,23 +280,21 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
   const skillEntries = computePartySkillOverview(characters);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</h3>
-
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Passives</p>
+    <ToolkitCard title="Skills">
+      <SectionLabel>Passives</SectionLabel>
       <div className="divide-y divide-slate-800/60">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
         <PassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} />
       </div>
 
-      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Skills</p>
+      <SectionLabel className="mt-4">Skills</SectionLabel>
       <div className="divide-y divide-slate-800/60">
         {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
         ))}
       </div>
-    </div>
+    </ToolkitCard>
   );
 }
 
@@ -325,19 +392,20 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
 /** Per-character breakdown for a spell slot level — the row's hover hint, same idea as a skill row's per-character panel. */
 function SpellSlotLevelPanel({ level, holders }: { level: number; holders: PartySpellSlotHolder[] }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{ordinalLevel(level)} Level</p>
-      <ul className="space-y-0.5">
-        {holders.map((h) => (
-          <li key={h.characterId} className="flex items-center justify-between gap-4">
-            <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
-            <span className={`shrink-0 whitespace-nowrap ${usageColorClass(h.current, h.max)}`}>
-              {h.current}/{h.max}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <HintPanel
+      title={`${ordinalLevel(level)} Level`}
+      rows={holders}
+      rowKey={(h) => h.characterId}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(h) => (
+        <>
+          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
+          <span className={`shrink-0 whitespace-nowrap ${usageColorClass(h.current, h.max)}`}>
+            {h.current}/{h.max}
+          </span>
+        </>
+      )}
+    />
   );
 }
 
@@ -347,10 +415,8 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const resources = computePartyResourceSummary(characters);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Spell Slots &amp; Resources</h3>
-
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Spell Slots</p>
+    <ToolkitCard title="Spell Slots & Resources">
+      <SectionLabel>Spell Slots</SectionLabel>
       {!spellSlots ? (
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
       ) : (
@@ -373,10 +439,10 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
         </>
       )}
 
-      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Heroic Inspiration</p>
+      <SectionLabel className="mt-4">Heroic Inspiration</SectionLabel>
       <HeroicInspirationRow summary={inspiration} />
 
-      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resources</p>
+      <SectionLabel className="mt-4">Resources</SectionLabel>
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
       ) : (
@@ -386,7 +452,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
           ))}
         </div>
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 
@@ -395,16 +461,7 @@ function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
     <div className="flex items-center gap-3 py-1 text-sm">
       <span className="min-w-0 flex-1 truncate text-slate-300">{entry.name}</span>
       <span className="shrink-0 font-medium text-slate-100">x{entry.totalQuantity}</span>
-      <span className="flex shrink-0 items-center gap-0.5">
-        {entry.holders.map((h) => (
-          <CharacterChip
-            key={h.characterId}
-            name={h.characterName}
-            avatarUrl={h.avatarUrl}
-            title={h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName}
-          />
-        ))}
-      </span>
+      <CharacterChipRow holders={entry.holders} chipTitle={(h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName)} />
     </div>
   );
 }
@@ -425,15 +482,14 @@ export function CriticalItemsPanel({ characters }: { characters: Character[] }) 
   }
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Critical Items</h3>
+    <ToolkitCard title="Critical Items">
       {entries.length === 0 ? (
         <p className="text-sm text-slate-600">No critical items found in the party&apos;s inventory.</p>
       ) : (
         <div className="space-y-3">
           {Array.from(byCategory.entries()).map(([category, items]) => (
             <div key={category}>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">{category}</p>
+              <SectionLabel>{category}</SectionLabel>
               <div className="divide-y divide-slate-800/60">
                 {items.map((item) => (
                   <CriticalItemRow key={item.name} entry={item} />
@@ -443,28 +499,26 @@ export function CriticalItemsPanel({ characters }: { characters: Character[] }) 
           ))}
         </div>
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 
 /** Same idea as `SkillAllScoresPanel` — every character who has this sense, with their own range, ranked implicitly by the row's own "Best" chip already answering the top one. */
 function SenseHolderPanel({ label, holders }: { label: string; holders: SenseHolder[] }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{label}</p>
-      {holders.length === 0 ? (
-        <p className="text-slate-100">No one currently has it.</p>
-      ) : (
-        <ul className="space-y-0.5">
-          {holders.map((h) => (
-            <li key={h.characterId} className="flex items-center justify-between gap-4">
-              <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
-              <span className="shrink-0 text-slate-100">{h.range} ft</span>
-            </li>
-          ))}
-        </ul>
+    <HintPanel
+      title={label}
+      rows={holders}
+      rowKey={(h) => h.characterId}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(h) => (
+        <>
+          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
+          <span className="shrink-0 text-slate-100">{h.range} ft</span>
+        </>
       )}
-    </div>
+      emptyText="No one currently has it."
+    />
   );
 }
 
@@ -502,23 +556,17 @@ const UTILITY_SPELL_BLURBS: Record<string, string> = {
 
 function UtilitySpellHintPanel({ entry }: { entry: UtilitySpellAvailability }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{entry.name}</p>
-      <p>{UTILITY_SPELL_BLURBS[entry.name]}</p>
-      {entry.characters.length > 0 && (
-        <ul className="space-y-0.5 pt-1">
-          {entry.characters.map((c) => (
-            <li key={c.characterId} className="text-slate-100">
-              {c.characterName}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <HintPanel
+      title={entry.name}
+      description={UTILITY_SPELL_BLURBS[entry.name]}
+      rows={entry.characters}
+      rowKey={(c) => c.characterId}
+      renderRow={(c) => <span className="text-slate-100">{c.characterName}</span>}
+    />
   );
 }
 
-/** Same "gray at zero, plain white otherwise" convention as `DefenseRow` — no green highlight, so availability reads the same way across every coverage row in this panel instead of standing out inconsistently. */
+/** Same "gray at zero, plain white otherwise" convention as `CoverageCountRow` — no green highlight, so availability reads the same way across every coverage row in this panel instead of standing out inconsistently. */
 function UtilitySpellRow({ entry }: { entry: UtilitySpellAvailability }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
@@ -526,11 +574,7 @@ function UtilitySpellRow({ entry }: { entry: UtilitySpellAvailability }) {
         <span className="text-slate-300">{entry.name} available</span>
       </InfoTooltip>
       {entry.available ? (
-        <span className="flex items-center gap-1">
-          {entry.characters.map((c) => (
-            <CharacterChip key={c.characterId} name={c.characterName} avatarUrl={c.avatarUrl} />
-          ))}
-        </span>
+        <CharacterChipRow holders={entry.characters} />
       ) : (
         <span className="text-slate-600">No</span>
       )}
@@ -543,8 +587,7 @@ function SensesPanel({ characters }: { characters: Character[] }) {
   const utility = computeUtilitySpellAvailability(characters);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Senses</h3>
+    <ToolkitCard title="Senses">
       <div className="space-y-1.5">
         {senses.map((entry) => (
           <SenseRow key={entry.name} entry={entry} />
@@ -555,31 +598,25 @@ function SensesPanel({ characters }: { characters: Character[] }) {
           <UtilitySpellRow key={entry.name} entry={entry} />
         ))}
       </div>
-    </div>
+    </ToolkitCard>
   );
 }
 
 /** Same hover-hint idea as a skill row's `SkillAllScoresPanel` — just who has it, no modifier column needed here. Handles the empty case (e.g. nobody currently holding Heroic Inspiration) since most callers only ever pass a non-empty list, but that one can't guarantee it. */
-function HolderListPanel({ label, holders }: { label: string; holders: DefenseHolder[] }) {
+function HolderListPanel({ label, holders }: { label: string; holders: CoverageHolder[] }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{label}</p>
-      {holders.length === 0 ? (
-        <p className="text-slate-100">No one currently has it.</p>
-      ) : (
-        <ul className="space-y-0.5">
-          {holders.map((h) => (
-            <li key={h.characterId} className="text-slate-100">
-              {h.characterName}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <HintPanel
+      title={label}
+      rows={holders}
+      rowKey={(h) => h.characterId}
+      renderRow={(h) => <span className="text-slate-100">{h.characterName}</span>}
+      emptyText="No one currently has it."
+    />
   );
 }
 
-function DefenseRow({ entry }: { entry: DefenseCoverageEntry }) {
+/** Shared row for resistances/immunities/languages/tools — all four reduce to the same `NamedCoverageEntry` shape (name, count, holders), so one row renders all of them: name with a hover hint listing who has it (same pattern as a skill row), count on the right. */
+function CoverageCountRow({ entry }: { entry: NamedCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
@@ -602,83 +639,59 @@ function DefensesPanel({ characters }: { characters: Character[] }) {
   const immunities = computeConditionProtectionCoverage(characters);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Defense Coverage</h3>
-      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resistances</p>
+    <ToolkitCard title="Defense Coverage">
+      <SectionLabel>Resistances</SectionLabel>
       {resistances.length === 0 ? (
         <p className="text-sm text-slate-600">No resistances in the party.</p>
       ) : (
         <div className="space-y-1.5">
           {resistances.map((entry) => (
-            <DefenseRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} />
           ))}
         </div>
       )}
-      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Immunities</p>
+      <SectionLabel className="mt-3">Immunities</SectionLabel>
       {immunities.length === 0 ? (
         <p className="text-sm text-slate-600">No immunities in the party.</p>
       ) : (
         <div className="space-y-1.5">
           {immunities.map((entry) => (
-            <DefenseRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} />
           ))}
         </div>
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 
-function LanguageRow({ entry }: { entry: LanguageCoverageEntry }) {
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
-        <span className="text-slate-300">{entry.name}</span>
-      </InfoTooltip>
-      <span className="font-medium text-slate-100">{entry.count}</span>
-    </div>
-  );
-}
-
-function ToolRow({ entry }: { entry: ToolCoverageEntry }) {
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
-        <span className="text-slate-300">{entry.name}</span>
-      </InfoTooltip>
-      <span className="font-medium text-slate-100">{entry.count}</span>
-    </div>
-  );
-}
-
-/** Only languages/tools actually present in the party — no pinned list anymore, see `computeLanguageCoverage`/`computeToolCoverage`. Both rows share the same shape: name with a hover hint listing who has it (same pattern as a skill row), count on the right. */
+/** Only languages/tools actually present in the party — no pinned list anymore, see `computeLanguageCoverage`/`computeToolCoverage`. */
 function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
   const languages = computeLanguageCoverage(characters);
   const tools = computeToolCoverage(characters);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Languages &amp; Tools</h3>
-      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Languages</p>
+    <ToolkitCard title="Languages & Tools">
+      <SectionLabel>Languages</SectionLabel>
       {languages.length === 0 ? (
         <p className="text-sm text-slate-600">No languages tracked.</p>
       ) : (
         <div className="space-y-1.5">
           {languages.map((entry) => (
-            <LanguageRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} />
           ))}
         </div>
       )}
-      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Tools</p>
+      <SectionLabel className="mt-3">Tools</SectionLabel>
       {tools.length === 0 ? (
         <p className="text-sm text-slate-600">No tool proficiencies tracked.</p>
       ) : (
         <div className="space-y-1.5">
           {tools.map((entry) => (
-            <ToolRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} />
           ))}
         </div>
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 
@@ -702,23 +715,13 @@ function CoverageHintPanel({ group }: { group: CoverageNameGroup }) {
   const holdersWithCharacter = group.holders.filter((h) => h.characterId);
   const description = group.holders.find((h) => h.description)?.description;
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{group.name}</p>
-      {description && (
-        <p className="text-slate-300">
-          <RichText text={description} />
-        </p>
-      )}
-      {holdersWithCharacter.length > 0 && (
-        <ul className="space-y-0.5 pt-1">
-          {holdersWithCharacter.map((h) => (
-            <li key={h.characterId} className="text-slate-100">
-              {h.characterName}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <HintPanel
+      title={group.name}
+      description={description && <RichText text={description} />}
+      rows={holdersWithCharacter}
+      rowKey={(h) => h.characterId!}
+      renderRow={(h) => <span className="text-slate-100">{h.characterName}</span>}
+    />
   );
 }
 
@@ -739,11 +742,7 @@ function CoveragePill({ group }: { group: CoverageNameGroup }) {
           <span className="text-slate-300">{group.name}</span>
         </InfoTooltip>
       </div>
-      <span className="flex shrink-0 items-center gap-0.5">
-        {group.holders.map((h) => (
-          <CharacterChip key={h.characterId} name={h.characterName} avatarUrl={h.avatarUrl} />
-        ))}
-      </span>
+      <CharacterChipRow holders={group.holders} />
     </div>
   );
 }
@@ -752,7 +751,7 @@ function CoverageCategoryBlock({ category, entries }: { category: CoverageCatego
   const groups = groupCoverageEntries(entries);
   return (
     <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">{category}</p>
+      <SectionLabel>{category}</SectionLabel>
       {groups.length === 0 ? (
         <p className="text-sm text-slate-600">none</p>
       ) : (
@@ -782,9 +781,9 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
   const categories = showAll ? COVERAGE_CATEGORY_ORDER : categoriesWithEntries;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Spell &amp; Ability Coverage</h3>
+    <ToolkitCard
+      title="Spell & Ability Coverage"
+      actions={
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
@@ -792,7 +791,8 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
         >
           {showAll ? "Show fewer" : `Show all ${COVERAGE_CATEGORY_ORDER.length} categories`}
         </button>
-      </div>
+      }
+    >
       {categories.length === 0 ? (
         <p className="text-sm text-slate-600">
           No known spells or abilities match a tracked coverage category yet.
@@ -804,7 +804,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
           ))}
         </div>
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 

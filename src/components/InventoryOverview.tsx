@@ -1,7 +1,7 @@
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
-import { CharacterChip } from "./ui/CharacterChip";
+import { CharacterChipRow } from "./ui/CharacterChip";
 
 const RARITY_COLOR: Record<ItemRarity, string> = {
   Common: "text-slate-300",
@@ -42,7 +42,7 @@ interface ItemGroup {
   name: string;
   rarity: ItemRarity;
   description?: string;
-  holders: Array<{ characterId: string; character: string; avatarUrl?: string; quantity: number }>;
+  holders: Array<{ characterId: string; characterName: string; avatarUrl?: string; quantity: number }>;
 }
 
 interface CategoryGroup {
@@ -69,7 +69,7 @@ function buildCategoryGroups(characters: Character[]): CategoryGroup[] {
       if (existing) {
         existing.quantity += item.quantity;
       } else {
-        holders.push({ characterId: c.id, character: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
+        holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
       }
     }
   }
@@ -174,16 +174,10 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
             <span className="min-w-0 flex-1">
               <ItemName item={item} />
             </span>
-            <span className="flex shrink-0 items-center gap-0.5">
-              {item.holders.map((h) => (
-                <CharacterChip
-                  key={h.characterId}
-                  name={h.character}
-                  avatarUrl={h.avatarUrl}
-                  title={h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character}
-                />
-              ))}
-            </span>
+            <CharacterChipRow
+              holders={item.holders}
+              chipTitle={(h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName)}
+            />
           </div>
         );
       })}
