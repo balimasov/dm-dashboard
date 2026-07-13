@@ -172,7 +172,7 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
 function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   const label = SKILL_LABELS[entry.skill];
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex items-center gap-3 py-1.5 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
           <span className="text-slate-300">{label}</span>
@@ -226,7 +226,7 @@ function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: Sk
 /** Same shape as `SkillRow` (name with a hover hint, best/weakest chips, status dot) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
 function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName; summary: PassiveStatSummary }) {
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex items-center gap-3 py-1.5 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
           <span className="text-slate-300">{label}</span>
@@ -268,14 +268,14 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
   return (
     <ToolkitCard title="Skills">
       <SectionLabel>Passives</SectionLabel>
-      <div className="space-y-1.5">
+      <div className="divide-y divide-slate-800/60">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
         <PassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} />
       </div>
 
       <SectionLabel className="mt-4">Skills</SectionLabel>
-      <div className="space-y-1.5">
+      <div className="divide-y divide-slate-800/60">
         {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
         ))}
@@ -352,7 +352,7 @@ function ResourceHintPanel({ entry }: { entry: PartyResourceEntry }) {
 
 function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex items-center gap-3 py-1 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<ResourceHintPanel entry={entry} />}>
           <span className="text-slate-300">{entry.resourceName}</span>
@@ -405,23 +405,24 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
       {!spellSlots ? (
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
       ) : (
-        <>
-          <div className="space-y-1.5">
-            {spellSlots.levels.map((l) => (
-              <div key={l.level} className="flex items-center justify-between gap-3 text-sm">
-                <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
-                  <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
-                </InfoTooltip>
-                <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
-                  {l.current}/{l.max}
-                </span>
-              </div>
-            ))}
+        <div className="divide-y divide-slate-800/60">
+          {spellSlots.levels.map((l) => (
+            <div key={l.level} className="flex items-center justify-between gap-3 py-1 text-sm">
+              <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
+                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
+              </InfoTooltip>
+              <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
+                {l.current}/{l.max}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between gap-3 py-1 text-sm">
+            <span className="text-slate-300">Total</span>
+            <span className={`font-medium ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
+              {spellSlots.totalCurrent}/{spellSlots.totalMax}
+            </span>
           </div>
-          <p className={`mt-1 text-right text-xl font-bold ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
-            {spellSlots.totalCurrent} / {spellSlots.totalMax}
-          </p>
-        </>
+        </div>
       )}
 
       <SectionLabel className="mt-4">Heroic Inspiration</SectionLabel>
@@ -431,7 +432,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="divide-y divide-slate-800/60">
           {resources.map((entry) => (
             <ResourceRow key={entry.id} entry={entry} />
           ))}
