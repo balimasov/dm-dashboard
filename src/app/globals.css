@@ -3,6 +3,11 @@
 :root {
   --background: oklch(12.9% 0.03 60);
   --foreground: oklch(96.8% 0.008 60);
+  /* Without this, the browser has no idea this is a dark UI and renders
+     native form-control chrome it draws itself — a <select>'s dropdown
+     popup, scrollbar thumbs, checkboxes — with light-mode UA defaults,
+     which flashes a stray white panel the instant a <select> opens. */
+  color-scheme: dark;
 }
 
 @theme inline {

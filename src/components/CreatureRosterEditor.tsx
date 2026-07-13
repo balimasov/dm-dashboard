@@ -290,19 +290,16 @@ function ImportCreaturePanel({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={downloadTemplate}
-          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
-        >
+      {/* Lightweight text links instead of two bordered buttons — this is a
+          one-time helper action (grab a blank template) and an alternative
+          to pasting text directly, neither needs the visual weight of its
+          own button competing with the textarea and Import button below. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <button type="button" onClick={downloadTemplate} className="text-sky-400 hover:underline">
           Download template (.yaml)
         </button>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
-        >
+        <span className="text-slate-700">·</span>
+        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sky-400 hover:underline">
           Upload file...
         </button>
         <input
@@ -452,22 +449,19 @@ export function CreatureRosterEditor({
   // (looking up a monster to throw at the party) — the DM can still switch
   // it before adding.
   const [category, setCategory] = useState<CreatureCategory>("enemy");
-  const tabCls = (active: boolean) =>
-    `rounded-md px-3 py-1.5 text-sm font-medium ${
-      active ? "bg-slate-800 text-slate-100" : "text-slate-500 hover:text-slate-300"
-    }`;
+  const selectCls =
+    "min-w-0 shrink rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm font-semibold text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 
   return (
     <div>
-      {/* One compact toolbar instead of a separate labeled category box
-          stacked above the mode tabs — the select's own visible value
-          ("🐺 Companions" etc.) already says what it's for, so it doesn't
-          need its own heading/border to stand out. */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      {/* Two compact dropdowns instead of a button row — guarantees both
+          controls stay on one line at any width, mobile included, instead
+          of a button row that either wraps or needs horizontal scrolling. */}
+      <div className="mb-3 flex items-center gap-2">
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as CreatureCategory)}
-          className="shrink-0 rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm font-semibold text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={selectCls}
         >
           {CREATURE_CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
@@ -475,14 +469,14 @@ export function CreatureRosterEditor({
             </option>
           ))}
         </select>
-        <div className="flex gap-1">
-          <button type="button" className={tabCls(addMode === "search")} onClick={() => setAddMode("search")}>
-            Search SRD
-          </button>
-          <button type="button" className={tabCls(addMode === "import")} onClick={() => setAddMode("import")}>
-            Import from file
-          </button>
-        </div>
+        <select
+          value={addMode}
+          onChange={(e) => setAddMode(e.target.value as "search" | "import")}
+          className={selectCls}
+        >
+          <option value="search">🔍 Search SRD</option>
+          <option value="import">📄 Import from file</option>
+        </select>
       </div>
       {addMode === "search" ? (
         <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} category={category} />
