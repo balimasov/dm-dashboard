@@ -11,11 +11,9 @@ import {
   DefenseCoverageEntry,
   HeroicInspirationSummary,
   LanguageCoverageEntry,
-  PARTY_TOOLKIT_COMPACT_SKILLS,
   PartyPassiveSummary,
   PartyResourceEntry,
   PassiveCharacterScore,
-  PassivePerceptionSummary,
   PassiveStatSummary,
   ResourceStatus,
   SenseCoverageEntry,
@@ -37,7 +35,6 @@ import {
   computeSpellAbilityCoverage,
   computeToolCoverage,
   computeUtilitySpellAvailability,
-  formatSkillScore,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
 
@@ -83,10 +80,6 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
         <InfoTooltip panel={<SkillAllScoresPanel label={label} all={entry.all} />}>
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
-        <p className="truncate text-xs text-slate-500">
-          {entry.best ? `Best: ${formatSkillScore(entry.best)}` : "No one in the party"}
-          {entry.weakest && ` · Weakest: ${formatSkillScore(entry.weakest)}`}
-        </p>
       </div>
       <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{entry.proficientCount} proficient</span>
       <StatusPill status={entry.status} />
@@ -114,36 +107,32 @@ function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveChar
   );
 }
 
-/** Same two-line row shape as `SkillRow` (bold label + muted detail line) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. */
-function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSummary | PassivePerceptionSummary }) {
-  const perception = "average" in summary ? summary : null;
+/** Same shape as `SkillRow` (name with a hover hint, proficient count, status pill) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Best/average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
+function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSummary }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<PassiveAllScoresPanel label={label} all={summary.all} />}>
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
-        <p className="truncate text-xs text-slate-500">
-          Best: {summary.best.characterName} {summary.best.value}
-          {perception && ` · Avg ${perception.average} · Lowest ${perception.lowest.value}`}
-        </p>
       </div>
+      <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{summary.proficientCount} proficient</span>
+      <StatusPill status={summary.status} />
     </div>
   );
 }
 
 /**
  * Skills — merges Passives and the Party Skill Overview into one card:
- * Passives first (same row shape as the skills below it), then the
- * skill list itself. Both subsections' row names carry a hover hint
- * listing every character's own score, so the compact view still answers
- * "what does everyone else have" without needing to open each character's
- * card.
+ * Passives first (same row shape as the skills below it), then all 18
+ * skills (no compact/"show all" split — a DM mid-session doesn't know in
+ * advance which skill they'll need, so hiding most of them just adds an
+ * extra click). Every row name carries a hover hint listing each
+ * character's own score, so the list stays scannable at a glance while
+ * still answering "what does everyone else have" on demand.
  */
 function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
-  const [showAll, setShowAll] = useState(false);
-  const allSkills = computePartySkillOverview(characters);
-  const skillEntries = showAll ? allSkills : allSkills.filter((e) => PARTY_TOOLKIT_COMPACT_SKILLS.includes(e.skill));
+  const skillEntries = computePartySkillOverview(characters);
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
@@ -156,16 +145,9 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
         <PassiveRow label="Passive Investigation" summary={passives.investigation} />
       </div>
 
-      <div className="mb-1 mt-4 flex items-center justify-between gap-3 border-t border-slate-800 pt-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Skills</p>
-        <button
-          type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
-        >
-          {showAll ? "Show fewer" : `Show all ${allSkills.length} skills`}
-        </button>
-      </div>
+      <p className="mb-1 mt-4 border-t border-slate-800 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        Skills
+      </p>
       <div className="divide-y divide-slate-800/60">
         {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
@@ -180,6 +162,40 @@ const RESOURCE_STATUS_CLASS: Record<ResourceStatus, string> = {
   low: "text-amber-400",
   normal: "text-slate-100",
 };
+
+/** A handful of distinguishable colors, picked deterministically per name — not tied to any character identity elsewhere in the app, just enough variety to tell rows apart at a glance in a dense list. */
+const CHARACTER_CHIP_COLORS = [
+  "border-sky-700 bg-sky-950/40 text-sky-300",
+  "border-emerald-700 bg-emerald-950/40 text-emerald-300",
+  "border-amber-700 bg-amber-950/40 text-amber-300",
+  "border-rose-700 bg-rose-950/40 text-rose-300",
+  "border-violet-700 bg-violet-950/40 text-violet-300",
+  "border-teal-700 bg-teal-950/40 text-teal-300",
+];
+
+function chipColorClass(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return CHARACTER_CHIP_COLORS[Math.abs(hash) % CHARACTER_CHIP_COLORS.length];
+}
+
+/**
+ * A compact stand-in for a full character name — just its first letter in a
+ * small colored circle, full name on hover. Only needs a name (not a full
+ * `Character`/avatar), so it works anywhere in the Party Toolkit that names
+ * an owner inside a tight row instead of a wide, truncating name column —
+ * `ResourceRow` today, and a natural fit for other rows here later.
+ */
+function CharacterInitial({ name }: { name: string }) {
+  return (
+    <span
+      title={name}
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${chipColorClass(name)}`}
+    >
+      {name.trim().charAt(0).toUpperCase() || "?"}
+    </span>
+  );
+}
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
@@ -221,9 +237,7 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
       <span className={`shrink-0 whitespace-nowrap font-medium ${RESOURCE_STATUS_CLASS[entry.status]}`}>
         {entry.current}/{entry.max}
       </span>
-      <span title={entry.characterName} className="w-32 shrink-0 truncate text-right text-xs text-slate-500">
-        {entry.characterName}
-      </span>
+      <CharacterInitial name={entry.characterName} />
     </div>
   );
 }
@@ -263,9 +277,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
             Spell Power:{" "}
             <span className="font-medium text-slate-100">
               {spellSlots.totalCurrent} / {spellSlots.totalMax}
-            </span>{" "}
-            slots available
-            {spellSlots.highestAvailableLevel && ` · Highest: ${ordinalLevel(spellSlots.highestAvailableLevel)}`}
+            </span>
           </p>
         </>
       )}

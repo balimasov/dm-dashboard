@@ -181,6 +181,8 @@ describe("computePartyPassiveSummary", () => {
           { characterName: "Esmeralda", value: 17, proficient: false },
           { characterName: "Ragnar", value: 11, proficient: false },
         ],
+        proficientCount: 0,
+        status: "Weak",
       },
       insight: {
         best: { characterName: "Ragnar", value: 15 },
@@ -188,6 +190,8 @@ describe("computePartyPassiveSummary", () => {
           { characterName: "Ragnar", value: 15, proficient: false },
           { characterName: "Esmeralda", value: 11, proficient: false },
         ],
+        proficientCount: 0,
+        status: "Weak",
       },
       investigation: {
         best: { characterName: "Ragnar", value: 14 },
@@ -195,6 +199,8 @@ describe("computePartyPassiveSummary", () => {
           { characterName: "Ragnar", value: 14, proficient: false },
           { characterName: "Esmeralda", value: 10, proficient: false },
         ],
+        proficientCount: 0,
+        status: "Weak",
       },
     });
   });
@@ -208,6 +214,15 @@ describe("computePartyPassiveSummary", () => {
 
     const summary = computePartyPassiveSummary([a]);
     expect(summary?.perception.all).toEqual([{ characterName: "A", value: 15, proficient: true }]);
+    expect(summary?.perception.proficientCount).toBe(1);
+    expect(summary?.perception.status).toBe("Weak");
+  });
+
+  test("3+ characters proficient in Perception is Strong coverage, same thresholds as a skill row", () => {
+    const chars = ["A", "B", "C"].map((name) =>
+      makeCharacter({ name, skillProficiencies: [{ name: "perception", proficient: true, expertise: false }] })
+    );
+    expect(computePartyPassiveSummary(chars)?.perception.status).toBe("Strong");
   });
 });
 

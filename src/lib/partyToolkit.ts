@@ -10,28 +10,6 @@ import {
   skillBonus,
 } from "./types";
 
-/**
- * The DM-facing "compact view" list from the Party Toolkit spec — the skills
- * asked about most often at the table. Already alphabetical, which doubles
- * as the display order. The remaining six (Animal Handling, History,
- * Medicine, Nature, Performance, Sleight of Hand) are reachable via "show
- * all" rather than shown by default.
- */
-export const PARTY_TOOLKIT_COMPACT_SKILLS: SkillName[] = [
-  "acrobatics",
-  "arcana",
-  "athletics",
-  "deception",
-  "insight",
-  "intimidation",
-  "investigation",
-  "perception",
-  "persuasion",
-  "religion",
-  "stealth",
-  "survival",
-];
-
 export type SkillCoverageStatus = "Strong" | "Medium" | "Weak";
 
 export interface SkillPartyScore {
@@ -136,6 +114,9 @@ export interface PassiveStatSummary {
   best: PassiveBest;
   /** Every character's value for this passive stat, ranked highest first. */
   all: PassiveCharacterScore[];
+  /** Characters proficient (or expert) in the underlying skill — same coverage-status math as a skill row, see `coverageStatus`. */
+  proficientCount: number;
+  status: SkillCoverageStatus;
 }
 
 export interface PassivePerceptionSummary extends PassiveStatSummary {
@@ -172,6 +153,16 @@ function passiveCharacterScores(
     .sort((a, b) => b.value - a.value || a.characterName.localeCompare(b.characterName));
 }
 
+function passiveStatSummary(
+  characters: Character[],
+  skill: SkillName,
+  value: (c: Character) => number
+): PassiveStatSummary {
+  const all = passiveCharacterScores(characters, skill, value);
+  const proficientCount = all.filter((s) => s.proficient).length;
+  return { best: bestBy(characters, value), all, proficientCount, status: coverageStatus(proficientCount) };
+}
+
 /** `null` when there are no characters — an empty average/best/lowest has nothing meaningful to show. */
 export function computePartyPassiveSummary(characters: Character[]): PartyPassiveSummary | null {
   if (characters.length === 0) return null;
@@ -181,19 +172,12 @@ export function computePartyPassiveSummary(characters: Character[]): PartyPassiv
 
   return {
     perception: {
-      best: bestBy(characters, (c) => c.combat.passivePerception),
+      ...passiveStatSummary(characters, "perception", (c) => c.combat.passivePerception),
       average,
       lowest: lowestBy(characters, (c) => c.combat.passivePerception),
-      all: passiveCharacterScores(characters, "perception", (c) => c.combat.passivePerception),
     },
-    insight: {
-      best: bestBy(characters, (c) => c.combat.passiveInsight),
-      all: passiveCharacterScores(characters, "insight", (c) => c.combat.passiveInsight),
-    },
-    investigation: {
-      best: bestBy(characters, (c) => c.combat.passiveInvestigation),
-      all: passiveCharacterScores(characters, "investigation", (c) => c.combat.passiveInvestigation),
-    },
+    insight: passiveStatSummary(characters, "insight", (c) => c.combat.passiveInsight),
+    investigation: passiveStatSummary(characters, "investigation", (c) => c.combat.passiveInvestigation),
   };
 }
 

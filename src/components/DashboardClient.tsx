@@ -385,7 +385,7 @@ export function DashboardClient({
       >
         <p className="mb-4 px-3 text-sm text-slate-500">
           Party-wide cheat sheet: who&apos;s best at what, what&apos;s left in the tank, and what your spells can
-          solve — reference only, no rolls.
+          solve.
         </p>
         <div className="px-3">
           <PartyToolkit characters={visibleCharacters} />
