@@ -13,6 +13,7 @@ import {
   computeResourceStatus,
   computeSensesCoverage,
   computeSkillOverviewEntry,
+  computeSpellAbilityCoverage,
   computeToolCoverage,
   computeUtilitySpellAvailability,
 } from "./partyToolkit";
@@ -394,5 +395,53 @@ describe("computeToolCoverage", () => {
       name: "Navigator's Tools",
       characterNames: [],
     });
+  });
+});
+
+describe("computeSpellAbilityCoverage", () => {
+  test("matches known spells and features case-insensitively into their categories", () => {
+    const runa = makeCharacter({
+      name: "Runa",
+      knownSpells: [
+        { id: "s1", name: "Fireball", level: 3, source: "Class" },
+        { id: "s2", name: "detect magic", level: 2, source: "Class" },
+      ],
+    });
+    const lilith = makeCharacter({
+      name: "Lilith",
+      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "other", originType: "feat" }],
+    });
+
+    const coverage = computeSpellAbilityCoverage([runa, lilith]);
+    expect(coverage["AOE Damage"]).toEqual([{ name: "Fireball", characterName: "Runa" }]);
+    expect(coverage.Detection).toEqual([{ name: "detect magic", characterName: "Runa" }]);
+    expect(coverage.Rerolls).toEqual([
+      { name: "Heroic Inspiration", characterName: "0 / 2" },
+      { name: "Lucky", characterName: "Lilith" },
+    ]);
+  });
+
+  test("a spell/ability not in the config map doesn't show up anywhere", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Definitely Not A Real Spell", level: 1, source: "Class" }],
+    });
+    const coverage = computeSpellAbilityCoverage([c]);
+    const allEntries = Object.values(coverage).flat();
+    expect(allEntries.some((e) => e.name === "Definitely Not A Real Spell")).toBe(false);
+  });
+
+  test("Shield maps to both Protection and Reactions", () => {
+    const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
+    const coverage = computeSpellAbilityCoverage([c]);
+    expect(coverage.Protection).toEqual([{ name: "Shield", characterName: "A" }]);
+    expect(coverage.Reactions).toEqual([{ name: "Shield", characterName: "A" }]);
+  });
+
+  test("every category is present (possibly empty) for an empty party", () => {
+    const coverage = computeSpellAbilityCoverage([]);
+    expect(Object.keys(coverage)).toHaveLength(16);
+    expect(coverage.Healing).toEqual([]);
+    expect(coverage.Rerolls).toEqual([]);
   });
 });

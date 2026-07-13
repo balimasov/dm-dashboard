@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Character, SKILL_LABELS, ordinalLevel } from "@/lib/types";
 import {
+  COVERAGE_CATEGORY_ORDER,
+  CoverageCategory,
+  CoverageEntry,
   CriticalItemCategory,
   CriticalItemEntry,
   DefenseCoverageEntry,
@@ -27,6 +30,7 @@ import {
   computePartySpellSlotSummary,
   computeResistanceCoverage,
   computeSensesCoverage,
+  computeSpellAbilityCoverage,
   computeToolCoverage,
   computeUtilitySpellAvailability,
   formatSkillScore,
@@ -400,12 +404,73 @@ function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
   );
 }
 
+function CoverageCategoryBlock({ category, entries }: { category: CoverageCategory; entries: CoverageEntry[] }) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">{category}</p>
+      {entries.length === 0 ? (
+        <p className="text-sm text-slate-600">none</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {entries.map((entry) => (
+            <li key={`${entry.name}-${entry.characterName}`} className="truncate text-sm text-slate-300">
+              {entry.name} <span className="text-slate-500">— {entry.characterName}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /**
- * Party Toolkit — Iterations 1-3: Skills, Passives, Spell Slots, Resources,
- * Critical Items, Senses, Defenses, Languages & Tools. Reference-only: no
- * dice roller, no roll buttons, no success/fail resolution. `characters` is
- * expected to already be filtered to the visible roster (same set shown in
- * the Party row above it).
+ * Which party-level problems the party can solve via spells/abilities — see
+ * `computeSpellAbilityCoverage`'s doc comment for the matching rules. Only
+ * names and owners are shown, never descriptions (the spec is explicit
+ * about this — the character card is where the full spell/ability text
+ * lives). Compact by default (only categories with at least one match);
+ * "show all" reveals the rest with an explicit "none", same show/hide
+ * pattern as the Skills panel's "show all skills".
+ */
+function CoveragePanel({ characters }: { characters: Character[] }) {
+  const [showAll, setShowAll] = useState(false);
+  const coverage = computeSpellAbilityCoverage(characters);
+  const categoriesWithEntries = COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
+  const categories = showAll ? COVERAGE_CATEGORY_ORDER : categoriesWithEntries;
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Spell &amp; Ability Coverage</h3>
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
+        >
+          {showAll ? "Show fewer" : `Show all ${COVERAGE_CATEGORY_ORDER.length} categories`}
+        </button>
+      </div>
+      {categories.length === 0 ? (
+        <p className="text-sm text-slate-600">
+          No known spells or abilities match a tracked coverage category yet.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+          {categories.map((category) => (
+            <CoverageCategoryBlock key={category} category={category} entries={coverage[category]} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Party Toolkit — Iterations 1-4: Skills, Passives, Spell Slots, Resources,
+ * Critical Items, Senses, Defenses, Languages & Tools, Spell & Ability
+ * Coverage. Reference-only: no dice roller, no roll buttons, no
+ * success/fail resolution. `characters` is expected to already be filtered
+ * to the visible roster (same set shown in the Party row above it).
  */
 export function PartyToolkit({ characters }: { characters: Character[] }) {
   const passives = computePartyPassiveSummary(characters);
@@ -432,6 +497,7 @@ export function PartyToolkit({ characters }: { characters: Character[] }) {
         <DefensesPanel characters={characters} />
         <LanguagesToolsPanel characters={characters} />
       </div>
+      <CoveragePanel characters={characters} />
     </div>
   );
 }

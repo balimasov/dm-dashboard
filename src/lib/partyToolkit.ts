@@ -492,3 +492,233 @@ export function computeToolCoverage(characters: Character[]): ToolCoverageEntry[
       return a.name.localeCompare(b.name);
     });
 }
+
+// ---------------------------------------------------------------------------
+// Iteration 4 — Spell & Ability Coverage
+// ---------------------------------------------------------------------------
+
+export type CoverageCategory =
+  | "Healing"
+  | "Revive"
+  | "AOE Damage"
+  | "Single Target Burst"
+  | "Control"
+  | "Mobility"
+  | "Detection"
+  | "Protection"
+  | "Light / Darkness"
+  | "Social"
+  | "Stealth"
+  | "Survival"
+  | "Rerolls"
+  | "Reactions"
+  | "Anti-Undead"
+  | "Anti-Magic";
+
+export const COVERAGE_CATEGORY_ORDER: CoverageCategory[] = [
+  "Healing",
+  "Revive",
+  "AOE Damage",
+  "Single Target Burst",
+  "Control",
+  "Mobility",
+  "Detection",
+  "Protection",
+  "Light / Darkness",
+  "Social",
+  "Stealth",
+  "Survival",
+  "Rerolls",
+  "Reactions",
+  "Anti-Undead",
+  "Anti-Magic",
+];
+
+/**
+ * A plain, hand-authored config map (lowercased spell/ability name →
+ * category) — deliberately not AI/semantic matching, per the spec's own
+ * restraint for this iteration. Grouped by category (not by name) since
+ * that's the shape a DM would actually want to extend: "add another Healing
+ * spell" is a one-line addition to the `Healing` array below. A name not in
+ * this list simply doesn't show up anywhere in Coverage — there's no
+ * "Uncategorized" bucket, matching the spec's "don't show unmapped items"
+ * rule.
+ *
+ * Deliberately excludes anything already tracked as a limited-use
+ * `Resource` (Rage, Bardic Inspiration, Lay on Hands' charge pool, Sorcery
+ * Points...) — that's already visible by name in the Resources panel above,
+ * and duplicating it here would be exactly the kind of redundant listing
+ * the spec warns against. Heroic Inspiration is the one explicit exception
+ * the spec itself calls out under Rerolls, folded in separately below since
+ * it isn't a spell or a `Feature` name at all (it's `Character.heroicInspiration`).
+ */
+const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
+  Healing: [
+    "cure wounds",
+    "healing word",
+    "mass cure wounds",
+    "mass healing word",
+    "prayer of healing",
+    "heal",
+    "mass heal",
+    "aid",
+    "lesser restoration",
+    "greater restoration",
+    "lay on hands: heal",
+    "lay on hands: purify poison",
+  ],
+  Revive: ["revivify", "raise dead", "resurrection", "true resurrection", "reincarnate"],
+  "AOE Damage": [
+    "fireball",
+    "burning hands",
+    "thunderwave",
+    "cone of cold",
+    "ice storm",
+    "lightning bolt",
+    "chain lightning",
+    "meteor swarm",
+    "delayed blast fireball",
+    "shatter",
+    "spirit guardians",
+    "sunburst",
+    "wall of fire",
+  ],
+  "Single Target Burst": [
+    "guiding bolt",
+    "divine smite",
+    "thunderous smite",
+    "melf's acid arrow",
+    "scorching ray",
+    "eldritch blast",
+    "magic missile",
+    "inflict wounds",
+    "chromatic orb",
+    "disintegrate",
+    "finger of death",
+    "power word kill",
+    "hellish rebuke",
+  ],
+  Control: [
+    "command",
+    "hold person",
+    "hypnotic pattern",
+    "web",
+    "sleep",
+    "banishment",
+    "dominate person",
+    "polymorph",
+    "slow",
+    "faerie fire",
+    "entangle",
+    "grease",
+    "dissonant whispers",
+  ],
+  Mobility: [
+    "misty step",
+    "fly",
+    "expeditious retreat",
+    "longstrider",
+    "jump",
+    "spider climb",
+    "feather fall",
+    "freedom of movement",
+    "dimension door",
+    "teleport",
+    "adrenaline rush",
+  ],
+  Detection: [
+    "detect magic",
+    "identify",
+    "locate object",
+    "locate creature",
+    "locate person",
+    "comprehend languages",
+    "alarm",
+    "see invisibility",
+    "true seeing",
+    "divination",
+    "find the path",
+  ],
+  Protection: [
+    "shield",
+    "mage armor",
+    "shield of faith",
+    "sanctuary",
+    "protection from evil and good",
+    "warding bond",
+    "heroism",
+    "danger sense",
+  ],
+  "Light / Darkness": ["light", "daylight", "darkness", "dancing lights"],
+  Social: ["charm person", "suggestion", "friends", "enthrall", "zone of truth", "vicious mockery"],
+  Stealth: ["invisibility", "pass without trace", "nondetection", "disguise self", "minor illusion", "silence"],
+  Survival: [
+    "goodberry",
+    "purify food and drink",
+    "create food and water",
+    "water breathing",
+    "water walk",
+    "meld into stone",
+    "plant growth",
+  ],
+  Rerolls: ["lucky"],
+  Reactions: ["shield", "counterspell", "war caster", "absorb elements", "hellish rebuke"],
+  "Anti-Undead": ["turn undead", "destroy undead", "guardian of faith"],
+  "Anti-Magic": ["counterspell", "dispel magic", "antimagic field", "globe of invulnerability"],
+};
+
+const COVERAGE_MAP: Record<string, CoverageCategory[]> = {};
+for (const category of COVERAGE_CATEGORY_ORDER) {
+  for (const keyword of COVERAGE_CATEGORY_KEYWORDS[category]) {
+    COVERAGE_MAP[keyword] = [...(COVERAGE_MAP[keyword] ?? []), category];
+  }
+}
+
+export interface CoverageEntry {
+  name: string;
+  characterName: string;
+}
+
+/**
+ * Matches every character's `knownSpells` and `features` names (case-
+ * insensitively) against `COVERAGE_MAP`. Heroic Inspiration is appended to
+ * `Rerolls` separately (see the map's own doc comment) whenever there's a
+ * party to report it for, formatted the same "name — owner" shape as every
+ * other entry but with the party-wide `x / partySize` count standing in for
+ * an owner name.
+ */
+export function computeSpellAbilityCoverage(characters: Character[]): Record<CoverageCategory, CoverageEntry[]> {
+  const coverage = Object.fromEntries(COVERAGE_CATEGORY_ORDER.map((c) => [c, [] as CoverageEntry[]])) as Record<
+    CoverageCategory,
+    CoverageEntry[]
+  >;
+
+  for (const c of characters) {
+    const named = [...c.knownSpells.map((s) => s.name), ...c.features.map((f) => f.name)];
+    const seen = new Set<string>();
+    for (const name of named) {
+      const categories = COVERAGE_MAP[name.toLowerCase()];
+      if (!categories) continue;
+      for (const category of categories) {
+        const key = `${category}:${name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        coverage[category].push({ name, characterName: c.name });
+      }
+    }
+  }
+
+  if (characters.length > 0) {
+    const inspiration = computeHeroicInspirationSummary(characters);
+    coverage.Rerolls.push({
+      name: "Heroic Inspiration",
+      characterName: `${inspiration.withInspiration} / ${inspiration.partySize}`,
+    });
+  }
+
+  for (const category of COVERAGE_CATEGORY_ORDER) {
+    coverage[category].sort((a, b) => a.name.localeCompare(b.name) || a.characterName.localeCompare(b.characterName));
+  }
+
+  return coverage;
+}
