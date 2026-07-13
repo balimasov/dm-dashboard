@@ -20,7 +20,7 @@ import {
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
 import {
-  CREATURE_CATEGORY_COLOR,
+  CREATURE_CATEGORY_CHIP_COLOR,
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_ORDER,
   Character,
@@ -36,6 +36,7 @@ import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
 import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
 import { RosterRow } from "@/components/RosterRow";
+import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 
 /**
  * Deliberately minimal, same weight as the character roster's "paste a
@@ -389,12 +390,11 @@ function CreatureRow({
         </>
       }
     >
-      <p title={creature.name} className="flex items-center gap-1.5 truncate text-lg font-semibold text-slate-100">
-        <span
-          title={CREATURE_CATEGORY_LABELS[creature.category]}
-          className={`h-2 w-2 shrink-0 rounded-full ${CREATURE_CATEGORY_COLOR[creature.category].dot}`}
-        />
-        <span className="truncate">{creature.name}</span>
+      <div className="mb-0.5">
+        <CreatureCategoryChip category={creature.category} />
+      </div>
+      <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
+        {creature.name}
       </p>
       {infoLine && (
         <p title={infoLine} className="truncate text-xs text-slate-500">
@@ -458,14 +458,13 @@ export function CreatureRosterEditor({
       <div className="mb-3 flex gap-1">
         {CREATURE_CATEGORY_ORDER.map((c) => {
           const active = category === c;
-          const color = CREATURE_CATEGORY_COLOR[c];
           return (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-                active ? `${color.border} ${color.text} bg-slate-800` : "border-transparent text-slate-500 hover:text-slate-300"
+              className={`rounded-md px-3 py-1.5 text-sm font-bold ${
+                active ? CREATURE_CATEGORY_CHIP_COLOR[c] : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {CREATURE_CATEGORY_LABELS[c]}

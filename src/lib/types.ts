@@ -508,17 +508,40 @@ export type CreatureCategory = "companion" | "enemy" | "npc";
 
 export const CREATURE_CATEGORY_ORDER: CreatureCategory[] = ["companion", "enemy", "npc"];
 
+/** Plural form — dashboard section titles ("Companions", "Enemies", "NPCs"). */
 export const CREATURE_CATEGORY_LABELS: Record<CreatureCategory, string> = {
   companion: "Companions",
   enemy: "Enemies",
   npc: "NPCs",
 };
 
-/** Border/accent color per category — companion (player-controlled, emerald), enemy (DM-run threat, red), NPC (non-combat, violet). Used on `CreatureCard`/`CreatureDetailsModal` accents and the matching dashboard section title. */
-export const CREATURE_CATEGORY_COLOR: Record<CreatureCategory, { border: string; text: string; dot: string }> = {
-  companion: { border: "border-emerald-700/60", text: "text-emerald-400", dot: "bg-emerald-400" },
-  enemy: { border: "border-red-800/60", text: "text-red-400", dot: "bg-red-400" },
-  npc: { border: "border-violet-700/60", text: "text-violet-400", dot: "bg-violet-400" },
+/** Singular form — the per-creature category chip/tag reads "Companion", not "Companions". */
+export const CREATURE_CATEGORY_SINGULAR_LABELS: Record<CreatureCategory, string> = {
+  companion: "Companion",
+  enemy: "Enemy",
+  npc: "NPC",
+};
+
+/** One emoji per category, used before the dashboard section title (see also the Campaign/Party/Inventory emoji picked directly in `DashboardClient`). */
+export const CREATURE_CATEGORY_EMOJI: Record<CreatureCategory, string> = {
+  companion: "🐾",
+  enemy: "⚔️",
+  npc: "🗣️",
+};
+
+/**
+ * Bright, solid-fill chip color per category — companion (player-controlled,
+ * emerald), enemy (DM-run threat, red), NPC (non-combat, violet). Deliberately
+ * a solid high-contrast badge rather than a subtle border/tint: a border
+ * accent on the card itself was tried first, but it visually competed with
+ * `StatusRail`'s own colored condition badges, so the category now shows as
+ * its own small tag instead (on `CreatureHeader`, shared by the card and its
+ * details modal, and on the roster row in Settings).
+ */
+export const CREATURE_CATEGORY_CHIP_COLOR: Record<CreatureCategory, string> = {
+  companion: "bg-emerald-500 text-emerald-950",
+  enemy: "bg-red-500 text-red-950",
+  npc: "bg-violet-500 text-violet-950",
 };
 
 export interface Creature {

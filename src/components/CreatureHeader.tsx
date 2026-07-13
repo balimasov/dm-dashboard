@@ -1,6 +1,7 @@
 import { Character, Creature, creatureInfoLine } from "@/lib/types";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
+import { CreatureCategoryChip } from "./ui/CreatureCategoryChip";
 
 /**
  * Shared between the compact `CreatureCard` and `CreatureDetailsModal`
@@ -23,6 +24,9 @@ export function CreatureHeader({
     <>
       <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
       <div className="min-w-0 flex-1">
+        <div className="mb-0.5">
+          <CreatureCategoryChip category={creature.category} />
+        </div>
         <p
           title={creature.name}
           className="truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white"

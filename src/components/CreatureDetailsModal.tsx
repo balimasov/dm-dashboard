@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CREATURE_CATEGORY_COLOR, Character, Creature } from "@/lib/types";
+import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { NotesSection } from "./ui/NotesSection";
@@ -57,7 +57,7 @@ export function CreatureDetailsModal({
       onClick={onClose}
     >
       <div
-        className={`relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border ${CREATURE_CATEGORY_COLOR[creature.category].border} bg-slate-950 p-4 shadow-2xl shadow-black/40`}
+        className="relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
         <StatusRail

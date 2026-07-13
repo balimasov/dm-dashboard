@@ -16,7 +16,7 @@ import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
-  CREATURE_CATEGORY_COLOR,
+  CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
   Campaign,
   CampaignSummary,
@@ -43,6 +43,29 @@ function CampaignLogo({ campaign }: { campaign: Campaign }) {
     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-slate-600">
       {campaign.name.trim().charAt(0).toUpperCase() || "?"}
     </div>
+  );
+}
+
+/** `${n} card` / `${n} cards` — the generic word for whatever's shown in a horizontal card row (characters, companions, enemies, NPCs alike), so the count doesn't have to pick a word specific to just one of them. */
+function formatCardCount(n: number): string {
+  return `${n} card${n === 1 ? "" : "s"}`;
+}
+
+/**
+ * A leading emoji instead of a plain heading — gives each dashboard section
+ * a quick visual anchor when scanning down the page, same idea previously
+ * tried as a colored dot (which read as arbitrary without a legend). `count`
+ * is only passed for the horizontal card-row sections (Party and the three
+ * creature categories); Campaign/Inventory aren't card rows, so they render
+ * without one.
+ */
+function SectionTitle({ emoji, label, count }: { emoji: string; label: React.ReactNode; count?: number }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span aria-hidden="true">{emoji}</span>
+      <span>{label}</span>
+      {count !== undefined && <span className="text-base font-normal text-slate-500">({formatCardCount(count)})</span>}
+    </span>
   );
 }
 
@@ -126,17 +149,11 @@ function CreatureCategorySection({
   onRemove: (id: string) => void;
   onOpenSettings: () => void;
 }) {
-  const color = CREATURE_CATEGORY_COLOR[category];
   const filtered = creatures.filter((c) => c.category === category);
 
   return (
     <CollapsibleSection
-      title={
-        <span className="inline-flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} />
-          {CREATURE_CATEGORY_LABELS[category]}
-        </span>
-      }
+      title={<SectionTitle emoji={CREATURE_CATEGORY_EMOJI[category]} label={CREATURE_CATEGORY_LABELS[category]} count={filtered.length} />}
       storageKey={storageKey}
       initialOpen={initialOpen}
     >
@@ -296,7 +313,7 @@ export function DashboardClient({
       </div>
 
       <CollapsibleSection
-        title={`Campaign: "${campaignState.name}"`}
+        title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
         storageKey="dm-dashboard-campaign-open"
         initialOpen={initialOpen.campaign}
       >
@@ -309,7 +326,11 @@ export function DashboardClient({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Party" storageKey="dm-dashboard-characters-open" initialOpen={initialOpen.characters}>
+      <CollapsibleSection
+        title={<SectionTitle emoji="🛡️" label="Party" count={characters.length} />}
+        storageKey="dm-dashboard-characters-open"
+        initialOpen={initialOpen.characters}
+      >
         <p className="mb-4 px-3 text-sm text-slate-500">Combat state, resources, and notes for each.</p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
@@ -371,7 +392,11 @@ export function DashboardClient({
         onOpenSettings={() => openSettings("roster")}
       />
 
-      <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open" initialOpen={initialOpen.inventory}>
+      <CollapsibleSection
+        title={<SectionTitle emoji="🎒" label="Inventory" />}
+        storageKey="dm-dashboard-inventory-open"
+        initialOpen={initialOpen.inventory}
+      >
         <div className="px-3">
           <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
           <InventoryOverview characters={characters} />
