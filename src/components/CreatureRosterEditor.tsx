@@ -455,22 +455,29 @@ export function CreatureRosterEditor({
 
   return (
     <div>
-      <div className="mb-3 flex gap-1">
-        {CREATURE_CATEGORY_ORDER.map((c) => {
-          const active = category === c;
-          return (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCategory(c)}
-              className={`rounded-md px-3 py-1.5 text-sm font-bold ${
-                active ? CREATURE_CATEGORY_CHIP_COLOR[c] : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              {CREATURE_CATEGORY_LABELS[c]}
-            </button>
-          );
-        })}
+      {/* Its own labeled, bordered block rather than a plain button row —
+          otherwise it visually blends into the Search SRD/Import tabs right
+          below it and is easy to miss, even though it's the first thing that
+          decides where the creature ends up on the dashboard. */}
+      <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-2.5">
+        <p className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Add as</p>
+        <div className="flex gap-1">
+          {CREATURE_CATEGORY_ORDER.map((c) => {
+            const active = category === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className={`rounded-md px-3 py-1.5 text-sm font-bold ${
+                  active ? CREATURE_CATEGORY_CHIP_COLOR[c] : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                {CREATURE_CATEGORY_LABELS[c]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mb-3 flex gap-1">

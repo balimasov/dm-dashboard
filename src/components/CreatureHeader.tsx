@@ -22,11 +22,17 @@ export function CreatureHeader({
 
   const content = (
     <>
-      <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
-      <div className="min-w-0 flex-1">
-        <div className="mb-0.5">
+      <div className="relative shrink-0">
+        <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
+        {/* Half-overlaps the avatar's bottom edge (same "floating marker"
+            convention as `StatusRail`'s own badges) instead of sitting inline
+            with the name — that read as clutter competing with the name for
+            attention right in the header's first line. */}
+        <div className="absolute inset-x-0 bottom-0 flex translate-y-1/2 justify-center">
           <CreatureCategoryChip category={creature.category} />
         </div>
+      </div>
+      <div className="min-w-0 flex-1">
         <p
           title={creature.name}
           className="truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white"

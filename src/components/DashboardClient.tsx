@@ -61,7 +61,7 @@ function formatCardCount(n: number): string {
  */
 function SectionTitle({ emoji, label, count }: { emoji: string; label: React.ReactNode; count?: number }) {
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-end gap-2">
       <span aria-hidden="true">{emoji}</span>
       <span>{label}</span>
       {count !== undefined && <span className="text-base font-normal text-slate-500">({formatCardCount(count)})</span>}
@@ -118,8 +118,8 @@ export interface OpenSections {
 }
 
 const CREATURE_SECTION_DESCRIPTION: Record<CreatureCategory, string> = {
-  companion: "Summons, mounts, Wild Shape forms, familiars — run by the players, mostly in combat.",
-  enemy: "Monsters and adversaries you run against the party — mostly in combat.",
+  companion: "Creatures the players control — summons, mounts, familiars.",
+  enemy: "Monsters and adversaries you run against the party.",
   npc: "Non-player characters you run outside of combat.",
 };
 
@@ -318,7 +318,7 @@ export function DashboardClient({
         initialOpen={initialOpen.campaign}
       >
         <div className="px-3">
-          <p className="mb-4 text-sm text-slate-500">Overview and notes for this campaign.</p>
+          <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
           <CampaignNotes
             campaign={campaignState}
             onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
@@ -331,7 +331,7 @@ export function DashboardClient({
         storageKey="dm-dashboard-characters-open"
         initialOpen={initialOpen.characters}
       >
-        <p className="mb-4 px-3 text-sm text-slate-500">Combat state, resources, and notes for each.</p>
+        <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
@@ -393,12 +393,12 @@ export function DashboardClient({
       />
 
       <CollapsibleSection
-        title={<SectionTitle emoji="🎒" label="Inventory" />}
+        title={<SectionTitle emoji="💎" label="Inventory" />}
         storageKey="dm-dashboard-inventory-open"
         initialOpen={initialOpen.inventory}
       >
         <div className="px-3">
-          <p className="mb-4 text-sm text-slate-500">Items and gold across the whole party.</p>
+          <p className="mb-4 text-sm text-slate-500">Items and gold shared across the whole party.</p>
           <InventoryOverview characters={characters} />
         </div>
       </CollapsibleSection>
