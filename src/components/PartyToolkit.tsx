@@ -26,7 +26,6 @@ import {
   PartySpellSlotHolder,
   PassiveCharacterScore,
   PassiveStatSummary,
-  ResourceStatus,
   SenseCoverageEntry,
   SenseHolder,
   SkillCharacterScore,
@@ -52,7 +51,7 @@ import { RichText } from "./RichText";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
-/** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value in this file that doesn't already have its own status coloring (spell slots, Heroic Inspiration). */
+/** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value in this file: spell slots, Heroic Inspiration, and limited-use resources. */
 function usageColorClass(current: number, max: number): string {
   if (max <= 0 || current <= 0) return "text-red-400";
   if (current <= max / 2) return "text-amber-400";
@@ -298,12 +297,6 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
   );
 }
 
-const RESOURCE_STATUS_CLASS: Record<ResourceStatus, string> = {
-  empty: "text-red-400",
-  low: "text-amber-400",
-  normal: "text-slate-100",
-};
-
 /**
  * Best/weakest character for a skill or passive stat, shown as their chip +
  * an up/down arrow — `hint` carries the full "Best: Name +N" detail as our
@@ -340,10 +333,15 @@ function StrengthChip({
   );
 }
 
+const HEROIC_INSPIRATION_DESCRIPTION =
+  "Spend it to gain advantage on one attack roll, saving throw, or ability check.";
+
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <InfoTooltip panel={<HolderListPanel label="Heroic Inspiration" holders={summary.holders} />}>
+      <InfoTooltip
+        panel={<HolderListPanel label="Heroic Inspiration" description={HEROIC_INSPIRATION_DESCRIPTION} holders={summary.holders} />}
+      >
         <span className="text-slate-300">Heroic Inspiration</span>
       </InfoTooltip>
       <span className={`font-medium ${usageColorClass(summary.withInspiration, summary.partySize)}`}>
@@ -374,7 +372,7 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
         </InfoTooltip>
       </div>
       <RecoveryBadge recovery={entry.recovery} />
-      <span className={`shrink-0 whitespace-nowrap font-medium ${RESOURCE_STATUS_CLASS[entry.status]}`}>
+      <span className={`shrink-0 whitespace-nowrap font-medium ${usageColorClass(entry.current, entry.max)}`}>
         {entry.current}/{entry.max}
       </span>
       <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} />
@@ -456,10 +454,33 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   );
 }
 
+/** Same "description first, then who has it" order as every other hint panel — holders show their own quantity instead of a plain name, since a critical item's per-character count is the whole point of this panel. */
+function CriticalItemHintPanel({ entry }: { entry: CriticalItemEntry }) {
+  return (
+    <HintPanel
+      title={entry.name}
+      description={entry.description && <RichText text={entry.description} />}
+      rows={entry.holders}
+      rowKey={(h) => h.characterId}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(h) => (
+        <>
+          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
+          <span className="shrink-0 text-slate-100">x{h.quantity}</span>
+        </>
+      )}
+    />
+  );
+}
+
 function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
   return (
     <div className="flex items-center gap-3 py-1 text-sm">
-      <span className="min-w-0 flex-1 truncate text-slate-300">{entry.name}</span>
+      <div className="min-w-0 flex-1">
+        <InfoTooltip panel={<CriticalItemHintPanel entry={entry} />}>
+          <span className="truncate text-slate-300">{entry.name}</span>
+        </InfoTooltip>
+      </div>
       <span className="shrink-0 font-medium text-slate-100">x{entry.totalQuantity}</span>
       <CharacterChipRow holders={entry.holders} chipTitle={(h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName)} />
     </div>
@@ -503,11 +524,20 @@ export function CriticalItemsPanel({ characters }: { characters: Character[] }) 
   );
 }
 
+/** Short rules reminder for what the sense actually lets a character do — the row itself only says "X of Y", not what that's useful for. */
+const SENSE_BLURBS: Record<string, string> = {
+  Darkvision: "See in dim light within range as if it were bright light, and in darkness as if it were dim light (shades of gray only).",
+  Blindsight: "Perceive its surroundings without relying on sight, within range.",
+  Tremorsense: "Detect and pinpoint anything in contact with the ground within range, without seeing it.",
+  Truesight: "See in normal and magical darkness, see invisible creatures/objects, see through illusions, and see a shapechanger's true form within range.",
+};
+
 /** Same idea as `SkillAllScoresPanel` — every character who has this sense, with their own range, ranked implicitly by the row's own "Best" chip already answering the top one. */
 function SenseHolderPanel({ label, holders }: { label: string; holders: SenseHolder[] }) {
   return (
     <HintPanel
       title={label}
+      description={SENSE_BLURBS[label]}
       rows={holders}
       rowKey={(h) => h.characterId}
       rowClassName="flex items-center justify-between gap-4"
@@ -603,10 +633,11 @@ function SensesPanel({ characters }: { characters: Character[] }) {
 }
 
 /** Same hover-hint idea as a skill row's `SkillAllScoresPanel` — just who has it, no modifier column needed here. Handles the empty case (e.g. nobody currently holding Heroic Inspiration) since most callers only ever pass a non-empty list, but that one can't guarantee it. */
-function HolderListPanel({ label, holders }: { label: string; holders: CoverageHolder[] }) {
+function HolderListPanel({ label, description, holders }: { label: string; description?: string; holders: CoverageHolder[] }) {
   return (
     <HintPanel
       title={label}
+      description={description}
       rows={holders}
       rowKey={(h) => h.characterId}
       renderRow={(h) => <span className="text-slate-100">{h.characterName}</span>}
@@ -615,11 +646,11 @@ function HolderListPanel({ label, holders }: { label: string; holders: CoverageH
   );
 }
 
-/** Shared row for resistances/immunities/languages/tools — all four reduce to the same `NamedCoverageEntry` shape (name, count, holders), so one row renders all of them: name with a hover hint listing who has it (same pattern as a skill row), count on the right. */
-function CoverageCountRow({ entry }: { entry: NamedCoverageEntry }) {
+/** Shared row for resistances/immunities/languages/tools — all four reduce to the same `NamedCoverageEntry` shape (name, count, holders), so one row renders all of them: name with a hover hint listing who has it (same pattern as a skill row), count on the right. `description` is a short generic blurb of what this kind of entry means (a resistance halves damage, a tool adds proficiency, ...) — the entry's own `name` is the specific type/language/tool, not a describable "ability" on its own. */
+function CoverageCountRow({ entry, description }: { entry: NamedCoverageEntry; description?: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
+      <InfoTooltip panel={<HolderListPanel label={entry.name} description={description} holders={entry.holders} />}>
         <span className="text-slate-300">{entry.name}</span>
       </InfoTooltip>
       <span className="font-medium text-slate-100">{entry.count}</span>
@@ -634,6 +665,9 @@ function CoverageCountRow({ entry }: { entry: NamedCoverageEntry }) {
  * for their campaign, and showing every possible type at 0/partySize just
  * added noise this simplified view drops.
  */
+const RESISTANCE_DESCRIPTION = "Takes half damage from this damage type.";
+const IMMUNITY_DESCRIPTION = "Takes no damage or effect from this immunity.";
+
 function DefensesPanel({ characters }: { characters: Character[] }) {
   const resistances = computeResistanceCoverage(characters);
   const immunities = computeConditionProtectionCoverage(characters);
@@ -646,7 +680,7 @@ function DefensesPanel({ characters }: { characters: Character[] }) {
       ) : (
         <div className="space-y-1.5">
           {resistances.map((entry) => (
-            <CoverageCountRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} description={RESISTANCE_DESCRIPTION} />
           ))}
         </div>
       )}
@@ -656,7 +690,7 @@ function DefensesPanel({ characters }: { characters: Character[] }) {
       ) : (
         <div className="space-y-1.5">
           {immunities.map((entry) => (
-            <CoverageCountRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} description={IMMUNITY_DESCRIPTION} />
           ))}
         </div>
       )}
@@ -665,6 +699,9 @@ function DefensesPanel({ characters }: { characters: Character[] }) {
 }
 
 /** Only languages/tools actually present in the party — no pinned list anymore, see `computeLanguageCoverage`/`computeToolCoverage`. */
+const LANGUAGE_DESCRIPTION = "Can speak, read, and write this language.";
+const TOOL_DESCRIPTION = "Adds their proficiency bonus to ability checks made using this tool.";
+
 function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
   const languages = computeLanguageCoverage(characters);
   const tools = computeToolCoverage(characters);
@@ -677,7 +714,7 @@ function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
       ) : (
         <div className="space-y-1.5">
           {languages.map((entry) => (
-            <CoverageCountRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} description={LANGUAGE_DESCRIPTION} />
           ))}
         </div>
       )}
@@ -687,7 +724,7 @@ function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
       ) : (
         <div className="space-y-1.5">
           {tools.map((entry) => (
-            <CoverageCountRow key={entry.name} entry={entry} />
+            <CoverageCountRow key={entry.name} entry={entry} description={TOOL_DESCRIPTION} />
           ))}
         </div>
       )}
@@ -765,6 +802,44 @@ function CoverageCategoryBlock({ category, entries }: { category: CoverageCatego
   );
 }
 
+const COVERAGE_COLUMNS = 4;
+
+/**
+ * Balances category blocks across `numColumns` real DOM columns (greedy
+ * "always add to the currently-shortest column" bin-packing) instead of
+ * letting CSS Grid auto-flow them into rows — a plain grid aligns every
+ * cell in a row to its tallest neighbor, which left large empty gaps under
+ * short categories once rows had 4 uneven-height blocks side by side. Each
+ * category's "weight" is its own group count (or 1, for a "none" block),
+ * so heavier categories get spread across different columns rather than
+ * stacking together. Column contents are then re-sorted back into
+ * `COVERAGE_CATEGORY_ORDER` so each column still reads top-to-bottom in
+ * the same order a DM would scan the full category list.
+ */
+function distributeCoverageColumns(
+  categories: CoverageCategory[],
+  coverage: Record<CoverageCategory, CoverageEntry[]>,
+  numColumns: number
+): CoverageCategory[][] {
+  const weight = (category: CoverageCategory) => Math.max(groupCoverageEntries(coverage[category]).length, 1) + 1;
+  const columns: CoverageCategory[][] = Array.from({ length: numColumns }, () => []);
+  const heights = new Array(numColumns).fill(0);
+
+  for (const category of [...categories].sort((a, b) => weight(b) - weight(a))) {
+    let shortest = 0;
+    for (let i = 1; i < numColumns; i++) {
+      if (heights[i] < heights[shortest]) shortest = i;
+    }
+    columns[shortest].push(category);
+    heights[shortest] += weight(category);
+  }
+
+  for (const column of columns) {
+    column.sort((a, b) => COVERAGE_CATEGORY_ORDER.indexOf(a) - COVERAGE_CATEGORY_ORDER.indexOf(b));
+  }
+  return columns;
+}
+
 /**
  * Which party-level problems the party can solve via spells/abilities — see
  * `computeSpellAbilityCoverage`'s doc comment for the matching rules. Only
@@ -779,6 +854,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
   const coverage = computeSpellAbilityCoverage(characters);
   const categoriesWithEntries = COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
   const categories = showAll ? COVERAGE_CATEGORY_ORDER : categoriesWithEntries;
+  const columns = distributeCoverageColumns(categories, coverage, COVERAGE_COLUMNS);
 
   return (
     <ToolkitCard
@@ -798,10 +874,17 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
           No known spells or abilities match a tracked coverage category yet.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categories.map((category) => (
-            <CoverageCategoryBlock key={category} category={category} entries={coverage[category]} />
-          ))}
+        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-4">
+          {columns.map(
+            (column, i) =>
+              column.length > 0 && (
+                <div key={i} className="space-y-3">
+                  {column.map((category) => (
+                    <CoverageCategoryBlock key={category} category={category} entries={coverage[category]} />
+                  ))}
+                </div>
+              )
+          )}
         </div>
       )}
     </ToolkitCard>

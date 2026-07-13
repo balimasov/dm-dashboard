@@ -245,22 +245,6 @@ function CurrencyRow({ character }: { character: Character }) {
   );
 }
 
-function splitIntoColumns<T>(entries: T[], weight: (entry: T) => number): [T[], T[]] {
-  if (entries.length <= 1) return [entries, []];
-  const total = entries.reduce((sum, e) => sum + weight(e), 0);
-  let running = 0;
-  let splitIndex = entries.length;
-  for (let i = 0; i < entries.length; i++) {
-    running += weight(entries[i]);
-    if (running >= total / 2) {
-      splitIndex = i + 1;
-      break;
-    }
-  }
-  if (splitIndex >= entries.length) splitIndex = Math.ceil(entries.length / 2);
-  return [entries.slice(0, splitIndex), entries.slice(splitIndex)];
-}
-
 const ITEM_LIST_COLUMNS = 4;
 
 /** The full party item list, grouped by category — see `CoinsPanel` for currency, kept as a separate panel so the two can sit side by side with `CriticalItemsPanel` above this. */
@@ -290,7 +274,6 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
 export function CoinsPanel({ characters }: { characters: Character[] }) {
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
   const totalGp = characters.reduce((sum, c) => sum + currencyToGp(c.currency), 0);
-  const [leftCurrency, rightCurrency] = splitIntoColumns(charactersWithCurrency, () => 1);
 
   if (charactersWithCurrency.length === 0) {
     return (
@@ -312,26 +295,11 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
           Coins
         </InfoTooltip>
       </h3>
-      {rightCurrency.length > 0 ? (
-        <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
-          <div className="flex flex-col gap-2 sm:pr-6">
-            {leftCurrency.map((c) => (
-              <CurrencyRow key={c.id} character={c} />
-            ))}
-          </div>
-          <div className="flex flex-col gap-2 sm:pl-6">
-            {rightCurrency.map((c) => (
-              <CurrencyRow key={c.id} character={c} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {leftCurrency.map((c) => (
-            <CurrencyRow key={c.id} character={c} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        {charactersWithCurrency.map((c) => (
+          <CurrencyRow key={c.id} character={c} />
+        ))}
+      </div>
       <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
         <span className="text-sm font-medium text-slate-100">Party total</span>
         <CoinChip

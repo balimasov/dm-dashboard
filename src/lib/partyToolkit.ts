@@ -427,6 +427,8 @@ export interface CriticalItemHolder {
 export interface CriticalItemEntry {
   category: CriticalItemCategory;
   name: string;
+  /** The item's own rules text, straight from `InventoryItem.description` — the row's hover hint, same source `InventoryOverview`'s item tooltip shows. */
+  description?: string;
   totalQuantity: number;
   holders: CriticalItemHolder[];
 }
@@ -448,7 +450,7 @@ export function computeCriticalInventoryHighlights(characters: Character[]): Cri
       if (!category) continue;
       const key = item.name.trim().toLowerCase();
       if (!byName.has(key)) {
-        byName.set(key, { category, name: item.name, totalQuantity: 0, holders: [] });
+        byName.set(key, { category, name: item.name, description: item.description, totalQuantity: 0, holders: [] });
       }
       const entry = byName.get(key)!;
       entry.totalQuantity += item.quantity;
