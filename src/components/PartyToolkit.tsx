@@ -17,8 +17,6 @@ import {
   CoverageCategory,
   CoverageEntry,
   CoverageHolder,
-  CriticalItemCategory,
-  CriticalItemEntry,
   HeroicInspirationSummary,
   NamedCoverageEntry,
   PartyPassiveSummary,
@@ -33,7 +31,6 @@ import {
   SkillOverviewEntry,
   UtilitySpellAvailability,
   computeConditionProtectionCoverage,
-  computeCriticalInventoryHighlights,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyPassiveSummary,
@@ -50,6 +47,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
+import { SectionLabel, ToolkitCard } from "./ui/ToolkitCard";
 
 /** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value in this file: spell slots, Heroic Inspiration, and limited-use resources. */
 function usageColorClass(current: number, max: number): string {
@@ -70,24 +68,6 @@ const STATUS_LABEL: Record<SkillCoverageStatus, string> = {
   Medium: "Medium coverage",
   Weak: "Weak coverage",
 };
-
-/** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coverage's "Show all" toggle). */
-function ToolkitCard({ title, actions, children }: { title: ReactNode; actions?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
-        {actions}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** The small uppercase subsection label used inside a `ToolkitCard` (Passives/Skills, Resistances/Immunities, ...) — `className` extends spacing per call site (e.g. `mt-4` before a second subsection). */
-function SectionLabel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ${className}`}>{children}</p>;
-}
 
 /**
  * The shared shape behind every hover-hint panel in this file: a title, an
@@ -454,76 +434,6 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
         <div className="space-y-1.5">
           {resources.map((entry) => (
             <ResourceRow key={entry.id} entry={entry} />
-          ))}
-        </div>
-      )}
-    </ToolkitCard>
-  );
-}
-
-/** Same "description first, then who has it" order as every other hint panel — holders show their own quantity instead of a plain name, since a critical item's per-character count is the whole point of this panel. */
-function CriticalItemHintPanel({ entry }: { entry: CriticalItemEntry }) {
-  return (
-    <HintPanel
-      title={entry.name}
-      description={entry.description && <RichText text={entry.description} />}
-      rows={entry.holders}
-      rowKey={(h) => h.characterId}
-      rowClassName="flex items-center justify-between gap-4"
-      renderRow={(h) => (
-        <>
-          <span className="min-w-0 truncate">{h.characterName}</span>
-          <span className="shrink-0">x{h.quantity}</span>
-        </>
-      )}
-    />
-  );
-}
-
-function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
-  return (
-    <div className="flex items-center gap-3 text-sm">
-      <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<CriticalItemHintPanel entry={entry} />}>
-          <span className="truncate text-slate-300">{entry.name}</span>
-        </InfoTooltip>
-      </div>
-      <span className="shrink-0 font-medium text-slate-100">x{entry.totalQuantity}</span>
-      <CharacterChipRow holders={entry.holders} chipTitle={(h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName)} />
-    </div>
-  );
-}
-
-/**
- * Grouped by category (see `computeCriticalInventoryHighlights`) —
- * deliberately not the full party inventory, `InventoryOverview` already
- * covers that. Rendered inside the Inventory section rather than Party
- * Toolkit — it's a curated view of inventory data, not party-wide combat
- * reference info, so it reads more naturally next to the full item list.
- */
-export function CriticalItemsPanel({ characters }: { characters: Character[] }) {
-  const entries = computeCriticalInventoryHighlights(characters);
-  const byCategory = new Map<CriticalItemCategory, CriticalItemEntry[]>();
-  for (const entry of entries) {
-    if (!byCategory.has(entry.category)) byCategory.set(entry.category, []);
-    byCategory.get(entry.category)!.push(entry);
-  }
-
-  return (
-    <ToolkitCard title="Critical Items">
-      {entries.length === 0 ? (
-        <p className="text-sm text-slate-600">No critical items found in the party&apos;s inventory.</p>
-      ) : (
-        <div className="space-y-3">
-          {Array.from(byCategory.entries()).map(([category, items]) => (
-            <div key={category}>
-              <SectionLabel>{category}</SectionLabel>
-              <div className="space-y-1.5">
-                {items.map((item) => (
-                  <CriticalItemRow key={item.name} entry={item} />
-                ))}
-              </div>
-            </div>
           ))}
         </div>
       )}
@@ -907,8 +817,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
  * Senses, Defenses, Languages & Tools, Spell & Ability Coverage.
  * Reference-only: no dice roller, no roll buttons, no success/fail
  * resolution. `characters` is expected to already be filtered to the
- * visible roster (same set shown in the Party row above it). Critical
- * Items lives in the Inventory section instead — see `CriticalItemsPanel`.
+ * visible roster (same set shown in the Party row above it).
  */
 export function PartyToolkit({ characters }: { characters: Character[] }) {
   const passives = computePartyPassiveSummary(characters);

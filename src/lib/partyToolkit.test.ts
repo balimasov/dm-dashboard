@@ -2,7 +2,6 @@ import { describe, expect, test } from "vitest";
 import { Character } from "./types";
 import {
   computeConditionProtectionCoverage,
-  computeCriticalInventoryHighlights,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyPassiveSummary,
@@ -397,69 +396,6 @@ describe("computePartyResourceSummary", () => {
 
   test("empty party yields no resource rows", () => {
     expect(computePartyResourceSummary([])).toEqual([]);
-  });
-});
-
-describe("computeCriticalInventoryHighlights", () => {
-  test("categorizes matched items, ignores unmatched ones, dedupes and sums across owners", () => {
-    const ragnar = makeCharacter({
-      name: "Ragnar",
-      inventory: [
-        { id: "1", name: "Healing Potion", rarity: "Common", category: "Consumable", quantity: 2 },
-        { id: "2", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
-        { id: "3", name: "Greataxe", rarity: "Common", category: "Weapon", quantity: 1 },
-      ],
-    });
-    const lilith = makeCharacter({
-      name: "Lilith",
-      inventory: [{ id: "4", name: "Healing Potion", rarity: "Common", category: "Consumable", quantity: 2 }],
-    });
-
-    const entries = computeCriticalInventoryHighlights([ragnar, lilith]);
-    expect(entries).toEqual([
-      {
-        category: "Healing & Emergency",
-        name: "Healing Potion",
-        totalQuantity: 4,
-        holders: [
-          { characterId: "Ragnar", characterName: "Ragnar", quantity: 2 },
-          { characterId: "Lilith", characterName: "Lilith", quantity: 2 },
-        ],
-      },
-      {
-        category: "Exploration",
-        name: "Rope, 50 ft",
-        totalQuantity: 1,
-        holders: [{ characterId: "Ragnar", characterName: "Ragnar", quantity: 1 }],
-      },
-    ]);
-  });
-
-  test("merges two separate inventory entries of the same item from the same character into one holder", () => {
-    const c = makeCharacter({
-      name: "A",
-      inventory: [
-        { id: "1", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
-        { id: "2", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
-      ],
-    });
-    const entries = computeCriticalInventoryHighlights([c]);
-    expect(entries).toEqual([
-      {
-        category: "Exploration",
-        name: "Rope, 50 ft",
-        totalQuantity: 2,
-        holders: [{ characterId: "A", characterName: "A", quantity: 2 }],
-      },
-    ]);
-  });
-
-  test("a scroll of revivify is claimed by Healing & Emergency, not the generic Magic & Utility 'scroll of' keyword", () => {
-    const c = makeCharacter({
-      name: "A",
-      inventory: [{ id: "1", name: "Scroll of Revivify", rarity: "Rare", category: "Magic Item", quantity: 1 }],
-    });
-    expect(computeCriticalInventoryHighlights([c])[0].category).toBe("Healing & Emergency");
   });
 });
 

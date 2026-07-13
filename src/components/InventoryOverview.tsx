@@ -2,6 +2,7 @@ import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory,
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { CharacterChipRow } from "./ui/CharacterChip";
+import { ToolkitCard } from "./ui/ToolkitCard";
 
 const RARITY_COLOR: Record<ItemRarity, string> = {
   Common: "text-slate-300",
@@ -247,7 +248,7 @@ function CurrencyRow({ character }: { character: Character }) {
 
 const ITEM_LIST_COLUMNS = 4;
 
-/** The full party item list, grouped by category — see `CoinsPanel` for currency, kept as a separate panel so the two can sit side by side with `CriticalItemsPanel` above this. */
+/** The full party item list, grouped by category — see `CoinsPanel` for currency, kept as a separate panel above this one. */
 export function InventoryOverview({ characters }: { characters: Character[] }) {
   const groups = buildCategoryGroups(characters);
   if (groups.length === 0) {
@@ -270,45 +271,49 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
   );
 }
 
-/** Party gold, split out from the item list so it can sit next to `CriticalItemsPanel` in one row instead of stacked below the (much taller) item grid. */
+/**
+ * Party gold — a single wide strip instead of a narrow standalone card:
+ * each character's coin chips wrap inline in one flowing row (`CurrencyRow`
+ * is itself a flex-wrap unit), so the panel is exactly as tall as it needs
+ * to be regardless of party size, with the party total pinned to the
+ * header's `actions` slot instead of a separate footer row. A short,
+ * mostly-empty panel like this reads badly squeezed into a grid column
+ * next to something taller — full-width and content-height avoids that.
+ */
 export function CoinsPanel({ characters }: { characters: Character[] }) {
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
   const totalGp = characters.reduce((sum, c) => sum + currencyToGp(c.currency), 0);
 
-  if (charactersWithCurrency.length === 0) {
-    return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <InfoTooltip panel={<CurrencyConversionPanel />} inline>
-            Coins
-          </InfoTooltip>
-        </h3>
-        <p className="text-sm text-slate-500">No gold on any character.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <ToolkitCard
+      title={
         <InfoTooltip panel={<CurrencyConversionPanel />} inline>
           Coins
         </InfoTooltip>
-      </h3>
-      <div className="flex flex-col gap-2">
-        {charactersWithCurrency.map((c) => (
-          <CurrencyRow key={c.id} character={c} />
-        ))}
-      </div>
-      <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
-        <span className="text-sm font-medium text-slate-100">Party total</span>
-        <CoinChip
-          code="GP"
-          value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
-          chipClass={COIN_CHIP_CLASS.gp}
-          codeClass={COIN_CODE_CLASS.gp}
-        />
-      </div>
-    </div>
+      }
+      actions={
+        charactersWithCurrency.length > 0 && (
+          <span className="flex shrink-0 items-center gap-2 text-sm">
+            <span className="text-slate-500">Party total</span>
+            <CoinChip
+              code="GP"
+              value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
+              chipClass={COIN_CHIP_CLASS.gp}
+              codeClass={COIN_CODE_CLASS.gp}
+            />
+          </span>
+        )
+      }
+    >
+      {charactersWithCurrency.length === 0 ? (
+        <p className="text-sm text-slate-500">No gold on any character.</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          {charactersWithCurrency.map((c) => (
+            <CurrencyRow key={c.id} character={c} />
+          ))}
+        </div>
+      )}
+    </ToolkitCard>
   );
 }
