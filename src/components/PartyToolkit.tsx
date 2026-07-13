@@ -3,18 +3,32 @@
 import { useState } from "react";
 import { Character, SKILL_LABELS, ordinalLevel } from "@/lib/types";
 import {
+  CriticalItemCategory,
+  CriticalItemEntry,
+  DefenseCoverageEntry,
   HeroicInspirationSummary,
+  LanguageCoverageEntry,
   PARTY_TOOLKIT_COMPACT_SKILLS,
   PartyPassiveSummary,
   PartyResourceEntry,
   ResourceStatus,
+  SenseCoverageEntry,
   SkillCoverageStatus,
   SkillOverviewEntry,
+  ToolCoverageEntry,
+  UtilitySpellAvailability,
+  computeConditionProtectionCoverage,
+  computeCriticalInventoryHighlights,
   computeHeroicInspirationSummary,
+  computeLanguageCoverage,
   computePartyPassiveSummary,
   computePartyResourceSummary,
   computePartySkillOverview,
   computePartySpellSlotSummary,
+  computeResistanceCoverage,
+  computeSensesCoverage,
+  computeToolCoverage,
+  computeUtilitySpellAvailability,
   formatSkillScore,
 } from "@/lib/partyToolkit";
 import { DotMeter } from "./ResourceMeter";
@@ -202,11 +216,196 @@ function ResourcesPanel({ characters }: { characters: Character[] }) {
   );
 }
 
+function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
+  const holdersText = entry.holders
+    .map((h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName))
+    .join(", ");
+  return (
+    <div className="flex items-center gap-3 py-1 text-sm">
+      <span className="min-w-0 flex-1 truncate text-slate-300">{entry.name}</span>
+      <span className="shrink-0 font-medium text-slate-100">x{entry.totalQuantity}</span>
+      <span title={holdersText} className="w-28 shrink-0 truncate text-right text-xs text-slate-500">
+        {holdersText}
+      </span>
+    </div>
+  );
+}
+
+/** Grouped by category (see `computeCriticalInventoryHighlights`) — deliberately not the full party inventory, `InventoryOverview` already covers that. */
+function CriticalItemsPanel({ characters }: { characters: Character[] }) {
+  const entries = computeCriticalInventoryHighlights(characters);
+  const byCategory = new Map<CriticalItemCategory, CriticalItemEntry[]>();
+  for (const entry of entries) {
+    if (!byCategory.has(entry.category)) byCategory.set(entry.category, []);
+    byCategory.get(entry.category)!.push(entry);
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Critical Items</h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-slate-600">No critical items found in the party&apos;s inventory.</p>
+      ) : (
+        <div className="space-y-3">
+          {Array.from(byCategory.entries()).map(([category, items]) => (
+            <div key={category}>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">{category}</p>
+              <div className="divide-y divide-slate-800/60">
+                {items.map((item) => (
+                  <CriticalItemRow key={item.name} entry={item} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-slate-300">{entry.name}</span>
+      {entry.count === 0 ? (
+        <span className="text-slate-600">none</span>
+      ) : (
+        <span className="text-right">
+          <span className="font-medium text-slate-100">
+            {entry.count}/{entry.partySize}
+          </span>
+          {entry.best && (
+            <span className="ml-2 text-xs text-slate-500">
+              Best: {entry.best.characterName} {entry.best.range} ft
+            </span>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function UtilitySpellRow({ entry }: { entry: UtilitySpellAvailability }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-slate-300">{entry.name} available</span>
+      <span className={entry.available ? "font-medium text-emerald-400" : "text-slate-600"}>
+        {entry.available ? `Yes — ${entry.characterNames.join(", ")}` : "No"}
+      </span>
+    </div>
+  );
+}
+
+function SensesPanel({ characters }: { characters: Character[] }) {
+  const senses = computeSensesCoverage(characters);
+  const utility = computeUtilitySpellAvailability(characters);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Senses</h3>
+      <div className="space-y-1.5">
+        {senses.map((entry) => (
+          <SenseRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+      <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-2">
+        {utility.map((entry) => (
+          <UtilitySpellRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DefenseRow({ entry }: { entry: DefenseCoverageEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-slate-300">{entry.name}</span>
+      <span className={entry.count === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
+        {entry.count} / {entry.partySize}
+      </span>
+    </div>
+  );
+}
+
+/** Pinned damage types + condition protections, not a full damage-type table — see `computeResistanceCoverage`/`computeConditionProtectionCoverage`. */
+function DefensesPanel({ characters }: { characters: Character[] }) {
+  const resistances = computeResistanceCoverage(characters);
+  const conditions = computeConditionProtectionCoverage(characters);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Defense Coverage</h3>
+      <div className="space-y-1.5">
+        {resistances.map((entry) => (
+          <DefenseRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        Condition Protection
+      </p>
+      <div className="space-y-1.5">
+        {conditions.map((entry) => (
+          <DefenseRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LanguageRow({ entry }: { entry: LanguageCoverageEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-slate-300">{entry.name}</span>
+      <span className="font-medium text-slate-100">{entry.count}</span>
+    </div>
+  );
+}
+
+function ToolRow({ entry }: { entry: ToolCoverageEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-slate-300">{entry.name}</span>
+      <span className={entry.characterNames.length === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
+        {entry.characterNames.length === 0 ? "none" : entry.characterNames.join(", ")}
+      </span>
+    </div>
+  );
+}
+
+/** Languages actually present in the party, plus a handful of commonly-relevant tool proficiencies pinned even at 0 — see `computeLanguageCoverage`/`computeToolCoverage`. */
+function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
+  const languages = computeLanguageCoverage(characters);
+  const tools = computeToolCoverage(characters);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Languages &amp; Tools</h3>
+      {languages.length === 0 ? (
+        <p className="text-sm text-slate-600">No languages tracked.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {languages.map((entry) => (
+            <LanguageRow key={entry.name} entry={entry} />
+          ))}
+        </div>
+      )}
+      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Tools</p>
+      <div className="space-y-1.5">
+        {tools.map((entry) => (
+          <ToolRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
- * Party Toolkit — Iterations 1-2: Skills, Passives, Spell Slots, Resources.
- * Reference-only: no dice roller, no roll buttons, no success/fail
- * resolution. `characters` is expected to already be filtered to the
- * visible roster (same set shown in the Party row above it).
+ * Party Toolkit — Iterations 1-3: Skills, Passives, Spell Slots, Resources,
+ * Critical Items, Senses, Defenses, Languages & Tools. Reference-only: no
+ * dice roller, no roll buttons, no success/fail resolution. `characters` is
+ * expected to already be filtered to the visible roster (same set shown in
+ * the Party row above it).
  */
 export function PartyToolkit({ characters }: { characters: Character[] }) {
   const passives = computePartyPassiveSummary(characters);
@@ -224,6 +423,14 @@ export function PartyToolkit({ characters }: { characters: Character[] }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SpellSlotsPanel characters={characters} />
         <ResourcesPanel characters={characters} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+        <CriticalItemsPanel characters={characters} />
+        <SensesPanel characters={characters} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <DefensesPanel characters={characters} />
+        <LanguagesToolsPanel characters={characters} />
       </div>
     </div>
   );

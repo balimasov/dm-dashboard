@@ -104,6 +104,8 @@ export const demoCharacters: Character[] = [
         "range": 120
       }
     ],
+    "languages": ["Common", "Orc"],
+    "toolProficiencies": ["Vehicles (Land)"],
     "inventory": [
       {
         "id": "item-0",
@@ -581,6 +583,8 @@ export const demoCharacters: Character[] = [
         "range": 60
       }
     ],
+    "languages": ["Common", "Elvish"],
+    "toolProficiencies": ["Herbalism Kit"],
     "inventory": [
       {
         "id": "item-0",
@@ -1499,6 +1503,8 @@ export const demoCharacters: Character[] = [
         "range": 60
       }
     ],
+    "languages": ["Common", "Elvish", "Draconic"],
+    "toolProficiencies": [],
     "inventory": [
       {
         "id": "item-0",
@@ -2383,6 +2389,8 @@ export const demoCharacters: Character[] = [
         "range": 60
       }
     ],
+    "languages": ["Common", "Infernal"],
+    "toolProficiencies": [],
     "inventory": [
       {
         "id": "item-0",

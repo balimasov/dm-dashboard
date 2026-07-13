@@ -94,6 +94,26 @@ describe("custom defense adjustments (customDefenseAdjustments)", () => {
   });
 });
 
+describe("languages and tool proficiencies — both respect isGranted, unlike skills", () => {
+  test("Lori (Artificer) — Void Speech is an unchosen pool option, Smith's Tools/Cook's Utensils weren't picked", () => {
+    const c = load("lori-artificer");
+    expect(c.languages).toEqual(["Common", "Draconic"]);
+    expect(c.toolProficiencies).toEqual(["Thieves' Tools", "Tinker's Tools"]);
+  });
+
+  test("Tarah (Rogue) — Thieves' Cant is a language, not a tool; Aglarondan/Chessentan/Undercommon weren't chosen", () => {
+    const c = load("tarah-rogue");
+    expect(c.languages).toEqual(["Common", "Thieves’ Cant"]);
+    expect(c.toolProficiencies).toEqual(["Thieves' Tools"]);
+  });
+
+  test("Esmeralda (Bard) — Thieves' Tools shows up ungranted in her pool, so it's excluded", () => {
+    const c = load("esmeralda-bard");
+    expect(c.languages).toEqual(["Common", "Infernal"]);
+    expect(c.toolProficiencies).toEqual([]);
+  });
+});
+
 describe("regression baseline — every fixture parses without throwing and has sane shape", () => {
   const fixtures = fs.readdirSync(FIXTURES_DIR).map((f) => f.replace(/\.json$/, ""));
 
@@ -106,5 +126,7 @@ describe("regression baseline — every fixture parses without throwing and has 
     expect(Array.isArray(c.resistances)).toBe(true);
     expect(Array.isArray(c.immunities)).toBe(true);
     expect(Array.isArray(c.vulnerabilities)).toBe(true);
+    expect(Array.isArray(c.languages)).toBe(true);
+    expect(Array.isArray(c.toolProficiencies)).toBe(true);
   });
 });

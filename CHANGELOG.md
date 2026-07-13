@@ -12,6 +12,29 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.96.0] - 2026-07-13
+
+### Added
+- **Party Toolkit** (третя ітерація) — ще чотири блоки:
+  - **Critical Items**: критичні предмети з інвентарю всієї партії
+    (Healing & Emergency, Exploration, Survival, Magic & Utility — категорія
+    визначається за ключовими словами в назві предмета, без дублювання
+    повного Party Inventory), з кількістю і власниками.
+  - **Senses**: покриття Darkvision/Blindsight/Tremorsense/Truesight
+    (`x / розмір партії` + найкраща дальність), і чи є в партії Detect
+    Magic / See Invisibility (за відомими заклинаннями персонажів).
+  - **Defense Coverage**: покриття Cold/Poison/Fire/Necrotic Resistance і
+    Advantage vs Frightened/Immunity to Charmed/Immunity to Poisoned —
+    завжди показані, навіть коли покриття 0/розмір партії.
+  - **Languages & Tools**: мови, які реально є в партії (з кількістю
+    носіїв), і tool proficiencies з іменем власника — Thieves' Tools/
+    Herbalism Kit/Navigator's Tools/Vehicles (Land) показані завжди, навіть
+    без власника.
+- Character отримав нові поля `languages` і `toolProficiencies`,
+  синхронізовані з D&D Beyond (`ddbParser/proficiencies.ts`) — раніше
+  синхронізовані персонажі покажуть ці дані тільки після повторного Sync.
+  Ручного редагування цих полів поки немає.
+
 ## [0.95.0] - 2026-07-13
 
 ### Added

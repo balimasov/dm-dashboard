@@ -1,13 +1,20 @@
 import { describe, expect, test } from "vitest";
 import { Character } from "./types";
 import {
+  computeConditionProtectionCoverage,
+  computeCriticalInventoryHighlights,
   computeHeroicInspirationSummary,
+  computeLanguageCoverage,
   computePartyPassiveSummary,
   computePartyResourceSummary,
   computePartySkillOverview,
   computePartySpellSlotSummary,
+  computeResistanceCoverage,
   computeResourceStatus,
+  computeSensesCoverage,
   computeSkillOverviewEntry,
+  computeToolCoverage,
+  computeUtilitySpellAvailability,
 } from "./partyToolkit";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -44,6 +51,8 @@ function makeCharacter(overrides: Partial<Character> & { name: string }): Charac
     vulnerabilities: [],
     advantages: [],
     senses: [],
+    languages: [],
+    toolProficiencies: [],
     inventory: [],
     currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
     notes: "",
@@ -256,5 +265,134 @@ describe("computePartyResourceSummary", () => {
 
   test("empty party yields no resource rows", () => {
     expect(computePartyResourceSummary([])).toEqual([]);
+  });
+});
+
+describe("computeCriticalInventoryHighlights", () => {
+  test("categorizes matched items, ignores unmatched ones, dedupes and sums across owners", () => {
+    const ragnar = makeCharacter({
+      name: "Ragnar",
+      inventory: [
+        { id: "1", name: "Healing Potion", rarity: "Common", category: "Consumable", quantity: 2 },
+        { id: "2", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
+        { id: "3", name: "Greataxe", rarity: "Common", category: "Weapon", quantity: 1 },
+      ],
+    });
+    const lilith = makeCharacter({
+      name: "Lilith",
+      inventory: [{ id: "4", name: "Healing Potion", rarity: "Common", category: "Consumable", quantity: 2 }],
+    });
+
+    const entries = computeCriticalInventoryHighlights([ragnar, lilith]);
+    expect(entries).toEqual([
+      {
+        category: "Healing & Emergency",
+        name: "Healing Potion",
+        totalQuantity: 4,
+        holders: [
+          { characterName: "Ragnar", quantity: 2 },
+          { characterName: "Lilith", quantity: 2 },
+        ],
+      },
+      {
+        category: "Exploration",
+        name: "Rope, 50 ft",
+        totalQuantity: 1,
+        holders: [{ characterName: "Ragnar", quantity: 1 }],
+      },
+    ]);
+  });
+
+  test("a scroll of revivify is claimed by Healing & Emergency, not the generic Magic & Utility 'scroll of' keyword", () => {
+    const c = makeCharacter({
+      name: "A",
+      inventory: [{ id: "1", name: "Scroll of Revivify", rarity: "Rare", category: "Magic Item", quantity: 1 }],
+    });
+    expect(computeCriticalInventoryHighlights([c])[0].category).toBe("Healing & Emergency");
+  });
+});
+
+describe("computeSensesCoverage", () => {
+  test("counts characters per sense and finds the best range, in tracked order", () => {
+    const a = makeCharacter({ name: "A", senses: [{ name: "Darkvision", range: 60 }] });
+    const b = makeCharacter({ name: "B", senses: [{ name: "Darkvision", range: 120 }] });
+    const c = makeCharacter({ name: "C", senses: [] });
+
+    const coverage = computeSensesCoverage([a, b, c]);
+    expect(coverage.map((s) => s.name)).toEqual(["Darkvision", "Blindsight", "Tremorsense", "Truesight"]);
+    expect(coverage[0]).toEqual({
+      name: "Darkvision",
+      count: 2,
+      partySize: 3,
+      best: { characterName: "B", range: 120 },
+    });
+    expect(coverage[1]).toEqual({ name: "Blindsight", count: 0, partySize: 3, best: null });
+  });
+});
+
+describe("computeUtilitySpellAvailability", () => {
+  test("flags Detect Magic/See Invisibility availability from knownSpells", () => {
+    const caster = makeCharacter({
+      name: "Runa",
+      knownSpells: [{ id: "s1", name: "Detect Magic", level: 2, source: "Class" }],
+    });
+    const nonCaster = makeCharacter({ name: "Ragnar" });
+
+    const result = computeUtilitySpellAvailability([caster, nonCaster]);
+    expect(result).toEqual([
+      { name: "Detect Magic", available: true, characterNames: ["Runa"] },
+      { name: "See Invisibility", available: false, characterNames: [] },
+    ]);
+  });
+});
+
+describe("computeResistanceCoverage / computeConditionProtectionCoverage", () => {
+  test("pins Cold/Poison/Fire/Necrotic even at 0 coverage", () => {
+    const c = makeCharacter({ name: "A", resistances: ["Cold"] });
+    const coverage = computeResistanceCoverage([c]);
+    expect(coverage).toEqual([
+      { name: "Cold", count: 1, partySize: 1 },
+      { name: "Poison", count: 0, partySize: 1 },
+      { name: "Fire", count: 0, partySize: 1 },
+      { name: "Necrotic", count: 0, partySize: 1 },
+    ]);
+  });
+
+  test("matches 'Advantage vs Frightened' fuzzily against the free-text advantages list", () => {
+    const c = makeCharacter({
+      name: "A",
+      advantages: ["Advantage: Charmed — you have advantage on saving throws against being frightened."],
+      immunities: ["Poisoned"],
+    });
+    const coverage = computeConditionProtectionCoverage([c]);
+    expect(coverage).toEqual([
+      { name: "Advantage vs Frightened", count: 1, partySize: 1 },
+      { name: "Immunity to Charmed", count: 0, partySize: 1 },
+      { name: "Immunity to Poisoned", count: 1, partySize: 1 },
+    ]);
+  });
+});
+
+describe("computeLanguageCoverage", () => {
+  test("counts only languages actually present in the party, sorted by count then name", () => {
+    const a = makeCharacter({ name: "A", languages: ["Common", "Elvish"] });
+    const b = makeCharacter({ name: "B", languages: ["Common"] });
+
+    expect(computeLanguageCoverage([a, b])).toEqual([
+      { name: "Common", count: 2, partySize: 2 },
+      { name: "Elvish", count: 1, partySize: 2 },
+    ]);
+  });
+});
+
+describe("computeToolCoverage", () => {
+  test("shows pinned tools even with no owner, owned ones sorted first", () => {
+    const c = makeCharacter({ name: "Lilith", toolProficiencies: ["Herbalism Kit"] });
+    const coverage = computeToolCoverage([c]);
+    expect(coverage[0]).toEqual({ name: "Herbalism Kit", characterNames: ["Lilith"] });
+    expect(coverage.find((t) => t.name === "Navigator's Tools")).toEqual({
+      name: "Navigator's Tools",
+      characterNames: [],
+    });
   });
 });

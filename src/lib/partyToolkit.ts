@@ -1,4 +1,4 @@
-import { Character, SKILL_ABILITY, SKILL_LABELS, SkillName, SkillProficiency, formatModifier, skillBonus } from "./types";
+import { Character, SKILL_ABILITY, SKILL_LABELS, Sense, SkillName, SkillProficiency, formatModifier, skillBonus } from "./types";
 
 /**
  * The DM-facing "compact view" list from the Party Toolkit spec — the skills
@@ -251,4 +251,244 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
   return entries.sort(
     (a, b) => statusOrder[a.status] - statusOrder[b.status] || a.resourceName.localeCompare(b.resourceName)
   );
+}
+
+// ---------------------------------------------------------------------------
+// Iteration 3 — Critical Inventory Highlights, Senses, Defenses, Languages & Tools
+// ---------------------------------------------------------------------------
+
+export type CriticalItemCategory = "Healing & Emergency" | "Exploration" | "Survival" | "Magic & Utility";
+
+/**
+ * A simple keyword-per-category config map, not semantic/AI matching (same
+ * restraint the spec asks for in the later Spell & Ability Coverage
+ * iteration) — first category whose keyword appears in the item's name wins,
+ * so e.g. a "Scroll of Revivify" is claimed by Healing & Emergency before
+ * the more generic "scroll of" Magic & Utility keyword gets a chance.
+ * Quest/Special items are deliberately not auto-detected: unlike the other
+ * four categories there's no reliable keyword or field to key off (a "quest
+ * item" is campaign-specific, not a recognizable name pattern), and inventing
+ * a heuristic for it risks silently hiding or miscategorizing real items.
+ */
+const CRITICAL_ITEM_CATEGORIES: Array<{ category: CriticalItemCategory; keywords: string[] }> = [
+  {
+    category: "Healing & Emergency",
+    keywords: [
+      "healing potion",
+      "potion of healing",
+      "greater healing",
+      "superior healing",
+      "supreme healing",
+      "antitoxin",
+      "healer's kit",
+      "healers kit",
+      "diamond",
+      "revivify",
+      "raise dead",
+      "resurrection",
+    ],
+  },
+  {
+    category: "Exploration",
+    keywords: [
+      "rope",
+      "climber's kit",
+      "climbers kit",
+      "grappling hook",
+      "crowbar",
+      "thieves' tools",
+      "thieves tools",
+      "torch",
+      "lantern",
+      "oil",
+    ],
+  },
+  {
+    category: "Survival",
+    keywords: ["rations", "waterskin", "cold weather gear", "tent", "bedroll", "firewood", "fuel", "snowshoes"],
+  },
+  {
+    category: "Magic & Utility",
+    keywords: ["spell scroll", "scroll of", "wand", "pearl of power", "identify"],
+  },
+];
+
+function classifyCriticalItem(name: string): CriticalItemCategory | null {
+  const lower = name.toLowerCase();
+  for (const { category, keywords } of CRITICAL_ITEM_CATEGORIES) {
+    if (keywords.some((k) => lower.includes(k))) return category;
+  }
+  return null;
+}
+
+export interface CriticalItemHolder {
+  characterName: string;
+  quantity: number;
+}
+
+export interface CriticalItemEntry {
+  category: CriticalItemCategory;
+  name: string;
+  totalQuantity: number;
+  holders: CriticalItemHolder[];
+}
+
+/**
+ * Deliberately does not duplicate the full party inventory (`InventoryOverview`
+ * already covers that) — only items matching a critical-category keyword
+ * make it in, deduped by lowercased name the same way `InventoryOverview`
+ * dedupes items across owners.
+ */
+export function computeCriticalInventoryHighlights(characters: Character[]): CriticalItemEntry[] {
+  const byName = new Map<string, CriticalItemEntry>();
+  for (const c of characters) {
+    for (const item of c.inventory) {
+      const category = classifyCriticalItem(item.name);
+      if (!category) continue;
+      const key = item.name.trim().toLowerCase();
+      if (!byName.has(key)) {
+        byName.set(key, { category, name: item.name, totalQuantity: 0, holders: [] });
+      }
+      const entry = byName.get(key)!;
+      entry.totalQuantity += item.quantity;
+      entry.holders.push({ characterName: c.name, quantity: item.quantity });
+    }
+  }
+
+  const categoryOrder = CRITICAL_ITEM_CATEGORIES.map((c) => c.category);
+  return Array.from(byName.values()).sort(
+    (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category) || a.name.localeCompare(b.name)
+  );
+}
+
+const TRACKED_SENSES = ["Darkvision", "Blindsight", "Tremorsense", "Truesight"];
+
+export interface SenseCoverageEntry {
+  name: string;
+  count: number;
+  partySize: number;
+  best: { characterName: string; range: number } | null;
+}
+
+export function computeSensesCoverage(characters: Character[]): SenseCoverageEntry[] {
+  return TRACKED_SENSES.map((name) => {
+    const withSense = characters
+      .map((c) => ({ characterName: c.name, sense: c.senses.find((s: Sense) => s.name === name) }))
+      .filter((x): x is { characterName: string; sense: Sense } => x.sense !== undefined);
+
+    const best =
+      withSense.length > 0
+        ? withSense.reduce((top, x) => (x.sense.range > top.sense.range ? x : top))
+        : null;
+
+    return {
+      name,
+      count: withSense.length,
+      partySize: characters.length,
+      best: best ? { characterName: best.characterName, range: best.sense.range } : null,
+    };
+  });
+}
+
+const TRACKED_UTILITY_SPELLS = ["Detect Magic", "See Invisibility"];
+
+export interface UtilitySpellAvailability {
+  name: string;
+  available: boolean;
+  characterNames: string[];
+}
+
+/** Whether anyone in the party currently knows a spell worth flagging for exploration/safety purposes — matched against `knownSpells`, the same already-synced data the rest of the character card uses. */
+export function computeUtilitySpellAvailability(characters: Character[]): UtilitySpellAvailability[] {
+  return TRACKED_UTILITY_SPELLS.map((spellName) => {
+    const withSpell = characters.filter((c) => c.knownSpells.some((s) => s.name === spellName));
+    return { name: spellName, available: withSpell.length > 0, characterNames: withSpell.map((c) => c.name) };
+  });
+}
+
+export interface DefenseCoverageEntry {
+  name: string;
+  count: number;
+  partySize: number;
+}
+
+/** Pinned so the campaign-relevant types still show at 0/partySize instead of silently disappearing — matches the spec's own "show even if coverage is 0" requirement. */
+const PINNED_RESISTANCES = ["Cold", "Poison", "Fire", "Necrotic"];
+
+export function computeResistanceCoverage(characters: Character[]): DefenseCoverageEntry[] {
+  return PINNED_RESISTANCES.map((name) => ({
+    name,
+    count: characters.filter((c) => c.resistances.includes(name)).length,
+    partySize: characters.length,
+  }));
+}
+
+const PINNED_CONDITION_IMMUNITIES = ["Charmed", "Poisoned"];
+
+/**
+ * "Advantage vs Frightened" is matched fuzzily (case-insensitive substring
+ * against the free-text `advantages` list) since that field is assembled
+ * from D&D Beyond's own rules-sentence fragments rather than a clean
+ * enum — see `computeAdvantages`'s own doc comment. Charmed/Poisoned
+ * immunity, by contrast, matches the (clean, enum-like) `immunities` list
+ * exactly.
+ */
+export function computeConditionProtectionCoverage(characters: Character[]): DefenseCoverageEntry[] {
+  const frightened: DefenseCoverageEntry = {
+    name: "Advantage vs Frightened",
+    count: characters.filter((c) =>
+      c.advantages.some((a) => /^advantage/i.test(a) && /frightened/i.test(a))
+    ).length,
+    partySize: characters.length,
+  };
+  const immunities = PINNED_CONDITION_IMMUNITIES.map((name) => ({
+    name: `Immunity to ${name}`,
+    count: characters.filter((c) => c.immunities.includes(name)).length,
+    partySize: characters.length,
+  }));
+  return [frightened, ...immunities];
+}
+
+export interface LanguageCoverageEntry {
+  name: string;
+  count: number;
+  partySize: number;
+}
+
+/** Only languages actually present in the party — unlike defenses/tools below, there's no fixed "campaign-relevant" language list to pin at 0 without DM input, which the spec explicitly keeps out of scope for now. */
+export function computeLanguageCoverage(characters: Character[]): LanguageCoverageEntry[] {
+  const counts = new Map<string, number>();
+  for (const c of characters) {
+    for (const lang of c.languages) counts.set(lang, (counts.get(lang) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count, partySize: characters.length }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+export interface ToolCoverageEntry {
+  name: string;
+  characterNames: string[];
+}
+
+/** Shown even with no owner (`characterNames: []`) — these four come up often enough at the table that a DM benefits from seeing the gap, same reasoning as the pinned defenses above. */
+const PINNED_TOOLS = ["Thieves' Tools", "Herbalism Kit", "Navigator's Tools", "Vehicles (Land)"];
+
+export function computeToolCoverage(characters: Character[]): ToolCoverageEntry[] {
+  const owners = new Map<string, string[]>();
+  for (const name of PINNED_TOOLS) owners.set(name, []);
+  for (const c of characters) {
+    for (const tool of c.toolProficiencies) {
+      if (!owners.has(tool)) owners.set(tool, []);
+      owners.get(tool)!.push(c.name);
+    }
+  }
+  return Array.from(owners.entries())
+    .map(([name, characterNames]) => ({ name, characterNames }))
+    .sort((a, b) => {
+      if ((a.characterNames.length > 0) !== (b.characterNames.length > 0)) {
+        return a.characterNames.length > 0 ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
 }
