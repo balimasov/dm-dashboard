@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, RECOVERY_LABELS, RECOVERY_SHORT_LABELS, SKILL_LABELS, formatModifier, ordinalLevel } from "@/lib/types";
+import { Character, RECOVERY_LABELS, SKILL_LABELS, formatModifier, ordinalLevel } from "@/lib/types";
 import {
   COVERAGE_CATEGORY_ORDER,
   CoverageCategory,
@@ -37,19 +37,23 @@ import {
   computeUtilitySpellAvailability,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
+import { RecoveryBadge } from "./ui/RecoveryBadge";
 
-const STATUS_CLASS: Record<SkillCoverageStatus, string> = {
-  Strong: "border-emerald-700 bg-emerald-950/30 text-emerald-300",
-  Medium: "border-amber-700 bg-amber-950/30 text-amber-300",
-  Weak: "border-slate-700 bg-slate-800/40 text-slate-400",
+const STATUS_DOT_CLASS: Record<SkillCoverageStatus, string> = {
+  Strong: "bg-emerald-400",
+  Medium: "bg-amber-400",
+  Weak: "bg-slate-600",
 };
 
-function StatusPill({ status }: { status: SkillCoverageStatus }) {
-  return (
-    <span className={`shrink-0 rounded-md border px-2 py-0.5 text-center text-xs font-medium ${STATUS_CLASS[status]}`}>
-      {status}
-    </span>
-  );
+const STATUS_HINT: Record<SkillCoverageStatus, string> = {
+  Strong: "Strong coverage — 3+ characters proficient",
+  Medium: "Medium coverage — 2 characters proficient",
+  Weak: "Weak coverage — 0-1 characters proficient",
+};
+
+/** Replaces the old Strong/Medium/Weak text chip — same three-tier read, but small enough to sit next to the best/weakest chips instead of competing with them for attention. */
+function StatusDot({ status }: { status: SkillCoverageStatus }) {
+  return <span title={STATUS_HINT[status]} className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT_CLASS[status]}`} />;
 }
 
 /** The hover hint's content for a skill row — every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
@@ -81,8 +85,25 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
       </div>
-      <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{entry.proficientCount} proficient</span>
-      <StatusPill status={entry.status} />
+      <div className="flex shrink-0 items-center gap-1.5">
+        {entry.best && (
+          <StrengthChip
+            characterName={entry.best.characterName}
+            avatarUrl={entry.best.avatarUrl}
+            hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}`}
+            direction="up"
+          />
+        )}
+        {entry.weakest && (
+          <StrengthChip
+            characterName={entry.weakest.characterName}
+            avatarUrl={entry.weakest.avatarUrl}
+            hint={`Weakest: ${entry.weakest.characterName} ${formatModifier(entry.weakest.modifier)}`}
+            direction="down"
+          />
+        )}
+      </div>
+      <StatusDot status={entry.status} />
     </div>
   );
 }
@@ -107,7 +128,7 @@ function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveChar
   );
 }
 
-/** Same shape as `SkillRow` (name with a hover hint, proficient count, status pill) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Best/average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
+/** Same shape as `SkillRow` (name with a hover hint, best/weakest chips, status dot) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
 function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSummary }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
@@ -116,8 +137,23 @@ function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSum
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
       </div>
-      <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{summary.proficientCount} proficient</span>
-      <StatusPill status={summary.status} />
+      <div className="flex shrink-0 items-center gap-1.5">
+        <StrengthChip
+          characterName={summary.best.characterName}
+          avatarUrl={summary.best.avatarUrl}
+          hint={`Best: ${summary.best.characterName} ${summary.best.value}`}
+          direction="up"
+        />
+        {summary.weakest && (
+          <StrengthChip
+            characterName={summary.weakest.characterName}
+            avatarUrl={summary.weakest.avatarUrl}
+            hint={`Weakest: ${summary.weakest.characterName} ${summary.weakest.value}`}
+            direction="down"
+          />
+        )}
+      </div>
+      <StatusDot status={summary.status} />
     </div>
   );
 }
@@ -145,9 +181,7 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
         <PassiveRow label="Passive Investigation" summary={passives.investigation} />
       </div>
 
-      <p className="mb-1 mt-4 border-t border-slate-800 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-        Skills
-      </p>
+      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Skills</p>
       <div className="divide-y divide-slate-800/60">
         {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
@@ -180,19 +214,54 @@ function chipColorClass(name: string): string {
 }
 
 /**
- * A compact stand-in for a full character name — just its first letter in a
- * small colored circle, full name on hover. Only needs a name (not a full
- * `Character`/avatar), so it works anywhere in the Party Toolkit that names
- * an owner inside a tight row instead of a wide, truncating name column —
- * `ResourceRow` today, and a natural fit for other rows here later.
+ * A compact stand-in for a full character name — their avatar if one's set,
+ * otherwise the first letter of their name in a small colored circle, full
+ * name on hover either way. Only needs a name + optional avatar (not a full
+ * `Character`), so it works anywhere in the Party Toolkit that names an
+ * owner inside a tight row instead of a wide, truncating name column.
  */
-function CharacterInitial({ name }: { name: string }) {
+function CharacterInitial({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (avatarUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small chip
+      <img
+        src={avatarUrl}
+        alt=""
+        title={name}
+        onError={() => setFailed(true)}
+        className="h-5 w-5 shrink-0 rounded-full border border-slate-700 object-cover"
+      />
+    );
+  }
   return (
     <span
       title={name}
       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${chipColorClass(name)}`}
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
+    </span>
+  );
+}
+
+/** Best/weakest character for a skill or passive stat, shown as their chip + an up/down arrow — `hint` carries the full "Best: Name +N" detail as a native tooltip, keeping the row itself compact. */
+function StrengthChip({
+  characterName,
+  avatarUrl,
+  hint,
+  direction,
+}: {
+  characterName: string;
+  avatarUrl?: string;
+  hint: string;
+  direction: "up" | "down";
+}) {
+  return (
+    <span title={hint} className="flex shrink-0 items-center gap-0.5">
+      <CharacterInitial name={characterName} avatarUrl={avatarUrl} />
+      <span className={`text-xs ${direction === "up" ? "text-emerald-400" : "text-slate-500"}`}>
+        {direction === "up" ? "↑" : "↓"}
+      </span>
     </span>
   );
 }
@@ -228,16 +297,11 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
           <span className="text-slate-300">{entry.resourceName}</span>
         </InfoTooltip>
       </div>
-      <span
-        title={RECOVERY_LABELS[entry.recovery]}
-        className="shrink-0 rounded border border-slate-700 px-1 text-[10px] font-medium uppercase text-slate-500"
-      >
-        {RECOVERY_SHORT_LABELS[entry.recovery]}
-      </span>
+      <RecoveryBadge recovery={entry.recovery} />
       <span className={`shrink-0 whitespace-nowrap font-medium ${RESOURCE_STATUS_CLASS[entry.status]}`}>
         {entry.current}/{entry.max}
       </span>
-      <CharacterInitial name={entry.characterName} />
+      <CharacterInitial name={entry.characterName} avatarUrl={entry.avatarUrl} />
     </div>
   );
 }
@@ -273,7 +337,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
               </div>
             ))}
           </div>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-1 text-right text-xs text-slate-400">
             Spell Power:{" "}
             <span className="font-medium text-slate-100">
               {spellSlots.totalCurrent} / {spellSlots.totalMax}
@@ -282,9 +346,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
         </>
       )}
 
-      <p className="mb-1 mt-4 border-t border-slate-800 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-        Resources
-      </p>
+      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resources</p>
       <HeroicInspirationRow summary={inspiration} />
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>

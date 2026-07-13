@@ -9,8 +9,6 @@ import {
   KnownSpell,
   ordinalLevel,
   proficiencyBonus,
-  RECOVERY_LABELS,
-  RECOVERY_SHORT_LABELS,
   RecoveryType,
   savingThrowBonus,
   SKILL_ABBR,
@@ -30,6 +28,7 @@ import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/ico
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
+import { RecoveryBadge } from "./ui/RecoveryBadge";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
@@ -55,9 +54,7 @@ function ChargeBadge({ current, max, recovery }: { current: number; max: number;
           {current}/{max}
         </span>
       )}
-      <span className="text-xs text-slate-500" title={RECOVERY_LABELS[recovery]}>
-        {RECOVERY_SHORT_LABELS[recovery]}
-      </span>
+      <RecoveryBadge recovery={recovery} />
     </span>
   );
 }

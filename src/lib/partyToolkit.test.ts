@@ -175,6 +175,7 @@ describe("computePartyPassiveSummary", () => {
     expect(summary).toEqual({
       perception: {
         best: { characterName: "Esmeralda", value: 17 },
+        weakest: { characterName: "Ragnar", value: 11 },
         average: 14,
         lowest: { characterName: "Ragnar", value: 11 },
         all: [
@@ -186,6 +187,7 @@ describe("computePartyPassiveSummary", () => {
       },
       insight: {
         best: { characterName: "Ragnar", value: 15 },
+        weakest: { characterName: "Esmeralda", value: 11 },
         all: [
           { characterName: "Ragnar", value: 15, proficient: false },
           { characterName: "Esmeralda", value: 11, proficient: false },
@@ -195,6 +197,7 @@ describe("computePartyPassiveSummary", () => {
       },
       investigation: {
         best: { characterName: "Ragnar", value: 14 },
+        weakest: { characterName: "Esmeralda", value: 10 },
         all: [
           { characterName: "Ragnar", value: 14, proficient: false },
           { characterName: "Esmeralda", value: 10, proficient: false },

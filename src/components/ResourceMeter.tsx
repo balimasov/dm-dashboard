@@ -1,6 +1,7 @@
-import { RECOVERY_LABELS, RECOVERY_SHORT_LABELS, Resource } from "@/lib/types";
+import { Resource } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
+import { RecoveryBadge } from "./ui/RecoveryBadge";
 
 /** Fixed-size CSS circles instead of "●"/"○" glyphs — those render at different visual weights per font. */
 export function DotMeter({
@@ -76,9 +77,7 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
             {resource.current}/{resource.max}
           </span>
         )}
-        <span className="text-xs text-slate-500" title={RECOVERY_LABELS[resource.recovery]}>
-          {RECOVERY_SHORT_LABELS[resource.recovery]}
-        </span>
+        <RecoveryBadge recovery={resource.recovery} />
       </span>
     </div>
   );

@@ -15,6 +15,7 @@ export type SkillCoverageStatus = "Strong" | "Medium" | "Weak";
 export interface SkillPartyScore {
   characterId: string;
   characterName: string;
+  avatarUrl?: string;
   modifier: number;
 }
 
@@ -65,6 +66,7 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
     return {
       characterId: c.id,
       characterName: c.name,
+      avatarUrl: c.avatarUrl,
       modifier: skillBonus(c, prof),
       proficient: prof.proficient || prof.expertise,
       expertise: prof.expertise,
@@ -79,8 +81,18 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
 
   return {
     skill,
-    best: best && { characterId: best.characterId, characterName: best.characterName, modifier: best.modifier },
-    weakest: weakest && { characterId: weakest.characterId, characterName: weakest.characterName, modifier: weakest.modifier },
+    best: best && {
+      characterId: best.characterId,
+      characterName: best.characterName,
+      avatarUrl: best.avatarUrl,
+      modifier: best.modifier,
+    },
+    weakest: weakest && {
+      characterId: weakest.characterId,
+      characterName: weakest.characterName,
+      avatarUrl: weakest.avatarUrl,
+      modifier: weakest.modifier,
+    },
     proficientCount,
     status: coverageStatus(proficientCount),
     all: sorted,
@@ -100,11 +112,13 @@ export function formatSkillScore(score: SkillPartyScore): string {
 
 export interface PassiveBest {
   characterName: string;
+  avatarUrl?: string;
   value: number;
 }
 
 export interface PassiveCharacterScore {
   characterName: string;
+  avatarUrl?: string;
   value: number;
   /** Proficient (or expertise) in the underlying skill (Perception/Insight/Investigation) — the passive score's own hover hint marks these the same way a skill row does. */
   proficient: boolean;
@@ -112,6 +126,8 @@ export interface PassiveCharacterScore {
 
 export interface PassiveStatSummary {
   best: PassiveBest;
+  /** Omitted (`null`) when there's nothing to contrast — same rule as `SkillOverviewEntry.weakest`. */
+  weakest: PassiveBest | null;
   /** Every character's value for this passive stat, ranked highest first. */
   all: PassiveCharacterScore[];
   /** Characters proficient (or expert) in the underlying skill — same coverage-status math as a skill row, see `coverageStatus`. */
@@ -132,12 +148,12 @@ export interface PartyPassiveSummary {
 
 function bestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
   const top = characters.reduce((best, c) => (value(c) > value(best) ? c : best));
-  return { characterName: top.name, value: value(top) };
+  return { characterName: top.name, avatarUrl: top.avatarUrl, value: value(top) };
 }
 
 function lowestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
   const bottom = characters.reduce((worst, c) => (value(c) < value(worst) ? c : worst));
-  return { characterName: bottom.name, value: value(bottom) };
+  return { characterName: bottom.name, avatarUrl: bottom.avatarUrl, value: value(bottom) };
 }
 
 function passiveCharacterScores(
@@ -148,7 +164,12 @@ function passiveCharacterScores(
   return characters
     .map((c) => {
       const prof = c.skillProficiencies.find((s) => s.name === skill);
-      return { characterName: c.name, value: value(c), proficient: Boolean(prof?.proficient || prof?.expertise) };
+      return {
+        characterName: c.name,
+        avatarUrl: c.avatarUrl,
+        value: value(c),
+        proficient: Boolean(prof?.proficient || prof?.expertise),
+      };
     })
     .sort((a, b) => b.value - a.value || a.characterName.localeCompare(b.characterName));
 }
@@ -160,7 +181,19 @@ function passiveStatSummary(
 ): PassiveStatSummary {
   const all = passiveCharacterScores(characters, skill, value);
   const proficientCount = all.filter((s) => s.proficient).length;
-  return { best: bestBy(characters, value), all, proficientCount, status: coverageStatus(proficientCount) };
+  const best = all[0] ?? null;
+  const last = all[all.length - 1] ?? null;
+  const weakest =
+    last && best && last.value < best.value
+      ? { characterName: last.characterName, avatarUrl: last.avatarUrl, value: last.value }
+      : null;
+  return {
+    best: bestBy(characters, value),
+    weakest,
+    all,
+    proficientCount,
+    status: coverageStatus(proficientCount),
+  };
 }
 
 /** `null` when there are no characters — an empty average/best/lowest has nothing meaningful to show. */
@@ -249,6 +282,7 @@ export interface PartyResourceEntry {
   id: string;
   resourceName: string;
   characterName: string;
+  avatarUrl?: string;
   current: number;
   max: number;
   status: ResourceStatus;
@@ -280,6 +314,7 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
       id: `${c.id}-${r.id}`,
       resourceName: r.name,
       characterName: c.name,
+      avatarUrl: c.avatarUrl,
       current: r.current,
       max: r.max,
       status: computeResourceStatus(r.current, r.max),
