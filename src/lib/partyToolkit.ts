@@ -660,6 +660,8 @@ export interface CoverageEntry {
   avatarUrl?: string;
   /** The spell's/feature's own rules text, straight from `KnownSpell.description`/`Feature.description` — the row's hover hint, same source the character's own card already shows. */
   description?: string;
+  /** Only set for the Heroic Inspiration entry, whose hover hint needs to list who currently has it — every other entry already carries that in `characterId`/`characterName` since it belongs to exactly one character. */
+  holders?: CoverageHolder[];
 }
 
 /**
@@ -699,6 +701,7 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
     coverage.Rerolls.push({
       name: "Heroic Inspiration",
       characterName: `${inspiration.withInspiration}/${inspiration.partySize}`,
+      holders: inspiration.holders,
     });
   }
 

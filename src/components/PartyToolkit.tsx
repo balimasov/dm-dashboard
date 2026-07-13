@@ -680,17 +680,22 @@ function CoverageHintPanel({ group }: { group: CoverageNameGroup }) {
   );
 }
 
-/** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster, and skips the hover hint since there's no spell/feature description behind it. One ability per line — name on the left, its holders' chips right-aligned to the category column's edge, same "name … value" row shape as every other coverage row in the panel. */
+/** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster. Its hover hint uses the same `HolderListPanel` as every other "who has it" row, listing whoever currently holds it (the row's own `holders`, threaded through from `computeHeroicInspirationSummary`), not just the description. One ability per line — name on the left, its holders' chips right-aligned to the category column's edge, same "name … value" row shape as every other coverage row in the panel. */
 function CoveragePill({ group }: { group: CoverageNameGroup }) {
   if (group.holders.length === 1 && !group.holders[0].characterId) {
+    const entry = group.holders[0];
     return (
       <div className="flex items-center justify-between gap-3 py-1 text-sm">
         <div className="min-w-0 flex-1">
-          <InfoTooltip panel={<HintPanel title={group.name} description={HEROIC_INSPIRATION_DESCRIPTION} />}>
+          <InfoTooltip
+            panel={
+              <HolderListPanel label={group.name} description={HEROIC_INSPIRATION_DESCRIPTION} holders={entry.holders ?? []} />
+            }
+          >
             <span className="text-slate-300">{group.name}</span>
           </InfoTooltip>
         </div>
-        <span className="shrink-0 text-slate-500">{group.holders[0].characterName}</span>
+        <span className="shrink-0 text-slate-500">{entry.characterName}</span>
       </div>
     );
   }

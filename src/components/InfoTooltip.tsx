@@ -39,9 +39,9 @@ export function InfoTooltip({
 }: {
   children: React.ReactNode;
   panel: React.ReactNode;
-  /** Skips the dotted-underline/cursor-help styling — for wrapping a compact chip, icon, or badge that already reads as its own visual unit and doesn't need a "this is hintable text" affordance. Tap-to-toggle still works; see `disableTap` for that. */
+  /** Skips the dotted-underline styling only — for wrapping a compact chip, icon, or badge that already reads as its own visual unit and doesn't need a "this is hintable text" affordance. The `cursor-help` hover cursor still applies (see `disableTap` for the one case that also loses that), so every hintable element gives the same cursor feedback regardless of how it's styled. */
   hoverOnly?: boolean;
-  /** Skips the tap-to-toggle click handler entirely — for wrapping an element that already has its own onClick (e.g. a toggle button, or a row nested inside a clickable header), so a tap there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS on desktop. Without this, touch devices have no way to open the panel at all, since neither `:hover` nor `:focus` fires from a tap. */
+  /** Skips the tap-to-toggle click handler *and* the `cursor-help` cursor — for wrapping an element that already has its own onClick (e.g. a toggle button, or a row nested inside a clickable header), so a tap there isn't hijacked into opening the tooltip instead of firing that handler, and the cursor doesn't advertise "hover for info" over what's really a button. Hover/focus still shows the panel via CSS on desktop. Without `disableTap`, touch devices have no way to open the panel at all, since neither `:hover` nor `:focus` fires from a tap. */
   disableTap?: boolean;
   /**
    * The trigger is always `inline-block` (sits on the same line as
@@ -122,7 +122,7 @@ export function InfoTooltip({
       // reserves extra space below it for descenders in the surrounding line
       // box, which was inflating every row that used this component (most
       // visibly the Inventory item list, where it added ~5px per row).
-      className={`group/tooltip relative inline-block max-w-full align-top ${hoverOnly ? "" : "cursor-help"}`}
+      className={`group/tooltip relative inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"}`}
       onClick={
         disableTap
           ? undefined

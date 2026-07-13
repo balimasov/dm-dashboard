@@ -53,10 +53,31 @@
   --color-sky-950: oklch(29.3% 0.05 65);
 }
 
+html {
+  /* See the matching note on `body` — this needs to be on both. The layout
+     viewport (what `window.innerWidth` reports) is governed by the root
+     `<html>` box, not `<body>`; clipping only the child left the root free
+     to still grow around a transiently-overflowing descendant. */
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* A hint panel is absolutely positioned and gets clamped on-screen by JS
+     (see `InfoTooltip`), but that clamp only runs after the panel's first,
+     unclamped layout — briefly wide enough to poke past the right edge of a
+     narrow viewport. Without this, that one frame of overflow is enough for
+     mobile browsers to permanently widen the page's layout viewport to fit
+     it (confirmed via `window.innerWidth` jumping from 390 to 558 the
+     instant a hint near the edge opened, and staying there) — every hint
+     afterwards then measures/clamps against that wrong, too-wide viewport,
+     so its computed on-screen position drifts back off the real edge again.
+     `overflow-x: hidden` makes that transient overflow inert instead of
+     viewport-altering, so the layout viewport stays pinned to the real
+     device width no matter what transiently overflows. */
+  overflow-x: hidden;
 }
 
 /* Native scrollbars default to the OS's light/solid chrome, which stands out
