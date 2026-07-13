@@ -276,7 +276,14 @@ describe("computeHeroicInspirationSummary", () => {
       makeCharacter({ name: "B", heroicInspiration: false }),
       makeCharacter({ name: "C", heroicInspiration: true }),
     ];
-    expect(computeHeroicInspirationSummary(chars)).toEqual({ withInspiration: 2, partySize: 3 });
+    expect(computeHeroicInspirationSummary(chars)).toEqual({
+      withInspiration: 2,
+      partySize: 3,
+      holders: [
+        { characterId: "A", characterName: "A" },
+        { characterId: "C", characterName: "C" },
+      ],
+    });
   });
 });
 
@@ -451,8 +458,12 @@ describe("computeSensesCoverage", () => {
       count: 2,
       partySize: 3,
       best: { characterName: "B", range: 120 },
+      holders: [
+        { characterId: "A", characterName: "A", range: 60 },
+        { characterId: "B", characterName: "B", range: 120 },
+      ],
     });
-    expect(coverage[1]).toEqual({ name: "Blindsight", count: 0, partySize: 3, best: null });
+    expect(coverage[1]).toEqual({ name: "Blindsight", count: 0, partySize: 3, best: null, holders: [] });
   });
 });
 

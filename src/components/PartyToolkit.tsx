@@ -18,6 +18,7 @@ import {
   PassiveStatSummary,
   ResourceStatus,
   SenseCoverageEntry,
+  SenseHolder,
   SkillCharacterScore,
   SkillCoverageStatus,
   SkillOverviewEntry,
@@ -41,21 +42,35 @@ import { InfoTooltip } from "./InfoTooltip";
 import { CharacterChip } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
-const STATUS_DOT_CLASS: Record<SkillCoverageStatus, string> = {
-  Strong: "bg-emerald-400",
-  Medium: "bg-amber-400",
-  Weak: "bg-slate-600",
+/** Same green/amber/red family as `HpBar`'s danger-tier colors — one shared "how worried should I be" palette across the whole app instead of coverage inventing its own. */
+const STATUS_BADGE_CLASS: Record<SkillCoverageStatus, string> = {
+  Strong: "border-emerald-700 bg-emerald-950/30 text-emerald-400",
+  Medium: "border-amber-700 bg-amber-950/30 text-amber-400",
+  Weak: "border-red-800 bg-red-950/30 text-red-400",
 };
 
-const STATUS_HINT: Record<SkillCoverageStatus, string> = {
-  Strong: "Strong coverage — 3+ characters proficient",
-  Medium: "Medium coverage — 2 characters proficient",
-  Weak: "Weak coverage — 0-1 characters proficient",
+const STATUS_LABEL: Record<SkillCoverageStatus, string> = {
+  Strong: "Strong coverage",
+  Medium: "Medium coverage",
+  Weak: "Weak coverage",
 };
 
-/** Replaces the old Strong/Medium/Weak text chip — same three-tier read, but small enough to sit next to the best/weakest chips instead of competing with them for attention. */
-function StatusDot({ status }: { status: SkillCoverageStatus }) {
-  return <span title={STATUS_HINT[status]} className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT_CLASS[status]}`} />;
+/**
+ * Replaces the old Strong/Medium/Weak text chip (too wide) and the dot that
+ * replaced it (too small to read anything from at a glance) — the actual
+ * `proficientCount / partySize` ratio, colored by the same tier, is exactly
+ * as compact as the dot but tells the DM the real numbers instead of making
+ * them hover for it.
+ */
+function CoverageBadge({ proficientCount, partySize, status }: { proficientCount: number; partySize: number; status: SkillCoverageStatus }) {
+  return (
+    <span
+      title={`${STATUS_LABEL[status]} — ${proficientCount} of ${partySize} proficient`}
+      className={`shrink-0 rounded-md border px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${STATUS_BADGE_CLASS[status]}`}
+    >
+      {proficientCount}/{partySize}
+    </span>
+  );
 }
 
 /** The hover hint's content for a skill row — every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
@@ -67,7 +82,7 @@ function SkillAllScoresPanel({ label, all }: { label: string; all: SkillCharacte
         {all.map((s) => (
           <li key={s.characterId} className="flex items-center justify-between gap-4">
             <span className="min-w-0 truncate">{s.characterName}</span>
-            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-400"}`}>
+            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
               {formatModifier(s.modifier)}
               {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
             </span>
@@ -105,7 +120,7 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
           />
         )}
       </div>
-      <StatusDot status={entry.status} />
+      <CoverageBadge proficientCount={entry.proficientCount} partySize={entry.all.length} status={entry.status} />
     </div>
   );
 }
@@ -119,7 +134,7 @@ function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveChar
         {all.map((s) => (
           <li key={s.characterName} className="flex items-center justify-between gap-4">
             <span className="min-w-0 truncate">{s.characterName}</span>
-            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-400"}`}>
+            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
               {s.value}
               {s.proficient ? " · proficient" : ""}
             </span>
@@ -155,7 +170,7 @@ function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSum
           />
         )}
       </div>
-      <StatusDot status={summary.status} />
+      <CoverageBadge proficientCount={summary.proficientCount} partySize={summary.all.length} status={summary.status} />
     </div>
   );
 }
@@ -199,7 +214,13 @@ const RESOURCE_STATUS_CLASS: Record<ResourceStatus, string> = {
   normal: "text-slate-100",
 };
 
-/** Best/weakest character for a skill or passive stat, shown as their chip + an up/down arrow — `hint` carries the full "Best: Name +N" detail as a native tooltip, keeping the row itself compact. */
+/**
+ * Best/weakest character for a skill or passive stat, shown as their chip +
+ * an up/down arrow — `hint` carries the full "Best: Name +N" detail as a
+ * native tooltip. Wrapped in a bordered pill (not just a bare chip+glyph)
+ * so the whole thing reads as one unit and gives the tooltip a real hit
+ * target to hover, instead of the tiny arrow glyph alone.
+ */
 function StrengthChip({
   characterName,
   avatarUrl,
@@ -211,11 +232,17 @@ function StrengthChip({
   hint: string;
   direction: "up" | "down";
 }) {
+  const isUp = direction === "up";
   return (
-    <span title={hint} className="flex shrink-0 items-center gap-0.5">
+    <span
+      title={hint}
+      className={`flex shrink-0 items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-1.5 ${
+        isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
+      }`}
+    >
       <CharacterChip name={characterName} avatarUrl={avatarUrl} />
-      <span className={`text-xs ${direction === "up" ? "text-emerald-400" : "text-slate-500"}`}>
-        {direction === "up" ? "↑" : "↓"}
+      <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+        {isUp ? "↑" : "↓"}
       </span>
     </span>
   );
@@ -223,8 +250,10 @@ function StrengthChip({
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 text-sm">
-      <span className="text-slate-300">Heroic Inspiration</span>
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <InfoTooltip panel={<HolderListPanel label="Heroic Inspiration" holders={summary.holders} />}>
+        <span className="text-slate-300">Heroic Inspiration</span>
+      </InfoTooltip>
       <span className="font-medium text-slate-100">
         {summary.withInspiration} / {summary.partySize}
       </span>
@@ -292,14 +321,16 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-right text-sm font-medium text-slate-100">
+          <p className="mt-1 text-right text-xl font-bold text-slate-100">
             {spellSlots.totalCurrent} / {spellSlots.totalMax}
           </p>
         </>
       )}
 
-      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resources</p>
+      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Heroic Inspiration</p>
       <HeroicInspirationRow summary={inspiration} />
+
+      <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resources</p>
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
       ) : (
@@ -370,10 +401,33 @@ export function CriticalItemsPanel({ characters }: { characters: Character[] }) 
   );
 }
 
+/** Same idea as `SkillAllScoresPanel` — every character who has this sense, with their own range, ranked implicitly by the row's own "Best" chip already answering the top one. */
+function SenseHolderPanel({ label, holders }: { label: string; holders: SenseHolder[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{label}</p>
+      {holders.length === 0 ? (
+        <p className="text-slate-100">No one currently has it.</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {holders.map((h) => (
+            <li key={h.characterId} className="flex items-center justify-between gap-4">
+              <span className="min-w-0 truncate">{h.characterName}</span>
+              <span className="shrink-0 text-slate-100">{h.range} ft</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-slate-300">{entry.name}</span>
+      <InfoTooltip panel={<SenseHolderPanel label={entry.name} holders={entry.holders} />}>
+        <span className="text-slate-300">{entry.name}</span>
+      </InfoTooltip>
       <span className="flex items-center gap-2">
         <span className={entry.count === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
           {entry.count}/{entry.partySize}
@@ -389,11 +443,37 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
   );
 }
 
+/** Short rules reminder for what the spell actually reveals — the row itself only says "available", not what that's useful for. */
+const UTILITY_SPELL_BLURBS: Record<string, string> = {
+  "Detect Magic": "Sense the presence of magic within 30 ft, and learn its school of magic if you study the source for a moment.",
+  "See Invisibility": "See invisible creatures and objects as if they were visible, and see into the Ethereal Plane, for the spell's duration.",
+};
+
+function UtilitySpellHintPanel({ entry }: { entry: UtilitySpellAvailability }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{entry.name}</p>
+      <p>{UTILITY_SPELL_BLURBS[entry.name]}</p>
+      {entry.characters.length > 0 && (
+        <ul className="space-y-0.5 pt-1">
+          {entry.characters.map((c) => (
+            <li key={c.characterId} className="text-slate-100">
+              {c.characterName}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Same "gray at zero, plain white otherwise" convention as `DefenseRow` — no green highlight, so availability reads the same way across every coverage row in this panel instead of standing out inconsistently. */
 function UtilitySpellRow({ entry }: { entry: UtilitySpellAvailability }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-slate-300">{entry.name} available</span>
+      <InfoTooltip panel={<UtilitySpellHintPanel entry={entry} />}>
+        <span className="text-slate-300">{entry.name} available</span>
+      </InfoTooltip>
       {entry.available ? (
         <span className="flex items-center gap-1">
           {entry.characters.map((c) => (
@@ -428,18 +508,22 @@ function SensesPanel({ characters }: { characters: Character[] }) {
   );
 }
 
-/** Same hover-hint idea as a skill row's `SkillAllScoresPanel` — just who has it, no modifier column needed here. */
+/** Same hover-hint idea as a skill row's `SkillAllScoresPanel` — just who has it, no modifier column needed here. Handles the empty case (e.g. nobody currently holding Heroic Inspiration) since most callers only ever pass a non-empty list, but that one can't guarantee it. */
 function HolderListPanel({ label, holders }: { label: string; holders: DefenseHolder[] }) {
   return (
     <div className="space-y-1">
       <p className="font-medium text-slate-100">{label}</p>
-      <ul className="space-y-0.5">
-        {holders.map((h) => (
-          <li key={h.characterId} className="text-slate-300">
-            {h.characterName}
-          </li>
-        ))}
-      </ul>
+      {holders.length === 0 ? (
+        <p className="text-slate-100">No one currently has it.</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {holders.map((h) => (
+            <li key={h.characterId} className="text-slate-100">
+              {h.characterName}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -565,23 +649,25 @@ function groupCoverageEntries(entries: CoverageEntry[]): CoverageNameGroup[] {
 }
 
 /** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster. */
+/** One ability per line — name on the left, its holders' chips right-aligned to the category column's edge, same "name … value" row shape as every other coverage row in the panel. */
 function CoveragePill({ group }: { group: CoverageNameGroup }) {
   if (group.holders.length === 1 && !group.holders[0].characterId) {
     return (
-      <span className="text-sm text-slate-300">
-        {group.name} <span className="text-slate-500">— {group.holders[0].characterName}</span>
-      </span>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="min-w-0 truncate text-slate-300">{group.name}</span>
+        <span className="shrink-0 text-slate-500">{group.holders[0].characterName}</span>
+      </div>
     );
   }
   return (
-    <span className="flex items-center gap-1.5 text-sm text-slate-300">
-      {group.name}
-      <span className="flex items-center gap-0.5">
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="min-w-0 truncate text-slate-300">{group.name}</span>
+      <span className="flex shrink-0 items-center gap-0.5">
         {group.holders.map((h) => (
           <CharacterChip key={h.characterId} name={h.characterName} avatarUrl={h.avatarUrl} />
         ))}
       </span>
-    </span>
+    </div>
   );
 }
 
@@ -593,7 +679,7 @@ function CoverageCategoryBlock({ category, entries }: { category: CoverageCatego
       {groups.length === 0 ? (
         <p className="text-sm text-slate-600">none</p>
       ) : (
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
+        <div className="space-y-0.5">
           {groups.map((g) => (
             <CoveragePill key={g.name} group={g} />
           ))}

@@ -266,13 +266,19 @@ export function computePartySpellSlotSummary(characters: Character[]): PartySpel
 export interface HeroicInspirationSummary {
   withInspiration: number;
   partySize: number;
+  /** Who currently has it — the row's hover hint, same pattern as a defense/language/tool row. */
+  holders: DefenseHolder[];
 }
 
 /** Counted separately from `resources` below — it lives on `Character.heroicInspiration` (a plain boolean), not in the `resources` array like class/feat resources. */
 export function computeHeroicInspirationSummary(characters: Character[]): HeroicInspirationSummary {
+  const holders = characters
+    .filter((c) => c.heroicInspiration)
+    .map((c) => ({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl }));
   return {
-    withInspiration: characters.filter((c) => c.heroicInspiration).length,
+    withInspiration: holders.length,
     partySize: characters.length,
+    holders,
   };
 }
 
@@ -450,31 +456,38 @@ export function computeCriticalInventoryHighlights(characters: Character[]): Cri
 
 const TRACKED_SENSES = ["Darkvision", "Blindsight", "Tremorsense", "Truesight"];
 
+export interface SenseHolder {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+  range: number;
+}
+
 export interface SenseCoverageEntry {
   name: string;
   count: number;
   partySize: number;
   best: { characterName: string; avatarUrl?: string; range: number } | null;
+  /** Every character who has this sense, with their own range — the row's hover hint. */
+  holders: SenseHolder[];
 }
 
 export function computeSensesCoverage(characters: Character[]): SenseCoverageEntry[] {
   return TRACKED_SENSES.map((name) => {
-    const withSense: Array<{ characterName: string; avatarUrl?: string; sense: Sense }> = [];
+    const withSense: SenseHolder[] = [];
     for (const c of characters) {
       const sense = c.senses.find((s: Sense) => s.name === name);
-      if (sense) withSense.push({ characterName: c.name, avatarUrl: c.avatarUrl, sense });
+      if (sense) withSense.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, range: sense.range });
     }
 
-    const best =
-      withSense.length > 0
-        ? withSense.reduce((top, x) => (x.sense.range > top.sense.range ? x : top))
-        : null;
+    const best = withSense.length > 0 ? withSense.reduce((top, x) => (x.range > top.range ? x : top)) : null;
 
     return {
       name,
       count: withSense.length,
       partySize: characters.length,
-      best: best ? { characterName: best.characterName, avatarUrl: best.avatarUrl, range: best.sense.range } : null,
+      best: best ? { characterName: best.characterName, avatarUrl: best.avatarUrl, range: best.range } : null,
+      holders: withSense,
     };
   });
 }
