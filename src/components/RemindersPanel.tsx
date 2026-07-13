@@ -138,9 +138,17 @@ export function RemindersPanel({
       <p className="mb-4 px-3 text-sm text-slate-500">
         Abilities flagged with the reminder flame across every character and creature — the ones easy to forget mid-session.
       </p>
-      <div className="scrollbar-themed flex gap-3 overflow-x-auto px-3 pb-2">
+      {/* `flex-wrap` instead of the `overflow-x-auto` horizontal-scroll rows
+          used elsewhere (Party/Companions/etc.) — an `overflow-x` container
+          also forces its own `overflow-y` to compute as clipped rather than
+          "visible" regardless of what's set (the same quirk documented on
+          the Party row below), which cut off an `InfoTooltip` hint the
+          moment it popped out past a short reminder card's own box. These
+          groups are usually few and short, so wrapping to a second line
+          reads better here anyway than a forced side-scroll. */}
+      <div className="flex flex-wrap gap-3 px-3 pb-2">
         {groups.map((group) => (
-          <div key={group.ownerId} className="w-[220px] shrink-0 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+          <div key={group.ownerId} className="w-[220px] rounded-lg border border-slate-800 bg-slate-900/60 p-3">
             <div className="mb-2 flex items-center gap-2">
               <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
               <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
