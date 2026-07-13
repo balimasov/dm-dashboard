@@ -1,6 +1,7 @@
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
+import { CharacterChip } from "./ui/CharacterChip";
 
 const RARITY_COLOR: Record<ItemRarity, string> = {
   Common: "text-slate-300",
@@ -41,7 +42,7 @@ interface ItemGroup {
   name: string;
   rarity: ItemRarity;
   description?: string;
-  holders: Array<{ character: string; quantity: number }>;
+  holders: Array<{ characterId: string; character: string; avatarUrl?: string; quantity: number }>;
 }
 
 interface CategoryGroup {
@@ -63,7 +64,13 @@ function buildCategoryGroups(characters: Character[]): CategoryGroup[] {
       if (!items.has(key)) {
         items.set(key, { name: item.name, rarity: item.rarity, description: item.description, holders: [] });
       }
-      items.get(key)!.holders.push({ character: c.name, quantity: item.quantity });
+      const holders = items.get(key)!.holders;
+      const existing = holders.find((h) => h.characterId === c.id);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        holders.push({ characterId: c.id, character: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
+      }
     }
   }
   return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => ({
@@ -147,16 +154,20 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
           );
         }
         const { item } = row;
-        const holdersText = item.holders
-          .map((h) => (h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character))
-          .join(", ");
         return (
           <div key={`${row.category}-${item.name}`} className="flex items-center gap-3 py-0.5">
             <span className="min-w-0 flex-1">
               <ItemName item={item} />
             </span>
-            <span title={holdersText} className="max-w-[45%] shrink-0 truncate text-right text-xs text-slate-500">
-              {holdersText}
+            <span className="flex shrink-0 items-center gap-0.5">
+              {item.holders.map((h) => (
+                <CharacterChip
+                  key={h.characterId}
+                  name={h.character}
+                  avatarUrl={h.avatarUrl}
+                  title={h.quantity > 1 ? `${h.character} x${h.quantity}` : h.character}
+                />
+              ))}
             </span>
           </div>
         );

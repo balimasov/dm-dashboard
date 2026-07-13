@@ -397,15 +397,34 @@ describe("computeCriticalInventoryHighlights", () => {
         name: "Healing Potion",
         totalQuantity: 4,
         holders: [
-          { characterName: "Ragnar", quantity: 2 },
-          { characterName: "Lilith", quantity: 2 },
+          { characterId: "Ragnar", characterName: "Ragnar", quantity: 2 },
+          { characterId: "Lilith", characterName: "Lilith", quantity: 2 },
         ],
       },
       {
         category: "Exploration",
         name: "Rope, 50 ft",
         totalQuantity: 1,
-        holders: [{ characterName: "Ragnar", quantity: 1 }],
+        holders: [{ characterId: "Ragnar", characterName: "Ragnar", quantity: 1 }],
+      },
+    ]);
+  });
+
+  test("merges two separate inventory entries of the same item from the same character into one holder", () => {
+    const c = makeCharacter({
+      name: "A",
+      inventory: [
+        { id: "1", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
+        { id: "2", name: "Rope, 50 ft", rarity: "Common", category: "Gear", quantity: 1 },
+      ],
+    });
+    const entries = computeCriticalInventoryHighlights([c]);
+    expect(entries).toEqual([
+      {
+        category: "Exploration",
+        name: "Rope, 50 ft",
+        totalQuantity: 2,
+        holders: [{ characterId: "A", characterName: "A", quantity: 2 }],
       },
     ]);
   });
@@ -447,35 +466,31 @@ describe("computeUtilitySpellAvailability", () => {
 
     const result = computeUtilitySpellAvailability([caster, nonCaster]);
     expect(result).toEqual([
-      { name: "Detect Magic", available: true, characterNames: ["Runa"] },
-      { name: "See Invisibility", available: false, characterNames: [] },
+      { name: "Detect Magic", available: true, characters: [{ characterId: "Runa", characterName: "Runa" }] },
+      { name: "See Invisibility", available: false, characters: [] },
     ]);
   });
 });
 
 describe("computeResistanceCoverage / computeConditionProtectionCoverage", () => {
-  test("pins Cold/Poison/Fire/Necrotic even at 0 coverage", () => {
+  test("only lists resistance types the party actually has, no fixed pinned list", () => {
     const c = makeCharacter({ name: "A", resistances: ["Cold"] });
     const coverage = computeResistanceCoverage([c]);
     expect(coverage).toEqual([
-      { name: "Cold", count: 1, partySize: 1 },
-      { name: "Poison", count: 0, partySize: 1 },
-      { name: "Fire", count: 0, partySize: 1 },
-      { name: "Necrotic", count: 0, partySize: 1 },
+      { name: "Cold", count: 1, partySize: 1, holders: [{ characterId: "A", characterName: "A" }] },
     ]);
   });
 
-  test("matches 'Advantage vs Frightened' fuzzily against the free-text advantages list", () => {
-    const c = makeCharacter({
-      name: "A",
-      advantages: ["Advantage: Charmed — you have advantage on saving throws against being frightened."],
-      immunities: ["Poisoned"],
-    });
+  test("empty party / no resistances yields no rows", () => {
+    const c = makeCharacter({ name: "A", resistances: [] });
+    expect(computeResistanceCoverage([c])).toEqual([]);
+  });
+
+  test("only lists immunity types the party actually has", () => {
+    const c = makeCharacter({ name: "A", immunities: ["Poisoned"] });
     const coverage = computeConditionProtectionCoverage([c]);
     expect(coverage).toEqual([
-      { name: "Advantage vs Frightened", count: 1, partySize: 1 },
-      { name: "Immunity to Charmed", count: 0, partySize: 1 },
-      { name: "Immunity to Poisoned", count: 1, partySize: 1 },
+      { name: "Poisoned", count: 1, partySize: 1, holders: [{ characterId: "A", characterName: "A" }] },
     ]);
   });
 });
@@ -486,21 +501,27 @@ describe("computeLanguageCoverage", () => {
     const b = makeCharacter({ name: "B", languages: ["Common"] });
 
     expect(computeLanguageCoverage([a, b])).toEqual([
-      { name: "Common", count: 2, partySize: 2 },
-      { name: "Elvish", count: 1, partySize: 2 },
+      {
+        name: "Common",
+        count: 2,
+        partySize: 2,
+        holders: [
+          { characterId: "A", characterName: "A" },
+          { characterId: "B", characterName: "B" },
+        ],
+      },
+      { name: "Elvish", count: 1, partySize: 2, holders: [{ characterId: "A", characterName: "A" }] },
     ]);
   });
 });
 
 describe("computeToolCoverage", () => {
-  test("shows pinned tools even with no owner, owned ones sorted first", () => {
+  test("only lists tools the party actually has, no fixed pinned list", () => {
     const c = makeCharacter({ name: "Lilith", toolProficiencies: ["Herbalism Kit"] });
     const coverage = computeToolCoverage([c]);
-    expect(coverage[0]).toEqual({ name: "Herbalism Kit", characterNames: ["Lilith"] });
-    expect(coverage.find((t) => t.name === "Navigator's Tools")).toEqual({
-      name: "Navigator's Tools",
-      characterNames: [],
-    });
+    expect(coverage).toEqual([
+      { name: "Herbalism Kit", count: 1, partySize: 1, holders: [{ characterId: "Lilith", characterName: "Lilith" }] },
+    ]);
   });
 });
 
@@ -519,11 +540,11 @@ describe("computeSpellAbilityCoverage", () => {
     });
 
     const coverage = computeSpellAbilityCoverage([runa, lilith]);
-    expect(coverage["AOE Damage"]).toEqual([{ name: "Fireball", characterName: "Runa" }]);
-    expect(coverage.Detection).toEqual([{ name: "detect magic", characterName: "Runa" }]);
+    expect(coverage["AOE Damage"]).toEqual([{ name: "Fireball", characterId: "Runa", characterName: "Runa" }]);
+    expect(coverage.Detection).toEqual([{ name: "detect magic", characterId: "Runa", characterName: "Runa" }]);
     expect(coverage.Rerolls).toEqual([
       { name: "Heroic Inspiration", characterName: "0 / 2" },
-      { name: "Lucky", characterName: "Lilith" },
+      { name: "Lucky", characterId: "Lilith", characterName: "Lilith" },
     ]);
   });
 
@@ -540,8 +561,8 @@ describe("computeSpellAbilityCoverage", () => {
   test("Shield maps to both Protection and Reactions", () => {
     const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
     const coverage = computeSpellAbilityCoverage([c]);
-    expect(coverage.Protection).toEqual([{ name: "Shield", characterName: "A" }]);
-    expect(coverage.Reactions).toEqual([{ name: "Shield", characterName: "A" }]);
+    expect(coverage.Protection).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
+    expect(coverage.Reactions).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
   });
 
   test("every category is present (possibly empty) for an empty party", () => {

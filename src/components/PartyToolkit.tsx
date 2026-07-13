@@ -9,6 +9,7 @@ import {
   CriticalItemCategory,
   CriticalItemEntry,
   DefenseCoverageEntry,
+  DefenseHolder,
   HeroicInspirationSummary,
   LanguageCoverageEntry,
   PartyPassiveSummary,
@@ -37,6 +38,7 @@ import {
   computeUtilitySpellAvailability,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
+import { CharacterChip } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
 const STATUS_DOT_CLASS: Record<SkillCoverageStatus, string> = {
@@ -197,53 +199,6 @@ const RESOURCE_STATUS_CLASS: Record<ResourceStatus, string> = {
   normal: "text-slate-100",
 };
 
-/** A handful of distinguishable colors, picked deterministically per name — not tied to any character identity elsewhere in the app, just enough variety to tell rows apart at a glance in a dense list. */
-const CHARACTER_CHIP_COLORS = [
-  "border-sky-700 bg-sky-950/40 text-sky-300",
-  "border-emerald-700 bg-emerald-950/40 text-emerald-300",
-  "border-amber-700 bg-amber-950/40 text-amber-300",
-  "border-rose-700 bg-rose-950/40 text-rose-300",
-  "border-violet-700 bg-violet-950/40 text-violet-300",
-  "border-teal-700 bg-teal-950/40 text-teal-300",
-];
-
-function chipColorClass(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  return CHARACTER_CHIP_COLORS[Math.abs(hash) % CHARACTER_CHIP_COLORS.length];
-}
-
-/**
- * A compact stand-in for a full character name — their avatar if one's set,
- * otherwise the first letter of their name in a small colored circle, full
- * name on hover either way. Only needs a name + optional avatar (not a full
- * `Character`), so it works anywhere in the Party Toolkit that names an
- * owner inside a tight row instead of a wide, truncating name column.
- */
-function CharacterInitial({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
-  const [failed, setFailed] = useState(false);
-  if (avatarUrl && !failed) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small chip
-      <img
-        src={avatarUrl}
-        alt=""
-        title={name}
-        onError={() => setFailed(true)}
-        className="h-5 w-5 shrink-0 rounded-full border border-slate-700 object-cover"
-      />
-    );
-  }
-  return (
-    <span
-      title={name}
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${chipColorClass(name)}`}
-    >
-      {name.trim().charAt(0).toUpperCase() || "?"}
-    </span>
-  );
-}
-
 /** Best/weakest character for a skill or passive stat, shown as their chip + an up/down arrow — `hint` carries the full "Best: Name +N" detail as a native tooltip, keeping the row itself compact. */
 function StrengthChip({
   characterName,
@@ -258,7 +213,7 @@ function StrengthChip({
 }) {
   return (
     <span title={hint} className="flex shrink-0 items-center gap-0.5">
-      <CharacterInitial name={characterName} avatarUrl={avatarUrl} />
+      <CharacterChip name={characterName} avatarUrl={avatarUrl} />
       <span className={`text-xs ${direction === "up" ? "text-emerald-400" : "text-slate-500"}`}>
         {direction === "up" ? "↑" : "↓"}
       </span>
@@ -301,7 +256,7 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
       <span className={`shrink-0 whitespace-nowrap font-medium ${RESOURCE_STATUS_CLASS[entry.status]}`}>
         {entry.current}/{entry.max}
       </span>
-      <CharacterInitial name={entry.characterName} avatarUrl={entry.avatarUrl} />
+      <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} />
     </div>
   );
 }
@@ -337,11 +292,8 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-right text-xs text-slate-400">
-            Spell Power:{" "}
-            <span className="font-medium text-slate-100">
-              {spellSlots.totalCurrent} / {spellSlots.totalMax}
-            </span>
+          <p className="mt-1 text-right text-sm font-medium text-slate-100">
+            {spellSlots.totalCurrent} / {spellSlots.totalMax}
           </p>
         </>
       )}
@@ -362,22 +314,32 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
 }
 
 function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
-  const holdersText = entry.holders
-    .map((h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName))
-    .join(", ");
   return (
     <div className="flex items-center gap-3 py-1 text-sm">
       <span className="min-w-0 flex-1 truncate text-slate-300">{entry.name}</span>
       <span className="shrink-0 font-medium text-slate-100">x{entry.totalQuantity}</span>
-      <span title={holdersText} className="w-28 shrink-0 truncate text-right text-xs text-slate-500">
-        {holdersText}
+      <span className="flex shrink-0 items-center gap-0.5">
+        {entry.holders.map((h) => (
+          <CharacterChip
+            key={h.characterId}
+            name={h.characterName}
+            avatarUrl={h.avatarUrl}
+            title={h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName}
+          />
+        ))}
       </span>
     </div>
   );
 }
 
-/** Grouped by category (see `computeCriticalInventoryHighlights`) — deliberately not the full party inventory, `InventoryOverview` already covers that. */
-function CriticalItemsPanel({ characters }: { characters: Character[] }) {
+/**
+ * Grouped by category (see `computeCriticalInventoryHighlights`) —
+ * deliberately not the full party inventory, `InventoryOverview` already
+ * covers that. Rendered inside the Inventory section rather than Party
+ * Toolkit — it's a curated view of inventory data, not party-wide combat
+ * reference info, so it reads more naturally next to the full item list.
+ */
+export function CriticalItemsPanel({ characters }: { characters: Character[] }) {
   const entries = computeCriticalInventoryHighlights(characters);
   const byCategory = new Map<CriticalItemCategory, CriticalItemEntry[]>();
   for (const entry of entries) {
@@ -412,31 +374,35 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-slate-300">{entry.name}</span>
-      {entry.count === 0 ? (
-        <span className="text-slate-600">none</span>
-      ) : (
-        <span className="text-right">
-          <span className="font-medium text-slate-100">
-            {entry.count}/{entry.partySize}
-          </span>
-          {entry.best && (
-            <span className="ml-2 text-xs text-slate-500">
-              Best: {entry.best.characterName} {entry.best.range} ft
-            </span>
-          )}
+      <span className="flex items-center gap-2">
+        <span className={entry.count === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
+          {entry.count}/{entry.partySize}
         </span>
-      )}
+        {entry.best && (
+          <span title={`${entry.best.characterName} — ${entry.best.range} ft`} className="flex items-center gap-1">
+            <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} />
+            <span className="text-xs text-slate-500">{entry.best.range} ft</span>
+          </span>
+        )}
+      </span>
     </div>
   );
 }
 
+/** Same "gray at zero, plain white otherwise" convention as `DefenseRow` — no green highlight, so availability reads the same way across every coverage row in this panel instead of standing out inconsistently. */
 function UtilitySpellRow({ entry }: { entry: UtilitySpellAvailability }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-slate-300">{entry.name} available</span>
-      <span className={entry.available ? "font-medium text-emerald-400" : "text-slate-600"}>
-        {entry.available ? `Yes — ${entry.characterNames.join(", ")}` : "No"}
-      </span>
+      {entry.available ? (
+        <span className="flex items-center gap-1">
+          {entry.characters.map((c) => (
+            <CharacterChip key={c.characterId} name={c.characterName} avatarUrl={c.avatarUrl} />
+          ))}
+        </span>
+      ) : (
+        <span className="text-slate-600">No</span>
+      )}
     </div>
   );
 }
@@ -462,38 +428,69 @@ function SensesPanel({ characters }: { characters: Character[] }) {
   );
 }
 
+/** Same hover-hint idea as a skill row's `SkillAllScoresPanel` — just who has it, no modifier column needed here. */
+function HolderListPanel({ label, holders }: { label: string; holders: DefenseHolder[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{label}</p>
+      <ul className="space-y-0.5">
+        {holders.map((h) => (
+          <li key={h.characterId} className="text-slate-300">
+            {h.characterName}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function DefenseRow({ entry }: { entry: DefenseCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-slate-300">{entry.name}</span>
-      <span className={entry.count === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
+      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
+        <span className="text-slate-300">{entry.name}</span>
+      </InfoTooltip>
+      <span className="font-medium text-slate-100">
         {entry.count} / {entry.partySize}
       </span>
     </div>
   );
 }
 
-/** Pinned damage types + condition protections, not a full damage-type table — see `computeResistanceCoverage`/`computeConditionProtectionCoverage`. */
+/**
+ * Only resistance/immunity types the party actually has — see
+ * `computeResistanceCoverage`/`computeConditionProtectionCoverage`. No
+ * pinned "campaign-relevant" list anymore: a DM already knows what matters
+ * for their campaign, and showing every possible type at 0/partySize just
+ * added noise this simplified view drops.
+ */
 function DefensesPanel({ characters }: { characters: Character[] }) {
   const resistances = computeResistanceCoverage(characters);
-  const conditions = computeConditionProtectionCoverage(characters);
+  const immunities = computeConditionProtectionCoverage(characters);
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Defense Coverage</h3>
-      <div className="space-y-1.5">
-        {resistances.map((entry) => (
-          <DefenseRow key={entry.name} entry={entry} />
-        ))}
-      </div>
-      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-        Condition Protection
-      </p>
-      <div className="space-y-1.5">
-        {conditions.map((entry) => (
-          <DefenseRow key={entry.name} entry={entry} />
-        ))}
-      </div>
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Resistances</p>
+      {resistances.length === 0 ? (
+        <p className="text-sm text-slate-600">No resistances in the party.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {resistances.map((entry) => (
+            <DefenseRow key={entry.name} entry={entry} />
+          ))}
+        </div>
+      )}
+      <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Immunities</p>
+      {immunities.length === 0 ? (
+        <p className="text-sm text-slate-600">No immunities in the party.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {immunities.map((entry) => (
+            <DefenseRow key={entry.name} entry={entry} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -501,7 +498,9 @@ function DefensesPanel({ characters }: { characters: Character[] }) {
 function LanguageRow({ entry }: { entry: LanguageCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-slate-300">{entry.name}</span>
+      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
+        <span className="text-slate-300">{entry.name}</span>
+      </InfoTooltip>
       <span className="font-medium text-slate-100">{entry.count}</span>
     </div>
   );
@@ -510,15 +509,15 @@ function LanguageRow({ entry }: { entry: LanguageCoverageEntry }) {
 function ToolRow({ entry }: { entry: ToolCoverageEntry }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-slate-300">{entry.name}</span>
-      <span className={entry.characterNames.length === 0 ? "text-slate-600" : "font-medium text-slate-100"}>
-        {entry.characterNames.length === 0 ? "none" : entry.characterNames.join(", ")}
-      </span>
+      <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
+        <span className="text-slate-300">{entry.name}</span>
+      </InfoTooltip>
+      <span className="font-medium text-slate-100">{entry.count}</span>
     </div>
   );
 }
 
-/** Languages actually present in the party, plus a handful of commonly-relevant tool proficiencies pinned even at 0 — see `computeLanguageCoverage`/`computeToolCoverage`. */
+/** Only languages/tools actually present in the party — no pinned list anymore, see `computeLanguageCoverage`/`computeToolCoverage`. Both rows share the same shape: name with a hover hint listing who has it (same pattern as a skill row), count on the right. */
 function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
   const languages = computeLanguageCoverage(characters);
   const tools = computeToolCoverage(characters);
@@ -526,6 +525,7 @@ function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Languages &amp; Tools</h3>
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Languages</p>
       {languages.length === 0 ? (
         <p className="text-sm text-slate-600">No languages tracked.</p>
       ) : (
@@ -536,29 +536,68 @@ function LanguagesToolsPanel({ characters }: { characters: Character[] }) {
         </div>
       )}
       <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Tools</p>
-      <div className="space-y-1.5">
-        {tools.map((entry) => (
-          <ToolRow key={entry.name} entry={entry} />
-        ))}
-      </div>
+      {tools.length === 0 ? (
+        <p className="text-sm text-slate-600">No tool proficiencies tracked.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {tools.map((entry) => (
+            <ToolRow key={entry.name} entry={entry} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
+interface CoverageNameGroup {
+  name: string;
+  holders: CoverageEntry[];
+}
+
+/** Groups same-named entries (multiple characters knowing the same spell/ability collapse into one pill with several chips) instead of one line per name-character pair — this is most of where the old layout's height came from. */
+function groupCoverageEntries(entries: CoverageEntry[]): CoverageNameGroup[] {
+  const byName = new Map<string, CoverageNameGroup>();
+  for (const entry of entries) {
+    if (!byName.has(entry.name)) byName.set(entry.name, { name: entry.name, holders: [] });
+    byName.get(entry.name)!.holders.push(entry);
+  }
+  return Array.from(byName.values());
+}
+
+/** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster. */
+function CoveragePill({ group }: { group: CoverageNameGroup }) {
+  if (group.holders.length === 1 && !group.holders[0].characterId) {
+    return (
+      <span className="text-sm text-slate-300">
+        {group.name} <span className="text-slate-500">— {group.holders[0].characterName}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 text-sm text-slate-300">
+      {group.name}
+      <span className="flex items-center gap-0.5">
+        {group.holders.map((h) => (
+          <CharacterChip key={h.characterId} name={h.characterName} avatarUrl={h.avatarUrl} />
+        ))}
+      </span>
+    </span>
+  );
+}
+
 function CoverageCategoryBlock({ category, entries }: { category: CoverageCategory; entries: CoverageEntry[] }) {
+  const groups = groupCoverageEntries(entries);
   return (
     <div>
       <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">{category}</p>
-      {entries.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="text-sm text-slate-600">none</p>
       ) : (
-        <ul className="space-y-0.5">
-          {entries.map((entry) => (
-            <li key={`${entry.name}-${entry.characterName}`} className="truncate text-sm text-slate-300">
-              {entry.name} <span className="text-slate-500">— {entry.characterName}</span>
-            </li>
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+          {groups.map((g) => (
+            <CoveragePill key={g.name} group={g} />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -596,7 +635,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
           No known spells or abilities match a tracked coverage category yet.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
           {categories.map((category) => (
             <CoverageCategoryBlock key={category} category={category} entries={coverage[category]} />
           ))}
@@ -608,10 +647,11 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
 
 /**
  * Party Toolkit — Iterations 1-4: Skills, Passives, Spell Slots, Resources,
- * Critical Items, Senses, Defenses, Languages & Tools, Spell & Ability
- * Coverage. Reference-only: no dice roller, no roll buttons, no
- * success/fail resolution. `characters` is expected to already be filtered
- * to the visible roster (same set shown in the Party row above it).
+ * Senses, Defenses, Languages & Tools, Spell & Ability Coverage.
+ * Reference-only: no dice roller, no roll buttons, no success/fail
+ * resolution. `characters` is expected to already be filtered to the
+ * visible roster (same set shown in the Party row above it). Critical
+ * Items lives in the Inventory section instead — see `CriticalItemsPanel`.
  */
 export function PartyToolkit({ characters }: { characters: Character[] }) {
   const passives = computePartyPassiveSummary(characters);
@@ -626,11 +666,8 @@ export function PartyToolkit({ characters }: { characters: Character[] }) {
         <SkillsPanel characters={characters} passives={passives} />
         <SpellSlotsResourcesPanel characters={characters} />
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
-        <CriticalItemsPanel characters={characters} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SensesPanel characters={characters} />
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DefensesPanel characters={characters} />
         <LanguagesToolsPanel characters={characters} />
       </div>

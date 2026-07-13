@@ -399,7 +399,9 @@ function classifyCriticalItem(name: string): CriticalItemCategory | null {
 }
 
 export interface CriticalItemHolder {
+  characterId: string;
   characterName: string;
+  avatarUrl?: string;
   quantity: number;
 }
 
@@ -414,7 +416,10 @@ export interface CriticalItemEntry {
  * Deliberately does not duplicate the full party inventory (`InventoryOverview`
  * already covers that) — only items matching a critical-category keyword
  * make it in, deduped by lowercased name the same way `InventoryOverview`
- * dedupes items across owners.
+ * dedupes items across owners. Holders are merged per character (a
+ * character with two separate "Rope" stacks shows as one holder with the
+ * combined quantity) rather than one row per inventory entry, both to read
+ * cleaner and to keep each holder keyable by a unique `characterId` in the UI.
  */
 export function computeCriticalInventoryHighlights(characters: Character[]): CriticalItemEntry[] {
   const byName = new Map<string, CriticalItemEntry>();
@@ -428,7 +433,12 @@ export function computeCriticalInventoryHighlights(characters: Character[]): Cri
       }
       const entry = byName.get(key)!;
       entry.totalQuantity += item.quantity;
-      entry.holders.push({ characterName: c.name, quantity: item.quantity });
+      const existingHolder = entry.holders.find((h) => h.characterId === c.id);
+      if (existingHolder) {
+        existingHolder.quantity += item.quantity;
+      } else {
+        entry.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
+      }
     }
   }
 
@@ -444,14 +454,16 @@ export interface SenseCoverageEntry {
   name: string;
   count: number;
   partySize: number;
-  best: { characterName: string; range: number } | null;
+  best: { characterName: string; avatarUrl?: string; range: number } | null;
 }
 
 export function computeSensesCoverage(characters: Character[]): SenseCoverageEntry[] {
   return TRACKED_SENSES.map((name) => {
-    const withSense = characters
-      .map((c) => ({ characterName: c.name, sense: c.senses.find((s: Sense) => s.name === name) }))
-      .filter((x): x is { characterName: string; sense: Sense } => x.sense !== undefined);
+    const withSense: Array<{ characterName: string; avatarUrl?: string; sense: Sense }> = [];
+    for (const c of characters) {
+      const sense = c.senses.find((s: Sense) => s.name === name);
+      if (sense) withSense.push({ characterName: c.name, avatarUrl: c.avatarUrl, sense });
+    }
 
     const best =
       withSense.length > 0
@@ -462,112 +474,98 @@ export function computeSensesCoverage(characters: Character[]): SenseCoverageEnt
       name,
       count: withSense.length,
       partySize: characters.length,
-      best: best ? { characterName: best.characterName, range: best.sense.range } : null,
+      best: best ? { characterName: best.characterName, avatarUrl: best.avatarUrl, range: best.sense.range } : null,
     };
   });
 }
 
 const TRACKED_UTILITY_SPELLS = ["Detect Magic", "See Invisibility"];
 
+export interface UtilitySpellHolder {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+}
+
 export interface UtilitySpellAvailability {
   name: string;
   available: boolean;
-  characterNames: string[];
+  characters: UtilitySpellHolder[];
 }
 
-/** Whether anyone in the party currently knows a spell worth flagging for exploration/safety purposes — matched against `knownSpells`, the same already-synced data the rest of the character card uses. */
+/** Whether anyone in the party currently knows a spell worth flagging for exploration/safety purposes ("can we find that secret door/invisible ambusher") — matched by exact name against `knownSpells`, the same already-synced data the rest of the character card uses. */
 export function computeUtilitySpellAvailability(characters: Character[]): UtilitySpellAvailability[] {
   return TRACKED_UTILITY_SPELLS.map((spellName) => {
     const withSpell = characters.filter((c) => c.knownSpells.some((s) => s.name === spellName));
-    return { name: spellName, available: withSpell.length > 0, characterNames: withSpell.map((c) => c.name) };
+    return {
+      name: spellName,
+      available: withSpell.length > 0,
+      characters: withSpell.map((c) => ({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl })),
+    };
   });
+}
+
+export interface DefenseHolder {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
 }
 
 export interface DefenseCoverageEntry {
   name: string;
   count: number;
   partySize: number;
+  /** Who actually has it — the row's hover hint, same idea as a skill row's per-character breakdown. */
+  holders: DefenseHolder[];
 }
 
-/** Pinned so the campaign-relevant types still show at 0/partySize instead of silently disappearing — matches the spec's own "show even if coverage is 0" requirement. */
-const PINNED_RESISTANCES = ["Cold", "Poison", "Fire", "Necrotic"];
+function coverageFromField(characters: Character[], field: (c: Character) => string[]): DefenseCoverageEntry[] {
+  const byName = new Map<string, DefenseCoverageEntry>();
+  for (const c of characters) {
+    for (const name of field(c)) {
+      if (!byName.has(name)) byName.set(name, { name, count: 0, partySize: characters.length, holders: [] });
+      const entry = byName.get(name)!;
+      entry.count += 1;
+      entry.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl });
+    }
+  }
+  return Array.from(byName.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
 
+/** Only resistance types the party actually has — no fixed pinned list. A DM already knows which damage types matter for the current campaign; showing every possible type at 0 just added noise. */
 export function computeResistanceCoverage(characters: Character[]): DefenseCoverageEntry[] {
-  return PINNED_RESISTANCES.map((name) => ({
-    name,
-    count: characters.filter((c) => c.resistances.includes(name)).length,
-    partySize: characters.length,
-  }));
+  return coverageFromField(characters, (c) => c.resistances);
 }
 
-const PINNED_CONDITION_IMMUNITIES = ["Charmed", "Poisoned"];
-
-/**
- * "Advantage vs Frightened" is matched fuzzily (case-insensitive substring
- * against the free-text `advantages` list) since that field is assembled
- * from D&D Beyond's own rules-sentence fragments rather than a clean
- * enum — see `computeAdvantages`'s own doc comment. Charmed/Poisoned
- * immunity, by contrast, matches the (clean, enum-like) `immunities` list
- * exactly.
- */
+/** Only immunity types the party actually has — same "present only" rule as resistances. Deliberately drops the old fuzzy "Advantage vs Frightened" text-matched row: it wasn't backed by a clean list like `immunities`, and folding it into a "these are simplified to what's actually there" view isn't a natural fit for a derived, imprecise signal. */
 export function computeConditionProtectionCoverage(characters: Character[]): DefenseCoverageEntry[] {
-  const frightened: DefenseCoverageEntry = {
-    name: "Advantage vs Frightened",
-    count: characters.filter((c) =>
-      c.advantages.some((a) => /^advantage/i.test(a) && /frightened/i.test(a))
-    ).length,
-    partySize: characters.length,
-  };
-  const immunities = PINNED_CONDITION_IMMUNITIES.map((name) => ({
-    name: `Immunity to ${name}`,
-    count: characters.filter((c) => c.immunities.includes(name)).length,
-    partySize: characters.length,
-  }));
-  return [frightened, ...immunities];
+  return coverageFromField(characters, (c) => c.immunities);
 }
 
 export interface LanguageCoverageEntry {
   name: string;
   count: number;
   partySize: number;
+  /** Who speaks it — the row's hover hint. */
+  holders: DefenseHolder[];
 }
 
-/** Only languages actually present in the party — unlike defenses/tools below, there's no fixed "campaign-relevant" language list to pin at 0 without DM input, which the spec explicitly keeps out of scope for now. */
+/** Only languages actually present in the party — there's no fixed "campaign-relevant" language list to pin at 0 without DM input. */
 export function computeLanguageCoverage(characters: Character[]): LanguageCoverageEntry[] {
-  const counts = new Map<string, number>();
-  for (const c of characters) {
-    for (const lang of c.languages) counts.set(lang, (counts.get(lang) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([name, count]) => ({ name, count, partySize: characters.length }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return coverageFromField(characters, (c) => c.languages);
 }
 
 export interface ToolCoverageEntry {
   name: string;
-  characterNames: string[];
+  count: number;
+  partySize: number;
+  /** Who has it — the row's hover hint. */
+  holders: DefenseHolder[];
 }
 
-/** Shown even with no owner (`characterNames: []`) — these four come up often enough at the table that a DM benefits from seeing the gap, same reasoning as the pinned defenses above. */
-const PINNED_TOOLS = ["Thieves' Tools", "Herbalism Kit", "Navigator's Tools", "Vehicles (Land)"];
-
+/** Only tools actually present in the party — same "present only" rule as languages/defenses; no more pinning a fixed tool list at 0. */
 export function computeToolCoverage(characters: Character[]): ToolCoverageEntry[] {
-  const owners = new Map<string, string[]>();
-  for (const name of PINNED_TOOLS) owners.set(name, []);
-  for (const c of characters) {
-    for (const tool of c.toolProficiencies) {
-      if (!owners.has(tool)) owners.set(tool, []);
-      owners.get(tool)!.push(c.name);
-    }
-  }
-  return Array.from(owners.entries())
-    .map(([name, characterNames]) => ({ name, characterNames }))
-    .sort((a, b) => {
-      if ((a.characterNames.length > 0) !== (b.characterNames.length > 0)) {
-        return a.characterNames.length > 0 ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
+  return coverageFromField(characters, (c) => c.toolProficiencies);
 }
 
 // ---------------------------------------------------------------------------
@@ -753,7 +751,10 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
 
 export interface CoverageEntry {
   name: string;
+  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, where `characterName` is a party-wide "x / partySize" ratio instead of an owner. */
+  characterId?: string;
   characterName: string;
+  avatarUrl?: string;
 }
 
 /**
@@ -780,7 +781,7 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
         const key = `${category}:${name}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        coverage[category].push({ name, characterName: c.name });
+        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl });
       }
     }
   }

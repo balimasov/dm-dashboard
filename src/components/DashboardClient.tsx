@@ -9,7 +9,7 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
-import { PartyToolkit } from "@/components/PartyToolkit";
+import { CriticalItemsPanel, PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersPanel } from "@/components/RemindersPanel";
 import { SyncAllButton } from "@/components/SyncAllButton";
@@ -466,8 +466,9 @@ export function DashboardClient({
         storageKey="dm-dashboard-inventory-open"
         initialOpen={initialOpen.inventory}
       >
-        <div className="px-3">
-          <p className="mb-4 text-sm text-slate-500">Items and gold shared across the whole party.</p>
+        <div className="px-3 space-y-4">
+          <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
+          <CriticalItemsPanel characters={characters} />
           <InventoryOverview characters={characters} />
         </div>
       </CollapsibleSection>
