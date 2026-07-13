@@ -55,7 +55,7 @@ import { RecoveryBadge } from "./ui/RecoveryBadge";
 function usageColorClass(current: number, max: number): string {
   if (max <= 0 || current <= 0) return "text-red-400";
   if (current <= max / 2) return "text-amber-400";
-  return "text-slate-100";
+  return "text-white";
 }
 
 /** Same green/amber/red family as `HpBar`'s danger-tier colors — one shared "how worried should I be" palette across the whole app instead of coverage inventing its own. */
@@ -95,11 +95,18 @@ function SectionLabel({ children, className = "" }: { children: ReactNode; class
  * `<ul>` of rows — same "description first, then who has it" order the DM
  * asked for everywhere. `emptyText` covers the few panels that show a
  * fallback line instead of an empty list ("No one currently has it.").
+ *
+ * Every row defaults to plain white text (`<li>`'s own color, inherited by
+ * any span inside that doesn't set its own) — noticeably brighter than the
+ * panel's dim `text-slate-300` description/prose, so a character name stays
+ * scannable at a glance instead of blending into the surrounding text. A
+ * `renderRow` callback only needs its own color class for an actual
+ * semantic override (proficient → green, low resource → amber/red).
  */
 function HintPanel<T>({
   title,
   description,
-  rows,
+  rows = [],
   rowKey,
   renderRow,
   rowClassName = "",
@@ -107,26 +114,26 @@ function HintPanel<T>({
 }: {
   title: ReactNode;
   description?: ReactNode;
-  rows: T[];
-  rowKey: (row: T) => string;
-  renderRow: (row: T) => ReactNode;
+  rows?: T[];
+  rowKey?: (row: T) => string;
+  renderRow?: (row: T) => ReactNode;
   rowClassName?: string;
   emptyText?: string;
 }) {
   return (
     <div className="space-y-1">
-      <p className="font-medium text-slate-100">{title}</p>
+      <p className="font-medium text-white">{title}</p>
       {description && <p className="text-slate-300">{description}</p>}
       {rows.length > 0 ? (
         <ul className="space-y-0.5 pt-1">
           {rows.map((row) => (
-            <li key={rowKey(row)} className={rowClassName}>
-              {renderRow(row)}
+            <li key={rowKey!(row)} className={`text-white ${rowClassName}`}>
+              {renderRow!(row)}
             </li>
           ))}
         </ul>
       ) : (
-        emptyText && <p className="text-slate-100">{emptyText}</p>
+        emptyText && <p className="text-white">{emptyText}</p>
       )}
     </div>
   );
@@ -141,7 +148,7 @@ function HintPanel<T>({
  */
 function CoverageBadge({ proficientCount, partySize, status }: { proficientCount: number; partySize: number; status: SkillCoverageStatus }) {
   return (
-    <InfoTooltip hoverOnly panel={<p className="text-slate-100">{STATUS_LABEL[status]} — {proficientCount} of {partySize} proficient</p>}>
+    <InfoTooltip hoverOnly panel={<p className="text-white">{STATUS_LABEL[status]} — {proficientCount} of {partySize} proficient</p>}>
       <span
         className={`shrink-0 rounded-md border px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${STATUS_BADGE_CLASS[status]}`}
       >
@@ -151,9 +158,9 @@ function CoverageBadge({ proficientCount, partySize, status }: { proficientCount
   );
 }
 
-/** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives): white name, green when proficient/expertise, with a trailing label. */
+/** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives): green when proficient/expertise, otherwise inherits the row's own white. */
 function scoreRowClass(proficient: boolean): string {
-  return `shrink-0 whitespace-nowrap ${proficient ? "text-emerald-400" : "text-slate-100"}`;
+  return `shrink-0 whitespace-nowrap ${proficient ? "text-emerald-400" : ""}`;
 }
 
 /** The hover hint's content for a skill row — same short description shown on the character's own card (`SKILL_DESCRIPTIONS`, see `SkillPanel`), then every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
@@ -171,7 +178,7 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
       rowClassName="flex items-center justify-between gap-4"
       renderRow={(s) => (
         <>
-          <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
+          <span className="min-w-0 truncate">{s.characterName}</span>
           <span className={scoreRowClass(s.proficient)}>
             {formatModifier(s.modifier)}
             {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
@@ -185,10 +192,10 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
 function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   const label = SKILL_LABELS[entry.skill];
   return (
-    <div className="flex items-center gap-3 py-1.5">
+    <div className="flex items-center gap-3 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-          <span className="text-sm font-medium text-slate-200">{label}</span>
+          <span className="text-slate-300">{label}</span>
         </InfoTooltip>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
@@ -225,7 +232,7 @@ function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: Sk
       rowClassName="flex items-center justify-between gap-4"
       renderRow={(s) => (
         <>
-          <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
+          <span className="min-w-0 truncate">{s.characterName}</span>
           <span className={scoreRowClass(s.proficient)}>
             {s.value}
             {s.proficient ? " · proficient" : ""}
@@ -239,10 +246,10 @@ function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: Sk
 /** Same shape as `SkillRow` (name with a hover hint, best/weakest chips, status dot) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
 function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName; summary: PassiveStatSummary }) {
   return (
-    <div className="flex items-center gap-3 py-1.5">
+    <div className="flex items-center gap-3 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
-          <span className="text-sm font-medium text-slate-200">{label}</span>
+          <span className="text-slate-300">{label}</span>
         </InfoTooltip>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
@@ -281,14 +288,14 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
   return (
     <ToolkitCard title="Skills">
       <SectionLabel>Passives</SectionLabel>
-      <div className="divide-y divide-slate-800/60">
+      <div className="space-y-1.5">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
         <PassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} />
       </div>
 
       <SectionLabel className="mt-4">Skills</SectionLabel>
-      <div className="divide-y divide-slate-800/60">
+      <div className="space-y-1.5">
         {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
         ))}
@@ -318,7 +325,7 @@ function StrengthChip({
 }) {
   const isUp = direction === "up";
   return (
-    <InfoTooltip hoverOnly panel={<p className="text-slate-100">{hint}</p>}>
+    <InfoTooltip hoverOnly panel={<p className="text-white">{hint}</p>}>
       <span
         className={`flex shrink-0 items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-1.5 ${
           isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
@@ -355,7 +362,7 @@ function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }
 function ResourceHintPanel({ entry }: { entry: PartyResourceEntry }) {
   return (
     <div className="space-y-1">
-      <p className="font-medium text-slate-100">{entry.resourceName}</p>
+      <p className="font-medium text-white">{entry.resourceName}</p>
       {entry.source && <p className="text-xs uppercase tracking-wide text-slate-500">{entry.source}</p>}
       <p>{RECOVERY_LABELS[entry.recovery]} recovery</p>
       {entry.description && <p>{entry.description}</p>}
@@ -365,7 +372,7 @@ function ResourceHintPanel({ entry }: { entry: PartyResourceEntry }) {
 
 function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
   return (
-    <div className="flex items-center gap-3 py-1 text-sm">
+    <div className="flex items-center gap-3 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<ResourceHintPanel entry={entry} />}>
           <span className="text-slate-300">{entry.resourceName}</span>
@@ -397,7 +404,7 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
       rowClassName="flex items-center justify-between gap-4"
       renderRow={(h) => (
         <>
-          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
+          <span className="min-w-0 truncate">{h.characterName}</span>
           <span className={`shrink-0 whitespace-nowrap ${usageColorClass(h.current, h.max)}`}>
             {h.current}/{h.max}
           </span>
@@ -419,7 +426,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
       ) : (
         <>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {spellSlots.levels.map((l) => (
               <div key={l.level} className="flex items-center justify-between gap-3 text-sm">
                 <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
@@ -444,7 +451,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
       ) : (
-        <div className="divide-y divide-slate-800/60">
+        <div className="space-y-1.5">
           {resources.map((entry) => (
             <ResourceRow key={entry.id} entry={entry} />
           ))}
@@ -465,8 +472,8 @@ function CriticalItemHintPanel({ entry }: { entry: CriticalItemEntry }) {
       rowClassName="flex items-center justify-between gap-4"
       renderRow={(h) => (
         <>
-          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
-          <span className="shrink-0 text-slate-100">x{h.quantity}</span>
+          <span className="min-w-0 truncate">{h.characterName}</span>
+          <span className="shrink-0">x{h.quantity}</span>
         </>
       )}
     />
@@ -475,7 +482,7 @@ function CriticalItemHintPanel({ entry }: { entry: CriticalItemEntry }) {
 
 function CriticalItemRow({ entry }: { entry: CriticalItemEntry }) {
   return (
-    <div className="flex items-center gap-3 py-1 text-sm">
+    <div className="flex items-center gap-3 text-sm">
       <div className="min-w-0 flex-1">
         <InfoTooltip panel={<CriticalItemHintPanel entry={entry} />}>
           <span className="truncate text-slate-300">{entry.name}</span>
@@ -511,7 +518,7 @@ export function CriticalItemsPanel({ characters }: { characters: Character[] }) 
           {Array.from(byCategory.entries()).map(([category, items]) => (
             <div key={category}>
               <SectionLabel>{category}</SectionLabel>
-              <div className="divide-y divide-slate-800/60">
+              <div className="space-y-1.5">
                 {items.map((item) => (
                   <CriticalItemRow key={item.name} entry={item} />
                 ))}
@@ -543,8 +550,8 @@ function SenseHolderPanel({ label, holders }: { label: string; holders: SenseHol
       rowClassName="flex items-center justify-between gap-4"
       renderRow={(h) => (
         <>
-          <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
-          <span className="shrink-0 text-slate-100">{h.range} ft</span>
+          <span className="min-w-0 truncate">{h.characterName}</span>
+          <span className="shrink-0">{h.range} ft</span>
         </>
       )}
       emptyText="No one currently has it."
@@ -565,7 +572,7 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
         {entry.best && (
           <InfoTooltip
             hoverOnly
-            panel={<p className="text-slate-100">Best: {entry.best.characterName} — {entry.best.range} ft</p>}
+            panel={<p className="text-white">Best: {entry.best.characterName} — {entry.best.range} ft</p>}
           >
             <span className="flex items-center gap-1">
               <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} />
@@ -591,7 +598,7 @@ function UtilitySpellHintPanel({ entry }: { entry: UtilitySpellAvailability }) {
       description={UTILITY_SPELL_BLURBS[entry.name]}
       rows={entry.characters}
       rowKey={(c) => c.characterId}
-      renderRow={(c) => <span className="text-slate-100">{c.characterName}</span>}
+      renderRow={(c) => c.characterName}
     />
   );
 }
@@ -623,7 +630,7 @@ function SensesPanel({ characters }: { characters: Character[] }) {
           <SenseRow key={entry.name} entry={entry} />
         ))}
       </div>
-      <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-2">
+      <div className="mt-3 space-y-1.5">
         {utility.map((entry) => (
           <UtilitySpellRow key={entry.name} entry={entry} />
         ))}
@@ -640,7 +647,7 @@ function HolderListPanel({ label, description, holders }: { label: string; descr
       description={description}
       rows={holders}
       rowKey={(h) => h.characterId}
-      renderRow={(h) => <span className="text-slate-100">{h.characterName}</span>}
+      renderRow={(h) => h.characterName}
       emptyText="No one currently has it."
     />
   );
@@ -757,7 +764,7 @@ function CoverageHintPanel({ group }: { group: CoverageNameGroup }) {
       description={description && <RichText text={description} />}
       rows={holdersWithCharacter}
       rowKey={(h) => h.characterId!}
-      renderRow={(h) => <span className="text-slate-100">{h.characterName}</span>}
+      renderRow={(h) => h.characterName}
     />
   );
 }
@@ -767,7 +774,11 @@ function CoveragePill({ group }: { group: CoverageNameGroup }) {
   if (group.holders.length === 1 && !group.holders[0].characterId) {
     return (
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="min-w-0 truncate text-slate-300">{group.name}</span>
+        <div className="min-w-0 flex-1">
+          <InfoTooltip panel={<HintPanel title={group.name} description={HEROIC_INSPIRATION_DESCRIPTION} />}>
+            <span className="text-slate-300">{group.name}</span>
+          </InfoTooltip>
+        </div>
         <span className="shrink-0 text-slate-500">{group.holders[0].characterName}</span>
       </div>
     );
