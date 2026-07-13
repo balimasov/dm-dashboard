@@ -17,6 +17,7 @@ export function RosterRow({
   actions,
   children,
   singleRow,
+  dimmed,
 }: {
   id: string;
   avatar: ReactNode;
@@ -30,6 +31,8 @@ export function RosterRow({
    * second row instead of anything actually getting more room.
    */
   singleRow?: boolean;
+  /** For a character/creature hidden from the dashboard — a lower-opacity row is the roster list's own visual cue that this one won't show up there, without needing a separate badge. */
+  dimmed?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -46,7 +49,7 @@ export function RosterRow({
         singleRow
           ? "flex-row items-center gap-3"
           : "flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-      } ${isDragging ? "opacity-50" : ""}`}
+      } ${isDragging ? "opacity-50" : dimmed ? "opacity-60" : ""}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button

@@ -103,9 +103,13 @@ export function RemindersPanel({
   storageKey: string;
   initialOpen: boolean;
 }) {
-  const groups = [...characters.map(characterReminders), ...creatures.map(creatureReminders)].filter(
-    (g): g is ReminderGroup => g !== null
-  );
+  // A hidden character/creature is deliberately off the dashboard for this
+  // session — its flagged reminders shouldn't surface here either, since
+  // that would defeat the point of hiding it in the first place.
+  const groups = [
+    ...characters.filter((c) => !c.hidden).map(characterReminders),
+    ...creatures.filter((c) => !c.hidden).map(creatureReminders),
+  ].filter((g): g is ReminderGroup => g !== null);
   const totalCount = groups.reduce((sum, g) => sum + g.entries.length, 0);
   if (totalCount === 0) return null;
 

@@ -396,10 +396,12 @@ function CreatureRow({
   creature,
   characters,
   onRemove,
+  onToggleHidden,
 }: {
   creature: Creature;
   characters: Character[];
   onRemove: (id: string) => Promise<void>;
+  onToggleHidden: (id: string) => void;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
   const infoLine = creatureInfoLine(creature);
@@ -408,6 +410,7 @@ function CreatureRow({
   return (
     <RosterRow
       id={creature.id}
+      dimmed={creature.hidden}
       avatar={
         <div className="relative shrink-0">
           <Avatar src={creature.avatarUrl} label={creature.name} />
@@ -421,6 +424,9 @@ function CreatureRow({
           <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
             Edit
           </Link>
+          <button type="button" onClick={() => onToggleHidden(creature.id)} className="text-slate-400 hover:text-slate-200">
+            {creature.hidden ? "Show" : "Hide"}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -436,6 +442,7 @@ function CreatureRow({
     >
       <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
         {creature.name}
+        {creature.hidden && <span className="ml-2 text-xs font-normal text-slate-500">(hidden)</span>}
       </p>
       {infoLine && (
         <p title={infoLine} className="truncate text-xs text-slate-500">
@@ -461,7 +468,12 @@ export function CreatureRosterEditor({
   creaturesState: ReturnType<typeof useCreatures>;
   characters: Character[];
 }) {
-  const { creatures, addCreature, removeCreature, reorderCreatures } = creaturesState;
+  const { creatures, addCreature, removeCreature, reorderCreatures, updateCreature } = creaturesState;
+
+  function handleToggleHidden(id: string) {
+    const creature = creatures.find((c) => c.id === id);
+    if (creature) updateCreature(id, { hidden: !creature.hidden });
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -546,7 +558,13 @@ export function CreatureRosterEditor({
           <SortableContext items={creatures.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
               {creatures.map((creature) => (
-                <CreatureRow key={creature.id} creature={creature} characters={characters} onRemove={removeCreature} />
+                <CreatureRow
+                  key={creature.id}
+                  creature={creature}
+                  characters={characters}
+                  onRemove={removeCreature}
+                  onToggleHidden={handleToggleHidden}
+                />
               ))}
             </ul>
           </SortableContext>

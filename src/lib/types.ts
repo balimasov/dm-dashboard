@@ -424,6 +424,13 @@ export interface Character {
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;
+  /**
+   * Toggled from the roster list in Settings — hides this character from the
+   * dashboard's Party row (and from `RemindersPanel`) without removing it
+   * from the campaign, for a character not in play this session but not
+   * gone for good either. Still fully editable/visible from Settings.
+   */
+  hidden?: boolean;
 }
 
 export interface CreatureTrait {
@@ -601,6 +608,8 @@ export interface Creature {
   quickNotes?: QuickNote[];
   /** Same convention as `Character.flaggedAbilities` — names of traits/actions the DM has flagged as a reminder, shown with a flame icon and amber highlight. */
   flaggedTraits?: string[];
+  /** Same convention as `Character.hidden` — hides this creature from its dashboard category row (and from `RemindersPanel`) without removing it from the campaign. */
+  hidden?: boolean;
 }
 
 /** e.g. "Large Celestial" — mirrors `characterInfoLine`'s "Race · Class" convention for the compact creature card. */

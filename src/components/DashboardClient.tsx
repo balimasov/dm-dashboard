@@ -151,7 +151,8 @@ function CreatureCategorySection({
   onRemove: (id: string) => void;
   onOpenSettings: () => void;
 }) {
-  const filtered = creatures.filter((c) => c.category === category);
+  const inCategory = creatures.filter((c) => c.category === category);
+  const filtered = inCategory.filter((c) => !c.hidden);
 
   return (
     <CollapsibleSection
@@ -161,7 +162,14 @@ function CreatureCategorySection({
     >
       <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
       {filtered.length === 0 ? (
-        <EmptyRosterState message={CREATURE_SECTION_EMPTY_MESSAGE[category]} onOpenSettings={onOpenSettings} />
+        <EmptyRosterState
+          message={
+            inCategory.length > 0
+              ? "All of these are hidden — unhide them in Settings."
+              : CREATURE_SECTION_EMPTY_MESSAGE[category]
+          }
+          onOpenSettings={onOpenSettings}
+        />
       ) : (
         // Same `pt-8`/`px-3` reservation as the Party row above, for the
         // same reason — CreatureCard's own StatusRail badges bleed above
@@ -233,6 +241,11 @@ export function DashboardClient({
     }));
   }
 
+  // A hidden character/creature still syncs and still counts everywhere
+  // else (Inventory, Settings' roster count...) — `hidden` only controls
+  // whether it shows up in the Party/Companions/Enemies/NPCs rows below and
+  // in `RemindersPanel`, not whether the app keeps tracking it.
+  const visibleCharacters = characters.filter((c) => !c.hidden);
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
   const lastSyncedAt = linkedCharacters.reduce<string | undefined>((latest, c) => {
     if (!c.lastSyncedAt) return latest;
@@ -338,7 +351,7 @@ export function DashboardClient({
       </CollapsibleSection>
 
       <CollapsibleSection
-        title={<SectionTitle emoji="🛡️" label="Party" count={characters.length} />}
+        title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
         storageKey="dm-dashboard-characters-open"
         initialOpen={initialOpen.characters}
       >
@@ -346,8 +359,11 @@ export function DashboardClient({
 
         {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 
-        {characters.length === 0 ? (
-          <EmptyRosterState message="No characters yet." onOpenSettings={() => openSettings("roster")} />
+        {visibleCharacters.length === 0 ? (
+          <EmptyRosterState
+            message={characters.length > 0 ? "All characters are hidden — unhide them in Settings." : "No characters yet."}
+            onOpenSettings={() => openSettings("roster")}
+          />
         ) : (
           // Status badges straddle each card's *top* border and can bleed
           // sideways too once there are several of them — `overflow-x-auto`
@@ -361,7 +377,7 @@ export function DashboardClient({
           // without this) — `px-3` also matches the Campaign/Inventory
           // blocks' own inset so all three line up on the same left edge.
           <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
-            {characters.map((character) => (
+            {visibleCharacters.map((character) => (
               <div key={character.id} className="w-[300px] shrink-0">
                 <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
               </div>

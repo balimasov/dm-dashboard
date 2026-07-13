@@ -89,6 +89,11 @@ export function CampaignRosterEditor({
     }
   }
 
+  function handleToggleHidden(id: string) {
+    const character = characters.find((c) => c.id === id);
+    if (character) updateCharacter(id, { hidden: !character.hidden });
+  }
+
   async function handleResync(id: string) {
     const character = characters.find((c) => c.id === id);
     if (!character) return;
@@ -164,6 +169,7 @@ export function CampaignRosterEditor({
                 syncing={syncingId === c.id}
                 onResync={handleResync}
                 onRemove={removeCharacter}
+                onToggleHidden={handleToggleHidden}
               />
             ))}
           </ul>
