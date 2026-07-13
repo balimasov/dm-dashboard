@@ -53,7 +53,7 @@ export function CreatureHeader({
   );
 
   const ownerTag = owner && (
-    <InfoTooltip hoverOnly panel={<p>Owner: {owner.name}</p>}>
+    <InfoTooltip hoverOnly disableTap panel={<p>Owner: {owner.name}</p>}>
       <Avatar src={owner.avatarUrl} label={owner.name} size="xs" />
     </InfoTooltip>
   );

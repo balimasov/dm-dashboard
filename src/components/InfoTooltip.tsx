@@ -34,12 +34,15 @@ export function InfoTooltip({
   children,
   panel,
   hoverOnly = false,
+  disableTap = false,
   inline = false,
 }: {
   children: React.ReactNode;
   panel: React.ReactNode;
-  /** Skips the tap-to-toggle affordance and the dotted-underline hint styling — for wrapping an element that already has its own onClick (e.g. a toggle button), so a click there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS. */
+  /** Skips the dotted-underline/cursor-help styling — for wrapping a compact chip, icon, or badge that already reads as its own visual unit and doesn't need a "this is hintable text" affordance. Tap-to-toggle still works; see `disableTap` for that. */
   hoverOnly?: boolean;
+  /** Skips the tap-to-toggle click handler entirely — for wrapping an element that already has its own onClick (e.g. a toggle button, or a row nested inside a clickable header), so a tap there isn't hijacked into opening the tooltip instead of firing that handler. Hover/focus still shows the panel via CSS on desktop. Without this, touch devices have no way to open the panel at all, since neither `:hover` nor `:focus` fires from a tap. */
+  disableTap?: boolean;
   /**
    * The trigger is always `inline-block` (sits on the same line as
    * surrounding text either way) — `inline` only skips the inner span's
@@ -121,7 +124,7 @@ export function InfoTooltip({
       // visibly the Inventory item list, where it added ~5px per row).
       className={`group/tooltip relative inline-block max-w-full align-top ${hoverOnly ? "" : "cursor-help"}`}
       onClick={
-        hoverOnly
+        disableTap
           ? undefined
           : (e) => {
               e.stopPropagation();

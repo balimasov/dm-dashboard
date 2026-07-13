@@ -508,7 +508,7 @@ describe("computeSpellAbilityCoverage", () => {
     expect(coverage["AOE Damage"]).toEqual([{ name: "Fireball", characterId: "Runa", characterName: "Runa" }]);
     expect(coverage.Detection).toEqual([{ name: "detect magic", characterId: "Runa", characterName: "Runa" }]);
     expect(coverage.Rerolls).toEqual([
-      { name: "Heroic Inspiration", characterName: "0 / 2" },
+      { name: "Heroic Inspiration", characterName: "0/2" },
       { name: "Lucky", characterId: "Lilith", characterName: "Lilith" },
     ]);
   });

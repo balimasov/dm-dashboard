@@ -1,3 +1,6 @@
+"use client";
+
+import { useLayoutEffect, useRef, useState } from "react";
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
@@ -232,16 +235,19 @@ function CoinChip({
  * plain text — swapping the name for an avatar chip (consistent with every
  * other holder in this app) loses the one thing plain text gave for free: an
  * obvious boundary between one character's coins and the next when several
- * sit on the same wrapped line. A `border-l` on every group but the first
- * restores that boundary as a plain vertical rule — the same divider
- * language already used everywhere else on the page — without wrapping the
- * group in its own boxed component; the rule travels with its group when
- * flex-wrap breaks the line, so it never ends up orphaned at a line start.
+ * sit on the same wrapped line. A `border-l` restores that boundary as a
+ * plain vertical rule — the same divider language already used everywhere
+ * else on the page — without wrapping the group in its own boxed component.
+ * `lineStart` (computed by the parent `CurrencyStrip`, not just "is this the
+ * first character") suppresses it for whichever group actually renders first
+ * on each wrapped row: a border attached to the group travels with it when
+ * flex-wrap breaks the line, so a group that wraps to a new row would
+ * otherwise open that row with a dangling rule before its own avatar.
  */
-function CurrencyGroup({ character, isFirst }: { character: Character; isFirst: boolean }) {
+function CurrencyGroup({ character, lineStart }: { character: Character; lineStart: boolean }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-1.5 ${isFirst ? "" : "border-l border-slate-700 pl-3"}`}
+      className={`flex flex-wrap items-center gap-1.5 ${lineStart ? "" : "border-l border-slate-700 pl-3"}`}
     >
       <CharacterChip name={character.name} avatarUrl={character.avatarUrl} />
       {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
@@ -252,6 +258,50 @@ function CurrencyGroup({ character, isFirst }: { character: Character; isFirst: 
           chipClass={COIN_CHIP_CLASS[k]}
           codeClass={COIN_CODE_CLASS[k]}
         />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * CSS has no selector for "is this flex item first on its wrapped row", so
+ * which `CurrencyGroup`s get a leading divider is measured directly: after
+ * each render (and on resize, since the wrap points shift with panel width),
+ * a group starts a new row whenever its `offsetTop` differs from the
+ * previous group's — those are exactly the ones whose divider must be
+ * suppressed.
+ */
+function CurrencyStrip({ characters }: { characters: Character[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [lineStarts, setLineStarts] = useState<Set<number>>(() => new Set([0]));
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function recompute() {
+      const groups = Array.from(container!.children) as HTMLElement[];
+      const starts = new Set<number>();
+      let lastTop: number | null = null;
+      groups.forEach((el, i) => {
+        if (el.offsetTop !== lastTop) {
+          starts.add(i);
+          lastTop = el.offsetTop;
+        }
+      });
+      setLineStarts(starts);
+    }
+
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [characters]);
+
+  return (
+    <div ref={containerRef} className="flex flex-wrap items-center gap-3">
+      {characters.map((c, i) => (
+        <CurrencyGroup key={c.id} character={c} lineStart={lineStarts.has(i)} />
       ))}
     </div>
   );
@@ -319,11 +369,7 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length === 0 ? (
         <p className="text-sm text-slate-500">No gold on any character.</p>
       ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          {charactersWithCurrency.map((c, i) => (
-            <CurrencyGroup key={c.id} character={c} isFirst={i === 0} />
-          ))}
-        </div>
+        <CurrencyStrip characters={charactersWithCurrency} />
       )}
     </ToolkitCard>
   );

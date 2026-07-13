@@ -654,7 +654,7 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
 
 export interface CoverageEntry {
   name: string;
-  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, where `characterName` is a party-wide "x / partySize" ratio instead of an owner. */
+  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, where `characterName` is a party-wide "x/partySize" ratio instead of an owner. */
   characterId?: string;
   characterName: string;
   avatarUrl?: string;
@@ -698,7 +698,7 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
     const inspiration = computeHeroicInspirationSummary(characters);
     coverage.Rerolls.push({
       name: "Heroic Inspiration",
-      characterName: `${inspiration.withInspiration} / ${inspiration.partySize}`,
+      characterName: `${inspiration.withInspiration}/${inspiration.partySize}`,
     });
   }
 

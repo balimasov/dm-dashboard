@@ -125,7 +125,7 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
           : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
       }`}
     >
-      <InfoTooltip hoverOnly panel={<p>Toggle Concentration — currently {active ? "on" : "off"}.</p>}>
+      <InfoTooltip hoverOnly disableTap panel={<p>Toggle Concentration — currently {active ? "on" : "off"}.</p>}>
         <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
       </InfoTooltip>
     </button>
