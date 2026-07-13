@@ -26,10 +26,26 @@ function chipColorClass(name: string): string {
  * `Character`), so it works anywhere a tight row/pill needs to name an
  * owner without a wide, truncating name column — Party Toolkit's resource
  * and coverage rows, Inventory's item-holder clusters.
+ *
+ * `showTitle` (default on) sets the native `title` attribute, which is the
+ * only naming mechanism for a bare chip. Turn it off when the chip is
+ * already nested inside our own `InfoTooltip` (e.g. `StrengthChip`) — that
+ * hint already states the name, so the browser's native tooltip would just
+ * pop up right alongside ours, duplicating it.
  */
-export function CharacterChip({ name, avatarUrl, title }: { name: string; avatarUrl?: string; title?: string }) {
+export function CharacterChip({
+  name,
+  avatarUrl,
+  title,
+  showTitle = true,
+}: {
+  name: string;
+  avatarUrl?: string;
+  title?: string;
+  showTitle?: boolean;
+}) {
   const [failed, setFailed] = useState(false);
-  const label = title ?? name;
+  const label = showTitle ? (title ?? name) : undefined;
   if (avatarUrl && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small chip

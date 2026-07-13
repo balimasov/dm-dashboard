@@ -181,6 +181,7 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
       <div className="flex shrink-0 items-center gap-1.5">
         {entry.best && (
           <StrengthChip
+            key={`best-${entry.best.characterId}`}
             characterName={entry.best.characterName}
             avatarUrl={entry.best.avatarUrl}
             hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}`}
@@ -189,6 +190,7 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
         )}
         {entry.weakest && (
           <StrengthChip
+            key={`weakest-${entry.weakest.characterId}`}
             characterName={entry.weakest.characterName}
             avatarUrl={entry.weakest.avatarUrl}
             hint={`Weakest: ${entry.weakest.characterName} ${formatModifier(entry.weakest.modifier)}`}
@@ -234,6 +236,7 @@ function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <StrengthChip
+          key={`best-${summary.best.characterId}`}
           characterName={summary.best.characterName}
           avatarUrl={summary.best.avatarUrl}
           hint={`Best: ${summary.best.characterName} ${summary.best.value}`}
@@ -241,6 +244,7 @@ function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName
         />
         {summary.weakest && (
           <StrengthChip
+            key={`weakest-${summary.weakest.characterId}`}
             characterName={summary.weakest.characterName}
             avatarUrl={summary.weakest.avatarUrl}
             hint={`Weakest: ${summary.weakest.characterName} ${summary.weakest.value}`}
@@ -311,7 +315,7 @@ function StrengthChip({
           isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
         }`}
       >
-        <CharacterChip name={characterName} avatarUrl={avatarUrl} />
+        <CharacterChip name={characterName} avatarUrl={avatarUrl} showTitle={false} />
         <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
           {isUp ? "↑" : "↓"}
         </span>
@@ -482,11 +486,12 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
         </span>
         {entry.best && (
           <InfoTooltip
+            key={entry.best.characterId}
             hoverOnly
             panel={<p className="text-white">Best: {entry.best.characterName} — {entry.best.range} ft</p>}
           >
             <span className="flex items-center gap-1">
-              <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} />
+              <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} showTitle={false} />
               <span className="text-xs text-slate-500">{entry.best.range} ft</span>
             </span>
           </InfoTooltip>

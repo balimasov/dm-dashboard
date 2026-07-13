@@ -111,12 +111,14 @@ export function formatSkillScore(score: SkillPartyScore): string {
 }
 
 export interface PassiveBest {
+  characterId: string;
   characterName: string;
   avatarUrl?: string;
   value: number;
 }
 
 export interface PassiveCharacterScore {
+  characterId: string;
   characterName: string;
   avatarUrl?: string;
   value: number;
@@ -148,12 +150,12 @@ export interface PartyPassiveSummary {
 
 function bestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
   const top = characters.reduce((best, c) => (value(c) > value(best) ? c : best));
-  return { characterName: top.name, avatarUrl: top.avatarUrl, value: value(top) };
+  return { characterId: top.id, characterName: top.name, avatarUrl: top.avatarUrl, value: value(top) };
 }
 
 function lowestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
   const bottom = characters.reduce((worst, c) => (value(c) < value(worst) ? c : worst));
-  return { characterName: bottom.name, avatarUrl: bottom.avatarUrl, value: value(bottom) };
+  return { characterId: bottom.id, characterName: bottom.name, avatarUrl: bottom.avatarUrl, value: value(bottom) };
 }
 
 function passiveCharacterScores(
@@ -165,6 +167,7 @@ function passiveCharacterScores(
     .map((c) => {
       const prof = c.skillProficiencies.find((s) => s.name === skill);
       return {
+        characterId: c.id,
         characterName: c.name,
         avatarUrl: c.avatarUrl,
         value: value(c),
@@ -185,7 +188,7 @@ function passiveStatSummary(
   const last = all[all.length - 1] ?? null;
   const weakest =
     last && best && last.value < best.value
-      ? { characterName: last.characterName, avatarUrl: last.avatarUrl, value: last.value }
+      ? { characterId: last.characterId, characterName: last.characterName, avatarUrl: last.avatarUrl, value: last.value }
       : null;
   return {
     best: bestBy(characters, value),
@@ -366,7 +369,7 @@ export interface SenseCoverageEntry {
   name: string;
   count: number;
   partySize: number;
-  best: { characterName: string; avatarUrl?: string; range: number } | null;
+  best: { characterId: string; characterName: string; avatarUrl?: string; range: number } | null;
   /** Every character who has this sense, with their own range — the row's hover hint. */
   holders: SenseHolder[];
 }
@@ -385,7 +388,7 @@ export function computeSensesCoverage(characters: Character[]): SenseCoverageEnt
       name,
       count: withSense.length,
       partySize: characters.length,
-      best: best ? { characterName: best.characterName, avatarUrl: best.avatarUrl, range: best.range } : null,
+      best: best ? { characterId: best.characterId, characterName: best.characterName, avatarUrl: best.avatarUrl, range: best.range } : null,
       holders: withSense,
     };
   });

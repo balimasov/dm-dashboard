@@ -173,33 +173,33 @@ describe("computePartyPassiveSummary", () => {
     const summary = computePartyPassiveSummary([a, b]);
     expect(summary).toEqual({
       perception: {
-        best: { characterName: "Esmeralda", value: 17 },
-        weakest: { characterName: "Ragnar", value: 11 },
+        best: { characterId: "Esmeralda", characterName: "Esmeralda", value: 17 },
+        weakest: { characterId: "Ragnar", characterName: "Ragnar", value: 11 },
         average: 14,
-        lowest: { characterName: "Ragnar", value: 11 },
+        lowest: { characterId: "Ragnar", characterName: "Ragnar", value: 11 },
         all: [
-          { characterName: "Esmeralda", value: 17, proficient: false },
-          { characterName: "Ragnar", value: 11, proficient: false },
+          { characterId: "Esmeralda", characterName: "Esmeralda", value: 17, proficient: false },
+          { characterId: "Ragnar", characterName: "Ragnar", value: 11, proficient: false },
         ],
         proficientCount: 0,
         status: "Weak",
       },
       insight: {
-        best: { characterName: "Ragnar", value: 15 },
-        weakest: { characterName: "Esmeralda", value: 11 },
+        best: { characterId: "Ragnar", characterName: "Ragnar", value: 15 },
+        weakest: { characterId: "Esmeralda", characterName: "Esmeralda", value: 11 },
         all: [
-          { characterName: "Ragnar", value: 15, proficient: false },
-          { characterName: "Esmeralda", value: 11, proficient: false },
+          { characterId: "Ragnar", characterName: "Ragnar", value: 15, proficient: false },
+          { characterId: "Esmeralda", characterName: "Esmeralda", value: 11, proficient: false },
         ],
         proficientCount: 0,
         status: "Weak",
       },
       investigation: {
-        best: { characterName: "Ragnar", value: 14 },
-        weakest: { characterName: "Esmeralda", value: 10 },
+        best: { characterId: "Ragnar", characterName: "Ragnar", value: 14 },
+        weakest: { characterId: "Esmeralda", characterName: "Esmeralda", value: 10 },
         all: [
-          { characterName: "Ragnar", value: 14, proficient: false },
-          { characterName: "Esmeralda", value: 10, proficient: false },
+          { characterId: "Ragnar", characterName: "Ragnar", value: 14, proficient: false },
+          { characterId: "Esmeralda", characterName: "Esmeralda", value: 10, proficient: false },
         ],
         proficientCount: 0,
         status: "Weak",
@@ -215,7 +215,7 @@ describe("computePartyPassiveSummary", () => {
     });
 
     const summary = computePartyPassiveSummary([a]);
-    expect(summary?.perception.all).toEqual([{ characterName: "A", value: 15, proficient: true }]);
+    expect(summary?.perception.all).toEqual([{ characterId: "A", characterName: "A", value: 15, proficient: true }]);
     expect(summary?.perception.proficientCount).toBe(1);
     expect(summary?.perception.status).toBe("Weak");
   });
@@ -411,7 +411,7 @@ describe("computeSensesCoverage", () => {
       name: "Darkvision",
       count: 2,
       partySize: 3,
-      best: { characterName: "B", range: 120 },
+      best: { characterId: "B", characterName: "B", range: 120 },
       holders: [
         { characterId: "A", characterName: "A", range: 60 },
         { characterId: "B", characterName: "B", range: 120 },
