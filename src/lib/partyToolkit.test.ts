@@ -5,6 +5,7 @@ import {
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyPassiveSummary,
+  computePartyResourceGauge,
   computePartyResourceSummary,
   computePartySkillOverview,
   computePartySpellSlotSummary,
@@ -396,6 +397,36 @@ describe("computePartyResourceSummary", () => {
 
   test("empty party yields no resource rows", () => {
     expect(computePartyResourceSummary([])).toEqual([]);
+  });
+});
+
+describe("computePartyResourceGauge", () => {
+  test("sums spell slots, Heroic Inspiration, and resources into one current/max/percent", () => {
+    const a = makeCharacter({
+      name: "A",
+      heroicInspiration: true,
+      spellSlots: [{ level: 1, current: 2, max: 4 }],
+      resources: [{ id: "rage", name: "Rage", current: 1, max: 2, recovery: "long-rest" }],
+    });
+    const b = makeCharacter({
+      name: "B",
+      heroicInspiration: false,
+      spellSlots: [{ level: 1, current: 1, max: 2 }],
+      resources: [{ id: "luck", name: "Luck Points", current: 3, max: 3, recovery: "long-rest" }],
+    });
+
+    // spell slots: 3/6, inspiration: 1/2, resources: 4/5 -> current 8, max 13
+    const gauge = computePartyResourceGauge([a, b]);
+    expect(gauge).toEqual({ current: 8, max: 13, percent: 62 });
+  });
+
+  test("still counts Heroic Inspiration even with no spell slots or resources", () => {
+    const a = makeCharacter({ name: "A", heroicInspiration: false });
+    expect(computePartyResourceGauge([a])).toEqual({ current: 0, max: 1, percent: 0 });
+  });
+
+  test("null for an empty party", () => {
+    expect(computePartyResourceGauge([])).toBeNull();
   });
 });
 

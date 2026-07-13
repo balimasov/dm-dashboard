@@ -21,6 +21,7 @@ import {
   NamedCoverageEntry,
   PartyPassiveSummary,
   PartyResourceEntry,
+  PartyResourceGauge,
   PartySpellSlotHolder,
   PassiveCharacterScore,
   PassiveStatSummary,
@@ -34,6 +35,7 @@ import {
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyPassiveSummary,
+  computePartyResourceGauge,
   computePartyResourceSummary,
   computePartySkillOverview,
   computePartySpellSlotSummary,
@@ -398,14 +400,61 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
   );
 }
 
+/**
+ * Semicircular "fuel gauge" arc — one dial for the whole card instead of
+ * making a DM eyeball a dozen current/max pairs to guess the party's
+ * overall state at a glance. Both arcs share `pathLength={100}`, so the
+ * fill is a plain 0-100 `strokeDasharray` regardless of the arc's actual
+ * pixel length — no trig needed to convert a percentage into an angle.
+ * Colored with the same emerald/amber/red danger tiers `HpBar` uses, so
+ * "how worried should I be" reads the same everywhere in the app.
+ */
+function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
+  const { percent, current, max } = gauge;
+  const tierClass = percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
+  const arcPath = "M 16 100 A 84 84 0 0 1 184 100";
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 200 118" className="w-52">
+        <path d={arcPath} fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" className="text-slate-800" />
+        <path
+          d={arcPath}
+          fill="none"
+          strokeWidth="16"
+          strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={`${percent} ${100 - percent}`}
+          stroke="currentColor"
+          className={tierClass}
+        />
+        <text x="100" y="88" textAnchor="middle" className={`text-3xl font-bold tabular-nums ${tierClass}`} fill="currentColor">
+          {percent}%
+        </text>
+        <text x="100" y="110" textAnchor="middle" className="text-[11px] fill-slate-500">
+          {current}/{max} charges left
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
+  const gauge = computePartyResourceGauge(characters);
 
   return (
     <ToolkitCard title="Spell Slots & Resources">
-      <SectionLabel>Spell Slots</SectionLabel>
+      {gauge && (
+        <>
+          <SectionLabel className="text-center">Party Resources</SectionLabel>
+          <PartyResourceGaugeDisplay gauge={gauge} />
+        </>
+      )}
+
+      <SectionLabel className={gauge ? "mt-4" : ""}>Spell Slots</SectionLabel>
       {!spellSlots ? (
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
       ) : (

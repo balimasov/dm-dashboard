@@ -360,6 +360,47 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
   );
 }
 
+export interface PartyResourceGauge {
+  current: number;
+  max: number;
+  /** Rounded 0-100 — `current / max`, or 0 when `max` is 0 (never reached in practice since the caller returns `null` first). */
+  percent: number;
+}
+
+/**
+ * One "how much gas is left in the tank" number for the whole card — every
+ * trackable charge (spell slots, Heroic Inspiration, every limited-use
+ * resource) summed into a single current/max pair. Summing raw charges
+ * rather than averaging each resource's own percentage means a bigger pool
+ * (a party's 20 spell slots) naturally outweighs a smaller one (one
+ * character's 2 Rage uses) the same way it would if you actually counted
+ * every charge in the party's hand. `null` when there's nothing trackable
+ * at all — no gauge to draw.
+ */
+export function computePartyResourceGauge(characters: Character[]): PartyResourceGauge | null {
+  const spellSlots = computePartySpellSlotSummary(characters);
+  const inspiration = computeHeroicInspirationSummary(characters);
+  const resources = computePartyResourceSummary(characters);
+
+  let current = 0;
+  let max = 0;
+  if (spellSlots) {
+    current += spellSlots.totalCurrent;
+    max += spellSlots.totalMax;
+  }
+  if (inspiration.partySize > 0) {
+    current += inspiration.withInspiration;
+    max += inspiration.partySize;
+  }
+  for (const r of resources) {
+    current += r.current;
+    max += r.max;
+  }
+
+  if (max === 0) return null;
+  return { current, max, percent: Math.round((current / max) * 100) };
+}
+
 // ---------------------------------------------------------------------------
 // Iteration 3 — Senses, Defenses, Languages & Tools
 // ---------------------------------------------------------------------------
