@@ -408,6 +408,14 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
  * pixel length — no trig needed to convert a percentage into an angle.
  * Colored with the same emerald/amber/red danger tiers `HpBar` uses, so
  * "how worried should I be" reads the same everywhere in the app.
+ *
+ * The gap value in `strokeDasharray` is deliberately way bigger than
+ * `100 - percent` needs to be, not the exact remainder — a dash+gap that
+ * sums to exactly `pathLength` wraps back to position 0 right at the
+ * path's own endpoint, and with `strokeLinecap="round"` that seam paints
+ * a stray round dot at the arc's tip (confirmed: visible at the 100% end
+ * regardless of `percent`). An oversized gap means the pattern never
+ * completes a second cycle, so there's nothing at the seam to draw.
  */
 function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
   const { percent, current, max } = gauge;
@@ -424,7 +432,7 @@ function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
           strokeWidth="16"
           strokeLinecap="round"
           pathLength={100}
-          strokeDasharray={`${percent} ${100 - percent}`}
+          strokeDasharray={`${percent} 1000`}
           stroke="currentColor"
           className={tierClass}
         />
