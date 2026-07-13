@@ -124,6 +124,25 @@ describe("computeSkillOverviewEntry", () => {
     const entry = computeSkillOverviewEntry(chars, "athletics");
     expect(entry.weakest).toBeNull();
   });
+
+  test("all ranks every character's score, highest first, with proficient/expertise flags", () => {
+    const esmeralda = makeCharacter({
+      name: "Esmeralda",
+      stats: { str: 10, dex: 10, con: 10, int: 10, wis: 14, cha: 10 },
+      skillProficiencies: [{ name: "perception", proficient: false, expertise: true }],
+    });
+    const ragnar = makeCharacter({
+      name: "Ragnar",
+      stats: { str: 10, dex: 10, con: 10, int: 10, wis: 12, cha: 10 },
+      skillProficiencies: [],
+    });
+
+    const entry = computeSkillOverviewEntry([ragnar, esmeralda], "perception");
+    expect(entry.all).toEqual([
+      { characterId: "Esmeralda", characterName: "Esmeralda", modifier: 8, proficient: true, expertise: true },
+      { characterId: "Ragnar", characterName: "Ragnar", modifier: 1, proficient: false, expertise: false },
+    ]);
+  });
 });
 
 describe("computePartySkillOverview", () => {
@@ -154,10 +173,41 @@ describe("computePartyPassiveSummary", () => {
 
     const summary = computePartyPassiveSummary([a, b]);
     expect(summary).toEqual({
-      perception: { best: { characterName: "Esmeralda", value: 17 }, average: 14, lowest: { characterName: "Ragnar", value: 11 } },
-      insight: { characterName: "Ragnar", value: 15 },
-      investigation: { characterName: "Ragnar", value: 14 },
+      perception: {
+        best: { characterName: "Esmeralda", value: 17 },
+        average: 14,
+        lowest: { characterName: "Ragnar", value: 11 },
+        all: [
+          { characterName: "Esmeralda", value: 17, proficient: false },
+          { characterName: "Ragnar", value: 11, proficient: false },
+        ],
+      },
+      insight: {
+        best: { characterName: "Ragnar", value: 15 },
+        all: [
+          { characterName: "Ragnar", value: 15, proficient: false },
+          { characterName: "Esmeralda", value: 11, proficient: false },
+        ],
+      },
+      investigation: {
+        best: { characterName: "Ragnar", value: 14 },
+        all: [
+          { characterName: "Ragnar", value: 14, proficient: false },
+          { characterName: "Esmeralda", value: 10, proficient: false },
+        ],
+      },
     });
+  });
+
+  test("marks a character proficient in the passive's underlying skill", () => {
+    const a = makeCharacter({
+      name: "A",
+      combat: { hp: 1, maxHp: 1, tempHp: 0, ac: 10, speed: 30, passivePerception: 15, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 },
+      skillProficiencies: [{ name: "perception", proficient: true, expertise: false }],
+    });
+
+    const summary = computePartyPassiveSummary([a]);
+    expect(summary?.perception.all).toEqual([{ characterName: "A", value: 15, proficient: true }]);
   });
 });
 
@@ -244,7 +294,17 @@ describe("computePartyResourceSummary", () => {
 
     const entries = computePartyResourceSummary([ragnar, alor]);
     expect(entries).toEqual([
-      { id: "Ragnar-rage", resourceName: "Rage", characterName: "Ragnar", current: 0, max: 3, status: "empty" },
+      {
+        id: "Ragnar-rage",
+        resourceName: "Rage",
+        characterName: "Ragnar",
+        current: 0,
+        max: 3,
+        status: "empty",
+        recovery: "long-rest",
+        source: undefined,
+        description: undefined,
+      },
       {
         id: "Alor-surge",
         resourceName: "Action Surge",
@@ -252,6 +312,9 @@ describe("computePartyResourceSummary", () => {
         current: 1,
         max: 1,
         status: "normal",
+        recovery: "short-rest",
+        source: undefined,
+        description: undefined,
       },
       {
         id: "Ragnar-luck",
@@ -260,8 +323,33 @@ describe("computePartyResourceSummary", () => {
         current: 2,
         max: 3,
         status: "normal",
+        recovery: "long-rest",
+        source: undefined,
+        description: undefined,
       },
     ]);
+  });
+
+  test("threads recovery/source/description through for the row's hover hint", () => {
+    const c = makeCharacter({
+      name: "A",
+      resources: [
+        {
+          id: "rage",
+          name: "Rage",
+          current: 2,
+          max: 3,
+          recovery: "long-rest",
+          source: "Class",
+          description: "Deal extra damage while raging.",
+        },
+      ],
+    });
+    expect(computePartyResourceSummary([c])[0]).toMatchObject({
+      recovery: "long-rest",
+      source: "Class",
+      description: "Deal extra damage while raging.",
+    });
   });
 
   test("empty party yields no resource rows", () => {

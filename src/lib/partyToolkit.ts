@@ -1,4 +1,14 @@
-import { Character, SKILL_ABILITY, SKILL_LABELS, Sense, SkillName, SkillProficiency, formatModifier, skillBonus } from "./types";
+import {
+  Character,
+  RecoveryType,
+  SKILL_ABILITY,
+  SKILL_LABELS,
+  Sense,
+  SkillName,
+  SkillProficiency,
+  formatModifier,
+  skillBonus,
+} from "./types";
 
 /**
  * The DM-facing "compact view" list from the Party Toolkit spec — the skills
@@ -30,6 +40,11 @@ export interface SkillPartyScore {
   modifier: number;
 }
 
+export interface SkillCharacterScore extends SkillPartyScore {
+  proficient: boolean;
+  expertise: boolean;
+}
+
 export interface SkillOverviewEntry {
   skill: SkillName;
   best: SkillPartyScore | null;
@@ -37,6 +52,8 @@ export interface SkillOverviewEntry {
   weakest: SkillPartyScore | null;
   proficientCount: number;
   status: SkillCoverageStatus;
+  /** Every character's modifier for this skill, ranked highest first — the full per-character breakdown shown in the row's hover hint. */
+  all: SkillCharacterScore[];
 }
 
 /** A character with no entry for this skill is still a valid (non-proficient) check — `skillProficiencies` only lists skills with something noteworthy attached (see `computeSkillProficiencies`), so a plain ability-mod-only entry stands in for the rest. */
@@ -65,18 +82,19 @@ function coverageStatus(proficientCount: number): SkillCoverageStatus {
 }
 
 export function computeSkillOverviewEntry(characters: Character[], skill: SkillName): SkillOverviewEntry {
-  const scores = characters.map((c) => {
+  const scores: SkillCharacterScore[] = characters.map((c) => {
     const prof = effectiveSkillProficiency(c, skill);
     return {
       characterId: c.id,
       characterName: c.name,
       modifier: skillBonus(c, prof),
       proficient: prof.proficient || prof.expertise,
+      expertise: prof.expertise,
     };
   });
 
   const proficientCount = scores.filter((s) => s.proficient).length;
-  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier);
+  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier || a.characterName.localeCompare(b.characterName));
   const best = sorted[0] ?? null;
   const last = sorted[sorted.length - 1] ?? null;
   const weakest = last && best && last.modifier < best.modifier ? last : null;
@@ -87,6 +105,7 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
     weakest: weakest && { characterId: weakest.characterId, characterName: weakest.characterName, modifier: weakest.modifier },
     proficientCount,
     status: coverageStatus(proficientCount),
+    all: sorted,
   };
 }
 
@@ -106,16 +125,28 @@ export interface PassiveBest {
   value: number;
 }
 
-export interface PassivePerceptionSummary {
+export interface PassiveCharacterScore {
+  characterName: string;
+  value: number;
+  /** Proficient (or expertise) in the underlying skill (Perception/Insight/Investigation) — the passive score's own hover hint marks these the same way a skill row does. */
+  proficient: boolean;
+}
+
+export interface PassiveStatSummary {
   best: PassiveBest;
+  /** Every character's value for this passive stat, ranked highest first. */
+  all: PassiveCharacterScore[];
+}
+
+export interface PassivePerceptionSummary extends PassiveStatSummary {
   average: number;
   lowest: PassiveBest;
 }
 
 export interface PartyPassiveSummary {
   perception: PassivePerceptionSummary;
-  insight: PassiveBest;
-  investigation: PassiveBest;
+  insight: PassiveStatSummary;
+  investigation: PassiveStatSummary;
 }
 
 function bestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
@@ -126,6 +157,19 @@ function bestBy(characters: Character[], value: (c: Character) => number): Passi
 function lowestBy(characters: Character[], value: (c: Character) => number): PassiveBest {
   const bottom = characters.reduce((worst, c) => (value(c) < value(worst) ? c : worst));
   return { characterName: bottom.name, value: value(bottom) };
+}
+
+function passiveCharacterScores(
+  characters: Character[],
+  skill: SkillName,
+  value: (c: Character) => number
+): PassiveCharacterScore[] {
+  return characters
+    .map((c) => {
+      const prof = c.skillProficiencies.find((s) => s.name === skill);
+      return { characterName: c.name, value: value(c), proficient: Boolean(prof?.proficient || prof?.expertise) };
+    })
+    .sort((a, b) => b.value - a.value || a.characterName.localeCompare(b.characterName));
 }
 
 /** `null` when there are no characters — an empty average/best/lowest has nothing meaningful to show. */
@@ -140,9 +184,16 @@ export function computePartyPassiveSummary(characters: Character[]): PartyPassiv
       best: bestBy(characters, (c) => c.combat.passivePerception),
       average,
       lowest: lowestBy(characters, (c) => c.combat.passivePerception),
+      all: passiveCharacterScores(characters, "perception", (c) => c.combat.passivePerception),
     },
-    insight: bestBy(characters, (c) => c.combat.passiveInsight),
-    investigation: bestBy(characters, (c) => c.combat.passiveInvestigation),
+    insight: {
+      best: bestBy(characters, (c) => c.combat.passiveInsight),
+      all: passiveCharacterScores(characters, "insight", (c) => c.combat.passiveInsight),
+    },
+    investigation: {
+      best: bestBy(characters, (c) => c.combat.passiveInvestigation),
+      all: passiveCharacterScores(characters, "investigation", (c) => c.combat.passiveInvestigation),
+    },
   };
 }
 
@@ -217,6 +268,10 @@ export interface PartyResourceEntry {
   current: number;
   max: number;
   status: ResourceStatus;
+  recovery: RecoveryType;
+  /** Where this resource comes from (e.g. "Race", "Class", "Feat") — same convention as `Resource.source`, shown in the row's hover hint. */
+  source?: string;
+  description?: string;
 }
 
 /** A third exhausted or less reads as "running low" — matches the kind of margin a DM would actually flag mid-session ("careful, Rage is down to your last one"), tighter than a straight half. */
@@ -244,6 +299,9 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
       current: r.current,
       max: r.max,
       status: computeResourceStatus(r.current, r.max),
+      recovery: r.recovery,
+      source: r.source,
+      description: r.description,
     }))
   );
 

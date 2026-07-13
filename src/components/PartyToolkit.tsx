@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, SKILL_LABELS, ordinalLevel } from "@/lib/types";
+import { Character, RECOVERY_LABELS, RECOVERY_SHORT_LABELS, SKILL_LABELS, formatModifier, ordinalLevel } from "@/lib/types";
 import {
   COVERAGE_CATEGORY_ORDER,
   CoverageCategory,
@@ -14,8 +14,12 @@ import {
   PARTY_TOOLKIT_COMPACT_SKILLS,
   PartyPassiveSummary,
   PartyResourceEntry,
+  PassiveCharacterScore,
+  PassivePerceptionSummary,
+  PassiveStatSummary,
   ResourceStatus,
   SenseCoverageEntry,
+  SkillCharacterScore,
   SkillCoverageStatus,
   SkillOverviewEntry,
   ToolCoverageEntry,
@@ -35,7 +39,7 @@ import {
   computeUtilitySpellAvailability,
   formatSkillScore,
 } from "@/lib/partyToolkit";
-import { DotMeter } from "./ResourceMeter";
+import { InfoTooltip } from "./InfoTooltip";
 
 const STATUS_CLASS: Record<SkillCoverageStatus, string> = {
   Strong: "border-emerald-700 bg-emerald-950/30 text-emerald-300",
@@ -51,11 +55,34 @@ function StatusPill({ status }: { status: SkillCoverageStatus }) {
   );
 }
 
+/** The hover hint's content for a skill row — every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
+function SkillAllScoresPanel({ label, all }: { label: string; all: SkillCharacterScore[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{label}</p>
+      <ul className="space-y-0.5">
+        {all.map((s) => (
+          <li key={s.characterId} className="flex items-center justify-between gap-4">
+            <span className="min-w-0 truncate">{s.characterName}</span>
+            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-400"}`}>
+              {formatModifier(s.modifier)}
+              {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
+  const label = SKILL_LABELS[entry.skill];
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-200">{SKILL_LABELS[entry.skill]}</p>
+        <InfoTooltip panel={<SkillAllScoresPanel label={label} all={entry.all} />}>
+          <span className="text-sm font-medium text-slate-200">{label}</span>
+        </InfoTooltip>
         <p className="truncate text-xs text-slate-500">
           {entry.best ? `Best: ${formatSkillScore(entry.best)}` : "No one in the party"}
           {entry.weakest && ` · Weakest: ${formatSkillScore(entry.weakest)}`}
@@ -67,102 +94,83 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   );
 }
 
-/** Union of the always-shown compact skills and the "show all" full 18 — Skills is the left/wide half of the Party Toolkit content grid. */
-function SkillOverviewPanel({ characters }: { characters: Character[] }) {
+/** Same hover-hint idea as `SkillAllScoresPanel`, for a passive stat — "proficient" here means proficient in the underlying skill (Perception/Insight/Investigation), not in the passive stat itself (which isn't a real game concept). */
+function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveCharacterScore[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{label}</p>
+      <ul className="space-y-0.5">
+        {all.map((s) => (
+          <li key={s.characterName} className="flex items-center justify-between gap-4">
+            <span className="min-w-0 truncate">{s.characterName}</span>
+            <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-400"}`}>
+              {s.value}
+              {s.proficient ? " · proficient" : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Same two-line row shape as `SkillRow` (bold label + muted detail line) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. */
+function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSummary | PassivePerceptionSummary }) {
+  const perception = "average" in summary ? summary : null;
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <div className="min-w-0 flex-1">
+        <InfoTooltip panel={<PassiveAllScoresPanel label={label} all={summary.all} />}>
+          <span className="text-sm font-medium text-slate-200">{label}</span>
+        </InfoTooltip>
+        <p className="truncate text-xs text-slate-500">
+          Best: {summary.best.characterName} {summary.best.value}
+          {perception && ` · Avg ${perception.average} · Lowest ${perception.lowest.value}`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Skills — merges Passives and the Party Skill Overview into one card:
+ * Passives first (same row shape as the skills below it), then the
+ * skill list itself. Both subsections' row names carry a hover hint
+ * listing every character's own score, so the compact view still answers
+ * "what does everyone else have" without needing to open each character's
+ * card.
+ */
+function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const [showAll, setShowAll] = useState(false);
-  const all = computePartySkillOverview(characters);
-  const entries = showAll ? all : all.filter((e) => PARTY_TOOLKIT_COMPACT_SKILLS.includes(e.skill));
+  const allSkills = computePartySkillOverview(characters);
+  const skillEntries = showAll ? allSkills : allSkills.filter((e) => PARTY_TOOLKIT_COMPACT_SKILLS.includes(e.skill));
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</h3>
+
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Passives</p>
+      <div className="divide-y divide-slate-800/60">
+        <PassiveRow label="Passive Perception" summary={passives.perception} />
+        <PassiveRow label="Passive Insight" summary={passives.insight} />
+        <PassiveRow label="Passive Investigation" summary={passives.investigation} />
+      </div>
+
+      <div className="mb-1 mt-4 flex items-center justify-between gap-3 border-t border-slate-800 pt-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Skills</p>
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
           className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
         >
-          {showAll ? "Show fewer" : `Show all ${all.length} skills`}
+          {showAll ? "Show fewer" : `Show all ${allSkills.length} skills`}
         </button>
       </div>
       <div className="divide-y divide-slate-800/60">
-        {entries.map((entry) => (
+        {skillEntries.map((entry) => (
           <SkillRow key={entry.skill} entry={entry} />
         ))}
       </div>
-    </div>
-  );
-}
-
-function PassiveRow({ label, best, average, lowest }: { label: string; best: string; average?: string; lowest?: string }) {
-  return (
-    <p className="text-sm">
-      <span className="text-slate-200">{label}: </span>
-      <span className="text-slate-400">
-        Best {best}
-        {average && ` · Avg ${average}`}
-        {lowest && ` · Lowest ${lowest}`}
-      </span>
-    </p>
-  );
-}
-
-function PassivesPanel({ summary }: { summary: PartyPassiveSummary }) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Passives</h3>
-      <div className="space-y-1.5">
-        <PassiveRow
-          label="Passive Perception"
-          best={`${summary.perception.best.value} — ${summary.perception.best.characterName}`}
-          average={String(summary.perception.average)}
-          lowest={String(summary.perception.lowest.value)}
-        />
-        <PassiveRow label="Passive Insight" best={`${summary.insight.value} — ${summary.insight.characterName}`} />
-        <PassiveRow
-          label="Passive Investigation"
-          best={`${summary.investigation.value} — ${summary.investigation.characterName}`}
-        />
-      </div>
-    </div>
-  );
-}
-
-/** Party-wide totals per spell slot level — never a per-character breakdown, that already lives on each character's own card. */
-function SpellSlotsPanel({ characters }: { characters: Character[] }) {
-  const summary = computePartySpellSlotSummary(characters);
-
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Spell Slots</h3>
-      {!summary ? (
-        <p className="text-sm text-slate-600">No spell slots in the party.</p>
-      ) : (
-        <>
-          <div className="space-y-1">
-            {summary.levels.map((l) => (
-              <div key={l.level} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
-                {l.max <= 6 ? (
-                  <DotMeter current={l.current} max={l.max} colorClass="bg-violet-400" />
-                ) : (
-                  <span className="font-medium text-slate-100">
-                    {l.current}/{l.max}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 border-t border-slate-800 pt-2 text-sm text-slate-400">
-            Spell Power:{" "}
-            <span className="font-medium text-slate-100">
-              {summary.totalCurrent} / {summary.totalMax}
-            </span>{" "}
-            slots available
-            {summary.highestAvailableLevel && ` · Highest: ${ordinalLevel(summary.highestAvailableLevel)}`}
-          </p>
-        </>
-      )}
     </div>
   );
 }
@@ -184,28 +192,87 @@ function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }
   );
 }
 
+/** Same hover-hint content as `ResourceMeter` on the character card (name/source/description) — resources aren't duplicated data here, just a different view of the same fields. */
+function ResourceHintPanel({ entry }: { entry: PartyResourceEntry }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{entry.resourceName}</p>
+      {entry.source && <p className="text-xs uppercase tracking-wide text-slate-500">{entry.source}</p>}
+      <p>{RECOVERY_LABELS[entry.recovery]} recovery</p>
+      {entry.description && <p>{entry.description}</p>}
+    </div>
+  );
+}
+
 function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
   return (
     <div className="flex items-center gap-3 py-1 text-sm">
-      <span className="min-w-0 flex-1 truncate text-slate-300">{entry.resourceName}</span>
+      <div className="min-w-0 flex-1">
+        <InfoTooltip panel={<ResourceHintPanel entry={entry} />}>
+          <span className="text-slate-300">{entry.resourceName}</span>
+        </InfoTooltip>
+      </div>
+      <span
+        title={RECOVERY_LABELS[entry.recovery]}
+        className="shrink-0 rounded border border-slate-700 px-1 text-[10px] font-medium uppercase text-slate-500"
+      >
+        {RECOVERY_SHORT_LABELS[entry.recovery]}
+      </span>
       <span className={`shrink-0 whitespace-nowrap font-medium ${RESOURCE_STATUS_CLASS[entry.status]}`}>
         {entry.current}/{entry.max}
       </span>
-      <span title={entry.characterName} className="w-24 shrink-0 truncate text-right text-xs text-slate-500">
+      <span title={entry.characterName} className="w-32 shrink-0 truncate text-right text-xs text-slate-500">
         {entry.characterName}
       </span>
     </div>
   );
 }
 
-/** Heroic Inspiration is tracked separately from `resources` — always shown, even at 0 — since it's a boolean on the character rather than a class/feat resource. */
-function ResourcesPanel({ characters }: { characters: Character[] }) {
+/**
+ * Spell Slots & Resources — slots first (party-wide totals per level, always
+ * shown as plain numbers here rather than the dot meter used on a
+ * character's own card, since a party total can run well past a
+ * single-character's usual single-digit max), then every limited-use
+ * resource in the party.
+ */
+function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
+  const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Resources</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Spell Slots &amp; Resources</h3>
+
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Spell Slots</p>
+      {!spellSlots ? (
+        <p className="text-sm text-slate-600">No spell slots in the party.</p>
+      ) : (
+        <>
+          <div className="space-y-1">
+            {spellSlots.levels.map((l) => (
+              <div key={l.level} className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
+                <span className="font-medium text-slate-100">
+                  {l.current}/{l.max}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-sm text-slate-400">
+            Spell Power:{" "}
+            <span className="font-medium text-slate-100">
+              {spellSlots.totalCurrent} / {spellSlots.totalMax}
+            </span>{" "}
+            slots available
+            {spellSlots.highestAvailableLevel && ` · Highest: ${ordinalLevel(spellSlots.highestAvailableLevel)}`}
+          </p>
+        </>
+      )}
+
+      <p className="mb-1 mt-4 border-t border-slate-800 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        Resources
+      </p>
       <HeroicInspirationRow summary={inspiration} />
       {resources.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
@@ -481,14 +548,8 @@ export function PartyToolkit({ characters }: { characters: Character[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
-        <SkillOverviewPanel characters={characters} />
-        <PassivesPanel summary={passives} />
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SpellSlotsPanel characters={characters} />
-        <ResourcesPanel characters={characters} />
-      </div>
+      <SkillsPanel characters={characters} passives={passives} />
+      <SpellSlotsResourcesPanel characters={characters} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
         <CriticalItemsPanel characters={characters} />
         <SensesPanel characters={characters} />

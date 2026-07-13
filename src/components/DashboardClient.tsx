@@ -384,7 +384,8 @@ export function DashboardClient({
         initialOpen={initialOpen.partyToolkit}
       >
         <p className="mb-4 px-3 text-sm text-slate-500">
-          Who&apos;s best at what, and what the party notices passively — reference only, no rolls.
+          Party-wide cheat sheet: who&apos;s best at what, what&apos;s left in the tank, and what your spells can
+          solve — reference only, no rolls.
         </p>
         <div className="px-3">
           <PartyToolkit characters={visibleCharacters} />
