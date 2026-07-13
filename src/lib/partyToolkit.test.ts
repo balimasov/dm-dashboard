@@ -1,8 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { Character } from "./types";
 import {
+  computeHeroicInspirationSummary,
   computePartyPassiveSummary,
+  computePartyResourceSummary,
   computePartySkillOverview,
+  computePartySpellSlotSummary,
+  computeResourceStatus,
   computeSkillOverviewEntry,
 } from "./partyToolkit";
 
@@ -144,5 +148,113 @@ describe("computePartyPassiveSummary", () => {
       insight: { characterName: "Ragnar", value: 15 },
       investigation: { characterName: "Ragnar", value: 14 },
     });
+  });
+});
+
+describe("computePartySpellSlotSummary", () => {
+  test("returns null when nobody in the party has any spell slots", () => {
+    expect(computePartySpellSlotSummary([makeCharacter({ name: "A", spellSlots: [] })])).toBeNull();
+  });
+
+  test("sums slots across characters by level and finds the highest available level", () => {
+    const a = makeCharacter({
+      name: "Runa",
+      spellSlots: [
+        { level: 1, current: 4, max: 4 },
+        { level: 2, current: 0, max: 3 },
+      ],
+    });
+    const b = makeCharacter({
+      name: "Lilith",
+      spellSlots: [
+        { level: 1, current: 3, max: 8 },
+        { level: 3, current: 1, max: 4 },
+      ],
+    });
+
+    const summary = computePartySpellSlotSummary([a, b]);
+    expect(summary).toEqual({
+      levels: [
+        { level: 1, current: 7, max: 12 },
+        { level: 2, current: 0, max: 3 },
+        { level: 3, current: 1, max: 4 },
+      ],
+      totalCurrent: 8,
+      totalMax: 19,
+      highestAvailableLevel: 3,
+    });
+  });
+
+  test("highestAvailableLevel is null when every slot is spent", () => {
+    const a = makeCharacter({ name: "A", spellSlots: [{ level: 1, current: 0, max: 2 }] });
+    expect(computePartySpellSlotSummary([a])?.highestAvailableLevel).toBeNull();
+  });
+});
+
+describe("computeHeroicInspirationSummary", () => {
+  test("counts characters with inspiration against party size", () => {
+    const chars = [
+      makeCharacter({ name: "A", heroicInspiration: true }),
+      makeCharacter({ name: "B", heroicInspiration: false }),
+      makeCharacter({ name: "C", heroicInspiration: true }),
+    ];
+    expect(computeHeroicInspirationSummary(chars)).toEqual({ withInspiration: 2, partySize: 3 });
+  });
+});
+
+describe("computeResourceStatus", () => {
+  test("0 current or 0 max is empty", () => {
+    expect(computeResourceStatus(0, 3)).toBe("empty");
+    expect(computeResourceStatus(0, 0)).toBe("empty");
+  });
+
+  test("a third or less remaining is low", () => {
+    expect(computeResourceStatus(1, 3)).toBe("low");
+  });
+
+  test("more than a third remaining is normal", () => {
+    expect(computeResourceStatus(2, 3)).toBe("normal");
+    expect(computeResourceStatus(3, 3)).toBe("normal");
+  });
+});
+
+describe("computePartyResourceSummary", () => {
+  test("keeps one row per character per resource, sorted empty/low/normal then by name", () => {
+    const ragnar = makeCharacter({
+      name: "Ragnar",
+      resources: [
+        { id: "rage", name: "Rage", current: 0, max: 3, recovery: "long-rest" },
+        { id: "luck", name: "Luck Points", current: 2, max: 3, recovery: "long-rest" },
+      ],
+    });
+    const alor = makeCharacter({
+      name: "Alor",
+      resources: [{ id: "surge", name: "Action Surge", current: 1, max: 1, recovery: "short-rest" }],
+    });
+
+    const entries = computePartyResourceSummary([ragnar, alor]);
+    expect(entries).toEqual([
+      { id: "Ragnar-rage", resourceName: "Rage", characterName: "Ragnar", current: 0, max: 3, status: "empty" },
+      {
+        id: "Alor-surge",
+        resourceName: "Action Surge",
+        characterName: "Alor",
+        current: 1,
+        max: 1,
+        status: "normal",
+      },
+      {
+        id: "Ragnar-luck",
+        resourceName: "Luck Points",
+        characterName: "Ragnar",
+        current: 2,
+        max: 3,
+        status: "normal",
+      },
+    ]);
+  });
+
+  test("empty party yields no resource rows", () => {
+    expect(computePartyResourceSummary([])).toEqual([]);
   });
 });

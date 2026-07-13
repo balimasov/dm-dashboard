@@ -145,3 +145,110 @@ export function computePartyPassiveSummary(characters: Character[]): PartyPassiv
     investigation: bestBy(characters, (c) => c.combat.passiveInvestigation),
   };
 }
+
+export interface PartySpellSlotLevel {
+  level: number;
+  current: number;
+  max: number;
+}
+
+export interface PartySpellSlotSummary {
+  /** Only levels the party actually has slots at, ascending. */
+  levels: PartySpellSlotLevel[];
+  totalCurrent: number;
+  totalMax: number;
+  /** The highest slot level with at least one slot still available, or `null` if none are. */
+  highestAvailableLevel: number | null;
+}
+
+/**
+ * Sums every character's `spellSlots` by level — a per-character breakdown
+ * already exists on each character's own card, so this is deliberately just
+ * the party-wide total per level (see the spec's "don't duplicate character
+ * cards" constraint). `null` when nobody in the party has any spell slots at
+ * all, so the caller can show one empty state instead of an all-zero table.
+ */
+export function computePartySpellSlotSummary(characters: Character[]): PartySpellSlotSummary | null {
+  const byLevel = new Map<number, { current: number; max: number }>();
+  for (const c of characters) {
+    for (const slot of c.spellSlots) {
+      const entry = byLevel.get(slot.level) ?? { current: 0, max: 0 };
+      entry.current += slot.current;
+      entry.max += slot.max;
+      byLevel.set(slot.level, entry);
+    }
+  }
+
+  const levels = Array.from(byLevel.entries())
+    .map(([level, v]) => ({ level, ...v }))
+    .filter((l) => l.max > 0)
+    .sort((a, b) => a.level - b.level);
+  if (levels.length === 0) return null;
+
+  const available = levels.filter((l) => l.current > 0);
+
+  return {
+    levels,
+    totalCurrent: levels.reduce((sum, l) => sum + l.current, 0),
+    totalMax: levels.reduce((sum, l) => sum + l.max, 0),
+    highestAvailableLevel: available.length > 0 ? Math.max(...available.map((l) => l.level)) : null,
+  };
+}
+
+export interface HeroicInspirationSummary {
+  withInspiration: number;
+  partySize: number;
+}
+
+/** Counted separately from `resources` below — it lives on `Character.heroicInspiration` (a plain boolean), not in the `resources` array like class/feat resources. */
+export function computeHeroicInspirationSummary(characters: Character[]): HeroicInspirationSummary {
+  return {
+    withInspiration: characters.filter((c) => c.heroicInspiration).length,
+    partySize: characters.length,
+  };
+}
+
+export type ResourceStatus = "empty" | "low" | "normal";
+
+export interface PartyResourceEntry {
+  id: string;
+  resourceName: string;
+  characterName: string;
+  current: number;
+  max: number;
+  status: ResourceStatus;
+}
+
+/** A third exhausted or less reads as "running low" — matches the kind of margin a DM would actually flag mid-session ("careful, Rage is down to your last one"), tighter than a straight half. */
+const LOW_RESOURCE_THRESHOLD = 1 / 3;
+
+export function computeResourceStatus(current: number, max: number): ResourceStatus {
+  if (max <= 0 || current <= 0) return "empty";
+  if (current / max <= LOW_RESOURCE_THRESHOLD) return "low";
+  return "normal";
+}
+
+/**
+ * One row per character per resource (not merged by name like inventory items)
+ * — `Rage`'s max varies per-character, and the spec's own worked example
+ * keeps every resource attributed to its owner rather than summed. Sorted
+ * empty-first, then low, then normal, so the resources most worth a DM's
+ * attention float to the top instead of getting lost alphabetically.
+ */
+export function computePartyResourceSummary(characters: Character[]): PartyResourceEntry[] {
+  const entries = characters.flatMap((c) =>
+    c.resources.map((r): PartyResourceEntry => ({
+      id: `${c.id}-${r.id}`,
+      resourceName: r.name,
+      characterName: c.name,
+      current: r.current,
+      max: r.max,
+      status: computeResourceStatus(r.current, r.max),
+    }))
+  );
+
+  const statusOrder: Record<ResourceStatus, number> = { empty: 0, low: 1, normal: 2 };
+  return entries.sort(
+    (a, b) => statusOrder[a.status] - statusOrder[b.status] || a.resourceName.localeCompare(b.resourceName)
+  );
+}
