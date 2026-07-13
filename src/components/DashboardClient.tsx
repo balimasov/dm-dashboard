@@ -10,6 +10,7 @@ import { CreatureCard } from "@/components/CreatureCard";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
+import { RemindersPanel } from "@/components/RemindersPanel";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
@@ -109,6 +110,7 @@ function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (no
 
 /** Open/closed state for each collapsible section, read from cookies on the server so the first paint already matches the user's real preference — see `CollapsibleSection`. */
 export interface OpenSections {
+  reminders: boolean;
   campaign: boolean;
   characters: boolean;
   companions: boolean;
@@ -311,6 +313,15 @@ export function DashboardClient({
           </div>
         </div>
       </div>
+
+      <RemindersPanel
+        characters={characters}
+        creatures={creatures}
+        onUpdateCharacter={updateCharacter}
+        onUpdateCreature={updateCreature}
+        storageKey="dm-dashboard-reminders-open"
+        initialOpen={initialOpen.reminders}
+      />
 
       <CollapsibleSection
         title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}

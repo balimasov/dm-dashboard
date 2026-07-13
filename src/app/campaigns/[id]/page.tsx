@@ -27,6 +27,7 @@ export default async function CampaignDashboardPage({
   const cookieStore = await cookies();
   const isOpen = (key: string) => cookieStore.get(key)?.value !== "0";
   const initialOpen = {
+    reminders: isOpen("dm-dashboard-reminders-open"),
     campaign: isOpen("dm-dashboard-campaign-open"),
     characters: isOpen("dm-dashboard-characters-open"),
     companions: isOpen("dm-dashboard-companions-open"),
