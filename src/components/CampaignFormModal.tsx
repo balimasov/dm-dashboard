@@ -429,7 +429,7 @@ export function CampaignFormModal({
 
               <Section
                 title="Creatures"
-                description="Companions & summons — search the bestiary by name, or add one blank and fill in its stat block afterwards."
+                description="Companions, enemies, and NPCs — pick a category, then search the SRD by name or import a YAML file, and fill in the stat block afterwards."
               >
                 <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
               </Section>

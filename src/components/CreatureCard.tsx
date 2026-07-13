@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Character, Creature } from "@/lib/types";
+import { CREATURE_CATEGORY_COLOR, Character, Creature } from "@/lib/types";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
@@ -34,7 +34,9 @@ export function CreatureCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
-    <div className="relative flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div
+      className={`relative flex flex-col gap-4 rounded-xl border ${CREATURE_CATEGORY_COLOR[creature.category].border} bg-slate-900/60 p-4 shadow-lg shadow-black/20`}
+    >
       <StatusRail
         conditions={creature.conditions}
         exhaustion={creature.exhaustion}

@@ -19,7 +19,17 @@ import {
 } from "@dnd-kit/sortable";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
-import { Character, Creature, CreatureSearchHit, CreatureTemplate, creatureInfoLine } from "@/lib/types";
+import {
+  CREATURE_CATEGORY_COLOR,
+  CREATURE_CATEGORY_LABELS,
+  CREATURE_CATEGORY_ORDER,
+  Character,
+  Creature,
+  CreatureCategory,
+  CreatureSearchHit,
+  CreatureTemplate,
+  creatureInfoLine,
+} from "@/lib/types";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
 import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
@@ -43,10 +53,13 @@ import { RosterRow } from "@/components/RosterRow";
 function AddCreaturePanel({
   onAdd,
   addedTemplateIds,
+  category,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Bestiary template ids already present in this campaign's roster — lets a search hit show "(Added)" instead of leaving no trace of a creature the DM already added a minute ago (e.g. while adding several different hits from one search). */
   addedTemplateIds: Set<string>;
+  /** Current value of the shared category selector rendered above this panel — applied to whatever gets added, whether resolved from a search hit or added blank via "Add it anyway". */
+  category: CreatureCategory;
 }) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -85,7 +98,7 @@ function AddCreaturePanel({
       const res = await apiFetch(`/api/bestiary/resolve?id=${encodeURIComponent(hit.id)}`);
       if (!res.ok) throw new Error("Failed to load stat block.");
       const template = (await res.json()) as CreatureTemplate;
-      await onAdd(formValueToAddCreatureInput(templateToFormValue(template), template.id));
+      await onAdd({ ...formValueToAddCreatureInput(templateToFormValue(template), template.id), category });
       // Deliberately not resetting the search here — the results list stays
       // put so adding a second creature from the same search (e.g. both the
       // "Owl" and "Giant Owl" hits) doesn't require re-searching from
@@ -103,7 +116,7 @@ function AddCreaturePanel({
     if (!trimmed) return;
     setAddingId("manual");
     try {
-      await onAdd(formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }));
+      await onAdd({ ...formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }), category });
       reset();
     } finally {
       setAddingId(null);
@@ -206,13 +219,24 @@ function downloadTemplate() {
  * template is generated from the same schema the parser validates against
  * (`creatureImportSchema.ts`), so the two can never silently drift apart.
  */
+/** Best-effort peek at a top-level `category: ...` line without a full YAML parse (which can throw on a mid-edit/invalid file) — lets the shared selector above follow along as a convenience while a file's being loaded, without gating on the file being fully valid yet. */
+function peekYamlCategory(text: string): CreatureCategory | undefined {
+  const match = text.match(/^category:\s*["']?(companion|enemy|npc)["']?\s*$/m);
+  return match ? (match[1] as CreatureCategory) : undefined;
+}
+
 function ImportCreaturePanel({
   onAdd,
   characters,
+  category,
+  onCategoryDetected,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Resolves the template's plain-text `ownerCharacter: "Aria"` field to an id — the parser itself only knows the schema, not any particular campaign's roster. */
   characters: Character[];
+  /** Current value of the shared category selector rendered above this panel — wins over whatever the imported file itself says, so loading a file only pre-fills the selector rather than locking it. */
+  category: CreatureCategory;
+  onCategoryDetected: (category: CreatureCategory) => void;
 }) {
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
@@ -220,9 +244,15 @@ function ImportCreaturePanel({
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  function updateText(next: string) {
+    setText(next);
+    const detected = peekYamlCategory(next);
+    if (detected) onCategoryDetected(detected);
+  }
+
   function handleFile(file: File) {
     const reader = new FileReader();
-    reader.onload = () => setText(String(reader.result ?? ""));
+    reader.onload = () => updateText(String(reader.result ?? ""));
     reader.readAsText(file);
   }
 
@@ -248,7 +278,7 @@ function ImportCreaturePanel({
           outcome.warnings.push(`Персонажа "${ownerCharacterName}" не знайдено в цій кампанії — прив'язку до власника пропущено.`);
         }
       }
-      await onAdd({ ...input, ownerCharacterId });
+      await onAdd({ ...input, ownerCharacterId, category });
       setWarnings(outcome.warnings);
       setText("");
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -288,7 +318,7 @@ function ImportCreaturePanel({
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => updateText(e.target.value)}
         placeholder="Встав заповнений YAML-шаблон сюди, або завантаж файл вище..."
         rows={8}
         className="scrollbar-themed w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
@@ -359,8 +389,12 @@ function CreatureRow({
         </>
       }
     >
-      <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
-        {creature.name}
+      <p title={creature.name} className="flex items-center gap-1.5 truncate text-lg font-semibold text-slate-100">
+        <span
+          title={CREATURE_CATEGORY_LABELS[creature.category]}
+          className={`h-2 w-2 shrink-0 rounded-full ${CREATURE_CATEGORY_COLOR[creature.category].dot}`}
+        />
+        <span className="truncate">{creature.name}</span>
       </p>
       {infoLine && (
         <p title={infoLine} className="truncate text-xs text-slate-500">
@@ -410,6 +444,10 @@ export function CreatureRosterEditor({
   );
 
   const [addMode, setAddMode] = useState<"search" | "import">("search");
+  // "Enemy" is the default since that's the most common Search-SRD case
+  // (looking up a monster to throw at the party) — the DM can still switch
+  // it before adding.
+  const [category, setCategory] = useState<CreatureCategory>("enemy");
   const tabCls = (active: boolean) =>
     `rounded-md px-3 py-1.5 text-sm font-medium ${
       active ? "bg-slate-800 text-slate-100" : "text-slate-500 hover:text-slate-300"
@@ -417,6 +455,25 @@ export function CreatureRosterEditor({
 
   return (
     <div>
+      <div className="mb-3 flex gap-1">
+        {CREATURE_CATEGORY_ORDER.map((c) => {
+          const active = category === c;
+          const color = CREATURE_CATEGORY_COLOR[c];
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                active ? `${color.border} ${color.text} bg-slate-800` : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {CREATURE_CATEGORY_LABELS[c]}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="mb-3 flex gap-1">
         <button type="button" className={tabCls(addMode === "search")} onClick={() => setAddMode("search")}>
           Search SRD
@@ -426,9 +483,14 @@ export function CreatureRosterEditor({
         </button>
       </div>
       {addMode === "search" ? (
-        <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} />
+        <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} category={category} />
       ) : (
-        <ImportCreaturePanel onAdd={addCreature} characters={characters} />
+        <ImportCreaturePanel
+          onAdd={addCreature}
+          characters={characters}
+          category={category}
+          onCategoryDetected={setCategory}
+        />
       )}
 
       <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">

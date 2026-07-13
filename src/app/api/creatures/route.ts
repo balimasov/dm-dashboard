@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { createCreature, listCreatures } from "@/lib/db";
-import { AbilityScores, CreatureTrait } from "@/lib/types";
+import { AbilityScores, CreatureCategory, CreatureTrait } from "@/lib/types";
 
 const DEFAULT_STATS: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+const VALID_CATEGORIES: CreatureCategory[] = ["companion", "enemy", "npc"];
+
+function parseCategory(raw: unknown): CreatureCategory {
+  return VALID_CATEGORIES.includes(raw as CreatureCategory) ? (raw as CreatureCategory) : "companion";
+}
 
 function parseSavingThrows(raw: unknown): Partial<AbilityScores> | undefined {
   if (!raw || typeof raw !== "object") return undefined;
@@ -81,6 +86,7 @@ export async function POST(req: Request) {
     templateId,
     templateName,
     name,
+    category: parseCategory(body?.category),
     avatarUrl,
     creatureType,
     size,

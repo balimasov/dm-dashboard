@@ -504,10 +504,35 @@ export interface CreatureTemplate {
  * `CreatureTemplate`, with its own current HP/conditions that can drift from
  * the template as the fight goes on.
  */
+export type CreatureCategory = "companion" | "enemy" | "npc";
+
+export const CREATURE_CATEGORY_ORDER: CreatureCategory[] = ["companion", "enemy", "npc"];
+
+export const CREATURE_CATEGORY_LABELS: Record<CreatureCategory, string> = {
+  companion: "Companions",
+  enemy: "Enemies",
+  npc: "NPCs",
+};
+
+/** Border/accent color per category — companion (player-controlled, emerald), enemy (DM-run threat, red), NPC (non-combat, violet). Used on `CreatureCard`/`CreatureDetailsModal` accents and the matching dashboard section title. */
+export const CREATURE_CATEGORY_COLOR: Record<CreatureCategory, { border: string; text: string; dot: string }> = {
+  companion: { border: "border-emerald-700/60", text: "text-emerald-400", dot: "bg-emerald-400" },
+  enemy: { border: "border-red-800/60", text: "text-red-400", dot: "bg-red-400" },
+  npc: { border: "border-violet-700/60", text: "text-violet-400", dot: "bg-violet-400" },
+};
+
 export interface Creature {
   id: string;
   /** Every creature belongs to exactly one campaign, same as `Character.campaignId`. */
   campaignId: string;
+  /**
+   * Which of the three dashboard sections this creature lives in — companion
+   * (player-controlled: a summon, mount, Wild Shape form, familiar), enemy
+   * (DM-run: any monster/adversary), or NPC (non-combat, DM-run). Rows saved
+   * before this field existed backfill to "companion" in `rowToCreature`,
+   * matching how the block was originally used.
+   */
+  category: CreatureCategory;
   /** The Open5e SRD search hit this was seeded from, if any — absent for a creature added blank or via YAML import. Purely so a repeat search in this campaign can grey out "Add" as "(Added)"; nothing else reads it. */
   templateId?: string;
   /** The creature's actual species/import name (e.g. "Otherworldly Steed") — stays fixed regardless of `name`, so renaming the in-play nickname never loses track of what it actually is. */

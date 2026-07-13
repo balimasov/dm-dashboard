@@ -1,12 +1,21 @@
 "use client";
 
-import { AbilityScores, Character, CreatureTrait, abilityModifier } from "@/lib/types";
+import {
+  AbilityScores,
+  Character,
+  CREATURE_CATEGORY_LABELS,
+  CREATURE_CATEGORY_ORDER,
+  CreatureCategory,
+  CreatureTrait,
+  abilityModifier,
+} from "@/lib/types";
 import { NumberInput } from "@/components/NumberInput";
 import { AvatarPicker } from "@/components/AvatarPicker";
 
 export interface CreatureFormValue {
   templateName: string;
   name: string;
+  category: CreatureCategory;
   avatarUrl: string;
   creatureType: string;
   size: string;
@@ -40,6 +49,7 @@ export function emptyCreatureFormValue(): CreatureFormValue {
   return {
     templateName: "",
     name: "",
+    category: "companion",
     avatarUrl: "",
     creatureType: "",
     size: "",
@@ -304,7 +314,20 @@ export function CreatureFormFields({
         </Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <Field label="Category" hint="Which dashboard section it lives in.">
+          <select
+            className={inputCls}
+            value={value.category}
+            onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
+          >
+            {CREATURE_CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {CREATURE_CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Owner" hint="Which character summons/commands it — optional.">
           <select
             className={inputCls}

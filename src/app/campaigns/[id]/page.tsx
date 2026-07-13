@@ -29,7 +29,9 @@ export default async function CampaignDashboardPage({
   const initialOpen = {
     campaign: isOpen("dm-dashboard-campaign-open"),
     characters: isOpen("dm-dashboard-characters-open"),
-    creatures: isOpen("dm-dashboard-creatures-open"),
+    companions: isOpen("dm-dashboard-companions-open"),
+    enemies: isOpen("dm-dashboard-enemies-open"),
+    npcs: isOpen("dm-dashboard-npcs-open"),
     inventory: isOpen("dm-dashboard-inventory-open"),
   };
 

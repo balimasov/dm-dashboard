@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AbilityScores, Creature, CreatureTrait } from "@/lib/types";
+import { AbilityScores, Creature, CreatureCategory, CreatureTrait } from "@/lib/types";
 import { patchCreature } from "@/lib/creatureApi";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 
 export interface AddCreatureInput {
   templateName: string;
   name?: string;
+  category: CreatureCategory;
   avatarUrl?: string;
   creatureType?: string;
   size?: string;

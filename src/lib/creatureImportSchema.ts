@@ -56,6 +56,15 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     includeInTemplate: true,
   },
   {
+    key: "category",
+    section: "Особистість",
+    kind: "string",
+    required: false,
+    doc: 'Яка з трьох секцій дашборду: "companion" (керує гравець — виклик, приручена істота, форма перетворення), "enemy" (керую я як ДМ, переважно бій), "npc" (керую я, переважно поза боєм). Типово "companion", якщо не вказано.',
+    example: "enemy",
+    includeInTemplate: true,
+  },
+  {
     key: "creatureType",
     section: "Особистість",
     kind: "string",

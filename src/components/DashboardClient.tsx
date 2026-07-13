@@ -15,7 +15,15 @@ import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
-import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
+import {
+  CREATURE_CATEGORY_COLOR,
+  CREATURE_CATEGORY_LABELS,
+  Campaign,
+  CampaignSummary,
+  Character,
+  Creature,
+  CreatureCategory,
+} from "@/lib/types";
 
 type SettingsTab = "campaign" | "roster";
 
@@ -80,8 +88,79 @@ function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (no
 export interface OpenSections {
   campaign: boolean;
   characters: boolean;
-  creatures: boolean;
+  companions: boolean;
+  enemies: boolean;
+  npcs: boolean;
   inventory: boolean;
+}
+
+const CREATURE_SECTION_DESCRIPTION: Record<CreatureCategory, string> = {
+  companion: "Summons, mounts, Wild Shape forms, familiars — run by the players, mostly in combat.",
+  enemy: "Monsters and adversaries you run against the party — mostly in combat.",
+  npc: "Non-player characters you run outside of combat.",
+};
+
+const CREATURE_SECTION_EMPTY_MESSAGE: Record<CreatureCategory, string> = {
+  companion: "No companions yet.",
+  enemy: "No enemies yet.",
+  npc: "No NPCs yet.",
+};
+
+/** One dashboard section per `CreatureCategory` — same horizontal-scroll-row shape as the Party section above, just filtered and colored per category so Companions/Enemies/NPCs don't get crammed into one long row. */
+function CreatureCategorySection({
+  category,
+  creatures,
+  characters,
+  storageKey,
+  initialOpen,
+  onUpdate,
+  onRemove,
+  onOpenSettings,
+}: {
+  category: CreatureCategory;
+  creatures: Creature[];
+  characters: Character[];
+  storageKey: string;
+  initialOpen: boolean;
+  onUpdate: (id: string, updates: Partial<Creature>) => void;
+  onRemove: (id: string) => void;
+  onOpenSettings: () => void;
+}) {
+  const color = CREATURE_CATEGORY_COLOR[category];
+  const filtered = creatures.filter((c) => c.category === category);
+
+  return (
+    <CollapsibleSection
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} />
+          {CREATURE_CATEGORY_LABELS[category]}
+        </span>
+      }
+      storageKey={storageKey}
+      initialOpen={initialOpen}
+    >
+      <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
+      {filtered.length === 0 ? (
+        <EmptyRosterState message={CREATURE_SECTION_EMPTY_MESSAGE[category]} onOpenSettings={onOpenSettings} />
+      ) : (
+        // Same `pt-8`/`px-3` reservation as the Party row above, for the
+        // same reason — CreatureCard's own StatusRail badges bleed above
+        // and sideways of the card's border and get clipped by this row's
+        // own overflow-x-auto without the extra room.
+        <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+          {filtered.map((creature) => {
+            const owner = characters.find((c) => c.id === creature.ownerCharacterId);
+            return (
+              <div key={creature.id} className="w-[300px] shrink-0">
+                <CreatureCard creature={creature} owner={owner} onUpdate={onUpdate} onRemove={onRemove} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </CollapsibleSection>
+  );
 }
 
 export function DashboardClient({
@@ -259,34 +338,38 @@ export function DashboardClient({
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Creatures" storageKey="dm-dashboard-creatures-open" initialOpen={initialOpen.creatures}>
-        <p className="mb-4 px-3 text-sm text-slate-500">
-          Companions and summons — mounts, Wild Shape forms, familiars, and the like.
-        </p>
-        {creatures.length === 0 ? (
-          <EmptyRosterState message="No creatures yet." onOpenSettings={() => openSettings("roster")} />
-        ) : (
-          // Same `pt-8`/`px-3` reservation as the Party row above, for the
-          // same reason — CreatureCard's own StatusRail badges bleed above
-          // and sideways of the card's border and get clipped by this row's
-          // own overflow-x-auto without the extra room.
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
-            {creatures.map((creature) => {
-              const owner = characters.find((c) => c.id === creature.ownerCharacterId);
-              return (
-                <div key={creature.id} className="w-[300px] shrink-0">
-                  <CreatureCard
-                    creature={creature}
-                    owner={owner}
-                    onUpdate={updateCreature}
-                    onRemove={removeCreature}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CollapsibleSection>
+      <CreatureCategorySection
+        category="companion"
+        creatures={creatures}
+        characters={characters}
+        storageKey="dm-dashboard-companions-open"
+        initialOpen={initialOpen.companions}
+        onUpdate={updateCreature}
+        onRemove={removeCreature}
+        onOpenSettings={() => openSettings("roster")}
+      />
+
+      <CreatureCategorySection
+        category="enemy"
+        creatures={creatures}
+        characters={characters}
+        storageKey="dm-dashboard-enemies-open"
+        initialOpen={initialOpen.enemies}
+        onUpdate={updateCreature}
+        onRemove={removeCreature}
+        onOpenSettings={() => openSettings("roster")}
+      />
+
+      <CreatureCategorySection
+        category="npc"
+        creatures={creatures}
+        characters={characters}
+        storageKey="dm-dashboard-npcs-open"
+        initialOpen={initialOpen.npcs}
+        onUpdate={updateCreature}
+        onRemove={removeCreature}
+        onOpenSettings={() => openSettings("roster")}
+      />
 
       <CollapsibleSection title="Inventory" storageKey="dm-dashboard-inventory-open" initialOpen={initialOpen.inventory}>
         <div className="px-3">

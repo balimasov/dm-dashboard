@@ -1,9 +1,10 @@
 import { load as loadYaml } from "js-yaml";
-import { AbilityScores, CreatureTrait } from "./types";
+import { AbilityScores, CreatureCategory, CreatureTrait } from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CREATURE_IMPORT_FIELDS, CREATURE_STAT_KEYS } from "./creatureImportSchema";
 
 const TRAIT_GROUPS = new Set(["trait", "action", "bonusAction", "reaction", "legendary"]);
+const CREATURE_CATEGORIES = new Set(["companion", "enemy", "npc"]);
 
 export interface CreatureImportResult {
   input: AddCreatureInput;
@@ -171,6 +172,10 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
     }
   }
 
+  if (values.category !== undefined && !CREATURE_CATEGORIES.has(values.category as string)) {
+    errors.push(`"category" має бути одним з: companion, enemy, npc (отримано "${String(values.category)}").`);
+  }
+
   const knownKeys = new Set<string>([
     ...CREATURE_IMPORT_FIELDS.map((f): string => String(f.key)),
     "ownerCharacter",
@@ -187,6 +192,7 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
   const input: AddCreatureInput = {
     templateName,
     name: (values.name as string | undefined) || undefined,
+    category: (values.category as CreatureCategory | undefined) ?? "companion",
     creatureType: values.creatureType as string | undefined,
     size: values.size as string | undefined,
     alignment: values.alignment as string | undefined,

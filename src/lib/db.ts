@@ -302,7 +302,7 @@ export function reorderCharacters(orderedIds: string[]): void {
   transaction(orderedIds);
 }
 
-/** Rows saved before `conditions`/`exhaustion`/`tempHp`/`templateName` existed on Creature won't have them in their stored JSON. */
+/** Rows saved before `conditions`/`exhaustion`/`tempHp`/`templateName`/`category` existed on Creature won't have them in their stored JSON. */
 function rowToCreature(row: { data: string }): Creature {
   const parsed = JSON.parse(row.data) as Creature;
   return {
@@ -312,6 +312,10 @@ function rowToCreature(row: { data: string }): Creature {
     exhaustion: parsed.exhaustion ?? 0,
     traits: parsed.traits ?? [],
     templateName: parsed.templateName ?? parsed.name,
+    // Historically this whole block was used only for player-controlled
+    // summons/companions, so that's the least surprising default for
+    // creatures saved before the category split existed.
+    category: parsed.category ?? "companion",
   };
 }
 
