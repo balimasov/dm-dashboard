@@ -60,14 +60,40 @@ function formatCardCount(n: number): string {
  * is only passed for the horizontal card-row sections (Party and the three
  * creature categories); Campaign/Inventory aren't card rows, so they render
  * without one.
+ *
+ * Plain inline flow rather than a flex row: a flex container's cross-axis
+ * alignment (`items-end`/`items-center`) only sees each child's *overall*
+ * height, so once `label` wraps onto a second line, the emoji and the count
+ * badge both get pulled down to align with that second line instead of
+ * sitting with the first — confirmed on a long title at mobile width. Plain
+ * inline content doesn't have that problem: the emoji, being first, always
+ * renders on line one, and the count badge sits on its own natural text
+ * baseline right after the label instead of being vertically offset by a
+ * flex alignment rule.
  */
-function SectionTitle({ emoji, label, count }: { emoji: string; label: React.ReactNode; count?: number }) {
+function SectionTitle({
+  emoji,
+  label,
+  count,
+  inProgress,
+}: {
+  emoji: string;
+  label: React.ReactNode;
+  count?: number;
+  /** Small muted "(in progress)" suffix for a section still being built out across iterations — remove once it's done. */
+  inProgress?: boolean;
+}) {
   return (
-    <span className="inline-flex items-end gap-2">
-      <span aria-hidden="true">{emoji}</span>
-      <span>{label}</span>
-      {count !== undefined && <span className="text-base font-normal text-slate-500">({formatCardCount(count)})</span>}
-    </span>
+    <>
+      <span aria-hidden="true" className="mr-2">
+        {emoji}
+      </span>
+      {label}
+      {inProgress && <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">(in progress)</span>}
+      {count !== undefined && (
+        <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">({formatCardCount(count)})</span>
+      )}
+    </>
   );
 }
 
@@ -353,6 +379,19 @@ export function DashboardClient({
       </CollapsibleSection>
 
       <CollapsibleSection
+        title={<SectionTitle emoji="🧭" label="Party Toolkit" inProgress />}
+        storageKey="dm-dashboard-party-toolkit-open"
+        initialOpen={initialOpen.partyToolkit}
+      >
+        <p className="mb-4 px-3 text-sm text-slate-500">
+          Who&apos;s best at what, and what the party notices passively — reference only, no rolls.
+        </p>
+        <div className="px-3">
+          <PartyToolkit characters={visibleCharacters} />
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
         title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
         storageKey="dm-dashboard-characters-open"
         initialOpen={initialOpen.characters}
@@ -386,19 +425,6 @@ export function DashboardClient({
             ))}
           </div>
         )}
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
-        storageKey="dm-dashboard-party-toolkit-open"
-        initialOpen={initialOpen.partyToolkit}
-      >
-        <p className="mb-4 px-3 text-sm text-slate-500">
-          Who&apos;s best at what, and what the party notices passively — reference only, no rolls.
-        </p>
-        <div className="px-3">
-          <PartyToolkit characters={visibleCharacters} />
-        </div>
       </CollapsibleSection>
 
       <CreatureCategorySection

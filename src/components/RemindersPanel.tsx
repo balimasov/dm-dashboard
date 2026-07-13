@@ -128,13 +128,15 @@ export function RemindersPanel({
   return (
     <CollapsibleSection
       title={
-        <span className="inline-flex items-end gap-2">
-          <span aria-hidden="true">🔥</span>
-          <span>Reminders</span>
-          <span className="text-base font-normal text-slate-500">
+        <>
+          <span aria-hidden="true" className="mr-2">
+            🔥
+          </span>
+          Reminders
+          <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">
             ({totalCount} reminder{totalCount === 1 ? "" : "s"})
           </span>
-        </span>
+        </>
       }
       storageKey={storageKey}
       initialOpen={initialOpen}
