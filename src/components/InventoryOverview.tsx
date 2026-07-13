@@ -157,11 +157,7 @@ function InventoryColumn({ rows }: { rows: InventoryRow[] }) {
             <h3
               key={`header-${row.category}-${idx}`}
               className={`text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 ${
-                idx > 0
-                  ? "mt-3 border-t border-slate-800 pt-3"
-                  : row.continued
-                    ? "mt-3 border-t border-slate-800 pt-3 sm:mt-0 sm:border-t-0 sm:pt-0"
-                    : ""
+                idx > 0 ? "mt-4" : row.continued ? "mt-4 sm:mt-0" : ""
               }`}
             >
               {CATEGORY_LABELS[row.category]}
@@ -232,17 +228,21 @@ function CoinChip({
 }
 
 /**
- * One character's coins as a self-contained bordered pill (avatar + their
- * coin chips) instead of "Name: chips" plain text — swapping the name for
- * an avatar chip (consistent with every other holder in this app) loses the
- * one thing plain text gave for free: an obvious boundary between one
- * character's coins and the next when several sit on the same wrapped line.
- * A bounded box gives that boundary back without relying on a divider line,
- * which can't be drawn reliably between items that wrap across rows.
+ * One character's coins (avatar + their coin chips) instead of "Name: chips"
+ * plain text — swapping the name for an avatar chip (consistent with every
+ * other holder in this app) loses the one thing plain text gave for free: an
+ * obvious boundary between one character's coins and the next when several
+ * sit on the same wrapped line. A `border-l` on every group but the first
+ * restores that boundary as a plain vertical rule — the same divider
+ * language already used everywhere else on the page — without wrapping the
+ * group in its own boxed component; the rule travels with its group when
+ * flex-wrap breaks the line, so it never ends up orphaned at a line start.
  */
-function CurrencyGroup({ character }: { character: Character }) {
+function CurrencyGroup({ character, isFirst }: { character: Character; isFirst: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950/40 py-1 pl-1 pr-2">
+    <div
+      className={`flex flex-wrap items-center gap-1.5 ${isFirst ? "" : "border-l border-slate-700 pl-3"}`}
+    >
       <CharacterChip name={character.name} avatarUrl={character.avatarUrl} />
       {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
         <CoinChip
@@ -284,12 +284,12 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
 
 /**
  * Party gold — a single wide strip instead of a narrow standalone card:
- * each character's coins are one `CurrencyGroup` pill that wraps as a unit,
- * so the panel is exactly as tall as it needs to be regardless of party
- * size, with the party total pinned to the header's `actions` slot instead
- * of a separate footer row. A short, mostly-empty panel like this reads
- * badly squeezed into a grid column next to something taller — full-width
- * and content-height avoids that.
+ * each character's coins are one `CurrencyGroup` that wraps as a unit, so
+ * the panel is exactly as tall as it needs to be regardless of party size,
+ * with the party total pinned to the header's `actions` slot instead of a
+ * separate footer row. A short, mostly-empty panel like this reads badly
+ * squeezed into a grid column next to something taller — full-width and
+ * content-height avoids that.
  */
 export function CoinsPanel({ characters }: { characters: Character[] }) {
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
@@ -319,9 +319,9 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
       {charactersWithCurrency.length === 0 ? (
         <p className="text-sm text-slate-500">No gold on any character.</p>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          {charactersWithCurrency.map((c) => (
-            <CurrencyGroup key={c.id} character={c} />
+        <div className="flex flex-wrap items-center gap-3">
+          {charactersWithCurrency.map((c, i) => (
+            <CurrencyGroup key={c.id} character={c} isFirst={i === 0} />
           ))}
         </div>
       )}
