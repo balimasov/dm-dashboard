@@ -74,7 +74,15 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
   });
 
   const proficientCount = scores.filter((s) => s.proficient).length;
-  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier || a.characterName.localeCompare(b.characterName));
+  // Tie-break by `characterId`, not `characterName.localeCompare(...)` — with no explicit
+  // locale, `localeCompare`'s collation is whatever the running environment's default locale
+  // says, which is free to differ between the Node.js server and the browser. For a party with
+  // both Latin and Cyrillic names, that mismatch is real: a tied modifier sorted one way during
+  // SSR and the other way once the client (browser locale) took over, so hydration silently
+  // "corrected" the DOM — the previously-server-picked best/weakest chip's avatar visibly
+  // flashed in before the client's swapped it out. `characterId` is plain ASCII and compared
+  // ordinally, so the tie-break is identical everywhere, and hydration has nothing to fix.
+  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier || (a.characterId < b.characterId ? -1 : a.characterId > b.characterId ? 1 : 0));
   const best = sorted[0] ?? null;
   const last = sorted[sorted.length - 1] ?? null;
   const weakest = last && best && last.modifier < best.modifier ? last : null;
