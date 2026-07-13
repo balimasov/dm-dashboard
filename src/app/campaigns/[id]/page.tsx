@@ -30,6 +30,7 @@ export default async function CampaignDashboardPage({
     reminders: isOpen("dm-dashboard-reminders-open"),
     campaign: isOpen("dm-dashboard-campaign-open"),
     characters: isOpen("dm-dashboard-characters-open"),
+    partyToolkit: isOpen("dm-dashboard-party-toolkit-open"),
     companions: isOpen("dm-dashboard-companions-open"),
     enemies: isOpen("dm-dashboard-enemies-open"),
     npcs: isOpen("dm-dashboard-npcs-open"),

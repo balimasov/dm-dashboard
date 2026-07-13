@@ -9,6 +9,7 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
+import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersPanel } from "@/components/RemindersPanel";
 import { SyncAllButton } from "@/components/SyncAllButton";
@@ -113,6 +114,7 @@ export interface OpenSections {
   reminders: boolean;
   campaign: boolean;
   characters: boolean;
+  partyToolkit: boolean;
   companions: boolean;
   enemies: boolean;
   npcs: boolean;
@@ -384,6 +386,19 @@ export function DashboardClient({
             ))}
           </div>
         )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
+        storageKey="dm-dashboard-party-toolkit-open"
+        initialOpen={initialOpen.partyToolkit}
+      >
+        <p className="mb-4 px-3 text-sm text-slate-500">
+          Who&apos;s best at what, and what the party notices passively — reference only, no rolls.
+        </p>
+        <div className="px-3">
+          <PartyToolkit characters={visibleCharacters} />
+        </div>
       </CollapsibleSection>
 
       <CreatureCategorySection
