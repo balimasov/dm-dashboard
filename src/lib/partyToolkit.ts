@@ -361,44 +361,87 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
 }
 
 export interface PartyResourceGauge {
-  current: number;
-  max: number;
-  /** Rounded 0-100 — `current / max`, or 0 when `max` is 0 (never reached in practice since the caller returns `null` first). */
+  /** Rounded 0-100 — the mean of every individually-tracked pool's own `current/max` percentage. */
   percent: number;
+  /** How many pools went into the average (each spell slot level, Heroic Inspiration, one per character-resource row) — the gauge's own caption context. */
+  resourceCount: number;
+}
+
+function averagePercent(percentages: number[]): { percent: number; resourceCount: number } | null {
+  if (percentages.length === 0) return null;
+  const percent = Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
+  return { percent, resourceCount: percentages.length };
 }
 
 /**
- * One "how much gas is left in the tank" number for the whole card — every
- * trackable charge (spell slots, Heroic Inspiration, every limited-use
- * resource) summed into a single current/max pair. Summing raw charges
- * rather than averaging each resource's own percentage means a bigger pool
- * (a party's 20 spell slots) naturally outweighs a smaller one (one
- * character's 2 Rage uses) the same way it would if you actually counted
- * every charge in the party's hand. `null` when there's nothing trackable
- * at all — no gauge to draw.
+ * One "how much is running low" number for the whole card — the mean of
+ * every individually-tracked pool's own percentage (each spell slot level,
+ * Heroic Inspiration, one per character-resource row), not a sum of raw
+ * charges. Averaging means every pool is one equal "vote" regardless of
+ * size: a single fully-spent 2-charge Rage pulls the number down exactly as
+ * much as any other tapped-out resource, even sitting next to a 20-slot
+ * spell pool that's still mostly full — summing raw charges would let that
+ * big pool mask the Rage being gone entirely, which is exactly the kind of
+ * thing a DM actually needs the gauge to flag. `null` when there's nothing
+ * trackable at all — no gauge to draw.
  */
 export function computePartyResourceGauge(characters: Character[]): PartyResourceGauge | null {
   const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
 
-  let current = 0;
-  let max = 0;
+  const percentages: number[] = [];
   if (spellSlots) {
-    current += spellSlots.totalCurrent;
-    max += spellSlots.totalMax;
+    for (const level of spellSlots.levels) {
+      if (level.max > 0) percentages.push((level.current / level.max) * 100);
+    }
   }
   if (inspiration.partySize > 0) {
-    current += inspiration.withInspiration;
-    max += inspiration.partySize;
+    percentages.push((inspiration.withInspiration / inspiration.partySize) * 100);
   }
   for (const r of resources) {
-    current += r.current;
-    max += r.max;
+    if (r.max > 0) percentages.push((r.current / r.max) * 100);
   }
 
-  if (max === 0) return null;
-  return { current, max, percent: Math.round((current / max) * 100) };
+  return averagePercent(percentages);
+}
+
+export interface PartyRestRecoveryGauge {
+  /** `null` when the party has no resources of this kind tracked at all. */
+  shortRest: { percent: number; resourceCount: number } | null;
+  longRest: { percent: number; resourceCount: number } | null;
+}
+
+/**
+ * Splits the same per-resource-percentage averaging `computePartyResourceGauge`
+ * uses into two buckets by `Resource.recovery` — "short-rest" (and
+ * "encounter", back within the hour regardless) vs everything slower
+ * ("long-rest", "dawn", "daily", "custom", "manual", none of which a short
+ * rest touches). Answers the DM's actual mid-session question more directly
+ * than one blended number: "if we short rest right now, how much of what's
+ * running low actually comes back?" Scoped to `resources` only — spell
+ * slots and Heroic Inspiration don't carry a `recovery` type in this app's
+ * data model. Most spellcasters are long-rest-only, but a Warlock's pact
+ * slots recover on a short rest, and without that distinction tracked
+ * per-slot, folding spell slots into either bucket would misrepresent them
+ * for some characters.
+ */
+export function computePartyRestRecoveryGauge(characters: Character[]): PartyRestRecoveryGauge {
+  const resources = computePartyResourceSummary(characters);
+  const shortRestPercentages: number[] = [];
+  const longRestPercentages: number[] = [];
+
+  for (const r of resources) {
+    if (r.max <= 0) continue;
+    const percent = (r.current / r.max) * 100;
+    if (r.recovery === "short-rest" || r.recovery === "encounter") {
+      shortRestPercentages.push(percent);
+    } else {
+      longRestPercentages.push(percent);
+    }
+  }
+
+  return { shortRest: averagePercent(shortRestPercentages), longRest: averagePercent(longRestPercentages) };
 }
 
 // ---------------------------------------------------------------------------

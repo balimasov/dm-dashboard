@@ -22,6 +22,7 @@ import {
   PartyPassiveSummary,
   PartyResourceEntry,
   PartyResourceGauge,
+  PartyRestRecoveryGauge,
   PartySpellSlotHolder,
   PassiveCharacterScore,
   PassiveStatSummary,
@@ -37,6 +38,7 @@ import {
   computePartyPassiveSummary,
   computePartyResourceGauge,
   computePartyResourceSummary,
+  computePartyRestRecoveryGauge,
   computePartySkillOverview,
   computePartySpellSlotSummary,
   computeResistanceCoverage,
@@ -401,13 +403,16 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
 }
 
 /**
- * Semicircular "fuel gauge" arc — one dial for the whole card instead of
- * making a DM eyeball a dozen current/max pairs to guess the party's
- * overall state at a glance. Both arcs share `pathLength={100}`, so the
- * fill is a plain 0-100 `strokeDasharray` regardless of the arc's actual
- * pixel length — no trig needed to convert a percentage into an angle.
- * Colored with the same emerald/amber/red danger tiers `HpBar` uses, so
- * "how worried should I be" reads the same everywhere in the app.
+ * Semicircular "fuel gauge" arc — shared by the single party-wide dial and
+ * the smaller Short Rest/Long Rest pair below it, so both read as the same
+ * visual language at different sizes. `pathLength={100}` makes the fill a
+ * plain 0-100 `strokeDasharray` regardless of the arc's actual pixel length
+ * — no trig needed to convert a percentage into an angle — and every other
+ * dimension (stroke width, font size) is expressed in the same SVG user
+ * units, so shrinking just the container's CSS width (`widthClassName`)
+ * scales the whole dial proportionally instead of needing a second set of
+ * hand-tuned sizes. Colored with the same emerald/amber/red danger tiers
+ * `HpBar` uses, so "how worried should I be" reads the same everywhere.
  *
  * The gap value in `strokeDasharray` is deliberately way bigger than
  * `100 - percent` needs to be, not the exact remainder — a dash+gap that
@@ -417,32 +422,66 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
  * regardless of `percent`). An oversized gap means the pattern never
  * completes a second cycle, so there's nothing at the seam to draw.
  */
-function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
-  const { percent, current, max } = gauge;
+function ResourceGaugeArc({ percent, subtitle, widthClassName = "w-52" }: { percent: number; subtitle: string; widthClassName?: string }) {
   const tierClass = percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
   const arcPath = "M 16 100 A 84 84 0 0 1 184 100";
 
   return (
+    <svg viewBox="0 0 200 118" className={widthClassName}>
+      <path d={arcPath} fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" className="text-slate-800" />
+      <path
+        d={arcPath}
+        fill="none"
+        strokeWidth="16"
+        strokeLinecap="round"
+        pathLength={100}
+        strokeDasharray={`${percent} 1000`}
+        stroke="currentColor"
+        className={tierClass}
+      />
+      <text x="100" y="88" textAnchor="middle" className={`text-3xl font-bold tabular-nums ${tierClass}`} fill="currentColor">
+        {percent}%
+      </text>
+      <text x="100" y="110" textAnchor="middle" className="text-[11px] fill-slate-500">
+        {subtitle}
+      </text>
+    </svg>
+  );
+}
+
+function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
+  return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 200 118" className="w-52">
-        <path d={arcPath} fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" className="text-slate-800" />
-        <path
-          d={arcPath}
-          fill="none"
-          strokeWidth="16"
-          strokeLinecap="round"
-          pathLength={100}
-          strokeDasharray={`${percent} 1000`}
-          stroke="currentColor"
-          className={tierClass}
-        />
-        <text x="100" y="88" textAnchor="middle" className={`text-3xl font-bold tabular-nums ${tierClass}`} fill="currentColor">
-          {percent}%
-        </text>
-        <text x="100" y="110" textAnchor="middle" className="text-[11px] fill-slate-500">
-          {current}/{max} charges left
-        </text>
-      </svg>
+      <ResourceGaugeArc percent={gauge.percent} subtitle={`${gauge.resourceCount} resources tracked`} />
+    </div>
+  );
+}
+
+/**
+ * The same average-per-resource gauge, split into a Short Rest and a Long
+ * Rest dial — answers "if we rest right now, how much of what's running
+ * low actually comes back" more directly than one blended number, since
+ * that's the DM's actual mid-encounter decision. Either side is omitted
+ * (not just empty) when the party has no resources of that kind at all, so
+ * a party with zero short-rest resources doesn't get an empty 0% dial that
+ * reads as "you have nothing," which would be misleading.
+ */
+function PartyRestRecoveryDisplay({ recovery }: { recovery: PartyRestRecoveryGauge }) {
+  if (!recovery.shortRest && !recovery.longRest) return null;
+  return (
+    <div className="mt-2 flex items-start justify-center gap-10">
+      {recovery.shortRest && (
+        <div className="flex flex-col items-center">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Short Rest</p>
+          <ResourceGaugeArc percent={recovery.shortRest.percent} subtitle={`${recovery.shortRest.resourceCount} resources`} widthClassName="w-32" />
+        </div>
+      )}
+      {recovery.longRest && (
+        <div className="flex flex-col items-center">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Long Rest</p>
+          <ResourceGaugeArc percent={recovery.longRest.percent} subtitle={`${recovery.longRest.resourceCount} resources`} widthClassName="w-32" />
+        </div>
+      )}
     </div>
   );
 }
@@ -452,6 +491,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
   const gauge = computePartyResourceGauge(characters);
+  const restRecovery = computePartyRestRecoveryGauge(characters);
 
   return (
     <ToolkitCard title="Spell Slots & Resources">
@@ -459,6 +499,7 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
         <>
           <SectionLabel className="text-center">Party Resources</SectionLabel>
           <PartyResourceGaugeDisplay gauge={gauge} />
+          <PartyRestRecoveryDisplay recovery={restRecovery} />
         </>
       )}
 

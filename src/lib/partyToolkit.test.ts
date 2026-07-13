@@ -7,6 +7,7 @@ import {
   computePartyPassiveSummary,
   computePartyResourceGauge,
   computePartyResourceSummary,
+  computePartyRestRecoveryGauge,
   computePartySkillOverview,
   computePartySpellSlotSummary,
   computeResistanceCoverage,
@@ -401,7 +402,7 @@ describe("computePartyResourceSummary", () => {
 });
 
 describe("computePartyResourceGauge", () => {
-  test("sums spell slots, Heroic Inspiration, and resources into one current/max/percent", () => {
+  test("averages each pool's own percentage — a small empty pool weighs the same as a big full one", () => {
     const a = makeCharacter({
       name: "A",
       heroicInspiration: true,
@@ -415,18 +416,64 @@ describe("computePartyResourceGauge", () => {
       resources: [{ id: "luck", name: "Luck Points", current: 3, max: 3, recovery: "long-rest" }],
     });
 
-    // spell slots: 3/6, inspiration: 1/2, resources: 4/5 -> current 8, max 13
+    // level 1 slots: 3/6 -> 50%, inspiration: 1/2 -> 50%, rage: 1/2 -> 50%, luck: 3/3 -> 100%
+    // average of [50, 50, 50, 100] = 62.5 -> rounds to 63
     const gauge = computePartyResourceGauge([a, b]);
-    expect(gauge).toEqual({ current: 8, max: 13, percent: 62 });
+    expect(gauge).toEqual({ percent: 63, resourceCount: 4 });
+  });
+
+  test("a single fully-drained small resource pulls the average down as much as any other pool", () => {
+    const a = makeCharacter({
+      name: "A",
+      heroicInspiration: true, // 100%
+      resources: [
+        { id: "loh", name: "Lay On Hands: Healing Pool", current: 20, max: 25, recovery: "long-rest" }, // 80%
+        { id: "rage", name: "Rage", current: 0, max: 2, recovery: "long-rest" }, // 0%
+      ],
+    });
+    // average of [100, 80, 0] = 60, not the 75% a raw-charge sum (21/28) would give
+    expect(computePartyResourceGauge([a])).toEqual({ percent: 60, resourceCount: 3 });
   });
 
   test("still counts Heroic Inspiration even with no spell slots or resources", () => {
     const a = makeCharacter({ name: "A", heroicInspiration: false });
-    expect(computePartyResourceGauge([a])).toEqual({ current: 0, max: 1, percent: 0 });
+    expect(computePartyResourceGauge([a])).toEqual({ percent: 0, resourceCount: 1 });
   });
 
   test("null for an empty party", () => {
     expect(computePartyResourceGauge([])).toBeNull();
+  });
+});
+
+describe("computePartyRestRecoveryGauge", () => {
+  test("splits resources into short-rest (+ encounter) and long-rest (+ everything else) buckets", () => {
+    const a = makeCharacter({
+      name: "A",
+      resources: [
+        { id: "surge", name: "Action Surge", current: 0, max: 1, recovery: "short-rest" }, // 0%
+        { id: "second-wind", name: "Second Wind", current: 1, max: 1, recovery: "encounter" }, // 100%
+        { id: "rage", name: "Rage", current: 1, max: 2, recovery: "long-rest" }, // 50%
+        { id: "misty", name: "Misty Step (item)", current: 1, max: 1, recovery: "dawn" }, // 100%
+      ],
+    });
+
+    const recovery = computePartyRestRecoveryGauge([a]);
+    expect(recovery.shortRest).toEqual({ percent: 50, resourceCount: 2 });
+    expect(recovery.longRest).toEqual({ percent: 75, resourceCount: 2 });
+  });
+
+  test("a bucket is null (not a 0% dial) when the party has no resources of that kind", () => {
+    const a = makeCharacter({
+      name: "A",
+      resources: [{ id: "rage", name: "Rage", current: 1, max: 2, recovery: "long-rest" }],
+    });
+    const recovery = computePartyRestRecoveryGauge([a]);
+    expect(recovery.shortRest).toBeNull();
+    expect(recovery.longRest).toEqual({ percent: 50, resourceCount: 1 });
+  });
+
+  test("both null for an empty party", () => {
+    expect(computePartyRestRecoveryGauge([])).toEqual({ shortRest: null, longRest: null });
   });
 });
 
