@@ -429,7 +429,7 @@ export function CampaignFormModal({
 
               <Section
                 title="Creatures"
-                description="Companions, enemies, and NPCs — pick a category, then search the SRD by name or import a YAML file, and fill in the stat block afterwards."
+                description="Search the SRD by name or import a YAML file, then fill in the stat block afterwards."
               >
                 <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
               </Section>

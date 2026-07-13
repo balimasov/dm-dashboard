@@ -20,7 +20,7 @@ import {
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
 import {
-  CREATURE_CATEGORY_CHIP_COLOR,
+  CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_ORDER,
   Character,
@@ -371,7 +371,14 @@ function CreatureRow({
   return (
     <RosterRow
       id={creature.id}
-      avatar={<Avatar src={creature.avatarUrl} label={creature.name} />}
+      avatar={
+        <div className="relative shrink-0">
+          <Avatar src={creature.avatarUrl} label={creature.name} />
+          <div className="absolute inset-x-0 bottom-0 flex translate-y-1/2 justify-center">
+            <CreatureCategoryChip category={creature.category} size="sm" />
+          </div>
+        </div>
+      }
       actions={
         <>
           <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
@@ -390,9 +397,6 @@ function CreatureRow({
         </>
       }
     >
-      <div className="mb-0.5">
-        <CreatureCategoryChip category={creature.category} />
-      </div>
       <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
         {creature.name}
       </p>
@@ -455,38 +459,30 @@ export function CreatureRosterEditor({
 
   return (
     <div>
-      {/* Its own labeled, bordered block rather than a plain button row —
-          otherwise it visually blends into the Search SRD/Import tabs right
-          below it and is easy to miss, even though it's the first thing that
-          decides where the creature ends up on the dashboard. */}
-      <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-2.5">
-        <p className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Add as</p>
+      {/* One compact toolbar instead of a separate labeled category box
+          stacked above the mode tabs — the select's own visible value
+          ("🐺 Companions" etc.) already says what it's for, so it doesn't
+          need its own heading/border to stand out. */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value as CreatureCategory)}
+          className="shrink-0 rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm font-semibold text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
+        >
+          {CREATURE_CATEGORY_ORDER.map((c) => (
+            <option key={c} value={c}>
+              {CREATURE_CATEGORY_EMOJI[c]} {CREATURE_CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
         <div className="flex gap-1">
-          {CREATURE_CATEGORY_ORDER.map((c) => {
-            const active = category === c;
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`rounded-md px-3 py-1.5 text-sm font-bold ${
-                  active ? CREATURE_CATEGORY_CHIP_COLOR[c] : "text-slate-500 hover:text-slate-300"
-                }`}
-              >
-                {CREATURE_CATEGORY_LABELS[c]}
-              </button>
-            );
-          })}
+          <button type="button" className={tabCls(addMode === "search")} onClick={() => setAddMode("search")}>
+            Search SRD
+          </button>
+          <button type="button" className={tabCls(addMode === "import")} onClick={() => setAddMode("import")}>
+            Import from file
+          </button>
         </div>
-      </div>
-
-      <div className="mb-3 flex gap-1">
-        <button type="button" className={tabCls(addMode === "search")} onClick={() => setAddMode("search")}>
-          Search SRD
-        </button>
-        <button type="button" className={tabCls(addMode === "import")} onClick={() => setAddMode("import")}>
-          Import from file
-        </button>
       </div>
       {addMode === "search" ? (
         <AddCreaturePanel onAdd={addCreature} addedTemplateIds={addedTemplateIds} category={category} />
