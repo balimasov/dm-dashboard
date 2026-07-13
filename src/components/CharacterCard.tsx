@@ -14,7 +14,7 @@ import {
   STAT_ORDER,
 } from "@/lib/types";
 import { useDdbSync } from "@/hooks/useDdbSync";
-import { DotMeter, ResourceMeter } from "./ResourceMeter";
+import { DotMeter, ResourceMeter, ResourceOverviewBar, averageResourcePercent } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
@@ -205,6 +205,10 @@ export function CharacterCard({
       {c.resources.length > 0 && (
         <div className="border-t border-slate-800 pt-3 space-y-1.5">
           <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Resources</h3>
+          {(() => {
+            const overviewPercent = averageResourcePercent(c.resources);
+            return overviewPercent !== null && <ResourceOverviewBar percent={overviewPercent} />;
+          })()}
           {c.resources
             .slice()
             .sort((a, b) => a.name.localeCompare(b.name))

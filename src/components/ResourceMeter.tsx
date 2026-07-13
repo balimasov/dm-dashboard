@@ -41,6 +41,27 @@ export function DotMeter({
   );
 }
 
+/** Mean of each resource's own `current/max` — same "every pool is one equal vote" averaging as the party-wide gauge, just scoped to one character's own resources. `null` when none of them carry a `max` to divide by (nothing to show a bar for). */
+export function averageResourcePercent(resources: Resource[]): number | null {
+  const percentages = resources.filter((r) => r.max > 0).map((r) => (r.current / r.max) * 100);
+  if (percentages.length === 0) return null;
+  return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
+}
+
+/** Compact single-row summary above the per-resource list — at a glance, how much of this character's *own* resources are left, before reading which specific one is low. */
+export function ResourceOverviewBar({ percent }: { percent: number }) {
+  const tierClass = percent > 50 ? "bg-emerald-400" : percent > 25 ? "bg-amber-400" : "bg-red-400";
+  const textTierClass = percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+        <div className={`h-full rounded-full ${tierClass}`} style={{ width: `${percent}%` }} />
+      </div>
+      <span className={`shrink-0 text-xs font-semibold tabular-nums ${textTierClass}`}>{percent}%</span>
+    </div>
+  );
+}
+
 export function ResourceMeter({ resource }: { resource: Resource }) {
   const showDots = resource.max > 0 && resource.max <= 6;
   const hasHint = Boolean(resource.source || resource.description);
