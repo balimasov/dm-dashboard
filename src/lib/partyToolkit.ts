@@ -214,10 +214,20 @@ export function computePartyPassiveSummary(characters: Character[]): PartyPassiv
   };
 }
 
+export interface PartySpellSlotHolder {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+  current: number;
+  max: number;
+}
+
 export interface PartySpellSlotLevel {
   level: number;
   current: number;
   max: number;
+  /** Per-character breakdown for this level — the row's hover hint. */
+  holders: PartySpellSlotHolder[];
 }
 
 export interface PartySpellSlotSummary {
@@ -230,19 +240,22 @@ export interface PartySpellSlotSummary {
 }
 
 /**
- * Sums every character's `spellSlots` by level — a per-character breakdown
- * already exists on each character's own card, so this is deliberately just
- * the party-wide total per level (see the spec's "don't duplicate character
- * cards" constraint). `null` when nobody in the party has any spell slots at
- * all, so the caller can show one empty state instead of an all-zero table.
+ * Sums every character's `spellSlots` by level — the party-wide total per
+ * level is still the headline number (see the spec's "don't duplicate
+ * character cards" constraint), but each level now also keeps its
+ * per-character breakdown for the row's hover hint, same idea as a skill
+ * row's per-character panel. `null` when nobody in the party has any spell
+ * slots at all, so the caller can show one empty state instead of an
+ * all-zero table.
  */
 export function computePartySpellSlotSummary(characters: Character[]): PartySpellSlotSummary | null {
-  const byLevel = new Map<number, { current: number; max: number }>();
+  const byLevel = new Map<number, { current: number; max: number; holders: PartySpellSlotHolder[] }>();
   for (const c of characters) {
     for (const slot of c.spellSlots) {
-      const entry = byLevel.get(slot.level) ?? { current: 0, max: 0 };
+      const entry = byLevel.get(slot.level) ?? { current: 0, max: 0, holders: [] };
       entry.current += slot.current;
       entry.max += slot.max;
+      entry.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, current: slot.current, max: slot.max });
       byLevel.set(slot.level, entry);
     }
   }
@@ -768,6 +781,8 @@ export interface CoverageEntry {
   characterId?: string;
   characterName: string;
   avatarUrl?: string;
+  /** The spell's/feature's own rules text, straight from `KnownSpell.description`/`Feature.description` — the row's hover hint, same source the character's own card already shows. */
+  description?: string;
 }
 
 /**
@@ -785,16 +800,19 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
   >;
 
   for (const c of characters) {
-    const named = [...c.knownSpells.map((s) => s.name), ...c.features.map((f) => f.name)];
+    const named = [
+      ...c.knownSpells.map((s) => ({ name: s.name, description: s.description })),
+      ...c.features.map((f) => ({ name: f.name, description: f.description })),
+    ];
     const seen = new Set<string>();
-    for (const name of named) {
+    for (const { name, description } of named) {
       const categories = COVERAGE_MAP[name.toLowerCase()];
       if (!categories) continue;
       for (const category of categories) {
         const key = `${category}:${name}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl });
+        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description });
       }
     }
   }

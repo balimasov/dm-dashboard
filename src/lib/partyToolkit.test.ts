@@ -253,9 +253,27 @@ describe("computePartySpellSlotSummary", () => {
     const summary = computePartySpellSlotSummary([a, b]);
     expect(summary).toEqual({
       levels: [
-        { level: 1, current: 7, max: 12 },
-        { level: 2, current: 0, max: 3 },
-        { level: 3, current: 1, max: 4 },
+        {
+          level: 1,
+          current: 7,
+          max: 12,
+          holders: [
+            { characterId: "Runa", characterName: "Runa", current: 4, max: 4 },
+            { characterId: "Lilith", characterName: "Lilith", current: 3, max: 8 },
+          ],
+        },
+        {
+          level: 2,
+          current: 0,
+          max: 3,
+          holders: [{ characterId: "Runa", characterName: "Runa", current: 0, max: 3 }],
+        },
+        {
+          level: 3,
+          current: 1,
+          max: 4,
+          holders: [{ characterId: "Lilith", characterName: "Lilith", current: 1, max: 4 }],
+        },
       ],
       totalCurrent: 8,
       totalMax: 19,

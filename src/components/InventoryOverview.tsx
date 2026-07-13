@@ -87,33 +87,48 @@ function flattenToRows(groups: CategoryGroup[]): InventoryRow[] {
 }
 
 /**
- * Splits an ordered row list into two contiguous slices — a category's items
- * are free to break across the column boundary (so the two columns come out
- * within one row of each other instead of following whole-category chunks,
- * which left large gaps whenever the categories didn't happen to divide
- * evenly). A synthetic "continued" header is inserted at the top of the
- * right column when a category's items resume there, so it's never unclear
- * which category a row belongs to. The only rule enforced: never leave a
- * category header as the last row of the left column with none of its items
- * following it — that header is pushed to the right column instead.
+ * Splits an ordered row list into `numColumns` contiguous slices — a
+ * category's items are free to break across a column boundary (so columns
+ * come out balanced instead of following whole-category chunks, which left
+ * large gaps whenever the categories didn't happen to divide evenly). A
+ * synthetic "continued" header is inserted at the top of each column a
+ * category's items resume in, so it's never unclear which category a row
+ * belongs to. The only rule enforced: never leave a category header as the
+ * last row of a column with none of its items following it — that header is
+ * pushed to the next column instead.
  *
- * Rendered as two real DOM columns (CSS Grid), not a `columns-*`
- * multi-column layout: a multi-column formatting context is a known source
- * of containing-block bugs for `position: absolute` descendants, which is
+ * Rendered as real DOM columns (CSS Grid), not a `columns-*` multi-column
+ * layout: a multi-column formatting context is a known source of
+ * containing-block bugs for `position: absolute` descendants, which is
  * exactly what previously made item hover tooltips jump.
  */
-function splitRowsIntoColumns(rows: InventoryRow[]): [InventoryRow[], InventoryRow[]] {
-  if (rows.length <= 1) return [rows, []];
-  let splitIndex = Math.ceil(rows.length / 2);
-  while (splitIndex > 0 && rows[splitIndex - 1].kind === "header") splitIndex--;
-  if (splitIndex === 0) return [rows, []];
+function splitRowsIntoColumns(rows: InventoryRow[], numColumns: number): InventoryRow[][] {
+  if (rows.length === 0) return Array.from({ length: numColumns }, () => []);
 
-  const left = rows.slice(0, splitIndex);
-  const right = rows.slice(splitIndex);
-  if (right[0]?.kind === "item") {
-    right.unshift({ kind: "header", category: right[0].category, continued: true });
+  const columns: InventoryRow[][] = [];
+  let remaining = rows;
+  for (let col = 0; col < numColumns - 1; col++) {
+    const columnsLeft = numColumns - col;
+    if (remaining.length === 0) {
+      columns.push([]);
+      continue;
+    }
+    let splitIndex = Math.ceil(remaining.length / columnsLeft);
+    while (splitIndex > 0 && remaining[splitIndex - 1].kind === "header") splitIndex--;
+    if (splitIndex === 0) {
+      columns.push([]);
+      continue;
+    }
+    const colRows = remaining.slice(0, splitIndex);
+    let rest = remaining.slice(splitIndex);
+    if (rest[0]?.kind === "item") {
+      rest = [{ kind: "header", category: rest[0].category, continued: true }, ...rest];
+    }
+    columns.push(colRows);
+    remaining = rest;
   }
-  return [left, right];
+  columns.push(remaining);
+  return columns;
 }
 
 function ItemName({ item }: { item: ItemGroup }) {
@@ -252,75 +267,86 @@ function splitIntoColumns<T>(entries: T[], weight: (entry: T) => number): [T[], 
   return [entries.slice(0, splitIndex), entries.slice(splitIndex)];
 }
 
+const ITEM_LIST_COLUMNS = 4;
+
+/** The full party item list, grouped by category — see `CoinsPanel` for currency, kept as a separate panel so the two can sit side by side with `CriticalItemsPanel` above this. */
 export function InventoryOverview({ characters }: { characters: Character[] }) {
   const groups = buildCategoryGroups(characters);
+  if (groups.length === 0) {
+    return <p className="text-sm text-slate-500">No items tracked on any character.</p>;
+  }
+
+  const columns = splitRowsIntoColumns(flattenToRows(groups), ITEM_LIST_COLUMNS);
+  const nonEmptyColumns = columns.filter((c) => c.length > 0);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      {nonEmptyColumns.length > 1 ? (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+          {columns.map((col, i) => col.length > 0 && <InventoryColumn key={i} rows={col} />)}
+        </div>
+      ) : (
+        <InventoryColumn rows={nonEmptyColumns[0] ?? []} />
+      )}
+    </div>
+  );
+}
+
+/** Party gold, split out from the item list so it can sit next to `CriticalItemsPanel` in one row instead of stacked below the (much taller) item grid. */
+export function CoinsPanel({ characters }: { characters: Character[] }) {
   const charactersWithCurrency = characters.filter((c) => COIN_ORDER.some((k) => c.currency[k] > 0));
   const totalGp = characters.reduce((sum, c) => sum + currencyToGp(c.currency), 0);
-
-  const [leftRows, rightRows] = splitRowsIntoColumns(flattenToRows(groups));
   const [leftCurrency, rightCurrency] = splitIntoColumns(charactersWithCurrency, () => 1);
 
-  if (groups.length === 0 && charactersWithCurrency.length === 0) {
-    return <p className="text-sm text-slate-500">No items or gold on any character.</p>;
+  if (charactersWithCurrency.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <InfoTooltip panel={<CurrencyConversionPanel />} inline>
+            Coins
+          </InfoTooltip>
+        </h3>
+        <p className="text-sm text-slate-500">No gold on any character.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {groups.length > 0 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-          {rightRows.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-800">
-              <div className="sm:pr-6">
-                <InventoryColumn rows={leftRows} />
-              </div>
-              <div className="sm:pl-6">
-                <InventoryColumn rows={rightRows} />
-              </div>
-            </div>
-          ) : (
-            <InventoryColumn rows={leftRows} />
-          )}
-        </div>
-      )}
-
-      {charactersWithCurrency.length > 0 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <InfoTooltip panel={<CurrencyConversionPanel />} inline>
-              Coins
-            </InfoTooltip>
-          </h3>
-          {rightCurrency.length > 0 ? (
-            <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
-              <div className="flex flex-col gap-2 sm:pr-6">
-                {leftCurrency.map((c) => (
-                  <CurrencyRow key={c.id} character={c} />
-                ))}
-              </div>
-              <div className="flex flex-col gap-2 sm:pl-6">
-                {rightCurrency.map((c) => (
-                  <CurrencyRow key={c.id} character={c} />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {leftCurrency.map((c) => (
-                <CurrencyRow key={c.id} character={c} />
-              ))}
-            </div>
-          )}
-          <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
-            <span className="text-sm font-medium text-slate-100">Party total</span>
-            <CoinChip
-              code="GP"
-              value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
-              chipClass={COIN_CHIP_CLASS.gp}
-              codeClass={COIN_CODE_CLASS.gp}
-            />
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <InfoTooltip panel={<CurrencyConversionPanel />} inline>
+          Coins
+        </InfoTooltip>
+      </h3>
+      {rightCurrency.length > 0 ? (
+        <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-y-0 sm:divide-x sm:divide-slate-800">
+          <div className="flex flex-col gap-2 sm:pr-6">
+            {leftCurrency.map((c) => (
+              <CurrencyRow key={c.id} character={c} />
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 sm:pl-6">
+            {rightCurrency.map((c) => (
+              <CurrencyRow key={c.id} character={c} />
+            ))}
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {leftCurrency.map((c) => (
+            <CurrencyRow key={c.id} character={c} />
+          ))}
+        </div>
       )}
+      <div className="mt-2 flex items-center gap-2 border-t border-slate-800 pt-2">
+        <span className="text-sm font-medium text-slate-100">Party total</span>
+        <CoinChip
+          code="GP"
+          value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
+          chipClass={COIN_CHIP_CLASS.gp}
+          codeClass={COIN_CODE_CLASS.gp}
+        />
+      </div>
     </div>
   );
 }

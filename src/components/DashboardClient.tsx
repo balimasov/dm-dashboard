@@ -7,7 +7,7 @@ import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
-import { InventoryOverview } from "@/components/InventoryOverview";
+import { CoinsPanel, InventoryOverview } from "@/components/InventoryOverview";
 import { NotesEditor } from "@/components/NotesEditor";
 import { CriticalItemsPanel, PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
@@ -468,7 +468,10 @@ export function DashboardClient({
       >
         <div className="px-3 space-y-4">
           <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
-          <CriticalItemsPanel characters={characters} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CriticalItemsPanel characters={characters} />
+            <CoinsPanel characters={characters} />
+          </div>
           <InventoryOverview characters={characters} />
         </div>
       </CollapsibleSection>

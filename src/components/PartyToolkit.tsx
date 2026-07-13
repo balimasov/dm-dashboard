@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Character, RECOVERY_LABELS, SKILL_LABELS, formatModifier, ordinalLevel } from "@/lib/types";
+import {
+  Character,
+  RECOVERY_LABELS,
+  SKILL_ABILITY,
+  SKILL_DESCRIPTIONS,
+  SKILL_LABELS,
+  SkillName,
+  formatModifier,
+  ordinalLevel,
+} from "@/lib/types";
 import {
   COVERAGE_CATEGORY_ORDER,
   CoverageCategory,
@@ -14,6 +23,7 @@ import {
   LanguageCoverageEntry,
   PartyPassiveSummary,
   PartyResourceEntry,
+  PartySpellSlotHolder,
   PassiveCharacterScore,
   PassiveStatSummary,
   ResourceStatus,
@@ -39,8 +49,16 @@ import {
   computeUtilitySpellAvailability,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
 import { CharacterChip } from "./ui/CharacterChip";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
+
+/** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value in this file that doesn't already have its own status coloring (spell slots, Heroic Inspiration). */
+function usageColorClass(current: number, max: number): string {
+  if (max <= 0 || current <= 0) return "text-red-400";
+  if (current <= max / 2) return "text-amber-400";
+  return "text-slate-100";
+}
 
 /** Same green/amber/red family as `HpBar`'s danger-tier colors — one shared "how worried should I be" palette across the whole app instead of coverage inventing its own. */
 const STATUS_BADGE_CLASS: Record<SkillCoverageStatus, string> = {
@@ -64,24 +82,28 @@ const STATUS_LABEL: Record<SkillCoverageStatus, string> = {
  */
 function CoverageBadge({ proficientCount, partySize, status }: { proficientCount: number; partySize: number; status: SkillCoverageStatus }) {
   return (
-    <span
-      title={`${STATUS_LABEL[status]} — ${proficientCount} of ${partySize} proficient`}
-      className={`shrink-0 rounded-md border px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${STATUS_BADGE_CLASS[status]}`}
-    >
-      {proficientCount}/{partySize}
-    </span>
+    <InfoTooltip hoverOnly panel={<p className="text-slate-100">{STATUS_LABEL[status]} — {proficientCount} of {partySize} proficient</p>}>
+      <span
+        className={`shrink-0 rounded-md border px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${STATUS_BADGE_CLASS[status]}`}
+      >
+        {proficientCount}/{partySize}
+      </span>
+    </InfoTooltip>
   );
 }
 
-/** The hover hint's content for a skill row — every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
-function SkillAllScoresPanel({ label, all }: { label: string; all: SkillCharacterScore[] }) {
+/** The hover hint's content for a skill row — same short description shown on the character's own card (`SKILL_DESCRIPTIONS`, see `SkillPanel`), then every character's modifier, ranked, with proficiency called out the same way the row's own coverage count does. */
+function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillCharacterScore[] }) {
   return (
     <div className="space-y-1">
-      <p className="font-medium text-slate-100">{label}</p>
-      <ul className="space-y-0.5">
+      <p className="font-medium text-slate-100">
+        {SKILL_LABELS[skill]} <span className="text-slate-500">({SKILL_ABILITY[skill].toUpperCase()})</span>
+      </p>
+      <p className="text-slate-300">{SKILL_DESCRIPTIONS[skill]}</p>
+      <ul className="space-y-0.5 pt-1">
         {all.map((s) => (
           <li key={s.characterId} className="flex items-center justify-between gap-4">
-            <span className="min-w-0 truncate">{s.characterName}</span>
+            <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
             <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
               {formatModifier(s.modifier)}
               {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
@@ -98,7 +120,7 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<SkillAllScoresPanel label={label} all={entry.all} />}>
+        <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
       </div>
@@ -125,15 +147,16 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   );
 }
 
-/** Same hover-hint idea as `SkillAllScoresPanel`, for a passive stat — "proficient" here means proficient in the underlying skill (Perception/Insight/Investigation), not in the passive stat itself (which isn't a real game concept). */
-function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveCharacterScore[] }) {
+/** Same hover-hint idea as `SkillAllScoresPanel`, for a passive stat — leads with the underlying skill's own description (proficiency here means proficient in that skill, not in the passive stat itself, which isn't a real game concept), plus a one-line reminder of how a passive score is derived. */
+function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: SkillName; all: PassiveCharacterScore[] }) {
   return (
     <div className="space-y-1">
       <p className="font-medium text-slate-100">{label}</p>
-      <ul className="space-y-0.5">
+      <p className="text-slate-300">{SKILL_DESCRIPTIONS[skill]} Equal to 10 + the modifier, with no roll.</p>
+      <ul className="space-y-0.5 pt-1">
         {all.map((s) => (
           <li key={s.characterName} className="flex items-center justify-between gap-4">
-            <span className="min-w-0 truncate">{s.characterName}</span>
+            <span className="min-w-0 truncate text-slate-100">{s.characterName}</span>
             <span className={`shrink-0 whitespace-nowrap ${s.proficient ? "text-emerald-400" : "text-slate-100"}`}>
               {s.value}
               {s.proficient ? " · proficient" : ""}
@@ -146,11 +169,11 @@ function PassiveAllScoresPanel({ label, all }: { label: string; all: PassiveChar
 }
 
 /** Same shape as `SkillRow` (name with a hover hint, best/weakest chips, status dot) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
-function PassiveRow({ label, summary }: { label: string; summary: PassiveStatSummary }) {
+function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName; summary: PassiveStatSummary }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<PassiveAllScoresPanel label={label} all={summary.all} />}>
+        <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
           <span className="text-sm font-medium text-slate-200">{label}</span>
         </InfoTooltip>
       </div>
@@ -193,9 +216,9 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
 
       <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Passives</p>
       <div className="divide-y divide-slate-800/60">
-        <PassiveRow label="Passive Perception" summary={passives.perception} />
-        <PassiveRow label="Passive Insight" summary={passives.insight} />
-        <PassiveRow label="Passive Investigation" summary={passives.investigation} />
+        <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
+        <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
+        <PassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} />
       </div>
 
       <p className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Skills</p>
@@ -216,10 +239,11 @@ const RESOURCE_STATUS_CLASS: Record<ResourceStatus, string> = {
 
 /**
  * Best/weakest character for a skill or passive stat, shown as their chip +
- * an up/down arrow — `hint` carries the full "Best: Name +N" detail as a
- * native tooltip. Wrapped in a bordered pill (not just a bare chip+glyph)
- * so the whole thing reads as one unit and gives the tooltip a real hit
- * target to hover, instead of the tiny arrow glyph alone.
+ * an up/down arrow — `hint` carries the full "Best: Name +N" detail as our
+ * own styled hover panel (not a native `title`, which is slow to appear and
+ * only responds to a precise hover over the tiny glyph). Wrapped in a
+ * bordered pill (not just a bare chip+glyph) so the whole thing reads as
+ * one unit and gives the tooltip a real hit target to hover.
  */
 function StrengthChip({
   characterName,
@@ -234,17 +258,18 @@ function StrengthChip({
 }) {
   const isUp = direction === "up";
   return (
-    <span
-      title={hint}
-      className={`flex shrink-0 items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-1.5 ${
-        isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
-      }`}
-    >
-      <CharacterChip name={characterName} avatarUrl={avatarUrl} />
-      <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-        {isUp ? "↑" : "↓"}
+    <InfoTooltip hoverOnly panel={<p className="text-slate-100">{hint}</p>}>
+      <span
+        className={`flex shrink-0 items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-1.5 ${
+          isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
+        }`}
+      >
+        <CharacterChip name={characterName} avatarUrl={avatarUrl} />
+        <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+          {isUp ? "↑" : "↓"}
+        </span>
       </span>
-    </span>
+    </InfoTooltip>
   );
 }
 
@@ -254,8 +279,8 @@ function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }
       <InfoTooltip panel={<HolderListPanel label="Heroic Inspiration" holders={summary.holders} />}>
         <span className="text-slate-300">Heroic Inspiration</span>
       </InfoTooltip>
-      <span className="font-medium text-slate-100">
-        {summary.withInspiration} / {summary.partySize}
+      <span className={`font-medium ${usageColorClass(summary.withInspiration, summary.partySize)}`}>
+        {summary.withInspiration}/{summary.partySize}
       </span>
     </div>
   );
@@ -297,6 +322,25 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
  * single-character's usual single-digit max), then every limited-use
  * resource in the party.
  */
+/** Per-character breakdown for a spell slot level — the row's hover hint, same idea as a skill row's per-character panel. */
+function SpellSlotLevelPanel({ level, holders }: { level: number; holders: PartySpellSlotHolder[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{ordinalLevel(level)} Level</p>
+      <ul className="space-y-0.5">
+        {holders.map((h) => (
+          <li key={h.characterId} className="flex items-center justify-between gap-4">
+            <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
+            <span className={`shrink-0 whitespace-nowrap ${usageColorClass(h.current, h.max)}`}>
+              {h.current}/{h.max}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
@@ -314,14 +358,16 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
           <div className="space-y-1">
             {spellSlots.levels.map((l) => (
               <div key={l.level} className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
-                <span className="font-medium text-slate-100">
+                <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
+                  <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
+                </InfoTooltip>
+                <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
                   {l.current}/{l.max}
                 </span>
               </div>
             ))}
           </div>
-          <p className="mt-1 text-right text-xl font-bold text-slate-100">
+          <p className={`mt-1 text-right text-xl font-bold ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
             {spellSlots.totalCurrent} / {spellSlots.totalMax}
           </p>
         </>
@@ -412,7 +458,7 @@ function SenseHolderPanel({ label, holders }: { label: string; holders: SenseHol
         <ul className="space-y-0.5">
           {holders.map((h) => (
             <li key={h.characterId} className="flex items-center justify-between gap-4">
-              <span className="min-w-0 truncate">{h.characterName}</span>
+              <span className="min-w-0 truncate text-slate-100">{h.characterName}</span>
               <span className="shrink-0 text-slate-100">{h.range} ft</span>
             </li>
           ))}
@@ -433,10 +479,15 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
           {entry.count}/{entry.partySize}
         </span>
         {entry.best && (
-          <span title={`${entry.best.characterName} — ${entry.best.range} ft`} className="flex items-center gap-1">
-            <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} />
-            <span className="text-xs text-slate-500">{entry.best.range} ft</span>
-          </span>
+          <InfoTooltip
+            hoverOnly
+            panel={<p className="text-slate-100">Best: {entry.best.characterName} — {entry.best.range} ft</p>}
+          >
+            <span className="flex items-center gap-1">
+              <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} />
+              <span className="text-xs text-slate-500">{entry.best.range} ft</span>
+            </span>
+          </InfoTooltip>
         )}
       </span>
     </div>
@@ -534,9 +585,7 @@ function DefenseRow({ entry }: { entry: DefenseCoverageEntry }) {
       <InfoTooltip panel={<HolderListPanel label={entry.name} holders={entry.holders} />}>
         <span className="text-slate-300">{entry.name}</span>
       </InfoTooltip>
-      <span className="font-medium text-slate-100">
-        {entry.count} / {entry.partySize}
-      </span>
+      <span className="font-medium text-slate-100">{entry.count}</span>
     </div>
   );
 }
@@ -648,8 +697,32 @@ function groupCoverageEntries(entries: CoverageEntry[]): CoverageNameGroup[] {
   return Array.from(byName.values());
 }
 
-/** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster. */
-/** One ability per line — name on the left, its holders' chips right-aligned to the category column's edge, same "name … value" row shape as every other coverage row in the panel. */
+/** Leads with the spell's/feature's own rules text (same source the character's own card shows), then who has it — same "description first, then characters" order as every other hint panel in this file. */
+function CoverageHintPanel({ group }: { group: CoverageNameGroup }) {
+  const holdersWithCharacter = group.holders.filter((h) => h.characterId);
+  const description = group.holders.find((h) => h.description)?.description;
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-slate-100">{group.name}</p>
+      {description && (
+        <p className="text-slate-300">
+          <RichText text={description} />
+        </p>
+      )}
+      {holdersWithCharacter.length > 0 && (
+        <ul className="space-y-0.5 pt-1">
+          {holdersWithCharacter.map((h) => (
+            <li key={h.characterId} className="text-slate-100">
+              {h.characterName}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Heroic Inspiration is the one entry with no real character behind it (`characterName` is a party-wide ratio) — rendered as plain text instead of a chip cluster, and skips the hover hint since there's no spell/feature description behind it. One ability per line — name on the left, its holders' chips right-aligned to the category column's edge, same "name … value" row shape as every other coverage row in the panel. */
 function CoveragePill({ group }: { group: CoverageNameGroup }) {
   if (group.holders.length === 1 && !group.holders[0].characterId) {
     return (
@@ -661,7 +734,11 @@ function CoveragePill({ group }: { group: CoverageNameGroup }) {
   }
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="min-w-0 truncate text-slate-300">{group.name}</span>
+      <div className="min-w-0 flex-1">
+        <InfoTooltip panel={<CoverageHintPanel group={group} />}>
+          <span className="text-slate-300">{group.name}</span>
+        </InfoTooltip>
+      </div>
       <span className="flex shrink-0 items-center gap-0.5">
         {group.holders.map((h) => (
           <CharacterChip key={h.characterId} name={h.characterName} avatarUrl={h.avatarUrl} />
@@ -721,7 +798,7 @@ function CoveragePanel({ characters }: { characters: Character[] }) {
           No known spells or abilities match a tracked coverage category yet.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {categories.map((category) => (
             <CoverageCategoryBlock key={category} category={category} entries={coverage[category]} />
           ))}
