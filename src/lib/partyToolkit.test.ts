@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { Character } from "./types";
 import {
+  computeAbilitySkillCoverage,
   computeConditionProtectionCoverage,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
@@ -154,6 +155,40 @@ describe("computePartySkillOverview", () => {
     expect(labels[0]).toBe("acrobatics");
     expect(labels).toContain("animal-handling");
     expect(labels).toContain("sleight-of-hand");
+  });
+});
+
+describe("computeAbilitySkillCoverage", () => {
+  test("collapses the 18 skills onto the 5 abilities that have skills — Constitution is never an axis", () => {
+    const a = makeCharacter({ name: "A", skillProficiencies: [{ name: "athletics", proficient: true, expertise: false }] });
+    const b = makeCharacter({ name: "B", skillProficiencies: [] });
+
+    const coverage = computeAbilitySkillCoverage([a, b]);
+    expect(coverage.map((c) => c.ability)).toEqual(["str", "dex", "int", "wis", "cha"]);
+    expect(coverage.find((c) => c.ability === "str")).toEqual({ ability: "str", percent: 50, skillCount: 1 });
+    expect(coverage.find((c) => c.ability === "dex")).toEqual({ ability: "dex", percent: 0, skillCount: 3 });
+    expect(coverage.find((c) => c.ability === "int")).toEqual({ ability: "int", percent: 0, skillCount: 5 });
+    expect(coverage.find((c) => c.ability === "wis")).toEqual({ ability: "wis", percent: 0, skillCount: 5 });
+    expect(coverage.find((c) => c.ability === "cha")).toEqual({ ability: "cha", percent: 0, skillCount: 4 });
+  });
+
+  test("averages every skill under an ability, not just one of them", () => {
+    const a = makeCharacter({
+      name: "A",
+      skillProficiencies: [
+        { name: "acrobatics", proficient: true, expertise: false },
+        { name: "stealth", proficient: true, expertise: false },
+      ],
+    });
+    const b = makeCharacter({ name: "B", skillProficiencies: [{ name: "acrobatics", proficient: true, expertise: false }] });
+
+    // dex: acrobatics 2/2 -> 100%, sleight-of-hand 0/2 -> 0%, stealth 1/2 -> 50% => average 50
+    const coverage = computeAbilitySkillCoverage([a, b]);
+    expect(coverage.find((c) => c.ability === "dex")).toEqual({ ability: "dex", percent: 50, skillCount: 3 });
+  });
+
+  test("empty for an empty party", () => {
+    expect(computeAbilitySkillCoverage([])).toEqual([]);
   });
 });
 

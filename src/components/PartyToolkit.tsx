@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { ReactNode } from "react";
 import {
+  AbilitySkillCoverage,
   COVERAGE_CATEGORY_ORDER,
   CoverageCategory,
   CoverageEntry,
@@ -32,6 +33,7 @@ import {
   SkillCoverageStatus,
   SkillOverviewEntry,
   UtilitySpellAvailability,
+  computeAbilitySkillCoverage,
   computeConditionProtectionCoverage,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
@@ -261,6 +263,110 @@ function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName
   );
 }
 
+const ABILITY_LABELS: Record<AbilitySkillCoverage["ability"], string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
+
+/** Same coordinate math every axis/grid-ring/data-point on the radar shares — polar (radius, degrees-from-top, clockwise) to the SVG's cartesian plane. */
+function polarPoint(cx: number, cy: number, radius: number, angleDeg: number): [number, number] {
+  const rad = (angleDeg * Math.PI) / 180;
+  return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+}
+
+/**
+ * Spider/radar chart of the party's skill coverage by ability — Constitution
+ * is never an axis (no skills use it in 5e) instead of a permanent, useless
+ * zero, so this only ever draws with the 5 abilities that do. Answers a
+ * different question than the row-by-row skill list below it: not "who's
+ * bad at Stealth" but "is the party's *Intelligence* thin across the
+ * board" — the shape a DM actually wants before deciding how hard to lean
+ * on a given kind of check tonight. Grid rings are drawn as the same
+ * N-sided polygon as the data shape (not circles) so the 25/50/75/100%
+ * rings visually line up with where the axis lines cross them.
+ */
+function AbilitySkillRadar({ coverage }: { coverage: AbilitySkillCoverage[] }) {
+  if (coverage.length < 3) return null;
+
+  const cx = 110;
+  const cy = 118;
+  const maxRadius = 62;
+  const angleStep = 360 / coverage.length;
+  const axisAngle = (i: number) => -90 + i * angleStep;
+
+  const dataPoints = coverage.map((c, i) => polarPoint(cx, cy, (c.percent / 100) * maxRadius, axisAngle(i)));
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 220 230" className="w-64">
+        {[0.25, 0.5, 0.75, 1].map((level) => (
+          <polygon
+            key={level}
+            points={coverage.map((_, i) => polarPoint(cx, cy, maxRadius * level, axisAngle(i)).join(",")).join(" ")}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            className="text-slate-800"
+          />
+        ))}
+        {coverage.map((_, i) => {
+          const [x, y] = polarPoint(cx, cy, maxRadius, axisAngle(i));
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="currentColor" strokeWidth="1" className="text-slate-800" />;
+        })}
+        <polygon
+          points={dataPoints.map((p) => p.join(",")).join(" ")}
+          fill="currentColor"
+          fillOpacity="0.25"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-amber-400"
+        />
+        {dataPoints.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="3" fill="currentColor" className="text-amber-400" />
+        ))}
+        {coverage.map((c, i) => {
+          const [lx, ly] = polarPoint(cx, cy, maxRadius + 26, axisAngle(i));
+          const tierClass = c.percent > 50 ? "text-emerald-400" : c.percent > 25 ? "text-amber-400" : "text-red-400";
+          return (
+            <g key={c.ability}>
+              <text x={lx} y={ly - 6} textAnchor="middle" className="text-xs font-semibold fill-slate-400">
+                {c.ability.toUpperCase()}
+              </text>
+              <text x={lx} y={ly + 9} textAnchor="middle" className={`text-xs font-bold tabular-nums ${tierClass}`} fill="currentColor">
+                {c.percent}%
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] }) {
+  return (
+    <HintPanel
+      title="Skill Coverage by Ability"
+      description="Average proficient-character share across every skill under each ability — how thin the party's whole skill set is for that kind of check, not any one skill."
+      rows={coverage}
+      rowKey={(c) => c.ability}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(c) => (
+        <>
+          <span className="min-w-0 truncate">
+            {ABILITY_LABELS[c.ability]} ({c.skillCount} skills)
+          </span>
+          <span className="shrink-0 whitespace-nowrap">{c.percent}%</span>
+        </>
+      )}
+    />
+  );
+}
+
 /**
  * Skills — merges Passives and the Party Skill Overview into one card:
  * Passives first (same row shape as the skills below it), then all 18
@@ -272,10 +378,22 @@ function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName
  */
 function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const skillEntries = computePartySkillOverview(characters);
+  const abilityCoverage = computeAbilitySkillCoverage(characters);
 
   return (
     <ToolkitCard title="Skills">
-      <SectionLabel>Passives</SectionLabel>
+      {abilityCoverage.length >= 3 && (
+        <>
+          <SectionLabel className="text-center">
+            <InfoTooltip inline panel={<AbilitySkillRadarHint coverage={abilityCoverage} />}>
+              Coverage by Ability
+            </InfoTooltip>
+          </SectionLabel>
+          <AbilitySkillRadar coverage={abilityCoverage} />
+        </>
+      )}
+
+      <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>Passives</SectionLabel>
       <div className="divide-y divide-slate-800/60">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />

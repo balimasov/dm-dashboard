@@ -149,7 +149,7 @@ export function InfoTooltip({
       </span>
       <span
         ref={panelRef}
-        className={`pointer-events-none absolute left-0 top-full z-20 mt-1 ${open ? "block" : "hidden"} w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl group-hover/tooltip:block group-focus/tooltip:block`}
+        className={`pointer-events-none absolute left-0 top-full z-20 mt-1 ${open ? "block" : "hidden"} w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl group-hover/tooltip:block group-focus/tooltip:block`}
       >
         {panel}
       </span>

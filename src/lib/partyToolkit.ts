@@ -1,8 +1,10 @@
 import {
+  AbilityScores,
   Character,
   RecoveryType,
   SKILL_ABILITY,
   SKILL_LABELS,
+  STAT_ORDER,
   Sense,
   SkillName,
   SkillProficiency,
@@ -116,6 +118,43 @@ export function computePartySkillOverview(characters: Character[]): SkillOvervie
 
 export function formatSkillScore(score: SkillPartyScore): string {
   return `${score.characterName} ${formatModifier(score.modifier)}`;
+}
+
+export interface AbilitySkillCoverage {
+  ability: keyof AbilityScores;
+  /** Average of `proficientCount / partySize` across every skill tied to this ability, 0-100. */
+  percent: number;
+  skillCount: number;
+}
+
+/**
+ * The party's 18-skill coverage collapsed onto the five abilities that
+ * actually have skills under them (Constitution has none in 5e, so it's
+ * simply omitted rather than shown as a permanent, meaningless zero) — the
+ * shape a DM actually needs at a glance for planning: which ability's
+ * *whole* skill set is thin across the party (lean on Wisdom checks
+ * tonight, or don't — everyone's covered; go easy on Intelligence, nobody
+ * has it), not which one specific skill among eighteen. `[]` for an empty
+ * party — no shape to draw.
+ */
+export function computeAbilitySkillCoverage(characters: Character[]): AbilitySkillCoverage[] {
+  if (characters.length === 0) return [];
+
+  const overview = computePartySkillOverview(characters);
+  const byAbility = new Map<keyof AbilityScores, { sum: number; count: number }>();
+  for (const entry of overview) {
+    const ability = SKILL_ABILITY[entry.skill];
+    const ratio = (entry.proficientCount / characters.length) * 100;
+    const bucket = byAbility.get(ability) ?? { sum: 0, count: 0 };
+    bucket.sum += ratio;
+    bucket.count += 1;
+    byAbility.set(ability, bucket);
+  }
+
+  return STAT_ORDER.filter((ability) => byAbility.has(ability)).map((ability) => {
+    const { sum, count } = byAbility.get(ability)!;
+    return { ability, percent: Math.round(sum / count), skillCount: count };
+  });
 }
 
 export interface PassiveBest {
