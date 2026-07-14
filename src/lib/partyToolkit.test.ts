@@ -936,14 +936,14 @@ describe("computeResourceCoverage", () => {
     expect(coverage["Damage AOE"].map((e) => e.name)).not.toContain("Homebrew Zap");
   });
 
-  test("isReaction adds Reactions on top of whatever the tag already contributed", () => {
+  test("isReaction beats whatever the tag already contributed — Reactions ranks first in the fixed priority order, so a reaction never shows twice", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [{ id: "s1", name: "Homebrew Riposte", level: 1, source: "Class", tags: ["Warding"], isReaction: true }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage.Protection.map((e) => e.name)).toContain("Homebrew Riposte");
     expect(coverage.Reactions.map((e) => e.name)).toContain("Homebrew Riposte");
+    expect(coverage.Protection.map((e) => e.name)).not.toContain("Homebrew Riposte");
   });
 
   test("a spell that has D&D Beyond tags never falls back to the name-keyword match, even for a category the tag doesn't reach", () => {
@@ -1132,5 +1132,46 @@ describe("computeFeatureCategories (via computeResourceCoverage) — features ha
     const coverage = computeResourceCoverage([c]);
     const allEntries = Object.values(coverage).flat();
     expect(allEntries.some((e) => e.name === "Totally Homebrew Lore")).toBe(false);
+  });
+});
+
+describe("COVERAGE_CATEGORY_PRIORITY — every real keyword overlap in COVERAGE_CATEGORY_KEYWORDS resolves to exactly one category, never both", () => {
+  test("Hellish Rebuke (Damage Single Target + Reactions) lands only in Reactions", () => {
+    const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Hellish Rebuke", level: 1, source: "Class" }] });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Hellish Rebuke");
+    expect(coverage["Damage Single Target"].map((e) => e.name)).not.toContain("Hellish Rebuke");
+  });
+
+  test("Shield (Protection + Reactions) lands only in Reactions", () => {
+    const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Shield");
+    expect(coverage.Protection.map((e) => e.name)).not.toContain("Shield");
+  });
+
+  test("Counterspell (Reactions + Anti-Magic) lands only in Reactions", () => {
+    const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Counterspell", level: 3, source: "Class" }] });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Counterspell");
+    expect(coverage["Anti-Magic"].map((e) => e.name)).not.toContain("Counterspell");
+  });
+
+  test("no spell or feature entry ever appears in more than one coverage category", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [
+        { id: "s1", name: "Hellish Rebuke", level: 1, source: "Class" },
+        { id: "s2", name: "Shield", level: 1, source: "Class" },
+        { id: "s3", name: "Counterspell", level: 3, source: "Class" },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    const nameCounts = new Map<string, number>();
+    for (const [category, entries] of Object.entries(coverage)) {
+      if (category === "Resources") continue;
+      for (const entry of entries) nameCounts.set(entry.name, (nameCounts.get(entry.name) ?? 0) + 1);
+    }
+    for (const [name, count] of nameCounts) expect(count, `${name} appeared in ${count} categories`).toBe(1);
   });
 });

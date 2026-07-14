@@ -894,7 +894,55 @@ const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
 };
 
 /**
- * Resolves a known spell's coverage categories. D&D Beyond's own `tags` (via
+ * Fixed ranking used to resolve a spell/feature that technically matches
+ * more than one category down to exactly one — a DM sees each ability
+ * filed under a single, predictable category instead of it being listed
+ * everywhere it happens to apply.
+ *
+ * `Reactions` ranks first, deliberately above every "what does this solve"
+ * category: it answers a different question — *when* can this be used, not
+ * what it does — and it's a narrow category (few real members) that would
+ * empty out if it always lost to a content category. Shield, Hellish
+ * Rebuke, and Counterspell all *also* match a content category (see
+ * `COVERAGE_CATEGORY_KEYWORDS`'s own overlapping keyword entries — the same
+ * name deliberately listed under two categories); ranking Reactions first
+ * keeps that list complete rather than shrinking it to just War Caster.
+ * `Anti-Undead`/`Anti-Magic`/`Summoning` are the next-narrowest,
+ * single-purpose categories, ranked ahead of the broad ones for the same
+ * reason. Nothing past that currently ever actually conflicts (confirmed:
+ * no keyword or tag maps two different non-Reaction categories to the same
+ * spell/feature today) — their order here is a sensible default for
+ * whatever overlap shows up later, not something already exercised.
+ */
+const COVERAGE_CATEGORY_PRIORITY: CoverageCategory[] = [
+  "Reactions",
+  "Anti-Undead",
+  "Anti-Magic",
+  "Summoning",
+  "Healing",
+  "Damage AOE",
+  "Damage Single Target",
+  "Control",
+  "Protection",
+  "Mobility",
+  "Detection",
+  "Social",
+  "Stealth",
+  "Survival",
+  "Rerolls",
+];
+
+/** Picks the single highest-priority category (per `COVERAGE_CATEGORY_PRIORITY`) out of a set of matches, or none — the one place both `computeSpellCategories` and `computeFeatureCategories` funnel through so neither can return more than one category. */
+function pickPrimaryCategory(categories: Iterable<CoverageCategory>): CoverageCategory[] {
+  const matched = new Set(categories);
+  for (const category of COVERAGE_CATEGORY_PRIORITY) {
+    if (matched.has(category)) return [category];
+  }
+  return [];
+}
+
+/**
+ * Resolves a known spell's coverage category. D&D Beyond's own `tags` (via
  * `SPELL_TAG_TO_CATEGORY`) are the sole signal once a spell has any —
  * `isAreaEffect` splits a `"Damage"`-tagged spell into `Damage AOE` vs
  * `Damage Single Target` (the tag alone doesn't distinguish them), and
@@ -904,6 +952,8 @@ const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
  * these fields existed, or genuinely untagged by D&D Beyond (`tags` absent
  * or empty). A spell that *has* tags never falls back to it — no custom
  * per-spell-name logic once D&D Beyond has actually told us what a spell is.
+ * Whatever ends up matching more than one category (e.g. a Warding-tagged
+ * reaction spell) is resolved to exactly one via `pickPrimaryCategory`.
  */
 function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAreaEffect" | "isReaction">): CoverageCategory[] {
   const categories = new Set<CoverageCategory>();
@@ -917,7 +967,7 @@ function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAre
   if (!spell.tags || spell.tags.length === 0) {
     for (const category of COVERAGE_MAP[spell.name.toLowerCase()] ?? []) categories.add(category);
   }
-  return Array.from(categories);
+  return pickPrimaryCategory(categories);
 }
 
 /**
@@ -978,11 +1028,14 @@ const FEATURE_CATEGORY_TRIGGER_PRIORITY: CoverageCategory[] = ["Healing", "Prote
  * usefully filed by "when can I use this", same reasoning already applied to
  * spells. Only once both of those come up empty does the description-trigger
  * heuristic above get a turn — it's the least reliable signal, so it's the
- * last resort, not the first guess.
+ * last resort, not the first guess. A `COVERAGE_MAP` hit still goes through
+ * `pickPrimaryCategory` — the same keyword can be listed under two
+ * categories (see `COVERAGE_CATEGORY_PRIORITY`'s own doc comment), and a
+ * feature is no more exempt from "exactly one category" than a spell is.
  */
 function computeFeatureCategories(feature: Pick<Feature, "name" | "description" | "group">): CoverageCategory[] {
   const byName = COVERAGE_MAP[feature.name.toLowerCase()];
-  if (byName && byName.length > 0) return byName;
+  if (byName && byName.length > 0) return pickPrimaryCategory(byName);
   if (feature.group === "reaction") return ["Reactions"];
   const text = feature.description?.toLowerCase();
   if (!text) return [];
