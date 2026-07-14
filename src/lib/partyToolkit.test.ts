@@ -522,7 +522,7 @@ describe("computePartyResourceGauge", () => {
 });
 
 describe("computePartyRestRecoveryGauge", () => {
-  test("splits resources into short-rest (+ encounter) and long-rest (+ everything else) buckets", () => {
+  test("splits resources into short-rest (+ encounter) and long-rest (+ everything else) buckets, keeping each bucket's contributing entries for the hint", () => {
     const a = makeCharacter({
       name: "A",
       resources: [
@@ -534,8 +534,22 @@ describe("computePartyRestRecoveryGauge", () => {
     });
 
     const recovery = computePartyRestRecoveryGauge([a]);
-    expect(recovery.shortRest).toEqual({ percent: 50, resourceCount: 2 });
-    expect(recovery.longRest).toEqual({ percent: 75, resourceCount: 2 });
+    expect(recovery.shortRest).toEqual({
+      percent: 50,
+      resourceCount: 2,
+      entries: [
+        { id: "A-surge", characterName: "A", resourceName: "Action Surge", current: 0, max: 1 },
+        { id: "A-second-wind", characterName: "A", resourceName: "Second Wind", current: 1, max: 1 },
+      ],
+    });
+    expect(recovery.longRest).toEqual({
+      percent: 75,
+      resourceCount: 2,
+      entries: [
+        { id: "A-misty", characterName: "A", resourceName: "Misty Step (item)", current: 1, max: 1 },
+        { id: "A-rage", characterName: "A", resourceName: "Rage", current: 1, max: 2 },
+      ],
+    });
   });
 
   test("a bucket is null (not a 0% dial) when the party has no resources of that kind", () => {
@@ -545,7 +559,11 @@ describe("computePartyRestRecoveryGauge", () => {
     });
     const recovery = computePartyRestRecoveryGauge([a]);
     expect(recovery.shortRest).toBeNull();
-    expect(recovery.longRest).toEqual({ percent: 50, resourceCount: 1 });
+    expect(recovery.longRest).toEqual({
+      percent: 50,
+      resourceCount: 1,
+      entries: [{ id: "A-rage", characterName: "A", resourceName: "Rage", current: 1, max: 2 }],
+    });
   });
 
   test("both null for an empty party", () => {

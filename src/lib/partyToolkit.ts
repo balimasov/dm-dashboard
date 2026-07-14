@@ -466,10 +466,32 @@ export function computePartyResourceGauge(characters: Character[]): PartyResourc
   return averagePercent(percentages);
 }
 
+/** One resource feeding a Short/Long Rest bucket — the bar's hover hint breakdown, same idea as `PartySpellSlotHolder` for a spell slot level. */
+export interface RestRecoveryEntry {
+  id: string;
+  characterName: string;
+  avatarUrl?: string;
+  resourceName: string;
+  current: number;
+  max: number;
+}
+
+export interface PartyRestRecoveryBucket {
+  percent: number;
+  resourceCount: number;
+  entries: RestRecoveryEntry[];
+}
+
 export interface PartyRestRecoveryGauge {
   /** `null` when the party has no resources of this kind tracked at all. */
-  shortRest: { percent: number; resourceCount: number } | null;
-  longRest: { percent: number; resourceCount: number } | null;
+  shortRest: PartyRestRecoveryBucket | null;
+  longRest: PartyRestRecoveryBucket | null;
+}
+
+function buildRestBucket(entries: RestRecoveryEntry[]): PartyRestRecoveryBucket | null {
+  if (entries.length === 0) return null;
+  const percent = Math.round(entries.reduce((sum, e) => sum + (e.current / e.max) * 100, 0) / entries.length);
+  return { percent, resourceCount: entries.length, entries };
 }
 
 /**
@@ -484,24 +506,33 @@ export interface PartyRestRecoveryGauge {
  * data model. Most spellcasters are long-rest-only, but a Warlock's pact
  * slots recover on a short rest, and without that distinction tracked
  * per-slot, folding spell slots into either bucket would misrepresent them
- * for some characters.
+ * for some characters. Each bucket keeps its contributing resources
+ * (`entries`) so the bar's hover hint can show the same kind of per-holder
+ * breakdown a spell slot level's hint already does.
  */
 export function computePartyRestRecoveryGauge(characters: Character[]): PartyRestRecoveryGauge {
   const resources = computePartyResourceSummary(characters);
-  const shortRestPercentages: number[] = [];
-  const longRestPercentages: number[] = [];
+  const shortRestEntries: RestRecoveryEntry[] = [];
+  const longRestEntries: RestRecoveryEntry[] = [];
 
   for (const r of resources) {
     if (r.max <= 0) continue;
-    const percent = (r.current / r.max) * 100;
+    const entry: RestRecoveryEntry = {
+      id: r.id,
+      characterName: r.characterName,
+      avatarUrl: r.avatarUrl,
+      resourceName: r.resourceName,
+      current: r.current,
+      max: r.max,
+    };
     if (r.recovery === "short-rest" || r.recovery === "encounter") {
-      shortRestPercentages.push(percent);
+      shortRestEntries.push(entry);
     } else {
-      longRestPercentages.push(percent);
+      longRestEntries.push(entry);
     }
   }
 
-  return { shortRest: averagePercent(shortRestPercentages), longRest: averagePercent(longRestPercentages) };
+  return { shortRest: buildRestBucket(shortRestEntries), longRest: buildRestBucket(longRestEntries) };
 }
 
 // ---------------------------------------------------------------------------

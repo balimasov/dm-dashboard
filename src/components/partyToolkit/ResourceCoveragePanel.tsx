@@ -1,12 +1,16 @@
 import { ReactNode } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
+import { tierBgClass, tierTextClass } from "@/lib/tierColor";
 import {
+  PartyRestRecoveryBucket,
+  PartyRestRecoveryGauge,
+  PartySpellSlotLevel,
+  PartySpellSlotSummary,
   RESOURCE_COVERAGE_CATEGORY_ORDER,
   ResourceAvailability,
   ResourceCoverageCategory,
   ResourceCoverageEntry,
-  computePartyResourceGauge,
   computePartyRestRecoveryGauge,
   computePartySpellSlotSummary,
   computeResourceCoverage,
@@ -16,16 +20,7 @@ import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import {
-  CHART_AREA_MIN_HEIGHT_CLASS,
-  HEROIC_INSPIRATION_DESCRIPTION,
-  HolderListPanel,
-  PartyResourceGaugeDisplay,
-  PartyResourcesHint,
-  PartyRestRecoveryDisplay,
-  SpellSlotLevelPanel,
-  usageColorClass,
-} from "./shared";
+import { HEROIC_INSPIRATION_DESCRIPTION, HintPanel, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
 
 /**
  * NEW — built alongside `SpellSlotsResourcesPanel`/`CoveragePanel` rather
@@ -38,6 +33,109 @@ import {
  * `CoveragePanel` components) once this one is confirmed as their
  * replacement.
  */
+
+/** Per-resource breakdown for a Short/Long Rest bucket — same idea as `SpellSlotLevelPanel`, but each row is a distinct named resource (possibly several per character) rather than one number per character. */
+function RestRecoveryHintPanel({ label, bucket }: { label: string; bucket: PartyRestRecoveryBucket }) {
+  return (
+    <HintPanel
+      title={label}
+      description="Average remaining % across every resource of this recovery type — one pool, one equal vote."
+      rows={bucket.entries}
+      rowKey={(e) => e.id}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(e) => (
+        <>
+          <span className="min-w-0 truncate">
+            {e.resourceName} <span className="text-slate-500">— {e.characterName}</span>
+          </span>
+          <span className={`shrink-0 whitespace-nowrap ${usageColorClass(e.current, e.max)}`}>
+            {e.current}/{e.max}
+          </span>
+        </>
+      )}
+    />
+  );
+}
+
+/** One recovery type's readiness as a horizontal meter (track = same-ramp light step, fill = danger-tier color) — same visual language as `ResourceTrackerBar` on a character card, just labeled per rest type instead of blended into one "overall" number. Hovering/tapping the bar itself (not just the number) shows the per-resource breakdown, matching the hit-target size of every other hintable row in this panel. */
+function RestRecoveryMeterRow({ label, bucket }: { label: string; bucket: PartyRestRecoveryBucket }) {
+  return (
+    <div className="flex items-center gap-2 text-xs leading-none">
+      <span className="w-20 shrink-0 whitespace-nowrap font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <InfoTooltip hoverOnly panel={<RestRecoveryHintPanel label={label} bucket={bucket} />}>
+        <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-800 sm:w-36">
+          <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
+        </div>
+      </InfoTooltip>
+      <span className={`shrink-0 font-semibold tabular-nums ${tierTextClass(bucket.percent)}`}>{bucket.percent}%</span>
+    </div>
+  );
+}
+
+/** Stacks the Short Rest and Long Rest meters — either row is omitted (not just empty) when the party has no resources of that kind, same as the arcs this replaces used to do. `null` when neither exists, so the caller can skip the whole block instead of rendering an empty wrapper. */
+function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) {
+  if (!recovery.shortRest && !recovery.longRest) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {recovery.shortRest && <RestRecoveryMeterRow label="Short Rest" bucket={recovery.shortRest} />}
+      {recovery.longRest && <RestRecoveryMeterRow label="Long Rest" bucket={recovery.longRest} />}
+    </div>
+  );
+}
+
+/** Widest column height in px — every column's height is proportional to its own `max` between this and `HISTOGRAM_MIN_HEIGHT_PX`, so a party's 1st-level pool (often 20+ slots) doesn't dwarf a 9th-level pool (often 1) into invisibility, while relative pool size still reads at a glance. */
+const HISTOGRAM_MAX_HEIGHT_PX = 64;
+/** Every column gets at least this much height regardless of `max` — the floor that keeps a 1-slot 9th-level column a real, hoverable bar instead of a sliver. */
+const HISTOGRAM_MIN_HEIGHT_PX = 18;
+/** Mark-spec column thickness (`≤24px`, see the dataviz skill's bar/column spec) — same width for the outer track and the inner fill so the fill never peeks past the track's rounded corners. */
+const HISTOGRAM_COLUMN_WIDTH_PX = 24;
+
+/** One spell slot level as a vertical meter column — full column height (the dim track) is that level's own `max`, scaled against the party's largest level so every level stays visible; the colored fill from the baseline is `current`. Same hover hint as the old text row (`SpellSlotLevelPanel`), just triggered by the column instead of a line of text. */
+function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLevel; maxAcrossLevels: number }) {
+  const percent = level.max > 0 ? (level.current / level.max) * 100 : 0;
+  const barHeight =
+    maxAcrossLevels > 0
+      ? HISTOGRAM_MIN_HEIGHT_PX + (level.max / maxAcrossLevels) * (HISTOGRAM_MAX_HEIGHT_PX - HISTOGRAM_MIN_HEIGHT_PX)
+      : HISTOGRAM_MIN_HEIGHT_PX;
+  const fillHeight = (percent / 100) * barHeight;
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className={`text-[10px] font-semibold tabular-nums ${usageColorClass(level.current, level.max)}`}>
+        {level.current}/{level.max}
+      </span>
+      <InfoTooltip hoverOnly panel={<SpellSlotLevelPanel level={level.level} holders={level.holders} />}>
+        <div
+          className="relative overflow-hidden rounded-md bg-slate-800"
+          style={{ width: `${HISTOGRAM_COLUMN_WIDTH_PX}px`, height: `${barHeight}px` }}
+        >
+          <div className={`absolute bottom-0 left-0 w-full rounded-md ${tierBgClass(percent)}`} style={{ height: `${fillHeight}px` }} />
+        </div>
+      </InfoTooltip>
+      <span className="text-[10px] text-slate-600">{level.level}</span>
+    </div>
+  );
+}
+
+/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. */
+function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
+  const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
+  return (
+    <div className="flex items-end gap-4">
+      <div className="flex items-end gap-2">
+        {spellSlots.levels.map((level) => (
+          <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
+        ))}
+      </div>
+      <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-4">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+        <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
+          {spellSlots.totalCurrent}/{spellSlots.totalMax}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /** Heroic Inspiration is the one entry with no real character behind it — same special case `CoveragePanel` handled, rendered as plain "x/partySize" text instead of a chip row. */
 function SpecialRow({ entry }: { entry: ResourceCoverageEntry }) {
@@ -379,44 +477,19 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   const columns = distributeColumns(categories, coverage, COLUMNS);
 
   const spellSlots = computePartySpellSlotSummary(characters);
-  const gauge = computePartyResourceGauge(characters);
   const restRecovery = computePartyRestRecoveryGauge(characters);
+  const hasRestMeters = Boolean(restRecovery.shortRest || restRecovery.longRest);
 
   return (
     <ToolkitCard title="Resources & Coverage">
-      {gauge && (
-        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
-          <SectionLabel className="text-center">
-            <InfoTooltip inline panel={<PartyResourcesHint resourceCount={gauge.resourceCount} />}>
-              Party Resources
-            </InfoTooltip>
-          </SectionLabel>
-          <PartyResourceGaugeDisplay gauge={gauge} />
-          <PartyRestRecoveryDisplay recovery={restRecovery} />
-        </div>
-      )}
-
-      <SectionLabel className={gauge ? "mt-4" : ""}>Spell Slots</SectionLabel>
-      {!spellSlots ? (
-        <p className="text-sm text-slate-600">No spell slots in the party.</p>
-      ) : (
-        <div className="divide-y divide-slate-800/60">
-          {spellSlots.levels.map((l) => (
-            <div key={l.level} className="flex items-center justify-between gap-3 py-1 text-sm">
-              <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
-                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
-              </InfoTooltip>
-              <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
-                {l.current}/{l.max}
-              </span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between gap-3 py-1 text-sm">
-            <span className="text-slate-300">Total</span>
-            <span className={`font-medium ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
-              {spellSlots.totalCurrent}/{spellSlots.totalMax}
-            </span>
-          </div>
+      {(hasRestMeters || spellSlots) && (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <RestRecoveryMeters recovery={restRecovery} />
+          {spellSlots ? (
+            <SpellSlotHistogram spellSlots={spellSlots} />
+          ) : (
+            <p className="text-sm text-slate-600">No spell slots in the party.</p>
+          )}
         </div>
       )}
 
