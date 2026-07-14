@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { addCharacterFromUrl, listCharacters } from "@/lib/db";
 import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
+import { characterCreateSchema } from "@/lib/schemas";
 
 export async function GET(req: Request) {
   const campaignId = new URL(req.url).searchParams.get("campaignId");
@@ -12,12 +13,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
-  const url = typeof body?.url === "string" ? body.url.trim() : "";
-  const campaignId = typeof body?.campaignId === "string" ? body.campaignId : "";
-
-  if (!campaignId) {
+  const result = characterCreateSchema.safeParse(body);
+  if (!result.success) {
     return NextResponse.json({ error: "campaignId is required." }, { status: 400 });
   }
+  const { campaignId } = result.data;
+  const url = result.data.url.trim();
+
   if (!url || !extractDndBeyondCharacterId(url)) {
     return NextResponse.json(
       { error: "Invalid D&D Beyond link." },

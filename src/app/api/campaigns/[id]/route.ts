@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { deleteCampaign, getCampaign, updateCampaign } from "@/lib/db";
+import { campaignUpdateSchema } from "@/lib/schemas";
 
 export async function PATCH(req: Request, ctx: RouteContext<"/api/campaigns/[id]">) {
   const { id } = await ctx.params;
-  const updates = await req.json().catch(() => null);
-  if (!updates || typeof updates !== "object") {
+  const body = await req.json().catch(() => null);
+  const result = campaignUpdateSchema.safeParse(body);
+  if (!result.success) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const updated = updateCampaign(id, updates);
+  const updated = updateCampaign(id, result.data);
   if (!updated) {
     return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
   }

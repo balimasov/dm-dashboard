@@ -12,6 +12,26 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.117.0] - 2026-07-14
+
+### Added
+- **Zod-валідація на межі API-роутів** — PATCH/POST раніше приймали
+  `req.json()` майже без перевірки (`typeof updates === "object"`) і напряму
+  спредили це в `{ ...existing, ...updates }` перед записом у БД: неправильний
+  тип чи побите поле з клієнта тихо псували збережений JSON. Новий
+  `src/lib/schemas.ts` дзеркалить `types.ts` — `campaignUpdateSchema`,
+  `characterUpdateSchema`, `creatureUpdateSchema` (усі `.partial()`, під
+  PATCH), плюс `campaignCreateSchema`/`characterCreateSchema`/
+  `reorderBodySchema`. Підключено до всіх PATCH-роутів
+  (`/api/{campaigns,characters,creatures}/[id]`), POST
+  `/api/{campaigns,characters}` і обох `/reorder` — невалідне тіло тепер дає
+  чіткий `400` замість тихого псування даних. `POST /api/creatures`
+  (найбільша ручна валідація, з дефолтами по кожному полю) свідомо лишили
+  як є — переписування під zod разом з логікою дефолтів це окрема, більша
+  задача. Новий `src/lib/schemas.test.ts` прогонює реальні демо-персонажі
+  та приклади Creature/Campaign через схеми — гарантія, що жодне поле
+  `types.ts` не загубилось при ручному дзеркаленні.
+
 ## [0.116.3] - 2026-07-14
 
 ### Changed
