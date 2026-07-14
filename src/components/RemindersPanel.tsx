@@ -154,7 +154,7 @@ export function RemindersPanel({
           reads better here anyway than a forced side-scroll. */}
       <div className="flex flex-wrap gap-3 px-3 pb-2">
         {groups.map((group) => (
-          <div key={group.ownerId} className="w-[220px] rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+          <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
             <div className="mb-2 flex items-center gap-2">
               <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
               <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
