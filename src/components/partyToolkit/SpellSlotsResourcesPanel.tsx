@@ -14,10 +14,11 @@ import {
   computePartySpellsByLevel,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
+import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CANTRIP_HINT, CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, SpellChartsRow, usageColorClass } from "./shared";
+import { CANTRIP_HINT, CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, usageColorClass } from "./shared";
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
@@ -68,18 +69,30 @@ function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
 }
 
-/** One row per known spell, deduped across the whole party — `LevelBadge` on the right names its level (or "Cantrip") the same way a slot-cost spell's badge does in `ResourceCoveragePanel`, and `CharacterChipRow` shows every character who knows it, same as a passive ability's "who has it" row elsewhere in this file. Kept even though the row already sits under a level-labeled group header — every other row in the Party Toolkit ends in a badge-then-avatar pair, and this is the one place that also doubles as the "is this a cantrip" marker. */
-function PartySpellRow({ spell, level }: { spell: PartySpellEntry; level: number }) {
+/** Same "name + short rules blurb" hint every other trackable row in the Party Toolkit shows (`TrackableHintPanel` in `ResourceCoveragePanel`) — a cantrip also gets the same `CANTRIP_HINT` line the Resources tab's cantrip badge used to show, since removing that badge here shouldn't lose the "no slot needed" fact entirely. */
+function PartySpellHintPanel({ spell }: { spell: PartySpellEntry }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-white">{spell.name}</p>
+      {spell.isCantrip && CANTRIP_HINT}
+      {spell.description && (
+        <p className="text-slate-300">
+          <RichText text={spell.description} />
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** One row per known spell, deduped across the whole party — its level already reads off the group header above it, so the row itself is just the name (with a hover hint for its rules text) and `CharacterChipRow` for who knows it. */
+function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <span className="text-slate-300">{spell.name}</span>
+        <InfoTooltip panel={<PartySpellHintPanel spell={spell} />}>
+          <span className="text-slate-300">{spell.name}</span>
+        </InfoTooltip>
       </div>
-      {spell.isCantrip ? (
-        <LevelBadge label="Cantrip" panel={CANTRIP_HINT} />
-      ) : (
-        <LevelBadge label={`${level} lvl`} panel={<p className="text-white">{ordinalLevel(level)}-level spell.</p>} />
-      )}
       <CharacterChipRow holders={spell.holders} />
     </div>
   );
@@ -158,20 +171,27 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
         </>
       )}
 
-      {currentTab === "spells" && (
-        <div className="space-y-3">
-          {spellLevelGroups.map((group) => (
+      {currentTab === "spells" &&
+        spellLevelGroups.map((group, index) => {
+          const slotLevel = spellSlots?.levels.find((l) => l.level === group.level);
+          return (
             <div key={group.level}>
-              <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(group.level)}</p>
+              <SectionLabel className={`flex items-center justify-between gap-3 ${index === 0 ? "" : "mt-4"}`}>
+                <span>{spellLevelLabel(group.level)}</span>
+                {slotLevel && (
+                  <span className={`normal-case tracking-normal ${usageColorClass(slotLevel.current, slotLevel.max)}`}>
+                    {slotLevel.current}/{slotLevel.max}
+                  </span>
+                )}
+              </SectionLabel>
               <div className="divide-y divide-slate-800/60">
                 {group.spells.map((spell) => (
-                  <PartySpellRow key={spell.name} spell={spell} level={group.level} />
+                  <PartySpellRow key={spell.name} spell={spell} />
                 ))}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
     </ToolkitCard>
   );
 }

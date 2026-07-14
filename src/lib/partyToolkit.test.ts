@@ -427,6 +427,16 @@ describe("computePartySpellsByLevel", () => {
   test("empty for a party with no known spells", () => {
     expect(computePartySpellsByLevel([makeCharacter({ name: "A" })])).toEqual([]);
   });
+
+  test("carries the first non-empty description across holders", () => {
+    const a = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
+    const b = makeCharacter({
+      name: "B",
+      knownSpells: [{ id: "s1", name: "shield", level: 1, source: "Class", description: "An invisible barrier of force." }],
+    });
+    const groups = computePartySpellsByLevel([a, b]);
+    expect(groups[0].spells[0].description).toBe("An invisible barrier of force.");
+  });
 });
 
 describe("computeHeroicInspirationSummary", () => {

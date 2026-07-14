@@ -351,6 +351,8 @@ export function computePartySpellSlotSummary(characters: Character[]): PartySpel
 export interface PartySpellEntry {
   name: string;
   isCantrip: boolean;
+  /** Short rules blurb for the hover hint — taken from whichever holder's copy has one first, since the same spell's text doesn't vary by character. */
+  description?: string;
   holders: CoverageHolder[];
 }
 
@@ -387,8 +389,9 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
       const existing = levelMap.get(key);
       if (existing) {
         existing.holders.push(holder);
+        existing.description ??= spell.description;
       } else {
-        levelMap.set(key, { name: spell.name, isCantrip: spell.level <= 0, holders: [holder] });
+        levelMap.set(key, { name: spell.name, isCantrip: spell.level <= 0, description: spell.description, holders: [holder] });
       }
       byLevel.set(spell.level, levelMap);
     }
