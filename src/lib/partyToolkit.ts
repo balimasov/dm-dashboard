@@ -1,6 +1,8 @@
 import {
   AbilityScores,
   Character,
+  Feature,
+  KnownSpell,
   RecoveryType,
   SKILL_ABILITY,
   SKILL_LABELS,
@@ -860,6 +862,149 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
 
   for (const category of COVERAGE_CATEGORY_ORDER) {
     coverage[category].sort((a, b) => a.name.localeCompare(b.name) || compareCharacterId(a.characterId, b.characterId));
+  }
+
+  return coverage;
+}
+
+// ---------------------------------------------------------------------------
+// Resources & Coverage — merges the Resources list and Spell & Ability
+// Coverage into one categorized view: "what can solve this problem, and how
+// much of it is left". Lives alongside the two panels above (not replacing
+// them yet) while it's being shaped; see PartyToolkit's own doc comment for
+// the migration plan.
+// ---------------------------------------------------------------------------
+
+/** `CoverageCategory` plus one bucket for tracked resources that don't match a coverage keyword at all — `Rage`, `Sorcery Points`, and the like, which `COVERAGE_CATEGORY_KEYWORDS` deliberately excludes (see its own doc comment) since they used to live in a separate Resources panel. Now that panel is gone, they need somewhere to land instead of disappearing. */
+export type ResourceCoverageCategory = CoverageCategory | "Other";
+
+export const RESOURCE_COVERAGE_CATEGORY_ORDER: ResourceCoverageCategory[] = [...COVERAGE_CATEGORY_ORDER, "Other"];
+
+/**
+ * How "used up" a single coverage entry is, so the row can show it directly
+ * instead of the DM having to cross-reference a separate Resources list:
+ * `"pool"` for anything with its own charge count (a `Resource`, or a
+ * `KnownSpell`/`Feature` already carrying `current`/`max` because the parser
+ * attached a linked charge pool to it); `"slot"` for a spell that costs an
+ * ordinary spell slot instead — `remaining` sums that one character's own
+ * `spellSlots` at this spell's level or higher (a higher-level slot can
+ * always cast a lower-level spell). A cantrip or an unlimited passive
+ * ability has no `ResourceAvailability` at all — there's nothing to run out
+ * of, so no badge should imply otherwise.
+ */
+export type ResourceAvailability =
+  | { kind: "pool"; current: number; max: number; recovery: RecoveryType }
+  | { kind: "slot"; level: number; available: boolean; remaining: number };
+
+export interface ResourceCoverageEntry {
+  name: string;
+  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, same as `CoverageEntry`. */
+  characterId?: string;
+  characterName: string;
+  avatarUrl?: string;
+  description?: string;
+  /** Only set for the Heroic Inspiration entry — see `CoverageEntry.holders`. */
+  holders?: CoverageHolder[];
+  /** Absent for a cantrip or an unlimited passive ability — see `ResourceAvailability`. */
+  availability?: ResourceAvailability;
+}
+
+function spellResourceAvailability(spell: KnownSpell, character: Character): ResourceAvailability | undefined {
+  if (spell.current !== undefined && spell.max !== undefined) {
+    return { kind: "pool", current: spell.current, max: spell.max, recovery: spell.recovery ?? "manual" };
+  }
+  if (spell.level <= 0) return undefined;
+  const remaining = character.spellSlots
+    .filter((s) => s.level >= spell.level)
+    .reduce((sum, s) => sum + s.current, 0);
+  return { kind: "slot", level: spell.level, available: remaining > 0, remaining };
+}
+
+function featureResourceAvailability(feature: Feature): ResourceAvailability | undefined {
+  if (feature.current === undefined || feature.max === undefined) return undefined;
+  return { kind: "pool", current: feature.current, max: feature.max, recovery: feature.recovery ?? "manual" };
+}
+
+/**
+ * Rank used to sort each category's entries — "can actually be used right
+ * now" (a non-empty pool, or a spell with a free slot) floats to the top,
+ * "tracked but currently empty" sinks below it, and an entry with no
+ * `ResourceAvailability` at all (a cantrip, a passive trait) sorts last —
+ * it's never urgent information, since it's never "out."
+ */
+function availabilityRank(availability: ResourceAvailability | undefined): number {
+  if (!availability) return 2;
+  if (availability.kind === "pool") return availability.current > 0 ? 0 : 1;
+  return availability.available ? 0 : 1;
+}
+
+/**
+ * Same category matching as `computeSpellAbilityCoverage`, but every entry
+ * now also carries its own `ResourceAvailability`, and every tracked
+ * `Resource` that doesn't match a coverage keyword lands in `Other` instead
+ * of vanishing — replaces both the old Resources panel and the old Coverage
+ * panel with one categorized, quantity-aware list.
+ */
+export function computeResourceCoverage(characters: Character[]): Record<ResourceCoverageCategory, ResourceCoverageEntry[]> {
+  const coverage = Object.fromEntries(
+    RESOURCE_COVERAGE_CATEGORY_ORDER.map((c) => [c, [] as ResourceCoverageEntry[]])
+  ) as Record<ResourceCoverageCategory, ResourceCoverageEntry[]>;
+
+  // Tracks every (character, name) pair already placed via a spell/feature
+  // match, regardless of which category it landed in — a raw `Resource`
+  // sharing that exact name (rare, but possible for a self-charged innate
+  // spell also tracked as a resource) is skipped from `Other` rather than
+  // listed twice.
+  const seenNames = new Set<string>();
+
+  for (const c of characters) {
+    const named = [
+      ...c.knownSpells.map((s) => ({ name: s.name, description: s.description, availability: spellResourceAvailability(s, c) })),
+      ...c.features.map((f) => ({ name: f.name, description: f.description, availability: featureResourceAvailability(f) })),
+    ];
+    const seenInCategory = new Set<string>();
+    for (const { name, description, availability } of named) {
+      const categories = COVERAGE_MAP[name.toLowerCase()];
+      if (!categories) continue;
+      seenNames.add(`${c.id}:${name.toLowerCase()}`);
+      for (const category of categories) {
+        const key = `${category}:${name}`;
+        if (seenInCategory.has(key)) continue;
+        seenInCategory.add(key);
+        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability });
+      }
+    }
+  }
+
+  if (characters.length > 0) {
+    const inspiration = computeHeroicInspirationSummary(characters);
+    coverage.Rerolls.push({
+      name: "Heroic Inspiration",
+      characterName: `${inspiration.withInspiration}/${inspiration.partySize}`,
+      holders: inspiration.holders,
+    });
+  }
+
+  for (const entry of computePartyResourceSummary(characters)) {
+    const owner = characters.find((c) => c.name === entry.characterName);
+    if (owner && seenNames.has(`${owner.id}:${entry.resourceName.toLowerCase()}`)) continue;
+    coverage.Other.push({
+      name: entry.resourceName,
+      characterId: owner?.id,
+      characterName: entry.characterName,
+      avatarUrl: entry.avatarUrl,
+      description: entry.description,
+      availability: { kind: "pool", current: entry.current, max: entry.max, recovery: entry.recovery },
+    });
+  }
+
+  for (const category of RESOURCE_COVERAGE_CATEGORY_ORDER) {
+    coverage[category].sort(
+      (a, b) =>
+        availabilityRank(a.availability) - availabilityRank(b.availability) ||
+        a.name.localeCompare(b.name) ||
+        compareCharacterId(a.characterId, b.characterId)
+    );
   }
 
   return coverage;

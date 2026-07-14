@@ -12,6 +12,7 @@ import {
   computePartySkillOverview,
   computePartySpellSlotSummary,
   computeResistanceCoverage,
+  computeResourceCoverage,
   computeResourceStatus,
   computeSensesCoverage,
   computeSkillOverviewEntry,
@@ -700,5 +701,154 @@ describe("computeSpellAbilityCoverage", () => {
     expect(Object.keys(coverage)).toHaveLength(16);
     expect(coverage.Healing).toEqual([]);
     expect(coverage.Rerolls).toEqual([]);
+  });
+});
+
+describe("computeResourceCoverage", () => {
+  test("a spell with its own charge pool carries pool availability", () => {
+    const c = makeCharacter({
+      name: "Runa",
+      knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class", current: 1, max: 2, recovery: "long-rest" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["AOE Damage"]).toEqual([
+      {
+        name: "Fireball",
+        characterId: "Runa",
+        characterName: "Runa",
+        description: undefined,
+        availability: { kind: "pool", current: 1, max: 2, recovery: "long-rest" },
+      },
+    ]);
+  });
+
+  test("a spell with no charge pool computes slot availability from this character's own spell slots", () => {
+    const c = makeCharacter({
+      name: "Lilith",
+      knownSpells: [{ id: "s1", name: "Guiding Bolt", level: 1, source: "Class" }],
+      spellSlots: [
+        { level: 1, current: 0, max: 4 },
+        { level: 2, current: 2, max: 2 },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["Single Target Burst"]).toEqual([
+      {
+        name: "Guiding Bolt",
+        characterId: "Lilith",
+        characterName: "Lilith",
+        description: undefined,
+        availability: { kind: "slot", level: 1, available: true, remaining: 2 },
+      },
+    ]);
+  });
+
+  test("a spent-out spell reports slot unavailable, not just a low number", () => {
+    const c = makeCharacter({
+      name: "Lilith",
+      knownSpells: [{ id: "s1", name: "Guiding Bolt", level: 1, source: "Class" }],
+      spellSlots: [{ level: 1, current: 0, max: 4 }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["Single Target Burst"][0].availability).toEqual({ kind: "slot", level: 1, available: false, remaining: 0 });
+  });
+
+  test("a cantrip has no availability at all — nothing to run out of", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Vicious Mockery", level: 0, source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Social[0].availability).toBeUndefined();
+  });
+
+  test("a feature with no linked charge pool has no availability", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "other", originType: "feat" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Rerolls.find((e) => e.name === "Lucky")?.availability).toBeUndefined();
+  });
+
+  test("a resource not matching any coverage keyword lands in Other with pool availability", () => {
+    const c = makeCharacter({
+      name: "Ragnar",
+      resources: [{ id: "r1", name: "Rage", current: 1, max: 3, recovery: "long-rest", source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Other).toEqual([
+      {
+        name: "Rage",
+        characterId: "Ragnar",
+        characterName: "Ragnar",
+        description: undefined,
+        availability: { kind: "pool", current: 1, max: 3, recovery: "long-rest" },
+      },
+    ]);
+  });
+
+  test("Heroic Inspiration still lands in Rerolls untouched, with no availability", () => {
+    const c = makeCharacter({ name: "A", heroicInspiration: true });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Rerolls).toContainEqual({
+      name: "Heroic Inspiration",
+      characterName: "1/1",
+      holders: [{ characterId: "A", characterName: "A" }],
+    });
+  });
+
+  test("a same-named feature that ISN'T coverage-categorized doesn't suppress the resource from Other", () => {
+    // Regression: a Feature with no coverage-keyword match used to still mark
+    // the name as "seen" and silently swallow the identically-named Resource
+    // entirely — invisible in both Other (wrongly suppressed) and every
+    // category (never matched one to begin with).
+    const c = makeCharacter({
+      name: "Ragnar",
+      features: [{ id: "f1", name: "Rage (Enter)", source: "Class", group: "bonusAction", originType: "class" }],
+      resources: [{ id: "r1", name: "Rage (Enter)", current: 3, max: 3, recovery: "long-rest", source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Other).toEqual([
+      {
+        name: "Rage (Enter)",
+        characterId: "Ragnar",
+        characterName: "Ragnar",
+        description: undefined,
+        availability: { kind: "pool", current: 3, max: 3, recovery: "long-rest" },
+      },
+    ]);
+  });
+
+  test("a resource whose name already matched a spell/feature isn't also listed in Other", () => {
+    const c = makeCharacter({
+      name: "Lilith",
+      features: [
+        { id: "f1", name: "Lay On Hands: Heal", source: "Class", group: "other", originType: "class", current: 5, max: 25, recovery: "long-rest" },
+      ],
+      resources: [{ id: "r1", name: "Lay On Hands: Heal", current: 5, max: 25, recovery: "long-rest", source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Healing).toHaveLength(1);
+    expect(coverage.Other).toHaveLength(0);
+  });
+
+  test("within a category, available entries sort before depleted ones, which sort before passives", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [
+        { id: "s1", name: "Fireball", level: 3, source: "Class", current: 0, max: 2, recovery: "long-rest" },
+        { id: "s2", name: "Shatter", level: 2, source: "Class" },
+      ],
+      spellSlots: [{ level: 2, current: 3, max: 3 }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["AOE Damage"].map((e) => e.name)).toEqual(["Shatter", "Fireball"]);
+  });
+
+  test("every category is present (possibly empty), including the new Other bucket", () => {
+    const coverage = computeResourceCoverage([]);
+    expect(Object.keys(coverage)).toHaveLength(17);
+    expect(coverage.Other).toEqual([]);
   });
 });
