@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
@@ -68,21 +68,10 @@ function AbilityMetaLine({ kind, source, isCantrip }: { kind?: ResourceCoverageE
   return <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{parts.join(" · ")}</p>;
 }
 
-/** How this specific ability recovers or what it costs — a distinct accent color from the meta line above so the two don't blur together in a hint that's already carrying a lot of text. For a slot-cost spell, also states the exact remaining count (`availability.remaining`) — this used to live only in the badge's native `title`, a plain unstyled browser tooltip that didn't match the rest of the hint. */
+/** How this specific ability recovers — pool kind only. A slot-cost spell's level/remaining-slot info used to live here too, but that duplicated what `LevelBadge`'s own minimal hint (right below) now says right next to it, so it moved out entirely rather than being said twice in two nearby tooltips. */
 function AvailabilityMetaLine({ availability }: { availability?: ResourceAvailability }) {
-  if (!availability) return null;
-  if (availability.kind === "pool") {
-    return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
-  }
-  const ordinal = ordinalLevel(availability.level);
-  return (
-    <>
-      <p className="text-xs font-medium text-sky-400">{ordinal}-level spell</p>
-      <p className={`text-xs font-medium ${availability.available ? "text-emerald-400" : "text-red-400"}`}>
-        {availability.remaining} slot{availability.remaining === 1 ? "" : "s"} available at {ordinal} level or higher
-      </p>
-    </>
-  );
+  if (!availability || availability.kind !== "pool") return null;
+  return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
 }
 
 function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
@@ -101,17 +90,48 @@ function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
 }
 
 /**
- * `pool` shows the exact charge count, same convention as the old Resources
- * row. `slot` can't show one exact number the way a pool can (a spell slot
- * is a shared party-wide/per-caster pool, not this ability's own) — an
- * available/depleted badge instead, labeled with the plain spell level
- * ("3 lvl") rather than the earlier "3rd+" shorthand, which read as unclear
- * (unclear whether the "+" meant "or higher" or something else). The exact
- * remaining-slot count moved into `AvailabilityMetaLine` inside this row's
- * own `InfoTooltip` — wrapping the badge in its own (`hoverOnly`, same
- * panel) tooltip means that detail is reachable by hovering the badge
- * directly too, not just a plain unstyled browser `title` tooltip.
+ * The small violet level/cantrip tag shared by a slot-cost spell's
+ * `AvailabilityBadge` and a cantrip's `PassivePill` — same border/text
+ * treatment as `RecoveryBadge`'s LR/SR tag (just violet instead of slate),
+ * so every small inline tag in this panel reads as one consistent visual
+ * language. Deliberately *not* colored green/red by availability the way
+ * the badge used to be — that status now lives in the hint's own text
+ * (`panel`), not the badge's border color, so one badge style covers both
+ * "here's a level" and "here's a cantrip" without a mismatched accent.
  */
+function LevelBadge({ label, panel }: { label: string; panel: ReactNode }) {
+  return (
+    <InfoTooltip hoverOnly panel={panel}>
+      <span className="shrink-0 whitespace-nowrap rounded border border-violet-800 px-1 text-[10px] font-medium uppercase text-violet-400">
+        {label}
+      </span>
+    </InfoTooltip>
+  );
+}
+
+/**
+ * Deliberately minimal — just the one status fact a DM actually needs when
+ * checking a slot-cost spell's badge: what level it is, and how many slots
+ * at that level (or higher) the character has left right now. The full
+ * name/kind/source/description hint already lives on the row's name itself
+ * (`TrackableHintPanel`); repeating all of that here too read as noise once
+ * both tooltips sat this close together.
+ */
+function SlotAvailabilityHint({ availability }: { availability: Extract<ResourceAvailability, { kind: "slot" }> }) {
+  const ordinal = ordinalLevel(availability.level);
+  return (
+    <div className="space-y-1">
+      <p className="text-white">{ordinal}-level spell</p>
+      <p className={availability.available ? "text-emerald-400" : "text-red-400"}>
+        {availability.remaining} slot{availability.remaining === 1 ? "" : "s"} available at {ordinal} level or higher
+      </p>
+    </div>
+  );
+}
+
+const CANTRIP_HINT = <p className="text-white">Cantrip — cast at will, no spell slot required.</p>;
+
+/** `pool` shows the exact charge count, same convention as the old Resources row. `slot` can't show one exact number the way a pool can (a spell slot is a shared party-wide/per-caster pool, not this ability's own) — a plain level badge instead, with the actual available-count in its own minimal hint (`SlotAvailabilityHint`). */
 function AvailabilityBadge({ entry }: { entry: ResourceCoverageEntry }) {
   const availability = entry.availability!;
   if (availability.kind === "pool") {
@@ -121,17 +141,7 @@ function AvailabilityBadge({ entry }: { entry: ResourceCoverageEntry }) {
       </span>
     );
   }
-  return (
-    <InfoTooltip hoverOnly panel={<TrackableHintPanel entry={entry} />}>
-      <span
-        className={`shrink-0 whitespace-nowrap rounded border px-1 text-[10px] font-semibold uppercase ${
-          availability.available ? "border-emerald-700 text-emerald-400" : "border-red-800 text-red-400"
-        }`}
-      >
-        {availability.level} lvl
-      </span>
-    </InfoTooltip>
-  );
+  return <LevelBadge label={`${availability.level} lvl`} panel={<SlotAvailabilityHint availability={availability} />} />;
 }
 
 /** One row per (character, ability) — deliberately not grouped by name like a passive pill below, since grouping would hide exactly the "how much is left" detail this merged panel exists to surface. */
@@ -193,11 +203,7 @@ function PassivePill({ group }: { group: NameGroup }) {
           <span className="text-slate-300">{group.name}</span>
         </InfoTooltip>
       </div>
-      {group.isCantrip && (
-        <span className="shrink-0 whitespace-nowrap rounded border border-violet-800 px-1 text-[10px] font-semibold uppercase text-violet-400">
-          Cantrip
-        </span>
-      )}
+      {group.isCantrip && <LevelBadge label="Cantrip" panel={CANTRIP_HINT} />}
       <CharacterChipRow holders={group.holders} />
     </div>
   );
