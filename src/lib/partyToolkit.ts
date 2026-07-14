@@ -638,6 +638,7 @@ export type CoverageCategory =
   | "AOE Damage"
   | "Single Target Burst"
   | "Control"
+  | "Summoning"
   | "Mobility"
   | "Detection"
   | "Protection"
@@ -656,6 +657,7 @@ export const COVERAGE_CATEGORY_ORDER: CoverageCategory[] = [
   "AOE Damage",
   "Single Target Burst",
   "Control",
+  "Summoning",
   "Mobility",
   "Detection",
   "Protection",
@@ -754,6 +756,12 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "blindness/deafness",
     "heat metal",
   ],
+  // No keyword fallback: unlike every other category here, this one didn't
+  // exist before D&D Beyond's `Summoning` tag was mapped to it (see
+  // `SPELL_TAG_TO_CATEGORY` below) — there's no legacy name list to carry
+  // forward, and the tag itself covers the whole family reliably (Find
+  // Familiar, Find Steed, Summon Celestial/Beast/Fiend/Fey/Undead...).
+  Summoning: [],
   Mobility: [
     "misty step",
     "fly",
@@ -824,11 +832,12 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
  * D&D Beyond's own spell `tags` (confirmed against real exports — 21
  * distinct values seen across several characters' full spell lists), mapped
  * to the categories they cleanly correspond to. Deliberately not a
- * *complete* replacement for `COVERAGE_MAP`: several tags (`Summoning`,
- * `Creation`, `Utility`, `Combat`, `Environment`...) don't map onto any one
- * of our categories, and several of our categories (`Stealth`, `Survival`,
- * `Rerolls`, `Anti-Undead`, `Light / Darkness`, `Revive`) have no tag that
- * reaches them at all — D&D Beyond's tagging just isn't that fine-grained.
+ * *complete* replacement for `COVERAGE_MAP`: `Utility`, `Creation`,
+ * `Combat`, `Environment` don't map onto any one of our categories (too
+ * generic to mean any one specific thing — see `computeSpellCategories`'s
+ * own doc comment), and several of our categories (`Stealth`, `Rerolls`,
+ * `Anti-Undead`, `Light / Darkness`, `Revive`) have no tag that reaches
+ * them at all — D&D Beyond's tagging just isn't that fine-grained.
  * `computeSpellCategories` below unions this with the existing keyword
  * lookup rather than replacing it, so those gaps keep working exactly as
  * before. `"Damage"` is deliberately absent here — it needs `isAreaEffect`
@@ -838,15 +847,20 @@ const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
   Healing: ["Healing"],
   Control: ["Control"],
   Debuff: ["Control"],
+  Summoning: ["Summoning"],
   Teleportation: ["Mobility"],
   Movement: ["Mobility"],
   Detection: ["Detection"],
+  // Spelled exactly as D&D Beyond returns it (confirmed against a real
+  // synced spell list) — not a typo on our side.
+  Foreknoweledge: ["Detection"],
   Warding: ["Protection"],
   Buff: ["Protection"],
   Social: ["Social"],
   Communication: ["Social"],
   Deception: ["Social"],
   Negation: ["Anti-Magic"],
+  Contaminated: ["Survival"],
 };
 
 /**

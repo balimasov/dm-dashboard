@@ -802,7 +802,7 @@ describe("computeResourceCoverage", () => {
 
   test("every category is present (possibly empty), including the new Resources bucket", () => {
     const coverage = computeResourceCoverage([]);
-    expect(Object.keys(coverage)).toHaveLength(17);
+    expect(Object.keys(coverage)).toHaveLength(18);
     expect(coverage.Resources).toEqual([]);
   });
 
@@ -954,5 +954,45 @@ describe("computeResourceCoverage", () => {
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Rerolls.find((e) => e.name === "Lucky")?.tags).toBeUndefined();
+  });
+
+  test("a Summoning-tagged spell lands in the dedicated Summoning category", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Conjuring", level: 3, source: "Class", tags: ["Summoning"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Summoning.map((e) => e.name)).toContain("Homebrew Conjuring");
+  });
+
+  test("a Foreknoweledge-tagged spell lands in Detection", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Augury", level: 2, source: "Class", tags: ["Foreknoweledge"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Detection.map((e) => e.name)).toContain("Homebrew Augury");
+  });
+
+  test("a Contaminated-tagged spell lands in Survival", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Purge", level: 1, source: "Class", tags: ["Contaminated"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Survival.map((e) => e.name)).toContain("Homebrew Purge");
+  });
+
+  test("a Utility-tagged spell with no other mapped tag stays out of every category (deliberately unmapped)", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Gadgetry", level: 0, source: "Class", tags: ["Utility"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    const categorized = Object.entries(coverage)
+      .filter(([key]) => key !== "Resources")
+      .flatMap(([, entries]) => entries);
+    expect(categorized.some((e) => e.name === "Homebrew Gadgetry")).toBe(false);
+    expect(coverage.Resources.map((e) => e.name)).toContain("Homebrew Gadgetry");
   });
 });
