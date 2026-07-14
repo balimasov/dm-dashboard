@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Character } from "@/lib/types";
+import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
   RESOURCE_COVERAGE_CATEGORY_ORDER,
@@ -19,7 +19,6 @@ import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import {
   CHART_AREA_MIN_HEIGHT_CLASS,
   HEROIC_INSPIRATION_DESCRIPTION,
-  HintPanel,
   HolderListPanel,
   PartyResourceGaugeDisplay,
   PartyResourcesHint,
@@ -56,8 +55,41 @@ function SpecialRow({ entry }: { entry: ResourceCoverageEntry }) {
   );
 }
 
+const KIND_LABELS: Record<NonNullable<ResourceCoverageEntry["kind"]>, string> = {
+  spell: "Spell",
+  feature: "Feature",
+  resource: "Resource",
+};
+
+/** "SPELL · Wizard" / "FEATURE · Barbarian" / "RESOURCE · Race" — the hint's own small-caps meta line, same tier the old `ResourceHintPanel` used for a resource's `source`, now generalized to spells/features too and folding in the kind so a DM doesn't have to guess what they're looking at. */
+function AbilityMetaLine({ kind, source, isCantrip }: { kind?: ResourceCoverageEntry["kind"]; source?: string; isCantrip?: boolean }) {
+  const parts = [kind && KIND_LABELS[kind], isCantrip && "Cantrip", source].filter(Boolean) as string[];
+  if (parts.length === 0) return null;
+  return <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{parts.join(" · ")}</p>;
+}
+
+/** How this specific ability recovers or what it costs — a distinct accent color from the meta line above so the two don't blur together in a hint that's already carrying a lot of text. */
+function AvailabilityMetaLine({ availability }: { availability?: ResourceAvailability }) {
+  if (!availability) return null;
+  if (availability.kind === "pool") {
+    return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
+  }
+  return <p className="text-xs font-medium text-sky-400">Costs a {ordinalLevel(availability.level)}-level spell slot</p>;
+}
+
 function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
-  return <HintPanel title={entry.name} description={entry.description && <RichText text={entry.description} />} />;
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-white">{entry.name}</p>
+      <AbilityMetaLine kind={entry.kind} source={entry.source} isCantrip={entry.isCantrip} />
+      <AvailabilityMetaLine availability={entry.availability} />
+      {entry.description && (
+        <p className="text-slate-300">
+          <RichText text={entry.description} />
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** `pool` shows the exact charge count, same convention as the old Resources row. `slot` can't show one exact number the way a pool can (a spell slot is a shared party-wide/per-caster pool, not this ability's own) — an available/depleted badge instead, with the precise count in the hover title. */
@@ -102,57 +134,101 @@ function TrackableRow({ entry }: { entry: ResourceCoverageEntry }) {
 interface NameGroup {
   name: string;
   holders: ResourceCoverageEntry[];
-}
-
-/** Same grouping `CoveragePanel` uses — multiple characters knowing the same passive spell/trait collapse into one pill with several chips, since there's no per-holder quantity to lose by grouping (unlike `TrackableRow` above). */
-function groupByName(entries: ResourceCoverageEntry[]): NameGroup[] {
-  const byName = new Map<string, NameGroup>();
-  for (const entry of entries) {
-    if (!byName.has(entry.name)) byName.set(entry.name, { name: entry.name, holders: [] });
-    byName.get(entry.name)!.holders.push(entry);
-  }
-  return Array.from(byName.values());
+  /** Whether this passive is a level-0 spell — see `ResourceCoverageEntry.isCantrip`. Every holder of the same name shares this, so it's hoisted onto the group rather than checked per-holder. */
+  isCantrip: boolean;
 }
 
 function PassiveHintPanel({ group }: { group: NameGroup }) {
   const holdersWithCharacter = group.holders.filter((h) => h.characterId);
   const description = group.holders.find((h) => h.description)?.description;
+  const sample = group.holders[0];
   return (
-    <HintPanel
-      title={group.name}
-      description={description && <RichText text={description} />}
-      rows={holdersWithCharacter}
-      rowKey={(h) => h.characterId!}
-      renderRow={(h) => h.characterName}
-    />
+    <div className="space-y-1">
+      <p className="font-medium text-white">{group.name}</p>
+      <AbilityMetaLine kind={sample?.kind} source={sample?.source} isCantrip={group.isCantrip} />
+      {description && (
+        <p className="text-slate-300">
+          <RichText text={description} />
+        </p>
+      )}
+      {holdersWithCharacter.length > 0 && (
+        <ul className="space-y-0.5 pt-1">
+          {holdersWithCharacter.map((h) => (
+            <li key={h.characterId} className="text-white">
+              {h.characterName}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
+/** A small "Cantrip" tag next to the name — without it, a cantrip's row looks identical to an unlimited passive `Feature`'s (neither has an availability badge), which reads as a gap rather than the intentional "nothing to run out of" it actually is. */
 function PassivePill({ group }: { group: NameGroup }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1 text-sm">
-      <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <InfoTooltip panel={<PassiveHintPanel group={group} />}>
-          <span className="text-slate-300">{group.name}</span>
+          <span className="min-w-0 truncate text-slate-300">{group.name}</span>
         </InfoTooltip>
+        {group.isCantrip && (
+          <span className="shrink-0 rounded border border-violet-800 px-1 text-[9px] font-semibold uppercase tracking-wide text-violet-400">
+            Cantrip
+          </span>
+        )}
       </div>
       <CharacterChipRow holders={group.holders} />
     </div>
   );
 }
 
-/** Splits a category's already-sorted entries into the three row shapes above — `computeResourceCoverage` already ranks trackable-and-available first, so this only needs to separate by *kind* of row, not re-sort. */
+type CategoryRow = { kind: "trackable"; entry: ResourceCoverageEntry } | { kind: "passive"; group: NameGroup };
+
+/**
+ * Builds one row per entry, grouping same-named entries with no
+ * `availability` into a single passive pill (multiple characters knowing
+ * the same cantrip/trait collapse into one row with several chips — there's
+ * no per-holder quantity to lose by grouping, unlike a trackable row).
+ * `entries` is already alphabetically sorted by `computeResourceCoverage`,
+ * and grouping only ever merges into a name's *first* occurrence, so the
+ * returned row order stays alphabetical too — trackable and passive rows
+ * interleave by name instead of clustering into two separate blocks.
+ */
+function buildRows(entries: ResourceCoverageEntry[]): CategoryRow[] {
+  const rows: CategoryRow[] = [];
+  const passiveRows = new Map<string, CategoryRow & { kind: "passive" }>();
+  for (const entry of entries) {
+    if (entry.availability) {
+      rows.push({ kind: "trackable", entry });
+      continue;
+    }
+    const existing = passiveRows.get(entry.name);
+    if (existing) {
+      existing.group.holders.push(entry);
+      continue;
+    }
+    const row: CategoryRow & { kind: "passive" } = {
+      kind: "passive",
+      group: { name: entry.name, holders: [entry], isCantrip: Boolean(entry.isCantrip) },
+    };
+    passiveRows.set(entry.name, row);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/** Splits a category's already-sorted entries into the special (Heroic Inspiration-style) rows and everything else — see `buildRows` for how the rest turn into a single alphabetical row list. */
 function splitCategoryEntries(entries: ResourceCoverageEntry[]) {
   const special = entries.filter((e) => e.holders);
-  const trackable = entries.filter((e) => !e.holders && e.availability);
-  const passiveGroups = groupByName(entries.filter((e) => !e.holders && !e.availability));
-  return { special, trackable, passiveGroups };
+  const rows = buildRows(entries.filter((e) => !e.holders));
+  return { special, rows };
 }
 
 /** Approximate rendered line count for a category — used only to balance column heights, so it doesn't need to be exact. */
 function categoryLineCount(entries: ResourceCoverageEntry[]): number {
-  const { special, trackable, passiveGroups } = splitCategoryEntries(entries);
-  return special.length + trackable.length + passiveGroups.length;
+  const { special, rows } = splitCategoryEntries(entries);
+  return special.length + rows.length;
 }
 
 /** The empty-category placeholder was reading as regular (if dim) content and blending into the populated blocks around it in a 4-column layout — italicized and a shade darker than `SectionLabel` itself so it unmistakably reads as "nothing here" rather than a line of real data. */
@@ -161,8 +237,8 @@ function EmptyCategoryPlaceholder() {
 }
 
 function ResourceCoverageCategoryBlock({ category, entries }: { category: ResourceCoverageCategory; entries: ResourceCoverageEntry[] }) {
-  const { special, trackable, passiveGroups } = splitCategoryEntries(entries);
-  const isEmpty = special.length === 0 && trackable.length === 0 && passiveGroups.length === 0;
+  const { special, rows } = splitCategoryEntries(entries);
+  const isEmpty = special.length === 0 && rows.length === 0;
   return (
     <div>
       <SectionLabel>{category}</SectionLabel>
@@ -173,12 +249,13 @@ function ResourceCoverageCategoryBlock({ category, entries }: { category: Resour
           {special.map((e) => (
             <SpecialRow key={e.name} entry={e} />
           ))}
-          {trackable.map((e) => (
-            <TrackableRow key={`${e.characterId}-${e.name}`} entry={e} />
-          ))}
-          {passiveGroups.map((g) => (
-            <PassivePill key={g.name} group={g} />
-          ))}
+          {rows.map((row) =>
+            row.kind === "trackable" ? (
+              <TrackableRow key={`${row.entry.characterId}-${row.entry.name}`} entry={row.entry} />
+            ) : (
+              <PassivePill key={row.group.name} group={row.group} />
+            )
+          )}
         </div>
       )}
     </div>
@@ -187,28 +264,41 @@ function ResourceCoverageCategoryBlock({ category, entries }: { category: Resour
 
 const COLUMNS = 4;
 
-/** Same greedy bin-packing `CoveragePanel.distributeCoverageColumns` uses, kept as its own local copy rather than a shared export — this panel's category set (`+ "Other"`) and per-category weight (line count, not group count) both differ enough that sharing the function would need a generic wrapper for one caller each. */
+/**
+ * Order-preserving column fill, the same idea CSS's `column-fill: balance`
+ * uses for multi-column text — categories are walked in
+ * `RESOURCE_COVERAGE_CATEGORY_ORDER` order and a column only closes once
+ * its already-placed weight would exceed an even share of the total. A
+ * greedy shortest-column-first bin pack (what `CoveragePanel.distributeCoverageColumns`
+ * does) balances heights too, but it assigns whichever category is
+ * heaviest to whichever column is shortest — the categories end up
+ * scattered across columns by weight, not in reading order, so a DM
+ * scanning top-to-bottom then across columns doesn't see them in the
+ * `RESOURCE_COVERAGE_CATEGORY_ORDER` sequence. This keeps that order intact:
+ * read down column 1, then column 2, and so on.
+ */
 function distributeColumns(
   categories: ResourceCoverageCategory[],
   coverage: Record<ResourceCoverageCategory, ResourceCoverageEntry[]>,
   numColumns: number
 ): ResourceCoverageCategory[][] {
   const weight = (category: ResourceCoverageCategory) => categoryLineCount(coverage[category]) + 1;
-  const columns: ResourceCoverageCategory[][] = Array.from({ length: numColumns }, () => []);
-  const heights = new Array(numColumns).fill(0);
+  const target = categories.reduce((sum, c) => sum + weight(c), 0) / numColumns;
 
-  for (const category of [...categories].sort((a, b) => weight(b) - weight(a))) {
-    let shortest = 0;
-    for (let i = 1; i < numColumns; i++) {
-      if (heights[i] < heights[shortest]) shortest = i;
+  const columns: ResourceCoverageCategory[][] = [];
+  let current: ResourceCoverageCategory[] = [];
+  let currentWeight = 0;
+  for (const category of categories) {
+    if (current.length > 0 && currentWeight + weight(category) > target && columns.length < numColumns - 1) {
+      columns.push(current);
+      current = [];
+      currentWeight = 0;
     }
-    columns[shortest].push(category);
-    heights[shortest] += weight(category);
+    current.push(category);
+    currentWeight += weight(category);
   }
-
-  for (const column of columns) {
-    column.sort((a, b) => RESOURCE_COVERAGE_CATEGORY_ORDER.indexOf(a) - RESOURCE_COVERAGE_CATEGORY_ORDER.indexOf(b));
-  }
+  columns.push(current);
+  while (columns.length < numColumns) columns.push([]);
   return columns;
 }
 
@@ -272,11 +362,10 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
         </div>
       )}
 
-      <SectionLabel className="mt-4">Coverage</SectionLabel>
       {categories.length === 0 ? (
-        <p className="text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
+        <p className="mt-4 text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {columns.map(
             (column, i) =>
               column.length > 0 && (

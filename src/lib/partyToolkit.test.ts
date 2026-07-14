@@ -719,6 +719,9 @@ describe("computeResourceCoverage", () => {
         characterName: "Runa",
         description: undefined,
         availability: { kind: "pool", current: 1, max: 2, recovery: "long-rest" },
+        kind: "spell",
+        source: "Class",
+        isCantrip: false,
       },
     ]);
   });
@@ -740,6 +743,9 @@ describe("computeResourceCoverage", () => {
         characterName: "Lilith",
         description: undefined,
         availability: { kind: "slot", level: 1, available: true, remaining: 2 },
+        kind: "spell",
+        source: "Class",
+        isCantrip: false,
       },
     ]);
   });
@@ -761,6 +767,7 @@ describe("computeResourceCoverage", () => {
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Social[0].availability).toBeUndefined();
+    expect(coverage.Social[0].isCantrip).toBe(true);
   });
 
   test("a feature with no linked charge pool has no availability", () => {
@@ -772,18 +779,20 @@ describe("computeResourceCoverage", () => {
     expect(coverage.Rerolls.find((e) => e.name === "Lucky")?.availability).toBeUndefined();
   });
 
-  test("a resource not matching any coverage keyword lands in Other with pool availability", () => {
+  test("a resource not matching any coverage keyword lands in Resources with pool availability", () => {
     const c = makeCharacter({
       name: "Ragnar",
       resources: [{ id: "r1", name: "Rage", current: 1, max: 3, recovery: "long-rest", source: "Class" }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage.Other).toEqual([
+    expect(coverage.Resources).toEqual([
       {
         name: "Rage",
         characterId: "Ragnar",
         characterName: "Ragnar",
         description: undefined,
+        kind: "resource",
+        source: "Class",
         availability: { kind: "pool", current: 1, max: 3, recovery: "long-rest" },
       },
     ]);
@@ -799,10 +808,10 @@ describe("computeResourceCoverage", () => {
     });
   });
 
-  test("a same-named feature that ISN'T coverage-categorized doesn't suppress the resource from Other", () => {
+  test("a same-named feature that ISN'T coverage-categorized doesn't suppress the resource from Resources", () => {
     // Regression: a Feature with no coverage-keyword match used to still mark
     // the name as "seen" and silently swallow the identically-named Resource
-    // entirely — invisible in both Other (wrongly suppressed) and every
+    // entirely — invisible in both Resources (wrongly suppressed) and every
     // category (never matched one to begin with).
     const c = makeCharacter({
       name: "Ragnar",
@@ -810,18 +819,20 @@ describe("computeResourceCoverage", () => {
       resources: [{ id: "r1", name: "Rage (Enter)", current: 3, max: 3, recovery: "long-rest", source: "Class" }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage.Other).toEqual([
+    expect(coverage.Resources).toEqual([
       {
         name: "Rage (Enter)",
         characterId: "Ragnar",
         characterName: "Ragnar",
         description: undefined,
+        kind: "resource",
+        source: "Class",
         availability: { kind: "pool", current: 3, max: 3, recovery: "long-rest" },
       },
     ]);
   });
 
-  test("a resource whose name already matched a spell/feature isn't also listed in Other", () => {
+  test("a resource whose name already matched a spell/feature isn't also listed in Resources", () => {
     const c = makeCharacter({
       name: "Lilith",
       features: [
@@ -831,32 +842,35 @@ describe("computeResourceCoverage", () => {
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Healing).toHaveLength(1);
-    expect(coverage.Other).toHaveLength(0);
+    expect(coverage.Resources).toHaveLength(0);
   });
 
-  test("within a category, available entries sort before depleted ones, which sort before passives", () => {
+  test("entries within a category sort alphabetically by name, not by availability", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [
-        { id: "s1", name: "Fireball", level: 3, source: "Class", current: 0, max: 2, recovery: "long-rest" },
-        { id: "s2", name: "Shatter", level: 2, source: "Class" },
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Race", current: 0, max: 1, recovery: "long-rest" },
+        { id: "s2", name: "Web", level: 2, source: "Class" },
       ],
       spellSlots: [{ level: 2, current: 3, max: 3 }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["AOE Damage"].map((e) => e.name)).toEqual(["Shatter", "Fireball"]);
+    // Faerie Fire is a depleted pool and Web is an available slot — an
+    // availability-first sort would put Web ahead of Faerie Fire; plain name
+    // order doesn't.
+    expect(coverage.Control.map((e) => e.name)).toEqual(["Faerie Fire", "Web"]);
   });
 
-  test("every category is present (possibly empty), including the new Other bucket", () => {
+  test("every category is present (possibly empty), including the new Resources bucket", () => {
     const coverage = computeResourceCoverage([]);
     expect(Object.keys(coverage)).toHaveLength(17);
-    expect(coverage.Other).toEqual([]);
+    expect(coverage.Resources).toEqual([]);
   });
 
-  test("RESOURCE_COVERAGE_CATEGORY_ORDER is alphabetical with Other always last", () => {
-    const alphabetical = RESOURCE_COVERAGE_CATEGORY_ORDER.slice(0, -1);
-    expect(alphabetical).toEqual([...alphabetical].sort((a, b) => a.localeCompare(b)));
-    expect(RESOURCE_COVERAGE_CATEGORY_ORDER[RESOURCE_COVERAGE_CATEGORY_ORDER.length - 1]).toBe("Other");
+  test("RESOURCE_COVERAGE_CATEGORY_ORDER puts Resources first, then the rest alphabetical", () => {
+    expect(RESOURCE_COVERAGE_CATEGORY_ORDER[0]).toBe("Resources");
+    const rest = RESOURCE_COVERAGE_CATEGORY_ORDER.slice(1);
+    expect(rest).toEqual([...rest].sort((a, b) => a.localeCompare(b)));
   });
 
   test("a spell known twice under the same name (charge pool + costs-a-slot) collapses to one entry, preferring the charge pool", () => {
@@ -877,23 +891,35 @@ describe("computeResourceCoverage", () => {
         characterId: "Runa",
         characterName: "Runa",
         description: undefined,
+        kind: "spell",
+        source: "Race",
+        isCantrip: false,
         availability: { kind: "pool", current: 1, max: 1, recovery: "long-rest" },
       },
     ]);
   });
 
-  test("a known spell not in the coverage keyword map lands in Other instead of vanishing", () => {
+  test("a known spell not in the coverage keyword map lands in Resources instead of vanishing", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [{ id: "s1", name: "Prestidigitation", level: 0, source: "Class" }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage.Other).toEqual([
-      { name: "Prestidigitation", characterId: "A", characterName: "A", description: undefined, availability: undefined },
+    expect(coverage.Resources).toEqual([
+      {
+        name: "Prestidigitation",
+        characterId: "A",
+        characterName: "A",
+        description: undefined,
+        kind: "spell",
+        source: "Class",
+        isCantrip: true,
+        availability: undefined,
+      },
     ]);
   });
 
-  test("an uncategorized feature does NOT land in Other — too much lore/reference noise, unlike spells", () => {
+  test("an uncategorized feature does NOT land in Resources — too much lore/reference noise, unlike spells", () => {
     const c = makeCharacter({
       name: "A",
       features: [{ id: "f1", name: "Ability Score Increases", source: "Race", group: "other", originType: "species" }],
@@ -911,6 +937,6 @@ describe("computeResourceCoverage", () => {
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Control).toHaveLength(1);
-    expect(coverage.Other).toHaveLength(0);
+    expect(coverage.Resources).toHaveLength(0);
   });
 });

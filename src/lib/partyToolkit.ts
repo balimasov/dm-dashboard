@@ -699,6 +699,8 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "greater restoration",
     "lay on hands: heal",
     "lay on hands: purify poison",
+    "lay on hands: healing pool",
+    "aura of vitality",
   ],
   Revive: ["revivify", "raise dead", "resurrection", "true resurrection", "reincarnate"],
   "AOE Damage": [
@@ -715,6 +717,7 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "spirit guardians",
     "sunburst",
     "wall of fire",
+    "cloud of daggers",
   ],
   "Single Target Burst": [
     "guiding bolt",
@@ -730,6 +733,7 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "finger of death",
     "power word kill",
     "hellish rebuke",
+    "fire bolt",
   ],
   Control: [
     "command",
@@ -745,6 +749,8 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "entangle",
     "grease",
     "dissonant whispers",
+    "blindness/deafness",
+    "heat metal",
   ],
   Mobility: [
     "misty step",
@@ -758,6 +764,7 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "dimension door",
     "teleport",
     "adrenaline rush",
+    "find steed",
   ],
   Detection: [
     "detect magic",
@@ -781,9 +788,12 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "warding bond",
     "heroism",
     "danger sense",
+    "mirror image",
+    "blade ward",
+    "bless",
   ],
-  "Light / Darkness": ["light", "daylight", "darkness", "dancing lights"],
-  Social: ["charm person", "suggestion", "friends", "enthrall", "zone of truth", "vicious mockery"],
+  "Light / Darkness": ["light", "daylight", "darkness", "dancing lights", "control flames"],
+  Social: ["charm person", "suggestion", "friends", "enthrall", "zone of truth", "vicious mockery", "message"],
   Stealth: ["invisibility", "pass without trace", "nondetection", "disguise self", "minor illusion", "silence"],
   Survival: [
     "goodberry",
@@ -793,8 +803,9 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "water walk",
     "meld into stone",
     "plant growth",
+    "relentless endurance",
   ],
-  Rerolls: ["lucky"],
+  Rerolls: ["lucky", "luck points"],
   Reactions: ["shield", "counterspell", "war caster", "absorb elements", "hellish rebuke"],
   "Anti-Undead": ["turn undead", "destroy undead", "guardian of faith"],
   "Anti-Magic": ["counterspell", "dispel magic", "antimagic field", "globe of invulnerability"],
@@ -875,13 +886,21 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
 // the migration plan.
 // ---------------------------------------------------------------------------
 
-/** `CoverageCategory` plus one bucket for tracked resources that don't match a coverage keyword at all — `Rage`, `Sorcery Points`, and the like, which `COVERAGE_CATEGORY_KEYWORDS` deliberately excludes (see its own doc comment) since they used to live in a separate Resources panel. Now that panel is gone, they need somewhere to land instead of disappearing. */
-export type ResourceCoverageCategory = CoverageCategory | "Other";
+/** `CoverageCategory` plus one bucket for tracked resources that don't match a coverage keyword at all — `Rage`, `Sorcery Points`, and the like, which `COVERAGE_CATEGORY_KEYWORDS` deliberately excludes (see its own doc comment) since they used to live in a separate Resources panel. Now that panel is gone, they need somewhere to land instead of disappearing. Named `"Resources"` rather than `"Other"` — it's usually the single biggest bucket (every personal charge pool that doesn't map to a specific combat need lands here), so it reads better as its own named thing than as a vague leftover. */
+export type ResourceCoverageCategory = CoverageCategory | "Resources";
 
-/** Alphabetical (not `COVERAGE_CATEGORY_ORDER`'s hand-picked "most-common-need-first" order) — with `Other` always last, since it's the least specific bucket and shouldn't compete with real categories for the DM's first glance. */
+/**
+ * `"Resources"` first, then the rest of `COVERAGE_CATEGORY_ORDER` alphabetically.
+ * It was tried last (least specific bucket, shouldn't compete with real
+ * categories for the first glance) but it's also consistently the largest —
+ * the column-balancing layout below always ends up placing it first anyway
+ * (heaviest category claims the first column), so fighting that by sorting
+ * it last just made the two disagree. Leading with it matches what a DM
+ * actually sees.
+ */
 export const RESOURCE_COVERAGE_CATEGORY_ORDER: ResourceCoverageCategory[] = [
+  "Resources",
   ...[...COVERAGE_CATEGORY_ORDER].sort((a, b) => a.localeCompare(b)),
-  "Other",
 ];
 
 /**
@@ -911,6 +930,12 @@ export interface ResourceCoverageEntry {
   holders?: CoverageHolder[];
   /** Absent for a cantrip or an unlimited passive ability — see `ResourceAvailability`. */
   availability?: ResourceAvailability;
+  /** What kind of thing this is — the hint panel's own "type" line, same idea as `PartyResourceEntry.source` on the old Resources panel but generalized to spells/features too. Absent for the Heroic Inspiration entry, which isn't any of the three. */
+  kind?: "spell" | "feature" | "resource";
+  /** Where it comes from (e.g. "Class", "Race", "Feat") — `KnownSpell.source`/`Feature.source`/`Resource.source` passed straight through, same convention as the old Resources panel's hover hint. */
+  source?: string;
+  /** A spell at level 0 — the row's "no availability badge" is otherwise indistinguishable from an unlimited passive `Feature`, which reads as a gap rather than an intentional cantrip. */
+  isCantrip?: boolean;
 }
 
 function spellResourceAvailability(spell: KnownSpell, character: Character): ResourceAvailability | undefined {
@@ -930,22 +955,9 @@ function featureResourceAvailability(feature: Feature): ResourceAvailability | u
 }
 
 /**
- * Rank used to sort each category's entries — "can actually be used right
- * now" (a non-empty pool, or a spell with a free slot) floats to the top,
- * "tracked but currently empty" sinks below it, and an entry with no
- * `ResourceAvailability` at all (a cantrip, a passive trait) sorts last —
- * it's never urgent information, since it's never "out."
- */
-function availabilityRank(availability: ResourceAvailability | undefined): number {
-  if (!availability) return 2;
-  if (availability.kind === "pool") return availability.current > 0 ? 0 : 1;
-  return availability.available ? 0 : 1;
-}
-
-/**
  * Same category matching as `computeSpellAbilityCoverage`, but every entry
  * now also carries its own `ResourceAvailability`, and every tracked
- * `Resource` that doesn't match a coverage keyword lands in `Other` instead
+ * `Resource` that doesn't match a coverage keyword lands in `Resources` instead
  * of vanishing — replaces both the old Resources panel and the old Coverage
  * panel with one categorized, quantity-aware list.
  */
@@ -960,30 +972,39 @@ function availabilityRank(availability: ResourceAvailability | undefined): numbe
  * the slot-cost one (`"slot"`) since it's the more specific "you also get
  * free casts" fact a DM benefits from seeing at a glance.
  */
-function dedupeSpellsByName(spells: KnownSpell[], character: Character): Array<{ name: string; description?: string; availability?: ResourceAvailability }> {
-  const byName = new Map<string, { name: string; description?: string; availability?: ResourceAvailability }>();
+function dedupeSpellsByName(
+  spells: KnownSpell[],
+  character: Character
+): Array<{ name: string; description?: string; source?: string; isCantrip: boolean; availability?: ResourceAvailability }> {
+  const byName = new Map<string, { name: string; description?: string; source?: string; isCantrip: boolean; availability?: ResourceAvailability }>();
   for (const s of spells) {
     const key = s.name.toLowerCase();
     const availability = spellResourceAvailability(s, character);
     const existing = byName.get(key);
     if (!existing || (availability?.kind === "pool" && existing.availability?.kind !== "pool")) {
-      byName.set(key, { name: s.name, description: s.description ?? existing?.description, availability });
+      byName.set(key, {
+        name: s.name,
+        description: s.description ?? existing?.description,
+        source: s.source,
+        isCantrip: s.level <= 0,
+        availability,
+      });
     }
   }
   return Array.from(byName.values());
 }
 
-/** D&D Beyond folds a charge-pool spell's level into its `Resource` name (`"Faerie Fire (1st)"` — see `computeResources`'s doc comment), which would otherwise read as a second, unrelated ability next to the properly-categorized plain `"Faerie Fire"` entry above. Stripped before the `Other`-bucket dedup check so the two collapse into the one entry the spell/feature pass already placed. */
+/** D&D Beyond folds a charge-pool spell's level into its `Resource` name (`"Faerie Fire (1st)"` — see `computeResources`'s doc comment), which would otherwise read as a second, unrelated ability next to the properly-categorized plain `"Faerie Fire"` entry above. Stripped before the `Resources`-bucket dedup check so the two collapse into the one entry the spell/feature pass already placed. */
 const RESOURCE_LEVEL_SUFFIX = /\s+\(\d+(?:st|nd|rd|th)\)$/i;
 
 /**
  * Same category matching as `computeSpellAbilityCoverage`, but every entry
  * now also carries its own `ResourceAvailability`, and nothing a character
  * has silently disappears: a tracked `Resource` or known spell that doesn't
- * match a coverage keyword lands in `Other` instead of vanishing — replaces
+ * match a coverage keyword lands in `Resources` instead of vanishing — replaces
  * both the old Resources panel and the old Coverage panel with one
  * categorized, quantity-aware list. Features are the one exception left
- * out of `Other` when uncategorized — unlike spells, most of a character's
+ * out of `Resources` when uncategorized — unlike spells, most of a character's
  * `features` are pure lore/reference entries (race size, ability-score-
  * increase writeups...) never meant to answer "what can I use", and dumping
  * all of them in would bury the entries that do.
@@ -994,7 +1015,7 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
   ) as Record<ResourceCoverageCategory, ResourceCoverageEntry[]>;
 
   // Tracks every (character, base name) already placed somewhere — a
-  // category, or `Other` — so the raw `Resource` pass below can skip a
+  // category, or `Resources` — so the raw `Resource` pass below can skip a
   // charge-pool resource that's just the same ability under its
   // level-suffixed name (see `RESOURCE_LEVEL_SUFFIX`) instead of listing it
   // twice.
@@ -1002,15 +1023,23 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
 
   for (const c of characters) {
     const namedSpells = dedupeSpellsByName(c.knownSpells, c);
-    const namedFeatures = c.features.map((f) => ({ name: f.name, description: f.description, availability: featureResourceAvailability(f) }));
+    const namedFeatures = c.features.map((f) => ({ name: f.name, description: f.description, source: f.source, availability: featureResourceAvailability(f) }));
 
     const seenInCategory = new Set<string>();
-    function place(name: string, description: string | undefined, availability: ResourceAvailability | undefined, fallbackToOther: boolean) {
+    function place(
+      name: string,
+      description: string | undefined,
+      availability: ResourceAvailability | undefined,
+      fallbackToOther: boolean,
+      kind: "spell" | "feature",
+      source: string | undefined,
+      isCantrip: boolean
+    ) {
       const categories = COVERAGE_MAP[name.toLowerCase()];
       if (!categories) {
         if (!fallbackToOther) return;
         seenNames.add(`${c.id}:${name.toLowerCase()}`);
-        coverage.Other.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability });
+        coverage.Resources.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip });
         return;
       }
       seenNames.add(`${c.id}:${name.toLowerCase()}`);
@@ -1018,12 +1047,12 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
         const key = `${category}:${name}`;
         if (seenInCategory.has(key)) continue;
         seenInCategory.add(key);
-        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability });
+        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip });
       }
     }
 
-    for (const { name, description, availability } of namedSpells) place(name, description, availability, true);
-    for (const { name, description, availability } of namedFeatures) place(name, description, availability, false);
+    for (const { name, description, source, isCantrip, availability } of namedSpells) place(name, description, availability, true, "spell", source, isCantrip);
+    for (const { name, description, source, availability } of namedFeatures) place(name, description, availability, false, "feature", source, false);
   }
 
   if (characters.length > 0) {
@@ -1039,23 +1068,20 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
     const owner = characters.find((c) => c.name === entry.characterName);
     const baseName = entry.resourceName.replace(RESOURCE_LEVEL_SUFFIX, "");
     if (owner && seenNames.has(`${owner.id}:${baseName.toLowerCase()}`)) continue;
-    coverage.Other.push({
+    coverage.Resources.push({
       name: entry.resourceName,
       characterId: owner?.id,
       characterName: entry.characterName,
       avatarUrl: entry.avatarUrl,
       description: entry.description,
+      kind: "resource",
+      source: entry.source,
       availability: { kind: "pool", current: entry.current, max: entry.max, recovery: entry.recovery },
     });
   }
 
   for (const category of RESOURCE_COVERAGE_CATEGORY_ORDER) {
-    coverage[category].sort(
-      (a, b) =>
-        availabilityRank(a.availability) - availabilityRank(b.availability) ||
-        a.name.localeCompare(b.name) ||
-        compareCharacterId(a.characterId, b.characterId)
-    );
+    coverage[category].sort((a, b) => a.name.localeCompare(b.name) || compareCharacterId(a.characterId, b.characterId));
   }
 
   return coverage;
