@@ -20,6 +20,7 @@ import { useCharacters } from "@/hooks/useCharacters";
 import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
+import { Button } from "@/components/ui/Button";
 
 /** The add/sync/reorder roster UI, without any page-level chrome — embedded inside `CampaignFormModal`. */
 export function CampaignRosterEditor({
@@ -135,13 +136,9 @@ export function CampaignRosterEditor({
           placeholder="https://www.dndbeyond.com/characters/27964361"
           className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
         />
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-        >
+        <Button type="submit" disabled={!canSubmit}>
           {adding ? "Adding..." : "Add"}
-        </button>
+        </Button>
       </form>
       <div className="mb-4 space-y-1">
         {error && <p className="text-sm text-red-400">{error}</p>}

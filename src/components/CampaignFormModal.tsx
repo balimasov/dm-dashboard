@@ -27,6 +27,7 @@ import { NotesEditor } from "@/components/NotesEditor";
 import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 const MAX_QUICK_LINKS = 15;
 
@@ -393,13 +394,9 @@ export function CampaignFormModal({
                 {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
                 {!isEditing && (
-                  <button
-                    type="submit"
-                    disabled={!name.trim() || creating}
-                    className="mt-5 w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-                  >
+                  <Button type="submit" disabled={!name.trim() || creating} className="mt-5 w-full">
                     {creating ? "Creating..." : "Create Campaign"}
-                  </button>
+                  </Button>
                 )}
               </form>
 
@@ -439,13 +436,9 @@ export function CampaignFormModal({
 
         {isEditing && (
           <div className="mt-4 flex justify-end">
-            <button
-              type="button"
-              onClick={close}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-            >
+            <Button type="button" onClick={close}>
               Done
-            </button>
+            </Button>
           </div>
         )}
       </div>

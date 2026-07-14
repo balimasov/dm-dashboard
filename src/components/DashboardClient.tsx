@@ -16,6 +16,7 @@ import { RemindersPanel } from "@/components/RemindersPanel";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
+import { Button } from "@/components/ui/Button";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { ClockIcon, DownloadIcon, GearIcon } from "@/components/ui/icons";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -105,13 +106,9 @@ function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpen
   return (
     <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
       <p>{message}</p>
-      <button
-        type="button"
-        onClick={onOpenSettings}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-      >
+      <Button type="button" onClick={onOpenSettings}>
         Open Settings
-      </button>
+      </Button>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { NumberInput } from "./NumberInput";
+import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
@@ -781,13 +782,9 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

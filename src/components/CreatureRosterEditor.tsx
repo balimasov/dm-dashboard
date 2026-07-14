@@ -38,6 +38,7 @@ import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
 import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
+import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 
@@ -161,14 +162,9 @@ function AddCreaturePanel({
             }
           }}
         />
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={!query.trim() || searching}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-        >
+        <Button type="button" onClick={handleSearch} disabled={!query.trim() || searching}>
           {searching ? "Searching..." : "Search"}
-        </button>
+        </Button>
       </div>
       {searchError && <p className="text-sm text-amber-400">{searchError}</p>}
 
@@ -380,14 +376,9 @@ function ImportCreaturePanel({
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={handleImport}
-        disabled={!text.trim() || importing}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-      >
+      <Button type="button" onClick={handleImport} disabled={!text.trim() || importing}>
         {importing ? "Importing..." : "Import"}
-      </button>
+      </Button>
     </div>
   );
 }

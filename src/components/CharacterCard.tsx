@@ -21,6 +21,8 @@ import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
+import { SectionDivider } from "./ui/SectionDivider";
+import { SubHeading } from "./ui/SubHeading";
 
 export function CharacterCard({
   character,
@@ -110,8 +112,8 @@ export function CharacterCard({
       </div>
 
       {/* Senses */}
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Senses</h3>
+      <SectionDivider>
+        <SubHeading>Senses</SubHeading>
         <div className="grid grid-cols-3 gap-1.5">
           <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
             {SKILL_ABBR.perception} {c.combat.passivePerception}
@@ -128,21 +130,21 @@ export function CharacterCard({
             <SenseEntries senses={c.senses} />
           </div>
         )}
-      </div>
+      </SectionDivider>
 
       {/* Stats */}
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Stats</h3>
+      <SectionDivider>
+        <SubHeading>Stats</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
             <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(c.stats[key]))} />
           ))}
         </div>
-      </div>
+      </SectionDivider>
 
       {/* Saving throws */}
       <div>
-        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Saving Throws</h3>
+        <SubHeading>Saving Throws</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
             <StatBox
@@ -170,8 +172,8 @@ export function CharacterCard({
 
       {/* Skills */}
       {c.skillProficiencies.length > 0 && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
+        <SectionDivider>
+          <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {c.skillProficiencies.map((skill) => {
               const color = skill.expertise
@@ -190,7 +192,7 @@ export function CharacterCard({
               );
             })}
           </div>
-        </div>
+        </SectionDivider>
       )}
 
       {/* Resources — Abilities and Spell Slots merged under one umbrella
@@ -199,8 +201,8 @@ export function CharacterCard({
           instead of two separate ones: a DM glancing at a card wants "how
           topped-up is this character" as one impression). */}
       {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Resources</h3>
+        <SectionDivider>
+          <SubHeading>Resources</SubHeading>
           <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} />
 
           {c.resources.length > 0 && (
@@ -239,7 +241,7 @@ export function CharacterCard({
               </div>
             </div>
           )}
-        </div>
+        </SectionDivider>
       )}
 
       <NotesSection notes={c.notes} />
@@ -249,7 +251,7 @@ export function CharacterCard({
         onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
       />
 
-      <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 text-xs">
+      <SectionDivider className="flex items-center justify-end gap-3 text-xs">
         <Link href={`/characters/${c.id}/edit`} className="text-slate-400 hover:text-slate-200">
           Edit
         </Link>
@@ -264,7 +266,7 @@ export function CharacterCard({
             Remove
           </button>
         )}
-      </div>
+      </SectionDivider>
 
       {detailsOpen && (
         <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} />

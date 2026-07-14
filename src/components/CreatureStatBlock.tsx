@@ -10,8 +10,10 @@ import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { Pill } from "./ui/Pill";
+import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
+import { SubHeading } from "./ui/SubHeading";
 import { RichText } from "./RichText";
 
 const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -139,8 +141,8 @@ export function CreatureStatBlock({
         </div>
       </div>
 
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Senses</h3>
+      <SectionDivider>
+        <SubHeading>Senses</SubHeading>
         <div className="grid grid-cols-3 gap-1.5">
           <Pill
             panel={
@@ -164,19 +166,19 @@ export function CreatureStatBlock({
             <SenseEntries senses={senses.entries} />
           </div>
         )}
-      </div>
+      </SectionDivider>
 
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Stats</h3>
+      <SectionDivider>
+        <SubHeading>Stats</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
             <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(creature.stats[key]))} />
           ))}
         </div>
-      </div>
+      </SectionDivider>
 
       <div>
-        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Saving Throws</h3>
+        <SubHeading>Saving Throws</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
             const plainMod = abilityModifier(creature.stats[key]);
@@ -214,8 +216,8 @@ export function CreatureStatBlock({
       />
 
       {skills.length > 0 && (
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Skills</h3>
+        <SectionDivider>
+          <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {skills.map((skill, index) => (
               <Pill key={`${skill.label}-${index}`} panel={<CreatureSkillPanel skill={skill} />} color="amber">
@@ -224,11 +226,11 @@ export function CreatureStatBlock({
               </Pill>
             ))}
           </div>
-        </div>
+        </SectionDivider>
       )}
 
       {groups.length > 0 && (
-        <div className="space-y-3 border-t border-slate-800 pt-3">
+        <SectionDivider className="space-y-3">
           {groups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
               <p className="text-xs uppercase tracking-wide text-slate-500">{GROUP_LABELS[group]}</p>
@@ -243,7 +245,7 @@ export function CreatureStatBlock({
               })}
             </div>
           ))}
-        </div>
+        </SectionDivider>
       )}
     </>
   );

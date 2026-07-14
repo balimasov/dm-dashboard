@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { SectionDivider } from "./SectionDivider";
+import { SubHeading } from "./SubHeading";
 
 /**
  * The long-form freeform `notes` field shared by `Character`/`Creature` —
@@ -22,16 +24,16 @@ export function NotesSection({
   if (!onChange) {
     if (!notes) return null;
     return (
-      <div className="border-t border-slate-800 pt-3">
-        <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Notes</h3>
+      <SectionDivider>
+        <SubHeading>Notes</SubHeading>
         <p className="text-sm text-slate-400 leading-snug">{notes}</p>
-      </div>
+      </SectionDivider>
     );
   }
 
   return (
-    <div className="border-t border-slate-800 pt-3">
-      <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Notes</h3>
+    <SectionDivider>
+      <SubHeading>Notes</SubHeading>
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -42,6 +44,6 @@ export function NotesSection({
         placeholder="Add notes..."
         className="w-full rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm leading-snug text-slate-300 outline-none placeholder:text-slate-600 focus:border-sky-600"
       />
-    </div>
+    </SectionDivider>
   );
 }

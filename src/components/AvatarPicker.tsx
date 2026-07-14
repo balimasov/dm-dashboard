@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Avatar } from "./Avatar";
+import { Button } from "./ui/Button";
 
 const OUTPUT_SIZE = 200;
 
@@ -140,13 +141,9 @@ export function AvatarPicker({
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={applyCrop}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-              >
+              <Button type="button" onClick={applyCrop}>
                 Apply
-              </button>
+              </Button>
             </div>
           </div>
         </div>

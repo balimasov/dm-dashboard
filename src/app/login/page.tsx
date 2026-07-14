@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
+import { Button } from "@/components/ui/Button";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, undefined);
@@ -44,13 +45,9 @@ export default function LoginPage() {
           />
         </div>
         {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Перевірка..." : "Увійти"}
-        </button>
+        </Button>
       </form>
     </div>
   );

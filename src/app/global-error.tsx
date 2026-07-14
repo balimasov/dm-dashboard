@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
 import "./globals.css";
 
 /**
@@ -21,13 +22,9 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <div className="w-full max-w-sm space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-center shadow-lg shadow-black/20">
           <h1 className="text-lg font-semibold text-slate-100">Something went wrong</h1>
           <p className="text-sm text-slate-500">The app failed to load.</p>
-          <button
-            type="button"
-            onClick={reset}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-          >
+          <Button type="button" onClick={reset}>
             Try again
-          </button>
+          </Button>
         </div>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
+import { Button } from "@/components/ui/Button";
 import { apiFetch } from "@/lib/apiClient";
 import { CampaignSummary, Character, Creature } from "@/lib/types";
 
@@ -129,13 +130,9 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
-        <button
-          type="button"
-          onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
-        >
+        <Button type="button" onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}>
           + New Campaign
-        </button>
+        </Button>
       </div>
 
       {campaigns.length === 0 ? (

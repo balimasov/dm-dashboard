@@ -25,9 +25,11 @@ import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
+import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
+import { SubHeading } from "./ui/SubHeading";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
@@ -313,8 +315,8 @@ export function CharacterDetailsModal({
         </div>
 
         {/* Senses — same block as the main card. */}
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Senses</h3>
+        <SectionDivider>
+          <SubHeading>Senses</SubHeading>
           <div className="grid grid-cols-3 gap-1.5">
             <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
               {SKILL_ABBR.perception} {c.combat.passivePerception}
@@ -331,21 +333,21 @@ export function CharacterDetailsModal({
               <SenseEntries senses={c.senses} />
             </div>
           )}
-        </div>
+        </SectionDivider>
 
         {/* Stats — same block as the main card. */}
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Stats</h3>
+        <SectionDivider>
+          <SubHeading>Stats</SubHeading>
           <div className="grid grid-cols-6 gap-1.5">
             {STAT_ORDER.map((key) => (
               <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(c.stats[key]))} />
             ))}
           </div>
-        </div>
+        </SectionDivider>
 
         {/* Saving Throws — same block as the main card. */}
         <div>
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Saving Throws</h3>
+          <SubHeading>Saving Throws</SubHeading>
           <div className="grid grid-cols-6 gap-1.5">
             {STAT_ORDER.map((key) => (
               <StatBox
@@ -361,7 +363,7 @@ export function CharacterDetailsModal({
         {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. */}
         {c.advantages.length > 0 && (
           <div>
-            <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Advantages</h3>
+            <SubHeading>Advantages</SubHeading>
             <ul className="space-y-1 text-sm text-slate-300">
               {c.advantages.map((a) => (
                 // The section header already says "Advantages" — repeating
@@ -388,8 +390,8 @@ export function CharacterDetailsModal({
         />
 
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Skills</h3>
+        <SectionDivider>
+          <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {allSkills.map((skill) => {
               const color = skill.expertise
@@ -408,16 +410,16 @@ export function CharacterDetailsModal({
               );
             })}
           </div>
-        </div>
+        </SectionDivider>
 
         {/* Resources tracker — same compact bar as the main card, quick-glance
             "how topped-up is this character" before diving into the
             Features/Spells tabs below (which don't otherwise show it). */}
         {averageOverallPercent(c.resources, c.spellSlots) !== null && (
-          <div className="border-t border-slate-800 pt-3">
-            <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Resources</h3>
+          <SectionDivider>
+            <SubHeading>Resources</SubHeading>
             <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} />
-          </div>
+          </SectionDivider>
         )}
 
         {/* Features and Traits / Spells — tabbed instead of side-by-side columns so
@@ -426,7 +428,7 @@ export function CharacterDetailsModal({
             with no spells just sees Features and Traits directly, no empty Spells
             tab to click into. More tabs (e.g. Inventory) can slot in here later. */}
         {tabs.length > 0 && (
-          <div className="border-t border-slate-800 pt-3">
+          <SectionDivider>
             {tabs.length > 1 && (
               <div className="mb-3 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
                 {tabs.map((tab) => (
@@ -544,7 +546,7 @@ export function CharacterDetailsModal({
                 })}
               </div>
             )}
-          </div>
+          </SectionDivider>
         )}
 
         {tabs.length === 0 && (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
+import { SectionDivider } from "./SectionDivider";
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -125,7 +126,7 @@ export function QuickNotesSection({
   }
 
   return (
-    <div className="border-t border-slate-800 pt-3">
+    <SectionDivider>
       <div className="mb-1.5 flex items-center justify-between">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
         {onChange && (
@@ -172,6 +173,6 @@ export function QuickNotesSection({
       ) : (
         !adding && <p className="text-sm italic text-slate-600">No notes yet.</p>
       )}
-    </div>
+    </SectionDivider>
   );
 }

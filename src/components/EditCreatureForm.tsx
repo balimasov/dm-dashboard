@@ -8,6 +8,7 @@ import { CreatureFormFields, CreatureFormValue } from "@/components/CreatureForm
 import { creatureToFormValue, formValueToCreatureUpdates } from "@/lib/creatureForm";
 import { patchCreature } from "@/lib/creatureApi";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { Button } from "./ui/Button";
 
 /**
  * Full-page creature edit, same shape as `EditCharacterForm` — a dedicated
@@ -71,13 +72,9 @@ export function EditCreatureForm({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

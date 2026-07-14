@@ -8,6 +8,7 @@ import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
+import { SectionDivider } from "./ui/SectionDivider";
 import { StatusRail } from "./ui/StatusRail";
 
 /**
@@ -62,7 +63,7 @@ export function CreatureCard({
       />
 
       {onRemove && (
-        <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-3 text-xs">
+        <SectionDivider className="flex items-center justify-end gap-3 text-xs">
           <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
             Edit
           </Link>
@@ -76,7 +77,7 @@ export function CreatureCard({
           >
             Remove
           </button>
-        </div>
+        </SectionDivider>
       )}
 
       {detailsOpen && (
