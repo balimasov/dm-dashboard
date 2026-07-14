@@ -63,7 +63,7 @@ function RestRecoveryMeterRow({ label, bucket }: { label: string; bucket: PartyR
     <div className="flex items-center gap-2 text-xs leading-none">
       <span className="w-20 shrink-0 whitespace-nowrap font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       <InfoTooltip hoverOnly panel={<RestRecoveryHintPanel label={label} bucket={bucket} />}>
-        <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-800 sm:w-36">
+        <div className="h-3.5 w-28 overflow-hidden rounded-full bg-slate-800 sm:w-36">
           <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
         </div>
       </InfoTooltip>
@@ -117,21 +117,24 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
   );
 }
 
-/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. */
+/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. The "Spell Slots" caption is load-bearing, not decorative — without it the row of bare numeral labels (1, 2, 3...) reads as an unlabeled axis with no clue what it's counting. */
 function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
   const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
   return (
-    <div className="flex items-end gap-4">
-      <div className="flex items-end gap-2">
-        {spellSlots.levels.map((level) => (
-          <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
-        ))}
-      </div>
-      <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-4">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
-        <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
-          {spellSlots.totalCurrent}/{spellSlots.totalMax}
-        </span>
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Spell Slots</span>
+      <div className="flex items-end gap-4">
+        <div className="flex items-end gap-2">
+          {spellSlots.levels.map((level) => (
+            <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
+          ))}
+        </div>
+        <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-4">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+          <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
+            {spellSlots.totalCurrent}/{spellSlots.totalMax}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -483,8 +486,9 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   return (
     <ToolkitCard title="Resources & Coverage">
       {(hasRestMeters || spellSlots) && (
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <RestRecoveryMeters recovery={restRecovery} />
+        <div className="flex flex-col items-center gap-4 lg:flex-row lg:justify-center lg:gap-8">
+          {hasRestMeters && <RestRecoveryMeters recovery={restRecovery} />}
+          {hasRestMeters && spellSlots && <div className="h-px w-24 bg-slate-800 lg:h-16 lg:w-px lg:self-stretch" />}
           {spellSlots ? (
             <SpellSlotHistogram spellSlots={spellSlots} />
           ) : (
