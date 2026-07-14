@@ -133,23 +133,28 @@ describe("custom defense adjustments (customDefenseAdjustments)", () => {
   });
 });
 
-describe("languages and tool proficiencies — both respect isGranted, unlike skills", () => {
-  test("Lori (Artificer) — Void Speech is an unchosen pool option, Smith's Tools/Cook's Utensils weren't picked", () => {
+describe("languages and tool proficiencies — no isGranted filter, same reasoning as skills", () => {
+  test("Lori (Artificer) — Void Speech, Smith's Tools, and Cook's Utensils are all isGranted:false but genuinely chosen (resolved 'choices' entries)", () => {
     const c = load("lori-artificer");
-    expect(c.languages).toEqual(["Common", "Draconic"]);
-    expect(c.toolProficiencies).toEqual(["Thieves' Tools", "Tinker's Tools"]);
+    expect(c.languages).toEqual(["Common", "Draconic", "Void Speech"]);
+    expect(c.toolProficiencies).toEqual(["Cook's Utensils", "Smith's Tools", "Thieves' Tools", "Tinker's Tools"]);
   });
 
-  test("Tarah (Rogue) — Thieves' Cant is a language, not a tool; Aglarondan/Chessentan/Undercommon weren't chosen", () => {
+  test("Tarah (Rogue) — Thieves' Cant is a language, not a tool; Aglarondan/Chessentan/Undercommon/Cartographer's Tools are isGranted:false but resolved choices", () => {
     const c = load("tarah-rogue");
-    expect(c.languages).toEqual(["Common", "Thieves’ Cant"]);
+    expect(c.languages).toEqual(["Aglarondan", "Chessentan", "Common", "Thieves’ Cant", "Undercommon"]);
+    expect(c.toolProficiencies).toEqual(["Cartographer's Tools", "Thieves' Tools"]);
+  });
+
+  test("Esmeralda (Bard) — Thieves' Tools is isGranted:false but a resolved choice, so it's included", () => {
+    const c = load("esmeralda-bard");
+    expect(c.languages).toEqual(["Common", "Infernal"]);
     expect(c.toolProficiencies).toEqual(["Thieves' Tools"]);
   });
 
-  test("Esmeralda (Bard) — Thieves' Tools shows up ungranted in her pool, so it's excluded", () => {
-    const c = load("esmeralda-bard");
-    expect(c.languages).toEqual(["Common", "Infernal"]);
-    expect(c.toolProficiencies).toEqual([]);
+  test("Alor (Fighter) — two resolved 'Select a Standard Language' choices (Elvish, Common Sign Language) both show isGranted:false despite being genuinely picked", () => {
+    const c = load("alor-fighter");
+    expect(c.languages).toEqual(["Common", "Common Sign Language", "Elvish"]);
   });
 });
 

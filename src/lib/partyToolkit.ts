@@ -665,8 +665,8 @@ export function computeToolCoverage(characters: Character[]): NamedCoverageEntry
 
 export type CoverageCategory =
   | "Healing"
-  | "AOE Damage"
-  | "Single Target Burst"
+  | "Damage AOE"
+  | "Damage Single Target"
   | "Control"
   | "Summoning"
   | "Mobility"
@@ -682,8 +682,8 @@ export type CoverageCategory =
 
 export const COVERAGE_CATEGORY_ORDER: CoverageCategory[] = [
   "Healing",
-  "AOE Damage",
-  "Single Target Burst",
+  "Damage AOE",
+  "Damage Single Target",
   "Control",
   "Summoning",
   "Mobility",
@@ -733,7 +733,7 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "lay on hands: healing pool",
     "aura of vitality",
   ],
-  "AOE Damage": [
+  "Damage AOE": [
     "fireball",
     "burning hands",
     "thunderwave",
@@ -749,7 +749,7 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "wall of fire",
     "cloud of daggers",
   ],
-  "Single Target Burst": [
+  "Damage Single Target": [
     "guiding bolt",
     "divine smite",
     "thunderous smite",
@@ -890,8 +890,8 @@ const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
 /**
  * Resolves a known spell's coverage categories. D&D Beyond's own `tags` (via
  * `SPELL_TAG_TO_CATEGORY`) are the sole signal once a spell has any —
- * `isAreaEffect` splits a `"Damage"`-tagged spell into `AOE Damage` vs
- * `Single Target Burst` (the tag alone doesn't distinguish them), and
+ * `isAreaEffect` splits a `"Damage"`-tagged spell into `Damage AOE` vs
+ * `Damage Single Target` (the tag alone doesn't distinguish them), and
  * `isReaction` adds `Reactions` (same `activationType === 4` convention
  * `Feature.group` already uses). The name-keyword lookup (`COVERAGE_MAP`) is
  * a fallback for the one case tags can't cover at all: a spell synced before
@@ -905,7 +905,7 @@ function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAre
     for (const category of SPELL_TAG_TO_CATEGORY[tag] ?? []) categories.add(category);
   }
   if (spell.tags?.includes("Damage")) {
-    categories.add(spell.isAreaEffect ? "AOE Damage" : "Single Target Burst");
+    categories.add(spell.isAreaEffect ? "Damage AOE" : "Damage Single Target");
   }
   if (spell.isReaction) categories.add("Reactions");
   if (!spell.tags || spell.tags.length === 0) {

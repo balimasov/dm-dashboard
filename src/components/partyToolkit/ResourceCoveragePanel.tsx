@@ -18,6 +18,7 @@ import {
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
+import { MetaBadge } from "../ui/MetaBadge";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { HEROIC_INSPIRATION_DESCRIPTION, HintPanel, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
@@ -238,22 +239,17 @@ function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
 
 /**
  * The small violet level/cantrip tag shared by a slot-cost spell's
- * `AvailabilityBadge` and a cantrip's `PassivePill` — same border/text
- * treatment as `RecoveryBadge`'s LR/SR tag (just violet instead of slate),
- * so every small inline tag in this panel reads as one consistent visual
- * language. Deliberately *not* colored green/red by availability the way
- * the badge used to be — that status now lives in the hint's own text
+ * `AvailabilityBadge` and a cantrip's `PassivePill` — built on the same
+ * `MetaBadge` primitive `RecoveryBadge`'s LR/SR tag uses (just violet
+ * instead of slate), so every small inline tag in this panel — and every
+ * recovery-type badge elsewhere in the app — reads and behaves as one
+ * consistent thing. Deliberately *not* colored green/red by availability the
+ * way the badge used to be — that status now lives in the hint's own text
  * (`panel`), not the badge's border color, so one badge style covers both
  * "here's a level" and "here's a cantrip" without a mismatched accent.
  */
 function LevelBadge({ label, panel }: { label: string; panel: ReactNode }) {
-  return (
-    <InfoTooltip hoverOnly panel={panel}>
-      <span className="shrink-0 whitespace-nowrap rounded border border-violet-800 px-1 text-[10px] font-medium uppercase text-violet-400">
-        {label}
-      </span>
-    </InfoTooltip>
-  );
+  return <MetaBadge label={label} panel={panel} colorClassName="border-violet-800 text-violet-400" />;
 }
 
 /**

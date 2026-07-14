@@ -669,7 +669,7 @@ describe("computeResourceCoverage", () => {
       knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class", current: 1, max: 2, recovery: "long-rest" }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["AOE Damage"]).toEqual([
+    expect(coverage["Damage AOE"]).toEqual([
       {
         name: "Fireball",
         characterId: "Runa",
@@ -693,7 +693,7 @@ describe("computeResourceCoverage", () => {
       ],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["Single Target Burst"]).toEqual([
+    expect(coverage["Damage Single Target"]).toEqual([
       {
         name: "Guiding Bolt",
         characterId: "Lilith",
@@ -714,7 +714,7 @@ describe("computeResourceCoverage", () => {
       spellSlots: [{ level: 1, current: 0, max: 4 }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["Single Target Burst"][0].availability).toEqual({ kind: "slot", level: 1, available: false, remaining: 0 });
+    expect(coverage["Damage Single Target"][0].availability).toEqual({ kind: "slot", level: 1, available: false, remaining: 0 });
   });
 
   test("a cantrip has no availability at all — nothing to run out of", () => {
@@ -906,24 +906,24 @@ describe("computeResourceCoverage", () => {
     expect(coverage.Healing.map((e) => e.name)).toContain("Totally Homebrew Heal");
   });
 
-  test("a Damage-tagged spell with isAreaEffect lands in AOE Damage, not Single Target Burst", () => {
+  test("a Damage-tagged spell with isAreaEffect lands in Damage AOE, not Damage Single Target", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [{ id: "s1", name: "Homebrew Blast", level: 3, source: "Class", tags: ["Damage"], isAreaEffect: true }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Homebrew Blast");
-    expect(coverage["Single Target Burst"].map((e) => e.name)).not.toContain("Homebrew Blast");
+    expect(coverage["Damage AOE"].map((e) => e.name)).toContain("Homebrew Blast");
+    expect(coverage["Damage Single Target"].map((e) => e.name)).not.toContain("Homebrew Blast");
   });
 
-  test("a Damage-tagged spell without isAreaEffect lands in Single Target Burst, not AOE Damage", () => {
+  test("a Damage-tagged spell without isAreaEffect lands in Damage Single Target, not Damage AOE", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [{ id: "s1", name: "Homebrew Zap", level: 1, source: "Class", tags: ["Damage"] }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["Single Target Burst"].map((e) => e.name)).toContain("Homebrew Zap");
-    expect(coverage["AOE Damage"].map((e) => e.name)).not.toContain("Homebrew Zap");
+    expect(coverage["Damage Single Target"].map((e) => e.name)).toContain("Homebrew Zap");
+    expect(coverage["Damage AOE"].map((e) => e.name)).not.toContain("Homebrew Zap");
   });
 
   test("isReaction adds Reactions on top of whatever the tag already contributed", () => {
@@ -955,7 +955,7 @@ describe("computeResourceCoverage", () => {
       knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class" }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
+    expect(coverage["Damage AOE"].map((e) => e.name)).toContain("Fireball");
   });
 
   test("a spell with an empty tags array (same as absent) still categorizes via keyword fallback", () => {
@@ -964,7 +964,7 @@ describe("computeResourceCoverage", () => {
       knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class", tags: [] }],
     });
     const coverage = computeResourceCoverage([c]);
-    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
+    expect(coverage["Damage AOE"].map((e) => e.name)).toContain("Fireball");
   });
 
   test("a spell entry carries its raw D&D Beyond tags through for the hint's diagnostic line", () => {
