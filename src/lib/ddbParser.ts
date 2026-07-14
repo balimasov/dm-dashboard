@@ -1,5 +1,6 @@
 import { Character } from "./types";
 import { abilityModifier, collectModifiers } from "./ddbParser/shared";
+import { RawDdbResponse } from "./ddbParser/rawTypes";
 import {
   computeAbilityScores,
   computeSavingThrowProficiencies,
@@ -47,12 +48,10 @@ import { proficiencyBonus } from "./characterMath";
  *   dragon hide, and dual-wielding AC bonuses also aren't accounted for.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export class DdbParseError extends Error {}
 
 /** Maps a raw D&D Beyond `character/v5/character/{id}` response onto our Character shape. */
-export function parseDdbCharacter(rawResponse: any, existing: Character): Character {
+export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Character): Character {
   const data = rawResponse?.data;
   if (!rawResponse?.success || !data) {
     throw new DdbParseError("Unexpected D&D Beyond response format.");

@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Currency, InventoryItem, ItemCategory, ItemRarity } from "../types";
 import { shortDescription } from "./shared";
+import { RawDdbData } from "./rawTypes";
 
 const RARITY_MAP: Record<string, ItemRarity> = {
   common: "Common",
@@ -40,8 +40,8 @@ function computeItemCategory(filterType: string | undefined, rarity: ItemRarity)
   return rarity !== "Common" && rarity !== "Unknown" ? "Magic Item" : "Gear";
 }
 
-export function computeInventory(data: any): InventoryItem[] {
-  return (data.inventory ?? []).map((item: any, idx: number) => {
+export function computeInventory(data: RawDdbData): InventoryItem[] {
+  return (data.inventory ?? []).map((item, idx) => {
     const rarity: ItemRarity = RARITY_MAP[String(item.definition?.rarity ?? "").toLowerCase()] ?? "Unknown";
     const description = shortDescription(item.definition?.snippet, item.definition?.description);
     return {
@@ -55,7 +55,7 @@ export function computeInventory(data: any): InventoryItem[] {
   });
 }
 
-export function computeCurrency(data: any): Currency {
+export function computeCurrency(data: RawDdbData): Currency {
   return {
     cp: data.currencies?.cp ?? 0,
     sp: data.currencies?.sp ?? 0,

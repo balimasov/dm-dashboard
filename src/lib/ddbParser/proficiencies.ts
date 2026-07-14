@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { titleCase } from "./shared";
+import { RawDdbModifier } from "./rawTypes";
 
 /**
  * Standard 5e tool proficiencies — artisan's tools, kits, and navigation/
@@ -47,16 +47,16 @@ const TOOL_SUBTYPES = new Set([
  * (which has to ignore `isGranted` for a documented, separately-confirmed
  * reason), languages and tools both respect it at face value here.
  */
-export function computeLanguages(mods: any[]): string[] {
+export function computeLanguages(mods: RawDdbModifier[]): string[] {
   const names = mods
     .filter((m) => m.type === "language" && m.isGranted)
     .map((m) => m.friendlySubtypeName || titleCase(m.subType ?? ""));
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }
 
-export function computeToolProficiencies(mods: any[]): string[] {
+export function computeToolProficiencies(mods: RawDdbModifier[]): string[] {
   const names = mods
-    .filter((m) => m.type === "proficiency" && m.isGranted && TOOL_SUBTYPES.has(m.subType))
+    .filter((m) => m.type === "proficiency" && m.isGranted && TOOL_SUBTYPES.has(m.subType ?? ""))
     .map((m) => m.friendlySubtypeName || titleCase(m.subType ?? ""));
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }

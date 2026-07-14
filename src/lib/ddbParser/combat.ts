@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, Sense } from "../types";
 import { ABILITY_BY_ID, abilityModifier, titleCase } from "./shared";
+import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 
 const CONDITION_LABELS: Record<number, string> = {
   1: "Blinded",
@@ -23,7 +23,7 @@ const EXHAUSTION_CONDITION_ID = 4;
 
 const SENSE_SUBTYPES = ["darkvision", "blindsight", "tremorsense", "truesight"];
 
-export function computeConditionsAndExhaustion(data: any): { conditions: string[]; exhaustion: number } {
+export function computeConditionsAndExhaustion(data: RawDdbData): { conditions: string[]; exhaustion: number } {
   const conditions: string[] = [];
   let exhaustion = 0;
   for (const c of data.conditions ?? []) {
@@ -52,7 +52,7 @@ export function computeConditionsAndExhaustion(data: any): { conditions: string[
  *    the bonus whenever it's less-or-equal to the base range, e.g. an Elf's
  *    innate 60 ft plus a 60 ft item bonus should read 120 ft, not 60 ft.
  */
-export function computeSenses(mods: any[]): Sense[] {
+export function computeSenses(mods: RawDdbModifier[]): Sense[] {
   const senses: Sense[] = [];
   for (const subType of SENSE_SUBTYPES) {
     const base = mods
@@ -77,7 +77,7 @@ export function computeSenses(mods: any[]): Sense[] {
  * Recomputed fresh on every sync — an explicit D&D Beyond HP override always
  * wins outright.
  */
-export function computeHp(data: any, mods: any[], conMod: number, totalLevel: number) {
+export function computeHp(data: RawDdbData, mods: RawDdbModifier[], conMod: number, totalLevel: number) {
   const perLevelBonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "hit-points-per-level" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0) * totalLevel, 0);
@@ -92,13 +92,13 @@ export function computeHp(data: any, mods: any[], conMod: number, totalLevel: nu
   return { hp, maxHp, tempHp: data.temporaryHitPoints ?? 0 };
 }
 
-export function computeClassSummary(data: any) {
+export function computeClassSummary(data: RawDdbData) {
   const classes = data.classes ?? [];
-  const level = classes.reduce((sum: number, c: any) => sum + (c.level ?? 0), 0);
-  const primary = classes.find((c: any) => c.isStartingClass) ?? classes[0];
+  const level = classes.reduce((sum, c) => sum + (c.level ?? 0), 0);
+  const primary = classes.find((c) => c.isStartingClass) ?? classes[0];
   const className =
     classes.length > 1
-      ? classes.map((c: any) => `${c.definition?.name ?? "?"} ${c.level}`).join(" / ")
+      ? classes.map((c) => `${c.definition?.name ?? "?"} ${c.level}`).join(" / ")
       : classes[0]?.definition?.name ?? "";
   const subclass = classes.length === 1 ? primary?.subclassDefinition?.name ?? undefined : undefined;
   return { level, className, subclass };
@@ -115,13 +115,13 @@ export function computeClassSummary(data: any) {
  * generic per-level-scaling field D&D Beyond attaches to any class feature
  * that scales this way (rather than hardcoding the level breakpoints here).
  */
-function computeUnarmoredMovementBonus(data: any): number {
+function computeUnarmoredMovementBonus(data: RawDdbData): number {
   const wearingArmorOrShield = (data.inventory ?? []).some(
-    (i: any) => i.equipped && i.definition?.filterType === "Armor"
+    (i) => i.equipped && i.definition?.filterType === "Armor"
   );
   if (wearingArmorOrShield) return 0;
   for (const c of data.classes ?? []) {
-    const feature = (c.classFeatures ?? []).find((f: any) => f.definition?.name === "Unarmored Movement");
+    const feature = (c.classFeatures ?? []).find((f: RawDdbAny) => f.definition?.name === "Unarmored Movement");
     if (feature?.levelScale?.fixedValue) return feature.levelScale.fixedValue;
   }
   return 0;
@@ -137,7 +137,7 @@ function computeUnarmoredMovementBonus(data: any): number {
  * conditional bonus like this currently applies (e.g. the Heavy-armor
  * restriction), the same flag Unarmored Defense's bonus relies on below.
  */
-export function computeSpeed(data: any, mods: any[]): number {
+export function computeSpeed(data: RawDdbData, mods: RawDdbModifier[]): number {
   const base = data.race?.weightSpeeds?.normal?.walk ?? 30;
   const bonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "speed" && m.isGranted)
@@ -154,7 +154,7 @@ export function computeSpeed(data: any, mods: any[]): number {
  * Con modifier. A shield can still be worn under Unarmored Defense, so
  * `shieldBonus` still applies on top.
  */
-function computeUnarmoredAbilityBonus(mods: any[], abilities: AbilityScores): number {
+function computeUnarmoredAbilityBonus(mods: RawDdbModifier[], abilities: AbilityScores): number {
   const seen = new Set<number>();
   let bonus = 0;
   for (const m of mods) {
@@ -175,25 +175,25 @@ function computeUnarmoredAbilityBonus(mods: any[], abilities: AbilityScores): nu
  * this +3 sheet value is added on top; every `modifiers` group was empty of
  * any armor-class entry, so this is D&D Beyond's only record of that bonus.
  */
-function computeCustomAcBonus(data: any): number {
+function computeCustomAcBonus(data: RawDdbData): number {
   return (data.characterValues ?? [])
-    .filter((v: any) => v.typeId === 2 && typeof v.value === "number")
-    .reduce((sum: number, v: any) => sum + v.value, 0);
+    .filter((v) => v.typeId === 2 && typeof v.value === "number")
+    .reduce((sum, v) => sum + (v.value as number), 0);
 }
 
-export function computeArmorClass(data: any, abilities: AbilityScores, mods: any[]): number {
+export function computeArmorClass(data: RawDdbData, abilities: AbilityScores, mods: RawDdbModifier[]): number {
   const dexMod = abilityModifier(abilities.dex);
   const inventory = data.inventory ?? [];
   const equippedArmor = inventory.filter(
-    (i: any) => i.equipped && i.definition?.filterType === "Armor" && i.definition?.armorTypeId !== 4
+    (i) => i.equipped && i.definition?.filterType === "Armor" && i.definition?.armorTypeId !== 4
   );
-  const equippedShields = inventory.filter((i: any) => i.equipped && i.definition?.armorTypeId === 4);
+  const equippedShields = inventory.filter((i) => i.equipped && i.definition?.armorTypeId === 4);
 
   const flatBonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "armor-class" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? 0), 0);
   const shieldBonus = equippedShields.reduce(
-    (sum: number, i: any) => sum + (i.definition?.armorClass ?? 0),
+    (sum: number, i) => sum + (i.definition?.armorClass ?? 0),
     0
   );
   const customBonus = computeCustomAcBonus(data);
@@ -226,7 +226,7 @@ export function computeArmorClass(data: any, abilities: AbilityScores, mods: any
  * `bonusTypes: [1]` marking it as a proficiency-bonus-based bonus — confirmed
  * on a real export where reading only `value` silently treated this as +0.
  */
-export function computeInitiative(dexMod: number, profBonus: number, mods: any[]): number {
+export function computeInitiative(dexMod: number, profBonus: number, mods: RawDdbModifier[]): number {
   const bonus = mods
     .filter((m) => m.type === "bonus" && m.subType === "initiative" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? (m.bonusTypes?.includes(1) ? profBonus : 0)), 0);

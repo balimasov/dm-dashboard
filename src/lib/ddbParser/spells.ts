@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, KnownSpell, SpellSlotLevel } from "../types";
 import { ABILITY_BY_ID, abilityModifier, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription } from "./shared";
+import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
  * A third-caster subclass (Arcane Trickster, Eldritch Knight) is where
@@ -11,7 +11,7 @@ import { ABILITY_BY_ID, abilityModifier, computeLimitedUseCharges, resolveSnippe
  * spell slots at all despite `definition.spellRules.levelSpellSlots` (still
  * on the base class) already having the correct third-caster progression.
  */
-export function classCastsSpells(c: any): boolean {
+export function classCastsSpells(c: RawDdbAny): boolean {
   return Boolean(c.definition?.canCastSpells || c.subclassDefinition?.canCastSpells);
 }
 
@@ -48,7 +48,7 @@ export function classCastsSpells(c: any): boolean {
 const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
 export function computeSpells(
-  data: any,
+  data: RawDdbData,
   abilities: AbilityScores,
   profBonus: number,
   level: number,
@@ -58,7 +58,7 @@ export function computeSpells(
   const spells: KnownSpell[] = [];
   const seenKeys = new Set<string>();
 
-  function add(entry: any, source: string) {
+  function add(entry: RawDdbAny, source: string) {
     const df = entry?.definition;
     const name = (df?.name || "").trim().toLowerCase();
     if (!name) return;
@@ -108,7 +108,7 @@ export function computeSpells(
     }
   }
 
-  const bonusGroups: Array<[string, string]> = [
+  const bonusGroups: Array<[keyof NonNullable<RawDdbData["spells"]>, string]> = [
     ["race", "Race"],
     ["class", "Class"],
     ["background", "Background"],
@@ -136,9 +136,9 @@ export function computeSpells(
  * spellcasting rule, then looked up in the same shared table. Warlocks are
  * excluded — their Pact Magic slots are handled separately as a resource.
  */
-export function computeSpellSlots(data: any): SpellSlotLevel[] {
+export function computeSpellSlots(data: RawDdbData): SpellSlotLevel[] {
   const casterClasses = (data.classes ?? []).filter(
-    (c: any) =>
+    (c) =>
       classCastsSpells(c) &&
       c.definition?.name !== "Warlock" &&
       Array.isArray(c.definition?.spellRules?.levelSpellSlots)
@@ -193,9 +193,9 @@ export function computeSpellSlots(data: any): SpellSlotLevel[] {
  * non-zero level per row (the current pact slot level), so this always
  * returns at most one entry.
  */
-export function computePactMagicSlots(data: any): SpellSlotLevel[] {
+export function computePactMagicSlots(data: RawDdbData): SpellSlotLevel[] {
   const warlock = (data.classes ?? []).find(
-    (c: any) => c.definition?.name === "Warlock" && Array.isArray(c.definition?.spellRules?.levelSpellSlots)
+    (c) => c.definition?.name === "Warlock" && Array.isArray(c.definition?.spellRules?.levelSpellSlots)
   );
   if (!warlock) return [];
   const table: number[][] = warlock.definition.spellRules.levelSpellSlots;
@@ -212,7 +212,7 @@ export function computePactMagicSlots(data: any): SpellSlotLevel[] {
   });
   if (max === 0) return [];
 
-  const used = (data.pactMagic ?? []).find((p: any) => p.level === slotLevel)?.used ?? 0;
+  const used = (data.pactMagic ?? []).find((p) => p.level === slotLevel)?.used ?? 0;
   return [{ level: slotLevel, current: Math.max(0, max - used), max }];
 }
 
@@ -224,12 +224,12 @@ export function computePactMagicSlots(data: any): SpellSlotLevel[] {
  * "known limitations" pattern of not fully modeling multiclass edge cases).
  */
 export function computeSpellcastingStats(
-  data: any,
+  data: RawDdbData,
   abilities: AbilityScores,
   profBonus: number
 ): { modifier: number; attack: number; saveDc: number } | undefined {
   const casterClass = (data.classes ?? []).find(
-    (c: any) => classCastsSpells(c) && (c.definition?.spellCastingAbilityId || c.subclassDefinition?.spellCastingAbilityId)
+    (c) => classCastsSpells(c) && (c.definition?.spellCastingAbilityId || c.subclassDefinition?.spellCastingAbilityId)
   );
   if (!casterClass) return undefined;
   const abilityId = casterClass.definition?.spellCastingAbilityId ?? casterClass.subclassDefinition?.spellCastingAbilityId;

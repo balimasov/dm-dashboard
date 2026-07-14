@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, Feature, RecoveryType, Resource } from "../types";
 import { computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
+import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
  * Race, class, and feat data each carry D&D Beyond's own "don't show this on
@@ -57,7 +57,7 @@ function activationGroup(activationType: number | null | undefined): Feature["gr
 }
 
 export function computeFeatures(
-  data: any,
+  data: RawDdbData,
   resources: Resource[],
   abilities: AbilityScores,
   profBonus: number,
@@ -106,7 +106,7 @@ export function computeFeatures(
   // that indirect registration didn't already claim.
   const parentInfoById = new Map<number, { name: string; originType: Feature["originType"] }>();
 
-  function registerGrantedFeatLinks(definition: any, name: string | undefined, originType: Feature["originType"]) {
+  function registerGrantedFeatLinks(definition: RawDdbAny, name: string | undefined, originType: Feature["originType"]) {
     if (!name) return;
     for (const grant of definition?.grantedFeats ?? []) {
       for (const featId of grant.featIds ?? []) {
@@ -177,7 +177,7 @@ export function computeFeatures(
     group: Feature["group"],
     originType: Feature["originType"],
     explicitCharges?: { current: number; max: number; recovery: RecoveryType },
-    dice?: any
+    dice?: RawDdbAny
   ) {
     const trimmedName = (name || "").trim();
     // The exact (non-normalized) name is the de-dupe key — normalizing away a

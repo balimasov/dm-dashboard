@@ -1,18 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, Resource } from "../types";
 import { ordinalLevel } from "../format";
 import { computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
 import { computePactMagicSlots } from "./spells";
+import { RawDdbAny, RawDdbData } from "./rawTypes";
 
-export function computeResources(data: any, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
+export function computeResources(data: RawDdbData, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
   function fromLimitedUse(
     name: string,
-    lu: any,
+    lu: RawDdbAny,
     keyPrefix: string,
     idx: number,
     rawDescription: string | undefined,
     source: string,
-    dice?: any
+    dice?: RawDdbAny
   ): Resource | null {
     const charges = computeLimitedUseCharges(lu, abilities, profBonus);
     if (!charges) return null;
@@ -32,13 +32,13 @@ export function computeResources(data: any, abilities: AbilityScores, profBonus:
   }
 
   const resources: Resource[] = [];
-  const actionGroups: Array<[string, string, any[]]> = [
+  const actionGroups: Array<[string, string, RawDdbAny[]]> = [
     ["race", "Race", data.actions?.race ?? []],
     ["class", "Class", data.actions?.class ?? []],
     ["feat", "Feat", data.actions?.feat ?? []],
   ];
   for (const [group, source, actions] of actionGroups) {
-    actions.forEach((action: any, idx: number) => {
+    actions.forEach((action, idx: number) => {
       const resource = fromLimitedUse(
         action.name,
         action.limitedUse,
@@ -60,7 +60,7 @@ export function computeResources(data: any, abilities: AbilityScores, profBonus:
   // under both Spells and the Limited Uses/resources tracker). The spell's
   // level is folded into the name (`Faerie Fire (1st)`) since `Resource` has
   // no separate level field to hang it off of.
-  const spellResourceGroups: Array<[string, string]> = [
+  const spellResourceGroups: Array<[keyof NonNullable<RawDdbData["spells"]>, string]> = [
     ["race", "Race"],
     ["class", "Class"],
     ["background", "Background"],
@@ -68,7 +68,7 @@ export function computeResources(data: any, abilities: AbilityScores, profBonus:
     ["feat", "Feat"],
   ];
   for (const [key, source] of spellResourceGroups) {
-    (data.spells?.[key] ?? []).forEach((entry: any, idx: number) => {
+    (data.spells?.[key] ?? []).forEach((entry, idx: number) => {
       const df = entry?.definition;
       if (!df?.name) return;
       const name = df.level > 0 ? `${df.name} (${ordinalLevel(df.level)})` : df.name;
@@ -85,8 +85,8 @@ export function computeResources(data: any, abilities: AbilityScores, profBonus:
   }
 
   (data.inventory ?? [])
-    .filter((item: any) => item.equipped && item.limitedUse)
-    .forEach((item: any, idx: number) => {
+    .filter((item) => item.equipped && item.limitedUse)
+    .forEach((item, idx: number) => {
       const resource = fromLimitedUse(
         item.definition?.name,
         item.limitedUse,

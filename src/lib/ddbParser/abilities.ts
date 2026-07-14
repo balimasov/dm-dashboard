@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, SKILL_ABILITY, SkillName, SkillProficiency } from "../types";
 import { ABILITY_BY_ID, abilityModifier } from "./shared";
+import { RawDdbData, RawDdbModifier } from "./rawTypes";
 
 const ABILITY_SUBTYPE: Record<keyof AbilityScores, string> = {
   str: "strength-score",
@@ -36,13 +36,13 @@ const SAVE_SUBTYPE: Record<keyof AbilityScores, string> = {
   cha: "charisma-saving-throws",
 };
 
-export function computeAbilityScores(data: any, mods: any[]): AbilityScores {
+export function computeAbilityScores(data: RawDdbData, mods: RawDdbModifier[]): AbilityScores {
   const result = {} as AbilityScores;
   for (const [idStr, key] of Object.entries(ABILITY_BY_ID)) {
     const id = Number(idStr);
-    const base = data.stats?.find((s: any) => s.id === id)?.value ?? 10;
-    const bonus = data.bonusStats?.find((s: any) => s.id === id)?.value ?? 0;
-    const override = data.overrideStats?.find((s: any) => s.id === id)?.value;
+    const base = data.stats?.find((s) => s.id === id)?.value ?? 10;
+    const bonus = data.bonusStats?.find((s) => s.id === id)?.value ?? 0;
+    const override = data.overrideStats?.find((s) => s.id === id)?.value;
     if (override != null) {
       result[key] = override;
       continue;
@@ -64,15 +64,15 @@ export function computeAbilityScores(data: any, mods: any[]): AbilityScores {
   return result;
 }
 
-export function computeSavingThrowProficiencies(mods: any[]): Array<keyof AbilityScores> {
+export function computeSavingThrowProficiencies(mods: RawDdbModifier[]): Array<keyof AbilityScores> {
   return (Object.keys(SAVE_SUBTYPE) as Array<keyof AbilityScores>).filter((key) =>
     mods.some((m) => m.type === "proficiency" && m.subType === SAVE_SUBTYPE[key] && m.isGranted)
   );
 }
 
 /** Equipped armor/shields expose `stealthCheck: 2` when they impose disadvantage on Stealth (1 = normal). */
-export function hasArmorStealthDisadvantage(data: any): boolean {
-  return (data.inventory ?? []).some((i: any) => i.equipped && i.definition?.stealthCheck === 2);
+export function hasArmorStealthDisadvantage(data: RawDdbData): boolean {
+  return (data.inventory ?? []).some((i) => i.equipped && i.definition?.stealthCheck === 2);
 }
 
 /**
@@ -97,7 +97,7 @@ export function hasArmorStealthDisadvantage(data: any): boolean {
  * were surfaced at all, silently dropping this bonus everywhere).
  */
 export function computeSkillProficiencies(
-  mods: any[],
+  mods: RawDdbModifier[],
   armorStealthDisadvantage: boolean,
   abilities: AbilityScores
 ): SkillProficiency[] {
@@ -136,7 +136,7 @@ export function computeSkillProficiencies(
     let advantageNote: string | undefined;
     if (advMod || disadvMod) {
       advantage = advMod ? "advantage" : "disadvantage";
-      advantageNote = (advMod ?? disadvMod).restriction?.trim() || undefined;
+      advantageNote = (advMod ?? disadvMod)!.restriction?.trim() || undefined;
     } else if (fromArmor) {
       advantage = "disadvantage";
       advantageNote = "Wearing armor that imposes disadvantage on Stealth checks.";
@@ -154,7 +154,7 @@ export function computeSkillProficiencies(
   return skills;
 }
 
-export function computePassiveSkill(abilityMod: number, profBonus: number, skill: string, mods: any[]): number {
+export function computePassiveSkill(abilityMod: number, profBonus: number, skill: string, mods: RawDdbModifier[]): number {
   // No `isGranted` filter on proficiency/expertise — same reasoning as
   // `computeSkillProficiencies` below: confirmed on real exports that a
   // skill's own proficiency modifier can be genuinely active with

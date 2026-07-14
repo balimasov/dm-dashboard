@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbilityScores, RecoveryType } from "../types";
 import { formatModifier } from "../format";
+import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 // Re-exported (not duplicated) so `abilities.ts`/`combat.ts`/`spells.ts`/`ddbParser.ts` can keep importing
 // it from "./shared" alongside this file's own DDB-specific helpers, instead of needing a second import
 // line from "../characterMath" in every one of those files just for this one function.
@@ -44,15 +44,15 @@ export function titleCase(kebab: string): string {
  * (e.g. it's actually granted by something else) is kept rather than
  * dropped, so an unrecognized source doesn't silently disappear.
  */
-export function collectModifiers(data: any): any[] {
+export function collectModifiers(data: RawDdbData): RawDdbModifier[] {
   const groups = ["race", "class", "background", "item", "feat", "condition"];
-  const inventoryById = new Map<number | undefined, any>(
-    (data.inventory ?? []).map((i: any) => [i.definition?.id, i])
+  const inventoryById = new Map<number | undefined, RawDdbAny>(
+    (data.inventory ?? []).map((i) => [i.definition?.id, i])
   );
   return groups.flatMap((g) => {
     const mods = data.modifiers?.[g] ?? [];
     if (g !== "item") return mods;
-    return mods.filter((m: any) => {
+    return mods.filter((m) => {
       const item = inventoryById.get(m.componentId);
       return !item || item.equipped;
     });
@@ -362,7 +362,7 @@ export function resolveSnippetTemplate(
  * slot), so one calculation covers both.
  */
 export function computeLimitedUseCharges(
-  lu: any,
+  lu: RawDdbAny,
   abilities: AbilityScores,
   profBonus: number
 ): { current: number; max: number; recovery: RecoveryType } | null {
@@ -406,7 +406,7 @@ export function computeLimitedUseCharges(
  * for most actions that field is the action's *damage* roll (e.g. a weapon
  * attack), unrelated to the resource's own charge count.
  */
-export function diceTypeNote(name: string, dice: any): string {
+export function diceTypeNote(name: string, dice: RawDdbAny): string {
   if (!dice?.diceValue || !/\b(die|dice)\b/i.test(name)) return "";
   return ` Each die is a d${dice.diceValue}.`;
 }

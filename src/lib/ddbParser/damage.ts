@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { titleCase } from "./shared";
+import { RawDdbData, RawDdbModifier } from "./rawTypes";
 
 /**
  * `customDefenseAdjustments` (D&D Beyond's "Damage & Condition Adjustments"
@@ -122,11 +122,14 @@ const CUSTOM_DEFENSE_ADJUSTMENTS: Record<
  * immunity would) — both are surfaced here at face value, matching what the
  * app's Resistances/Immunities/Vulnerabilities section is meant to list.
  */
-export function computeDamageModifiers(mods: any[], customDefenseAdjustments: any[]) {
+export function computeDamageModifiers(
+  mods: RawDdbModifier[],
+  customDefenseAdjustments: RawDdbData["customDefenseAdjustments"]
+) {
   function namesFor(type: string): string[] {
     const names = mods
       .filter((m) => m.type === type && m.isGranted && m.subType)
-      .map((m) => titleCase(m.subType));
+      .map((m) => titleCase(m.subType!));
     return Array.from(new Set(names));
   }
 
@@ -159,7 +162,7 @@ export function computeDamageModifiers(mods: any[], customDefenseAdjustments: an
  * reassembled into a single sentence, since restriction text isn't
  * consistently a clean standalone clause.
  */
-export function computeAdvantages(mods: any[]): string[] {
+export function computeAdvantages(mods: RawDdbModifier[]): string[] {
   const entries = mods.filter((m) => (m.type === "advantage" || m.type === "disadvantage") && m.isGranted);
   const names = entries.map((m) => {
     const prefix = m.type === "disadvantage" ? "Disadvantage" : "Advantage";
