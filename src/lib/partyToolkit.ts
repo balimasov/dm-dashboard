@@ -420,52 +420,6 @@ export function computePartyResourceSummary(characters: Character[]): PartyResou
   );
 }
 
-export interface PartyResourceGauge {
-  /** Rounded 0-100 — the mean of every individually-tracked pool's own `current/max` percentage. */
-  percent: number;
-  /** How many pools went into the average (each spell slot level, Heroic Inspiration, one per character-resource row) — the gauge's own caption context. */
-  resourceCount: number;
-}
-
-function averagePercent(percentages: number[]): { percent: number; resourceCount: number } | null {
-  if (percentages.length === 0) return null;
-  const percent = Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
-  return { percent, resourceCount: percentages.length };
-}
-
-/**
- * One "how much is running low" number for the whole card — the mean of
- * every individually-tracked pool's own percentage (each spell slot level,
- * Heroic Inspiration, one per character-resource row), not a sum of raw
- * charges. Averaging means every pool is one equal "vote" regardless of
- * size: a single fully-spent 2-charge Rage pulls the number down exactly as
- * much as any other tapped-out resource, even sitting next to a 20-slot
- * spell pool that's still mostly full — summing raw charges would let that
- * big pool mask the Rage being gone entirely, which is exactly the kind of
- * thing a DM actually needs the gauge to flag. `null` when there's nothing
- * trackable at all — no gauge to draw.
- */
-export function computePartyResourceGauge(characters: Character[]): PartyResourceGauge | null {
-  const spellSlots = computePartySpellSlotSummary(characters);
-  const inspiration = computeHeroicInspirationSummary(characters);
-  const resources = computePartyResourceSummary(characters);
-
-  const percentages: number[] = [];
-  if (spellSlots) {
-    for (const level of spellSlots.levels) {
-      if (level.max > 0) percentages.push((level.current / level.max) * 100);
-    }
-  }
-  if (inspiration.partySize > 0) {
-    percentages.push((inspiration.withInspiration / inspiration.partySize) * 100);
-  }
-  for (const r of resources) {
-    if (r.max > 0) percentages.push((r.current / r.max) * 100);
-  }
-
-  return averagePercent(percentages);
-}
-
 /** One resource feeding a Short/Long Rest bucket — the bar's hover hint breakdown, same idea as `PartySpellSlotHolder` for a spell slot level. */
 export interface RestRecoveryEntry {
   id: string;
@@ -497,8 +451,11 @@ function buildRestBucket(entries: RestRecoveryEntry[]): PartyRestRecoveryBucket 
 }
 
 /**
- * Splits the same per-resource-percentage averaging `computePartyResourceGauge`
- * uses into two buckets by `Resource.recovery` — "short-rest" (and
+ * Splits per-resource-percentage averaging (each pool is one equal "vote",
+ * not summed raw charges — a single fully-spent 2-charge Rage pulls the
+ * average down exactly as much as any other tapped-out resource, instead of
+ * getting masked by sitting next to a 20-slot spell pool that's still
+ * mostly full) into two buckets by `Resource.recovery` — "short-rest" (and
  * "encounter", back within the hour regardless) vs everything slower
  * ("long-rest", "dawn", "daily", "custom", "manual", none of which a short
  * rest touches). Answers the DM's actual mid-session question more directly

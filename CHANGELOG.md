@@ -12,6 +12,18 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.126.0] - 2026-07-14
+
+### Changed
+- **"Spell Slots & Resources" отримав ті самі графіки, що й "Resources &
+  Coverage"** — Rest Recovery (Short/Long Rest бари з Total) і гістограма
+  Spell Slots замінили старий дуговий gauge ("Party Resources" + окремі
+  дуги Short/Long Rest) і плаский список рівнів спелслотів. Обидва блоки
+  тепер читаються як один інструмент замість двох різних стилів графіків.
+  `ChartBox`/`RestRecoveryMeters`/`SpellSlotHistogram` винесені у спільний
+  `SpellChartsRow` (`shared.tsx`), яким користуються обидві панелі — старий
+  дуговий gauge-код і `computePartyResourceGauge` видалені як мертвий код.
+
 ## [0.125.2] - 2026-07-14
 
 ### Fixed

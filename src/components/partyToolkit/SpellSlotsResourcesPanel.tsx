@@ -1,10 +1,8 @@
 import { Character, RECOVERY_LABELS } from "@/lib/types";
-import { ordinalLevel } from "@/lib/format";
 import {
   HeroicInspirationSummary,
   PartyResourceEntry,
   computeHeroicInspirationSummary,
-  computePartyResourceGauge,
   computePartyResourceSummary,
   computePartyRestRecoveryGauge,
   computePartySpellSlotSummary,
@@ -13,16 +11,7 @@ import { InfoTooltip } from "../InfoTooltip";
 import { CharacterChip } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import {
-  CHART_AREA_MIN_HEIGHT_CLASS,
-  HEROIC_INSPIRATION_DESCRIPTION,
-  HolderListPanel,
-  PartyResourceGaugeDisplay,
-  PartyResourcesHint,
-  PartyRestRecoveryDisplay,
-  SpellSlotLevelPanel,
-  usageColorClass,
-} from "./shared";
+import { CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, usageColorClass } from "./shared";
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
@@ -69,56 +58,23 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
 }
 
 /**
- * Spell Slots & Resources — slots first (party-wide totals per level, always
- * shown as plain numbers here rather than the dot meter used on a
- * character's own card, since a party total can run well past a
- * single-character's usual single-digit max), then every limited-use
- * resource in the party.
+ * Spell Slots & Resources — the same Rest Recovery/Spell Slots charts
+ * `ResourceCoveragePanel` shows (via the shared `SpellChartsRow`), so both
+ * panels read as one consistent instrument instead of this one showing an
+ * older, different chart style. Below that: Heroic Inspiration, then every
+ * limited-use resource in the party.
  */
 export function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
-  const gauge = computePartyResourceGauge(characters);
   const restRecovery = computePartyRestRecoveryGauge(characters);
 
   return (
     <ToolkitCard title="Spell Slots & Resources">
-      {gauge && (
-        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
-          <SectionLabel className="text-center">
-            <InfoTooltip inline panel={<PartyResourcesHint resourceCount={gauge.resourceCount} />}>
-              Party Resources
-            </InfoTooltip>
-          </SectionLabel>
-          <PartyResourceGaugeDisplay gauge={gauge} />
-          <PartyRestRecoveryDisplay recovery={restRecovery} />
-        </div>
-      )}
-
-      <SectionLabel className={gauge ? "mt-4" : ""}>Spell Slots</SectionLabel>
-      {!spellSlots ? (
-        <p className="text-sm text-slate-600">No spell slots in the party.</p>
-      ) : (
-        <div className="divide-y divide-slate-800/60">
-          {spellSlots.levels.map((l) => (
-            <div key={l.level} className="flex items-center justify-between gap-3 py-1 text-sm">
-              <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
-                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
-              </InfoTooltip>
-              <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
-                {l.current}/{l.max}
-              </span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between gap-3 py-1 text-sm">
-            <span className="text-slate-300">Total</span>
-            <span className={`font-medium ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
-              {spellSlots.totalCurrent}/{spellSlots.totalMax}
-            </span>
-          </div>
-        </div>
-      )}
+      <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
+        <SpellChartsRow restRecovery={restRecovery} spellSlots={spellSlots} />
+      </div>
 
       <SectionLabel className="mt-4">Heroic Inspiration</SectionLabel>
       <HeroicInspirationRow summary={inspiration} />

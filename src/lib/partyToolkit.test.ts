@@ -7,7 +7,6 @@ import {
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyPassiveSummary,
-  computePartyResourceGauge,
   computePartyResourceSummary,
   computePartyRestRecoveryGauge,
   computePartySkillOverview,
@@ -474,50 +473,6 @@ describe("computePartyResourceSummary", () => {
 
   test("empty party yields no resource rows", () => {
     expect(computePartyResourceSummary([])).toEqual([]);
-  });
-});
-
-describe("computePartyResourceGauge", () => {
-  test("averages each pool's own percentage — a small empty pool weighs the same as a big full one", () => {
-    const a = makeCharacter({
-      name: "A",
-      heroicInspiration: true,
-      spellSlots: [{ level: 1, current: 2, max: 4 }],
-      resources: [{ id: "rage", name: "Rage", current: 1, max: 2, recovery: "long-rest" }],
-    });
-    const b = makeCharacter({
-      name: "B",
-      heroicInspiration: false,
-      spellSlots: [{ level: 1, current: 1, max: 2 }],
-      resources: [{ id: "luck", name: "Luck Points", current: 3, max: 3, recovery: "long-rest" }],
-    });
-
-    // level 1 slots: 3/6 -> 50%, inspiration: 1/2 -> 50%, rage: 1/2 -> 50%, luck: 3/3 -> 100%
-    // average of [50, 50, 50, 100] = 62.5 -> rounds to 63
-    const gauge = computePartyResourceGauge([a, b]);
-    expect(gauge).toEqual({ percent: 63, resourceCount: 4 });
-  });
-
-  test("a single fully-drained small resource pulls the average down as much as any other pool", () => {
-    const a = makeCharacter({
-      name: "A",
-      heroicInspiration: true, // 100%
-      resources: [
-        { id: "loh", name: "Lay On Hands: Healing Pool", current: 20, max: 25, recovery: "long-rest" }, // 80%
-        { id: "rage", name: "Rage", current: 0, max: 2, recovery: "long-rest" }, // 0%
-      ],
-    });
-    // average of [100, 80, 0] = 60, not the 75% a raw-charge sum (21/28) would give
-    expect(computePartyResourceGauge([a])).toEqual({ percent: 60, resourceCount: 3 });
-  });
-
-  test("still counts Heroic Inspiration even with no spell slots or resources", () => {
-    const a = makeCharacter({ name: "A", heroicInspiration: false });
-    expect(computePartyResourceGauge([a])).toEqual({ percent: 0, resourceCount: 1 });
-  });
-
-  test("null for an empty party", () => {
-    expect(computePartyResourceGauge([])).toBeNull();
   });
 });
 
