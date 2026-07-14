@@ -486,6 +486,8 @@ export interface PartyRestRecoveryGauge {
   /** `null` when the party has no resources of this kind tracked at all. */
   shortRest: PartyRestRecoveryBucket | null;
   longRest: PartyRestRecoveryBucket | null;
+  /** Both buckets' entries combined into one overall average — same rollup the Spell Slots histogram already shows as its "Total" column. */
+  total: PartyRestRecoveryBucket | null;
 }
 
 function buildRestBucket(entries: RestRecoveryEntry[]): PartyRestRecoveryBucket | null {
@@ -532,7 +534,11 @@ export function computePartyRestRecoveryGauge(characters: Character[]): PartyRes
     }
   }
 
-  return { shortRest: buildRestBucket(shortRestEntries), longRest: buildRestBucket(longRestEntries) };
+  return {
+    shortRest: buildRestBucket(shortRestEntries),
+    longRest: buildRestBucket(longRestEntries),
+    total: buildRestBucket([...shortRestEntries, ...longRestEntries]),
+  };
 }
 
 // ---------------------------------------------------------------------------

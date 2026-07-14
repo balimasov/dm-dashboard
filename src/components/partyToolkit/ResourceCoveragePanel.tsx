@@ -58,28 +58,46 @@ function RestRecoveryHintPanel({ label, bucket }: { label: string; bucket: Party
   );
 }
 
-/** One recovery type's readiness as a horizontal meter (track = same-ramp light step, fill = danger-tier color) — same visual language as `ResourceTrackerBar` on a character card, just labeled per rest type instead of blended into one "overall" number. Hovering/tapping the bar itself (not just the number) shows the per-resource breakdown, matching the hit-target size of every other hintable row in this panel. */
-function RestRecoveryMeterRow({ label, bucket }: { label: string; bucket: PartyRestRecoveryBucket }) {
+/** One recovery type's readiness as a horizontal meter (track = same-ramp light step, fill = danger-tier color) — same visual language as `ResourceTrackerBar` on a character card, just labeled per rest type instead of blended into one "overall" number. Hovering/tapping the bar itself (not just the number) shows the per-resource breakdown, matching the hit-target size of every other hintable row in this panel. The `(N)` after the percent is the pool count the percent is an average *of* — without it, a 50% bar reads the same whether it's one resource or ten, which matters exactly when it's low: a lone empty resource is a smaller problem than five of them. `emphasized` is only ever the Total row, bold enough to stand apart from the two rows it sums up. */
+function RestRecoveryMeterRow({ label, bucket, emphasized = false }: { label: string; bucket: PartyRestRecoveryBucket; emphasized?: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs leading-none">
-      <span className="w-20 shrink-0 whitespace-nowrap font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <span
+        className={`w-20 shrink-0 whitespace-nowrap uppercase tracking-wide ${emphasized ? "font-bold text-slate-300" : "font-semibold text-slate-500"}`}
+      >
+        {label}
+      </span>
       <InfoTooltip hoverOnly panel={<RestRecoveryHintPanel label={label} bucket={bucket} />}>
         <div className="h-3.5 w-36 overflow-hidden rounded-full bg-slate-800 sm:w-48">
           <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
         </div>
       </InfoTooltip>
       <span className={`shrink-0 font-semibold tabular-nums ${tierTextClass(bucket.percent)}`}>{bucket.percent}%</span>
+      <span className="shrink-0 tabular-nums text-slate-600">({bucket.resourceCount})</span>
     </div>
   );
 }
 
-/** Stacks the Short Rest and Long Rest meters — either row is omitted (not just empty) when the party has no resources of that kind, same as the arcs this replaces used to do. `null` when neither exists, so the caller can skip the whole block instead of rendering an empty wrapper. The row gap is double the old `gap-1.5`: once this sits in a `ChartBox` matched to the taller Spell Slots box's height, cramming both bars right under the caption instead of letting them breathe read as leftover empty space below them rather than a deliberately roomier layout. */
+/**
+ * Stacks the Short Rest and Long Rest meters, plus a combined Total row once
+ * both exist (same idea as the Spell Slots histogram's own Total column) —
+ * either of the two main rows is omitted (not just empty) when the party has
+ * no resources of that kind, same as the arcs this replaces used to do.
+ * Total only makes sense with both present — with just one, it would repeat
+ * that row's own number. `null` when neither exists, so the caller can skip
+ * the whole block instead of rendering an empty wrapper.
+ */
 function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) {
   if (!recovery.shortRest && !recovery.longRest) return null;
   return (
     <div className="flex flex-col gap-3">
       {recovery.shortRest && <RestRecoveryMeterRow label="Short Rest" bucket={recovery.shortRest} />}
       {recovery.longRest && <RestRecoveryMeterRow label="Long Rest" bucket={recovery.longRest} />}
+      {recovery.shortRest && recovery.longRest && recovery.total && (
+        <div className="mt-1 border-t border-slate-800/60 pt-2">
+          <RestRecoveryMeterRow label="Total" bucket={recovery.total} emphasized />
+        </div>
+      )}
     </div>
   );
 }
@@ -88,8 +106,8 @@ function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) 
 const HISTOGRAM_MAX_HEIGHT_PX = 64;
 /** Every column gets at least this much height regardless of `max` — the floor that keeps a 1-slot 9th-level column a real, hoverable bar instead of a sliver. */
 const HISTOGRAM_MIN_HEIGHT_PX = 18;
-/** Mark-spec column thickness (`≤24px`, see the dataviz skill's bar/column spec) — same width for the outer track and the inner fill so the fill never peeks past the track's rounded corners. */
-const HISTOGRAM_COLUMN_WIDTH_PX = 24;
+/** Mark-spec column thickness (`≤24px`, see the dataviz skill's bar/column spec) — same width for the outer track and the inner fill so the fill never peeks past the track's rounded corners. Kept toward the narrow end of that range (not the full 24px) so all 9 possible spell levels plus their gaps still fit a phone-width `ChartBox` without scrolling. */
+const HISTOGRAM_COLUMN_WIDTH_PX = 20;
 
 /** One spell slot level as a vertical meter column — full column height (the dim track) is that level's own `max`, scaled against the party's largest level so every level stays visible; the colored fill from the baseline is `current`. Same hover hint as the old text row (`SpellSlotLevelPanel`), just triggered by the column instead of a line of text. */
 function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLevel; maxAcrossLevels: number }) {
@@ -117,22 +135,37 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
           <div className={`absolute bottom-0 left-0 w-full rounded-md ${tierBgClass(percent)}`} style={{ height: `${fillHeight}px` }} />
         </div>
       </InfoTooltip>
-      <span className="text-[10px] text-slate-600">{level.level}</span>
+      <span className="text-[10px] font-semibold text-slate-400">{level.level}</span>
     </div>
   );
 }
 
-/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. Its own caption lives on the enclosing `ChartBox`, not here. */
+/**
+ * The histogram of every spell slot level the party has, plus the running
+ * total — replaces the old plain-number "1st Level ... 22/24" rows with one
+ * glanceable shape: which levels are topped up, which are running dry, at
+ * what relative depth. Its own caption lives on the enclosing `ChartBox`,
+ * not here.
+ *
+ * Up to 9 columns (one per spell level) plus the Total block used to sit in
+ * one unbroken row — on a phone-width `ChartBox` that overflowed the screen
+ * instead of wrapping. Total now stacks below the columns on narrow screens
+ * (a divider on top instead of the left) and only moves back beside them at
+ * `sm:`, and `overflow-x-auto` on the column row is a safety net for
+ * whatever's still too tight below that (a party with several high-level
+ * casters can genuinely fill all 9 levels) — scrolling a chart beats it
+ * silently pushing the whole card off-screen.
+ */
 function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
   const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
   return (
-    <div className="flex items-end gap-5">
-      <div className="flex items-end gap-3">
+    <div className="flex w-full max-w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:items-end sm:gap-5">
+      <div className="flex max-w-full items-end gap-2 overflow-x-auto pb-1 sm:gap-3">
         {spellSlots.levels.map((level) => (
           <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
         ))}
       </div>
-      <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-5">
+      <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
         <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
           {spellSlots.totalCurrent}/{spellSlots.totalMax}
@@ -161,9 +194,9 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
  */
 function ChartBox({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-4 sm:px-8">
+    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 sm:w-auto sm:px-8">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
-      <div className="flex flex-1 flex-col items-center justify-center">{children}</div>
+      <div className="flex w-full flex-1 flex-col items-center justify-center">{children}</div>
     </div>
   );
 }

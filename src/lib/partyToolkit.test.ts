@@ -550,6 +550,16 @@ describe("computePartyRestRecoveryGauge", () => {
         { id: "A-rage", characterName: "A", resourceName: "Rage", current: 1, max: 2 },
       ],
     });
+    expect(recovery.total).toEqual({
+      percent: 63,
+      resourceCount: 4,
+      entries: [
+        { id: "A-surge", characterName: "A", resourceName: "Action Surge", current: 0, max: 1 },
+        { id: "A-second-wind", characterName: "A", resourceName: "Second Wind", current: 1, max: 1 },
+        { id: "A-misty", characterName: "A", resourceName: "Misty Step (item)", current: 1, max: 1 },
+        { id: "A-rage", characterName: "A", resourceName: "Rage", current: 1, max: 2 },
+      ],
+    });
   });
 
   test("a bucket is null (not a 0% dial) when the party has no resources of that kind", () => {
@@ -567,7 +577,7 @@ describe("computePartyRestRecoveryGauge", () => {
   });
 
   test("both null for an empty party", () => {
-    expect(computePartyRestRecoveryGauge([])).toEqual({ shortRest: null, longRest: null });
+    expect(computePartyRestRecoveryGauge([])).toEqual({ shortRest: null, longRest: null, total: null });
   });
 });
 
