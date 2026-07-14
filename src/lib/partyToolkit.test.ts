@@ -220,6 +220,23 @@ describe("computePartyPassiveSummary", () => {
     expect(computePartyPassiveSummary([])).toBeNull();
   });
 
+  test("a tie in passive perception breaks by characterId, not characterName", () => {
+    const zeta = makeCharacter({
+      id: "aaa",
+      name: "Zeta",
+      combat: { hp: 1, maxHp: 1, tempHp: 0, ac: 10, speed: 30, passivePerception: 12, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 },
+    });
+    const alpha = makeCharacter({
+      id: "zzz",
+      name: "Alpha",
+      combat: { hp: 1, maxHp: 1, tempHp: 0, ac: 10, speed: 30, passivePerception: 12, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 },
+    });
+
+    const summary = computePartyPassiveSummary([alpha, zeta]);
+
+    expect(summary?.perception.all.map((s) => s.characterName)).toEqual(["Zeta", "Alpha"]);
+  });
+
   test("computes best/average/lowest passive perception, and best insight/investigation", () => {
     const a = makeCharacter({
       name: "Esmeralda",
@@ -664,6 +681,18 @@ describe("computeSpellAbilityCoverage", () => {
     const coverage = computeSpellAbilityCoverage([c]);
     expect(coverage.Protection).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
     expect(coverage.Reactions).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
+  });
+
+  test("ties (two characters knowing the same spell) break by characterId, not characterName — locale-independent so SSR/client hydration can't reorder the avatars", () => {
+    // `id` deliberately sorts the opposite way from `name` — if the tie-break
+    // used `characterName.localeCompare(...)` instead, "Alpha" would come
+    // first; asserting "Zeta" comes first proves it's actually ordering by id.
+    const zeta = makeCharacter({ id: "aaa", name: "Zeta", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
+    const alpha = makeCharacter({ id: "zzz", name: "Alpha", knownSpells: [{ id: "s2", name: "Shield", level: 1, source: "Class" }] });
+
+    const coverage = computeSpellAbilityCoverage([alpha, zeta]);
+
+    expect(coverage.Protection.map((e) => e.characterName)).toEqual(["Zeta", "Alpha"]);
   });
 
   test("every category is present (possibly empty) for an empty party", () => {

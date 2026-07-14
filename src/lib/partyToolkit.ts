@@ -14,6 +14,28 @@ import {
 
 export type SkillCoverageStatus = "Strong" | "Medium" | "Weak";
 
+/**
+ * Ordinal `characterId` comparison — the locale-independent tie-break every
+ * "sort characters, then break ties by name" spot in this file needs.
+ * `characterName.localeCompare(...)` with no explicit locale collates
+ * however the *running environment's* default locale says to, which is free
+ * to differ between the Node.js server and the browser. For a party with
+ * both Latin and Cyrillic names, that's a real mismatch: two tied entries
+ * (e.g. two characters who both know the same spell) sort one way during
+ * SSR and the other way once the client's locale takes over, so hydration
+ * silently "corrects" the DOM — the previously server-picked entry's avatar
+ * visibly flashes in before the client's swaps it out. `characterId` is
+ * plain ASCII and compared ordinally, so the order is identical everywhere
+ * and hydration has nothing to fix. `undefined` (an entry with no owning
+ * character, e.g. the Heroic Inspiration coverage row) sorts last.
+ */
+function compareCharacterId(a: string | undefined, b: string | undefined): number {
+  if (a === b) return 0;
+  if (a === undefined) return 1;
+  if (b === undefined) return -1;
+  return a < b ? -1 : 1;
+}
+
 export interface SkillPartyScore {
   characterId: string;
   characterName: string;
@@ -79,15 +101,7 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
   });
 
   const proficientCount = scores.filter((s) => s.proficient).length;
-  // Tie-break by `characterId`, not `characterName.localeCompare(...)` — with no explicit
-  // locale, `localeCompare`'s collation is whatever the running environment's default locale
-  // says, which is free to differ between the Node.js server and the browser. For a party with
-  // both Latin and Cyrillic names, that mismatch is real: a tied modifier sorted one way during
-  // SSR and the other way once the client (browser locale) took over, so hydration silently
-  // "corrected" the DOM — the previously-server-picked best/weakest chip's avatar visibly
-  // flashed in before the client's swapped it out. `characterId` is plain ASCII and compared
-  // ordinally, so the tie-break is identical everywhere, and hydration has nothing to fix.
-  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier || (a.characterId < b.characterId ? -1 : a.characterId > b.characterId ? 1 : 0));
+  const sorted = [...scores].sort((a, b) => b.modifier - a.modifier || compareCharacterId(a.characterId, b.characterId));
   const best = sorted[0] ?? null;
   const last = sorted[sorted.length - 1] ?? null;
   const weakest = last && best && last.modifier < best.modifier ? last : null;
@@ -226,7 +240,7 @@ function passiveCharacterScores(
         proficient: Boolean(prof?.proficient || prof?.expertise),
       };
     })
-    .sort((a, b) => b.value - a.value || a.characterName.localeCompare(b.characterName));
+    .sort((a, b) => b.value - a.value || compareCharacterId(a.characterId, b.characterId));
 }
 
 function passiveStatSummary(
@@ -845,7 +859,7 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
   }
 
   for (const category of COVERAGE_CATEGORY_ORDER) {
-    coverage[category].sort((a, b) => a.name.localeCompare(b.name) || a.characterName.localeCompare(b.characterName));
+    coverage[category].sort((a, b) => a.name.localeCompare(b.name) || compareCharacterId(a.characterId, b.characterId));
   }
 
   return coverage;
