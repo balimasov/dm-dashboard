@@ -11,6 +11,21 @@ import {
   PartySpellSlotSummary,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
+import { MetaBadge } from "../ui/MetaBadge";
+
+/**
+ * The small violet level/cantrip tag shared by a slot-cost spell's
+ * availability badge and a cantrip's passive pill — built on the same
+ * `MetaBadge` primitive `RecoveryBadge`'s LR/SR tag uses (just violet
+ * instead of slate), so every small inline tag across the Party Toolkit —
+ * and every recovery-type badge elsewhere in the app — reads and behaves as
+ * one consistent thing.
+ */
+export function LevelBadge({ label, panel }: { label: string; panel: ReactNode }) {
+  return <MetaBadge label={label} panel={panel} colorClassName="border-violet-800 text-violet-400" />;
+}
+
+export const CANTRIP_HINT = <p className="text-white">Cantrip — cast at will, no spell slot required.</p>;
 
 /** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value across the Party Toolkit panels: spell slots, Heroic Inspiration, and limited-use resources. */
 export function usageColorClass(current: number, max: number): string {
@@ -247,35 +262,41 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
  * not here.
  *
  * Up to 9 columns (one per spell level) plus the Total block used to sit in
- * one unbroken row — on a phone-width `ChartBox` that overflowed the screen
- * instead of wrapping. Total now stacks below the columns on narrow screens
- * (a divider on top instead of the left) and only moves back beside them at
- * `sm:`, and `overflow-x-auto` on the column row is a mobile-only safety
- * net for whatever's still too tight below that (a party with several
- * high-level casters can genuinely fill all 9 levels) — scrolling a chart
- * beats it silently pushing the whole card off-screen.
+ * one unbroken row — a narrow `ChartBox` overflows that. Total now stacks
+ * below the columns when narrow (a divider on top instead of the left) and
+ * only moves back beside them once there's `@[512px]` of room, and
+ * `overflow-x-auto` on the column row is a safety net for whatever's still
+ * too tight below that (a party with several high-level casters can
+ * genuinely fill all 9 levels) — scrolling a chart beats it silently
+ * pushing the whole card off-screen.
  *
- * `shrink-0` on that same column row plus switching to `overflow-visible`
- * at `sm:` both matter, not just one: a flex item that contains any
+ * These are **container** queries (`@[…]:`), not viewport ones (`sm:`/
+ * `lg:`) — this histogram sits in two very differently-sized places: the
+ * full-width "Resources & Coverage" card (~1400px) and the half-width
+ * "Spell Slots & Resources" card, which sits in a 2-column grid next to
+ * Skills and measures only ~680px even on a wide desktop viewport. A
+ * viewport breakpoint like `sm:`/`lg:` can't tell those two apart — it only
+ * knows the browser window is wide, not that *this* box only got half of
+ * it — and confirmed exactly that: 9 columns fit fine in the full-width
+ * card but overflowed in the half-width one at the very same viewport
+ * width. `@container` on `SpellChartsRow`'s own root (below) is what makes
+ * `@[512px]` mean "*this chart's own space* is ≥512px," not "the window
+ * is." `shrink-0` still matters alongside it — a flex item with any
  * `overflow-x-auto` descendant loses its normal min-content-width floor (a
- * CSS flexbox quirk — `overflow: auto` resets `min-width: auto` to `0`),
- * so its `lg:flex-row` sibling (the Total block, or Rest Recovery's own
- * `ChartBox` one level up) was free to squeeze it *below* what 9 columns
- * actually need — producing a scrollbar on a wide desktop screen with
- * plenty of unused width, confirmed by a screenshot. `shrink-0` keeps that
- * floor; `sm:overflow-visible` removes the scroll container outright once
- * the layout is roomy enough that scrolling should never be needed at all.
+ * separate CSS flexbox quirk), which let a sibling squeeze this column row
+ * narrower than 9 columns need even when the container query above says
+ * there's room.
  */
 function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
   const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
   return (
-    <div className="flex w-full max-w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:items-end sm:gap-5">
-      <div className="flex max-w-full shrink-0 items-end gap-2 overflow-x-auto pb-1 sm:gap-3 sm:overflow-visible sm:pb-0">
+    <div className="flex w-full max-w-full flex-col items-center gap-3 @[512px]:w-auto @[512px]:flex-row @[512px]:items-end @[512px]:gap-5">
+      <div className="flex max-w-full shrink-0 items-end gap-2 overflow-x-auto pb-1 @[512px]:gap-3 @[512px]:overflow-visible @[512px]:pb-0">
         {spellSlots.levels.map((level) => (
           <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
         ))}
       </div>
-      <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+      <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 @[512px]:border-l @[512px]:border-t-0 @[512px]:pl-5 @[512px]:pt-0">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
         <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
           {spellSlots.totalCurrent}/{spellSlots.totalMax}
@@ -294,27 +315,49 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
  *
  * The two boxes rendered side by side (Rest Recovery, Spell Slots) naturally
  * want different heights — the histogram's tall bars make Spell Slots the
- * taller of the two. The `lg:items-stretch` on `SpellChartsRow`'s own row
- * stretches both boxes to that same height; the `flex-1 justify-center`
- * wrapper here is what makes the *shorter* box's content actually use that
- * extra height instead of sitting cramped under the caption with dead space
- * below it.
+ * taller of the two. The `items-stretch` on `SpellChartsRow`'s own row (once
+ * it goes side by side) stretches both boxes to that same height; the
+ * `flex-1 justify-center` wrapper here is what makes the *shorter* box's
+ * content actually use that extra height instead of sitting cramped under
+ * the caption with dead space below it. `@[1024px]:w-auto` — a container
+ * query, same reasoning as `SpellSlotHistogram`'s own — only shrinks a box
+ * to its own content width once `SpellChartsRow`'s container is actually
+ * roomy enough for that to look intentional rather than cramped.
  */
 function ChartBox({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 sm:w-auto sm:px-8">
+    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 @[1024px]:w-auto @[1024px]:px-8">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
       <div className="flex w-full flex-1 flex-col items-center justify-center">{children}</div>
     </div>
   );
 }
 
-/** Rest Recovery + Spell Slots charts, side by side — shared by every panel that shows the party's resting/casting readiness (`SpellSlotsResourcesPanel`, `ResourceCoveragePanel`) so both read as the same instrument instead of drifting into two different chart styles over time. `null` when neither chart has anything to show, so the caller can skip the wrapper entirely instead of rendering empty chrome. */
+/**
+ * Rest Recovery + Spell Slots charts, side by side — shared by every panel
+ * that shows the party's resting/casting readiness (`SpellSlotsResourcesPanel`,
+ * `ResourceCoveragePanel`) so both read as the same instrument instead of
+ * drifting into two different chart styles over time. `null` when neither
+ * chart has anything to show, so the caller can skip the wrapper entirely
+ * instead of rendering empty chrome.
+ *
+ * `@container` here is what makes every `@[…]:` query in this file (here and
+ * in `ChartBox`/`SpellSlotHistogram`) measure *this component's own*
+ * rendered width — not the browser viewport's. That distinction matters
+ * because this exact component renders inside two very differently-sized
+ * places: the full-width "Resources & Coverage" card and the half-width
+ * "Spell Slots & Resources" card (paired with Skills in a 2-column grid,
+ * confirmed ~680px wide even on a 1500px-wide desktop viewport) — a `lg:`
+ * viewport breakpoint can't distinguish those, only a container query can.
+ * The side-by-side switch itself waits for `@[1024px]` (not the `@[512px]`
+ * `SpellSlotHistogram` uses) because *two* boxes need to fit at once here,
+ * not one.
+ */
 export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: PartyRestRecoveryGauge; spellSlots: PartySpellSlotSummary | null }) {
   const hasRestMeters = Boolean(restRecovery.shortRest || restRecovery.longRest);
   if (!hasRestMeters && !spellSlots) return null;
   return (
-    <div className="mt-2 flex flex-col items-center gap-4 lg:flex-row lg:items-stretch lg:justify-center lg:gap-6">
+    <div className="@container mt-2 flex flex-col items-center gap-4 @[1024px]:flex-row @[1024px]:items-stretch @[1024px]:justify-center @[1024px]:gap-6">
       {hasRestMeters && (
         <ChartBox title="Rest Recovery">
           <RestRecoveryMeters recovery={restRecovery} />

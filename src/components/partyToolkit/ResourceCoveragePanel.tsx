@@ -1,4 +1,3 @@
-import { ReactNode } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
@@ -13,10 +12,9 @@ import {
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
-import { MetaBadge } from "../ui/MetaBadge";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, usageColorClass } from "./shared";
+import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, SpellChartsRow, usageColorClass } from "./shared";
 
 /** Heroic Inspiration is the one entry with no real character behind it — same special case `CoveragePanel` handled, rendered as plain "x/partySize" text instead of a chip row. */
 function SpecialRow({ entry }: { entry: ResourceCoverageEntry }) {
@@ -88,21 +86,6 @@ function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
 }
 
 /**
- * The small violet level/cantrip tag shared by a slot-cost spell's
- * `AvailabilityBadge` and a cantrip's `PassivePill` — built on the same
- * `MetaBadge` primitive `RecoveryBadge`'s LR/SR tag uses (just violet
- * instead of slate), so every small inline tag in this panel — and every
- * recovery-type badge elsewhere in the app — reads and behaves as one
- * consistent thing. Deliberately *not* colored green/red by availability the
- * way the badge used to be — that status now lives in the hint's own text
- * (`panel`), not the badge's border color, so one badge style covers both
- * "here's a level" and "here's a cantrip" without a mismatched accent.
- */
-function LevelBadge({ label, panel }: { label: string; panel: ReactNode }) {
-  return <MetaBadge label={label} panel={panel} colorClassName="border-violet-800 text-violet-400" />;
-}
-
-/**
  * Deliberately minimal — just the one status fact a DM actually needs when
  * checking a slot-cost spell's badge: what level it is, and how many slots
  * at that level (or higher) the character has left right now. The full
@@ -121,8 +104,6 @@ function SlotAvailabilityHint({ availability }: { availability: Extract<Resource
     </div>
   );
 }
-
-const CANTRIP_HINT = <p className="text-white">Cantrip — cast at will, no spell slot required.</p>;
 
 /** `pool` shows the exact charge count, same convention as the old Resources row. `slot` can't show one exact number the way a pool can (a spell slot is a shared party-wide/per-caster pool, not this ability's own) — a plain level badge instead, with the actual available-count in its own minimal hint (`SlotAvailabilityHint`). */
 function AvailabilityBadge({ entry }: { entry: ResourceCoverageEntry }) {

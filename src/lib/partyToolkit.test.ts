@@ -11,6 +11,7 @@ import {
   computePartyRestRecoveryGauge,
   computePartySkillOverview,
   computePartySpellSlotSummary,
+  computePartySpellsByLevel,
   computeResistanceCoverage,
   computeResourceCoverage,
   computeResourceStatus,
@@ -360,6 +361,71 @@ describe("computePartySpellSlotSummary", () => {
   test("highestAvailableLevel is null when every slot is spent", () => {
     const a = makeCharacter({ name: "A", spellSlots: [{ level: 1, current: 0, max: 2 }] });
     expect(computePartySpellSlotSummary([a])?.highestAvailableLevel).toBeNull();
+  });
+});
+
+describe("computePartySpellsByLevel", () => {
+  test("groups by level, ascending, cantrips (level 0) first", () => {
+    const a = makeCharacter({
+      name: "A",
+      knownSpells: [
+        { id: "s1", name: "Fireball", level: 3, source: "Class" },
+        { id: "s2", name: "Fire Bolt", level: 0, source: "Class" },
+        { id: "s3", name: "Shield", level: 1, source: "Class" },
+      ],
+    });
+    const groups = computePartySpellsByLevel([a]);
+    expect(groups.map((g) => g.level)).toEqual([0, 1, 3]);
+    expect(groups[0].spells.map((s) => s.name)).toEqual(["Fire Bolt"]);
+    expect(groups[0].spells[0].isCantrip).toBe(true);
+  });
+
+  test("two characters knowing the same spell collapse into one entry with both as holders", () => {
+    const a = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
+    const b = makeCharacter({ name: "B", knownSpells: [{ id: "s1", name: "shield", level: 1, source: "Class" }] });
+    const groups = computePartySpellsByLevel([a, b]);
+    expect(groups).toEqual([
+      {
+        level: 1,
+        spells: [
+          {
+            name: "Shield",
+            isCantrip: false,
+            holders: [
+              { characterId: "A", characterName: "A" },
+              { characterId: "B", characterName: "B" },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("a character knowing the same spell twice (innate charge-pool copy + slot-cost copy) counts as one holder, not two", () => {
+    const a = makeCharacter({
+      name: "A",
+      knownSpells: [
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Race" },
+        { id: "s2", name: "Faerie Fire", level: 1, source: "Race", current: 1, max: 1, recovery: "long-rest" },
+      ],
+    });
+    const groups = computePartySpellsByLevel([a]);
+    expect(groups).toEqual([{ level: 1, spells: [{ name: "Faerie Fire", isCantrip: false, holders: [{ characterId: "A", characterName: "A" }] }] }]);
+  });
+
+  test("spells within a level sort alphabetically", () => {
+    const a = makeCharacter({
+      name: "A",
+      knownSpells: [
+        { id: "s1", name: "Web", level: 2, source: "Class" },
+        { id: "s2", name: "Acid Arrow", level: 2, source: "Class" },
+      ],
+    });
+    expect(computePartySpellsByLevel([a])[0].spells.map((s) => s.name)).toEqual(["Acid Arrow", "Web"]);
+  });
+
+  test("empty for a party with no known spells", () => {
+    expect(computePartySpellsByLevel([makeCharacter({ name: "A" })])).toEqual([]);
   });
 });
 

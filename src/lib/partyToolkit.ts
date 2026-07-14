@@ -347,6 +347,61 @@ export function computePartySpellSlotSummary(characters: Character[]): PartySpel
   };
 }
 
+/** One known spell, deduped by name across every character who knows it — `holders` is who has it, same shape `PassivePill` groups a coverage-category's cantrips into. */
+export interface PartySpellEntry {
+  name: string;
+  isCantrip: boolean;
+  holders: CoverageHolder[];
+}
+
+export interface PartySpellLevelGroup {
+  /** 0 = cantrips. */
+  level: number;
+  /** Alphabetical. */
+  spells: PartySpellEntry[];
+}
+
+/**
+ * Every known spell across the party, grouped by level and deduped by name
+ * within each level — multiple characters knowing the same spell collapse
+ * into one row with several holders instead of listing it once per
+ * character, same idea `PassivePill` already uses for a cantrip inside a
+ * Coverage category. Unlike `computeResourceCoverage`'s categorization, a
+ * spell's own level is a fixed rule fact that never varies by character, so
+ * grouping by `spell.level` needs no cross-character reconciliation. A
+ * character knowing the same spell twice under D&D Beyond's own quirk (an
+ * innate charge-pool copy alongside an ordinary slot-cost one — see
+ * `dedupeSpellsByName`'s doc comment) still counts as one holder, not two.
+ */
+export function computePartySpellsByLevel(characters: Character[]): PartySpellLevelGroup[] {
+  const byLevel = new Map<number, Map<string, PartySpellEntry>>();
+  for (const c of characters) {
+    const seenNames = new Set<string>();
+    for (const spell of c.knownSpells) {
+      const key = spell.name.toLowerCase();
+      if (seenNames.has(key)) continue;
+      seenNames.add(key);
+
+      const levelMap = byLevel.get(spell.level) ?? new Map<string, PartySpellEntry>();
+      const holder: CoverageHolder = { characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl };
+      const existing = levelMap.get(key);
+      if (existing) {
+        existing.holders.push(holder);
+      } else {
+        levelMap.set(key, { name: spell.name, isCantrip: spell.level <= 0, holders: [holder] });
+      }
+      byLevel.set(spell.level, levelMap);
+    }
+  }
+
+  return Array.from(byLevel.entries())
+    .map(([level, spellMap]) => ({
+      level,
+      spells: Array.from(spellMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.level - b.level);
+}
+
 export interface HeroicInspirationSummary {
   withInspiration: number;
   partySize: number;
