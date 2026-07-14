@@ -14,7 +14,7 @@ import {
   STAT_ORDER,
 } from "@/lib/types";
 import { useDdbSync } from "@/hooks/useDdbSync";
-import { DotMeter, ResourceMeter, ResourceTrackerBar, averageResourcePercent, averageSpellSlotPercent } from "./ResourceMeter";
+import { DotMeter, ResourceMeter, ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
@@ -209,10 +209,7 @@ export function CharacterCard({
       {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
           <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Resources</h3>
-          <ResourceTrackerBar
-            resourcesPercent={averageResourcePercent(c.resources)}
-            spellSlotsPercent={averageSpellSlotPercent(c.spellSlots)}
-          />
+          <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} />
 
           {c.resources.length > 0 && (
             <div className="mt-3 space-y-1.5">

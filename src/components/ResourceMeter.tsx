@@ -63,18 +63,36 @@ function tierBgClass(percent: number): string {
   return percent > 50 ? "bg-emerald-400" : percent > 25 ? "bg-amber-400" : "bg-red-400";
 }
 
-/** The hover/tap breakdown for `ResourceTrackerBar` — spells out which of the two layers is which, since the bar itself only has color to go on. */
+/** Mean of every individual pool's own `current/max` across *both* abilities and spell slots at once — one flat list of equally-weighted votes (a Rage charge and a 3rd-level slot don't compare on their own terms, but each still counts as "one pool, topped-up or not" the same as the party-wide gauge treats them). `null` when there's nothing with a `max` to divide by on either side. */
+export function averageOverallPercent(resources: Resource[], spellSlots: SpellSlotLevel[]): number | null {
+  const percentages = [
+    ...resources.filter((r) => r.max > 0).map((r) => (r.current / r.max) * 100),
+    ...spellSlots.filter((s) => s.max > 0).map((s) => (s.current / s.max) * 100),
+  ];
+  if (percentages.length === 0) return null;
+  return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
+}
+
+/** The hover/tap breakdown for `ResourceTrackerBar` — the bar itself shows only the one blended number, so this is the one place to see it split back out by Abilities vs. Spell Slots. */
 function ResourceTrackerHint({
+  overallPercent,
   resourcesPercent,
   spellSlotsPercent,
 }: {
+  overallPercent: number;
   resourcesPercent: number | null;
   spellSlotsPercent: number | null;
 }) {
   return (
     <div className="space-y-1">
       <p className="font-medium text-white">Resource Tracker</p>
-      <p className="text-slate-300">Average remaining % across each tracked pool, one pool one equal vote regardless of its size.</p>
+      <p className="text-slate-300">
+        Average remaining % across every tracked pool — abilities and spell slots together, one pool one equal vote
+        regardless of its size.
+      </p>
+      <p>
+        <span className={tierTextClass(overallPercent)}>●</span> Overall: <span className="font-semibold text-white">{overallPercent}%</span>
+      </p>
       {resourcesPercent !== null && (
         <p>
           <span className={tierTextClass(resourcesPercent)}>●</span> Abilities:{" "}
@@ -91,50 +109,31 @@ function ResourceTrackerHint({
 }
 
 /**
- * One compact bar for both the Abilities and Spell Slots sub-sections below
- * it, instead of two separate summary bars — the two are different pools
- * (a Rage charge and a 3rd-level slot don't compare), but a DM glancing at
- * a card wants "how topped-up is this character" as one impression, not two
- * numbers to average in their head. The abilities layer fills the bar's
- * full height and carries the tier color (green/amber/red — same "is this
- * dangerously low" signal as everywhere else); the spell slots layer is a
- * thinner strip nested inside it in the app's established spell-slot violet
- * (see the dot meters below), so the two stay visually distinguishable by
- * color and shape even without hovering. Hovering/tapping spells out the
- * exact numbers and which is which. Either layer is simply omitted when
- * that pool doesn't exist for this character (a non-caster has no violet
- * strip at all), and the whole bar disappears if neither does.
+ * One bar, one number, for both the Abilities and Spell Slots sub-sections
+ * below it — a DM glancing at a card wants "how topped-up is this
+ * character" as one combined impression, not two separate bars to compare
+ * in their head. Abilities and spell slots are pooled into a single average
+ * (see `averageOverallPercent`); the bar's tier color (green/amber/red)
+ * reflects that one number. The per-pool-type split (which is low, which
+ * isn't) lives one hover/tap away in the hint instead of being crammed into
+ * the bar itself. `null` (nothing to show a bar for at all) only when
+ * neither abilities nor spell slots have anything tracked.
  */
-export function ResourceTrackerBar({
-  resourcesPercent,
-  spellSlotsPercent,
-}: {
-  resourcesPercent: number | null;
-  spellSlotsPercent: number | null;
-}) {
-  if (resourcesPercent === null && spellSlotsPercent === null) return null;
+export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resource[]; spellSlots: SpellSlotLevel[] }) {
+  const overallPercent = averageOverallPercent(resources, spellSlots);
+  if (overallPercent === null) return null;
+  const resourcesPercent = averageResourcePercent(resources);
+  const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
   return (
     <div className="flex items-center gap-2">
-      <div className="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-        {resourcesPercent !== null && (
-          <div
-            className={`absolute inset-y-0 left-0 rounded-full ${tierBgClass(resourcesPercent)}`}
-            style={{ width: `${resourcesPercent}%` }}
-          />
-        )}
-        {spellSlotsPercent !== null && (
-          <div
-            className="absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-violet-300"
-            style={{ width: `${spellSlotsPercent}%` }}
-          />
-        )}
+      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+        <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
       </div>
-      <InfoTooltip hoverOnly panel={<ResourceTrackerHint resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}>
-        <span className="shrink-0 text-xs font-semibold tabular-nums">
-          {resourcesPercent !== null && <span className={tierTextClass(resourcesPercent)}>{resourcesPercent}%</span>}
-          {resourcesPercent !== null && spellSlotsPercent !== null && <span className="text-slate-600"> </span>}
-          {spellSlotsPercent !== null && <span className="text-violet-400">{spellSlotsPercent}%</span>}
-        </span>
+      <InfoTooltip
+        hoverOnly
+        panel={<ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}
+      >
+        <span className={`shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
       </InfoTooltip>
     </div>
   );
