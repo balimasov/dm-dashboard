@@ -17,7 +17,6 @@ import {
   computeResourceStatus,
   computeSensesCoverage,
   computeSkillOverviewEntry,
-  computeSpellAbilityCoverage,
   computeToolCoverage,
   computeUtilitySpellAvailability,
 } from "./partyToolkit";
@@ -642,66 +641,6 @@ describe("computeToolCoverage", () => {
     expect(coverage).toEqual([
       { name: "Herbalism Kit", count: 1, partySize: 1, holders: [{ characterId: "Lilith", characterName: "Lilith" }] },
     ]);
-  });
-});
-
-describe("computeSpellAbilityCoverage", () => {
-  test("matches known spells and features case-insensitively into their categories", () => {
-    const runa = makeCharacter({
-      name: "Runa",
-      knownSpells: [
-        { id: "s1", name: "Fireball", level: 3, source: "Class" },
-        { id: "s2", name: "detect magic", level: 2, source: "Class" },
-      ],
-    });
-    const lilith = makeCharacter({
-      name: "Lilith",
-      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "other", originType: "feat" }],
-    });
-
-    const coverage = computeSpellAbilityCoverage([runa, lilith]);
-    expect(coverage["AOE Damage"]).toEqual([{ name: "Fireball", characterId: "Runa", characterName: "Runa" }]);
-    expect(coverage.Detection).toEqual([{ name: "detect magic", characterId: "Runa", characterName: "Runa" }]);
-    expect(coverage.Rerolls).toEqual([
-      { name: "Heroic Inspiration", characterName: "0/2", holders: [] },
-      { name: "Lucky", characterId: "Lilith", characterName: "Lilith" },
-    ]);
-  });
-
-  test("a spell/ability not in the config map doesn't show up anywhere", () => {
-    const c = makeCharacter({
-      name: "A",
-      knownSpells: [{ id: "s1", name: "Definitely Not A Real Spell", level: 1, source: "Class" }],
-    });
-    const coverage = computeSpellAbilityCoverage([c]);
-    const allEntries = Object.values(coverage).flat();
-    expect(allEntries.some((e) => e.name === "Definitely Not A Real Spell")).toBe(false);
-  });
-
-  test("Shield maps to both Protection and Reactions", () => {
-    const c = makeCharacter({ name: "A", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
-    const coverage = computeSpellAbilityCoverage([c]);
-    expect(coverage.Protection).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
-    expect(coverage.Reactions).toEqual([{ name: "Shield", characterId: "A", characterName: "A" }]);
-  });
-
-  test("ties (two characters knowing the same spell) break by characterId, not characterName — locale-independent so SSR/client hydration can't reorder the avatars", () => {
-    // `id` deliberately sorts the opposite way from `name` — if the tie-break
-    // used `characterName.localeCompare(...)` instead, "Alpha" would come
-    // first; asserting "Zeta" comes first proves it's actually ordering by id.
-    const zeta = makeCharacter({ id: "aaa", name: "Zeta", knownSpells: [{ id: "s1", name: "Shield", level: 1, source: "Class" }] });
-    const alpha = makeCharacter({ id: "zzz", name: "Alpha", knownSpells: [{ id: "s2", name: "Shield", level: 1, source: "Class" }] });
-
-    const coverage = computeSpellAbilityCoverage([alpha, zeta]);
-
-    expect(coverage.Protection.map((e) => e.characterName)).toEqual(["Zeta", "Alpha"]);
-  });
-
-  test("every category is present (possibly empty) for an empty party", () => {
-    const coverage = computeSpellAbilityCoverage([]);
-    expect(Object.keys(coverage)).toHaveLength(16);
-    expect(coverage.Healing).toEqual([]);
-    expect(coverage.Rerolls).toEqual([]);
   });
 });
 

@@ -627,7 +627,9 @@ export function computeToolCoverage(characters: Character[]): NamedCoverageEntry
 }
 
 // ---------------------------------------------------------------------------
-// Iteration 4 — Spell & Ability Coverage
+// Coverage category taxonomy — the keyword map below feeds
+// `computeResourceCoverage` further down (the old, now-removed Spell &
+// Ability Coverage panel used to be its other consumer).
 // ---------------------------------------------------------------------------
 
 export type CoverageCategory =
@@ -818,72 +820,11 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
   }
 }
 
-export interface CoverageEntry {
-  name: string;
-  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, where `characterName` is a party-wide "x/partySize" ratio instead of an owner. */
-  characterId?: string;
-  characterName: string;
-  avatarUrl?: string;
-  /** The spell's/feature's own rules text, straight from `KnownSpell.description`/`Feature.description` — the row's hover hint, same source the character's own card already shows. */
-  description?: string;
-  /** Only set for the Heroic Inspiration entry, whose hover hint needs to list who currently has it — every other entry already carries that in `characterId`/`characterName` since it belongs to exactly one character. */
-  holders?: CoverageHolder[];
-}
-
-/**
- * Matches every character's `knownSpells` and `features` names (case-
- * insensitively) against `COVERAGE_MAP`. Heroic Inspiration is appended to
- * `Rerolls` separately (see the map's own doc comment) whenever there's a
- * party to report it for, formatted the same "name — owner" shape as every
- * other entry but with the party-wide `x / partySize` count standing in for
- * an owner name.
- */
-export function computeSpellAbilityCoverage(characters: Character[]): Record<CoverageCategory, CoverageEntry[]> {
-  const coverage = Object.fromEntries(COVERAGE_CATEGORY_ORDER.map((c) => [c, [] as CoverageEntry[]])) as Record<
-    CoverageCategory,
-    CoverageEntry[]
-  >;
-
-  for (const c of characters) {
-    const named = [
-      ...c.knownSpells.map((s) => ({ name: s.name, description: s.description })),
-      ...c.features.map((f) => ({ name: f.name, description: f.description })),
-    ];
-    const seen = new Set<string>();
-    for (const { name, description } of named) {
-      const categories = COVERAGE_MAP[name.toLowerCase()];
-      if (!categories) continue;
-      for (const category of categories) {
-        const key = `${category}:${name}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description });
-      }
-    }
-  }
-
-  if (characters.length > 0) {
-    const inspiration = computeHeroicInspirationSummary(characters);
-    coverage.Rerolls.push({
-      name: "Heroic Inspiration",
-      characterName: `${inspiration.withInspiration}/${inspiration.partySize}`,
-      holders: inspiration.holders,
-    });
-  }
-
-  for (const category of COVERAGE_CATEGORY_ORDER) {
-    coverage[category].sort((a, b) => a.name.localeCompare(b.name) || compareCharacterId(a.characterId, b.characterId));
-  }
-
-  return coverage;
-}
-
 // ---------------------------------------------------------------------------
-// Resources & Coverage — merges the Resources list and Spell & Ability
-// Coverage into one categorized view: "what can solve this problem, and how
-// much of it is left". Lives alongside the two panels above (not replacing
-// them yet) while it's being shaped; see PartyToolkit's own doc comment for
-// the migration plan.
+// Resources & Coverage — merges what used to be two separate panels (a
+// Resources list, and a `computeSpellAbilityCoverage`-driven Spell & Ability
+// Coverage panel, both since removed) into one categorized view: "what can
+// solve this problem, and how much of it is left".
 // ---------------------------------------------------------------------------
 
 /** `CoverageCategory` plus one bucket for tracked resources that don't match a coverage keyword at all — `Rage`, `Sorcery Points`, and the like, which `COVERAGE_CATEGORY_KEYWORDS` deliberately excludes (see its own doc comment) since they used to live in a separate Resources panel. Now that panel is gone, they need somewhere to land instead of disappearing. Named `"Resources"` rather than `"Other"` — it's usually the single biggest bucket (every personal charge pool that doesn't map to a specific combat need lands here), so it reads better as its own named thing than as a vague leftover. */
@@ -921,7 +862,7 @@ export type ResourceAvailability =
 
 export interface ResourceCoverageEntry {
   name: string;
-  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration, same as `CoverageEntry`. */
+  /** Omitted for the one entry that isn't tied to a single character — Heroic Inspiration. */
   characterId?: string;
   characterName: string;
   avatarUrl?: string;

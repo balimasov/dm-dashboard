@@ -68,13 +68,21 @@ function AbilityMetaLine({ kind, source, isCantrip }: { kind?: ResourceCoverageE
   return <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{parts.join(" · ")}</p>;
 }
 
-/** How this specific ability recovers or what it costs — a distinct accent color from the meta line above so the two don't blur together in a hint that's already carrying a lot of text. */
+/** How this specific ability recovers or what it costs — a distinct accent color from the meta line above so the two don't blur together in a hint that's already carrying a lot of text. For a slot-cost spell, also states the exact remaining count (`availability.remaining`) — this used to live only in the badge's native `title`, a plain unstyled browser tooltip that didn't match the rest of the hint. */
 function AvailabilityMetaLine({ availability }: { availability?: ResourceAvailability }) {
   if (!availability) return null;
   if (availability.kind === "pool") {
     return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
   }
-  return <p className="text-xs font-medium text-sky-400">Costs a {ordinalLevel(availability.level)}-level spell slot</p>;
+  const ordinal = ordinalLevel(availability.level);
+  return (
+    <>
+      <p className="text-xs font-medium text-sky-400">{ordinal}-level spell</p>
+      <p className={`text-xs font-medium ${availability.available ? "text-emerald-400" : "text-red-400"}`}>
+        {availability.remaining} slot{availability.remaining === 1 ? "" : "s"} available at {ordinal} level or higher
+      </p>
+    </>
+  );
 }
 
 function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
@@ -92,8 +100,20 @@ function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
   );
 }
 
-/** `pool` shows the exact charge count, same convention as the old Resources row. `slot` can't show one exact number the way a pool can (a spell slot is a shared party-wide/per-caster pool, not this ability's own) — an available/depleted badge instead, with the precise count in the hover title. */
-function AvailabilityBadge({ availability }: { availability: ResourceAvailability }) {
+/**
+ * `pool` shows the exact charge count, same convention as the old Resources
+ * row. `slot` can't show one exact number the way a pool can (a spell slot
+ * is a shared party-wide/per-caster pool, not this ability's own) — an
+ * available/depleted badge instead, labeled with the plain spell level
+ * ("3 lvl") rather than the earlier "3rd+" shorthand, which read as unclear
+ * (unclear whether the "+" meant "or higher" or something else). The exact
+ * remaining-slot count moved into `AvailabilityMetaLine` inside this row's
+ * own `InfoTooltip` — wrapping the badge in its own (`hoverOnly`, same
+ * panel) tooltip means that detail is reachable by hovering the badge
+ * directly too, not just a plain unstyled browser `title` tooltip.
+ */
+function AvailabilityBadge({ entry }: { entry: ResourceCoverageEntry }) {
+  const availability = entry.availability!;
   if (availability.kind === "pool") {
     return (
       <span className={`shrink-0 whitespace-nowrap text-xs font-medium tabular-nums ${usageColorClass(availability.current, availability.max)}`}>
@@ -101,16 +121,16 @@ function AvailabilityBadge({ availability }: { availability: ResourceAvailabilit
       </span>
     );
   }
-  const ordinal = ordinalLevel(availability.level);
   return (
-    <span
-      title={`${availability.remaining} slot${availability.remaining === 1 ? "" : "s"} available at ${ordinal} level or higher`}
-      className={`shrink-0 rounded border px-1 text-[10px] font-semibold uppercase ${
-        availability.available ? "border-emerald-700 text-emerald-400" : "border-red-800 text-red-400"
-      }`}
-    >
-      {ordinal}+
-    </span>
+    <InfoTooltip hoverOnly panel={<TrackableHintPanel entry={entry} />}>
+      <span
+        className={`shrink-0 whitespace-nowrap rounded border px-1 text-[10px] font-semibold uppercase ${
+          availability.available ? "border-emerald-700 text-emerald-400" : "border-red-800 text-red-400"
+        }`}
+      >
+        {availability.level} lvl
+      </span>
+    </InfoTooltip>
   );
 }
 
@@ -125,7 +145,7 @@ function TrackableRow({ entry }: { entry: ResourceCoverageEntry }) {
         </InfoTooltip>
       </div>
       {availability.kind === "pool" && <RecoveryBadge recovery={availability.recovery} />}
-      <AvailabilityBadge availability={availability} />
+      <AvailabilityBadge entry={entry} />
       <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} />
     </div>
   );
@@ -164,20 +184,20 @@ function PassiveHintPanel({ group }: { group: NameGroup }) {
   );
 }
 
-/** A small "Cantrip" tag next to the name — without it, a cantrip's row looks identical to an unlimited passive `Feature`'s (neither has an availability badge), which reads as a gap rather than the intentional "nothing to run out of" it actually is. */
+/** A small "Cantrip" tag right before the avatar chips — same slot `AvailabilityBadge` sits in on a trackable row, so every row's badge-then-avatar rhythm reads the same regardless of which kind of row it is. Without it, a cantrip's row looks identical to an unlimited passive `Feature`'s (neither has an availability badge), which reads as a gap rather than the intentional "nothing to run out of" it actually is. */
 function PassivePill({ group }: { group: NameGroup }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-1 text-sm">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div className="flex items-center gap-2 py-1 text-sm">
+      <div className="min-w-0 flex-1">
         <InfoTooltip panel={<PassiveHintPanel group={group} />}>
-          <span className="min-w-0 truncate text-slate-300">{group.name}</span>
+          <span className="text-slate-300">{group.name}</span>
         </InfoTooltip>
-        {group.isCantrip && (
-          <span className="shrink-0 rounded border border-violet-800 px-1 text-[9px] font-semibold uppercase tracking-wide text-violet-400">
-            Cantrip
-          </span>
-        )}
       </div>
+      {group.isCantrip && (
+        <span className="shrink-0 whitespace-nowrap rounded border border-violet-800 px-1 text-[10px] font-semibold uppercase text-violet-400">
+          Cantrip
+        </span>
+      )}
       <CharacterChipRow holders={group.holders} />
     </div>
   );
@@ -265,38 +285,72 @@ function ResourceCoverageCategoryBlock({ category, entries }: { category: Resour
 const COLUMNS = 4;
 
 /**
- * Order-preserving column fill, the same idea CSS's `column-fill: balance`
- * uses for multi-column text — categories are walked in
- * `RESOURCE_COVERAGE_CATEGORY_ORDER` order and a column only closes once
- * its already-placed weight would exceed an even share of the total. A
- * greedy shortest-column-first bin pack (what `CoveragePanel.distributeCoverageColumns`
- * does) balances heights too, but it assigns whichever category is
- * heaviest to whichever column is shortest — the categories end up
- * scattered across columns by weight, not in reading order, so a DM
- * scanning top-to-bottom then across columns doesn't see them in the
- * `RESOURCE_COVERAGE_CATEGORY_ORDER` sequence. This keeps that order intact:
- * read down column 1, then column 2, and so on.
+ * Whether `weights` can be split into at most `numColumns` contiguous runs
+ * with no run's sum exceeding `maxSum` — the feasibility check the binary
+ * search in `distributeColumns` below probes at each candidate `maxSum`.
+ */
+function fitsInColumns(weights: number[], numColumns: number, maxSum: number): boolean {
+  let columnsUsed = 1;
+  let currentSum = 0;
+  for (const w of weights) {
+    if (currentSum + w > maxSum) {
+      columnsUsed += 1;
+      currentSum = w;
+      if (columnsUsed > numColumns) return false;
+    } else {
+      currentSum += w;
+    }
+  }
+  return true;
+}
+
+/**
+ * Order-preserving column fill that's actually balanced — the classic
+ * "split an array into k contiguous parts minimizing the tallest part"
+ * problem (binary search over the candidate max-column-weight, using
+ * `fitsInColumns` as the feasibility check). An earlier version tried to
+ * eyeball this by closing a column once its running weight passed a flat
+ * `total / numColumns` average, but that average doesn't account for how
+ * the *remaining* categories are distributed — with one very heavy category
+ * up front (`Resources`, reliably the biggest bucket) followed by many
+ * lighter ones, it closed the first three columns early and dumped
+ * everything left over into the last one (confirmed: a visibly lopsided
+ * last column). Binary search finds the true minimum-possible tallest
+ * column instead of guessing at one, while still walking categories in
+ * `RESOURCE_COVERAGE_CATEGORY_ORDER` and keeping each column a contiguous
+ * run of that order — the grid still reads top-to-bottom within a column,
+ * then across to the next one.
  */
 function distributeColumns(
   categories: ResourceCoverageCategory[],
   coverage: Record<ResourceCoverageCategory, ResourceCoverageEntry[]>,
   numColumns: number
 ): ResourceCoverageCategory[][] {
-  const weight = (category: ResourceCoverageCategory) => categoryLineCount(coverage[category]) + 1;
-  const target = categories.reduce((sum, c) => sum + weight(c), 0) / numColumns;
+  if (categories.length === 0) return Array.from({ length: numColumns }, () => []);
+
+  const weights = categories.map((c) => categoryLineCount(coverage[c]) + 1);
+
+  let lo = Math.max(...weights);
+  let hi = weights.reduce((sum, w) => sum + w, 0);
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (fitsInColumns(weights, numColumns, mid)) hi = mid;
+    else lo = mid + 1;
+  }
+  const maxColumnWeight = lo;
 
   const columns: ResourceCoverageCategory[][] = [];
   let current: ResourceCoverageCategory[] = [];
   let currentWeight = 0;
-  for (const category of categories) {
-    if (current.length > 0 && currentWeight + weight(category) > target && columns.length < numColumns - 1) {
+  categories.forEach((category, i) => {
+    if (current.length > 0 && currentWeight + weights[i] > maxColumnWeight) {
       columns.push(current);
       current = [];
       currentWeight = 0;
     }
     current.push(category);
-    currentWeight += weight(category);
-  }
+    currentWeight += weights[i];
+  });
   columns.push(current);
   while (columns.length < numColumns) columns.push([]);
   return columns;
