@@ -57,12 +57,18 @@ export function CreatureDetailsModal({
       onClick={onClose}
     >
       <div
-        className="relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-2xl shadow-black/40"
+        className={`relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${
+          creature.concentrating
+            ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
+            : "border-slate-800 bg-slate-950"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <StatusRail
           conditions={creature.conditions}
           exhaustion={creature.exhaustion}
+          concentrating={Boolean(creature.concentrating)}
+          onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
           onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
           onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
         />

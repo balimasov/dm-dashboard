@@ -601,6 +601,8 @@ export interface Creature {
   traits: CreatureTrait[];
   conditions: string[];
   exhaustion: number;
+  /** Same convention as `Character.concentrating` — a spellcasting enemy/NPC/companion concentrating on a spell is exactly the kind of thing worth a save-or-lose reminder mid-combat, same as a player forgetting their own. Manually toggled via the same `StatusRail` badge and ring the character card uses. */
+  concentrating?: boolean;
   /** Same shape as `CombatState.deathSaves` — only meaningful once `hp` hits 0, tracked separately so stabilizing and dropping again doesn't require guessing a reset. */
   deathSaves?: { successes: number; failures: number };
   /** Which character summons/commands this creature — purely informational (shown as a tag on the card), not a game-mechanical link. */

@@ -34,10 +34,18 @@ export function CreatureCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
-    <div className="relative flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div
+      className={`relative flex flex-col gap-4 rounded-xl border p-4 shadow-lg shadow-black/20 ${
+        creature.concentrating
+          ? "concentrating-ring border-violet-500 bg-violet-950/10"
+          : "border-slate-800 bg-slate-900/60"
+      }`}
+    >
       <StatusRail
         conditions={creature.conditions}
         exhaustion={creature.exhaustion}
+        concentrating={Boolean(creature.concentrating)}
+        onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
         onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
         onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
       />

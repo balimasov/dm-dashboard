@@ -283,7 +283,7 @@ export function StatusRail({
 }: {
   conditions: string[];
   exhaustion: number;
-  /** Omit entirely to hide the Concentration badge — creatures don't have a concentration concept, only characters do. */
+  /** Omit entirely to hide the Concentration badge — pass it (characters and creatures both can) whenever the caller tracks concentration at all. */
   concentrating?: boolean;
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
