@@ -811,7 +811,8 @@ export const demoCharacters: Character[] = [
         "school": "Transmutation",
         "description": "Until the spell ends, your attacks with weapons deal an extra 1d4 Radiant damage on a hit.",
         "source": "Class",
-        "components": "V, S"
+        "components": "V, S",
+        "tags": ["Buff"]
       },
       {
         "id": "spell-2",
@@ -927,7 +928,8 @@ export const demoCharacters: Character[] = [
         "description": "You touch a creature and choose Strength, Dexterity, Intelligence, Wisdom, or Charisma. For the duration, the target has Advantage on ability checks using the chosen ability. **Using a Higher-Level Spell Slot.** You can target one additional creature for each spell slot level above 2. You can choose a different ability for each target.",
         "source": "Class",
         "components": "V, S, M",
-        "materialComponent": "fur or a feather"
+        "materialComponent": "fur or a feather",
+        "tags": ["Buff"]
       },
       {
         "id": "spell-13",
@@ -936,7 +938,8 @@ export const demoCharacters: Character[] = [
         "school": "Transmutation",
         "description": "You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls. The spell ends early if you cast it again. **Using a Higher-Level Spell Slot.** The bonus increases to +2 with a level 3&ndash;5 spell slot. The bonus increases to +3 with a level 6+ spell slot.",
         "source": "Class",
-        "components": "V, S"
+        "components": "V, S",
+        "tags": ["Buff"]
       }
     ],
     "features": [
@@ -2448,7 +2451,8 @@ export const demoCharacters: Character[] = [
         "school": "Conjuration",
         "description": "A spectral, floating hand appears at a point you choose within range. The hand lasts for the duration. The hand vanishes if it is ever more than 30 feet away from you or if you cast this spell again. When you cast the spell, you can use the hand to manipulate an object, open an unlocked door or container, stow or retrieve an item from an open container, or pour the contents out of a vial. As a Magic action on your later turns, you can control the hand thus again. As part of that action, you can move the hand up to 30 feet. The hand can’t attack, activate magic items, or carry more than 10 pounds.",
         "source": "Class",
-        "components": "V, S"
+        "components": "V, S",
+        "tags": ["Utility"]
       },
       {
         "id": "spell-1",
@@ -2560,7 +2564,8 @@ export const demoCharacters: Character[] = [
         "school": "Transmutation",
         "description": "You manifest a minor wonder, a sign of supernatural power, within range. You create one of the following magical effects within range: Your voice booms up to three times as loud as normal for 1 minute. You cause flames to flicker, brighten, dim, or change color for 1 minute. You cause harmless tremors in the ground for 1 minute. You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers. You instantaneously cause an unlocked door or window to fly open or slam shut. You alter the appearance of your eyes for 1 minute. If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time, and you can dismiss such an effect as an action.",
         "source": "Race",
-        "components": "V"
+        "components": "V",
+        "tags": ["Control"]
       },
       {
         "id": "spell-13",
