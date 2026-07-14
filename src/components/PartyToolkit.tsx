@@ -168,6 +168,8 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
           <span className={scoreRowClass(s.proficient)}>
             {formatModifier(s.modifier)}
             {s.expertise ? " · expertise" : s.proficient ? " · proficient" : ""}
+            {s.advantage === "advantage" && <span className="ml-1 text-emerald-400">▲</span>}
+            {s.advantage === "disadvantage" && <span className="ml-1 text-red-400">▼</span>}
           </span>
         </>
       )}
@@ -190,8 +192,9 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
             key={`best-${entry.best.characterId}`}
             characterName={entry.best.characterName}
             avatarUrl={entry.best.avatarUrl}
-            hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}`}
+            hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.best.advantage ?? ""] ?? ""}`}
             direction="up"
+            advantage={entry.best.advantage}
           />
         )}
         {entry.weakest && (
@@ -199,8 +202,9 @@ function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
             key={`weakest-${entry.weakest.characterId}`}
             characterName={entry.weakest.characterName}
             avatarUrl={entry.weakest.avatarUrl}
-            hint={`Weakest: ${entry.weakest.characterName} ${formatModifier(entry.weakest.modifier)}`}
+            hint={`Weakest: ${entry.weakest.characterName} ${formatModifier(entry.weakest.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.weakest.advantage ?? ""] ?? ""}`}
             direction="down"
+            advantage={entry.weakest.advantage}
           />
         )}
       </div>
@@ -418,16 +422,25 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
  * bordered pill (not just a bare chip+glyph) so the whole thing reads as
  * one unit and gives the tooltip a real hit target to hover.
  */
+/** Appended to a best/weakest chip's hover hint — `modifier` alone doesn't say whether the roll behind it is actually helped or hurt by advantage/disadvantage, so a numerically-"best" pick (e.g. highest Stealth modifier) can still be a bad real pick if it's rolled at disadvantage. */
+const ADVANTAGE_HINT_SUFFIX: Record<string, string> = {
+  advantage: " (advantage)",
+  disadvantage: " (disadvantage)",
+};
+
 function StrengthChip({
   characterName,
   avatarUrl,
   hint,
   direction,
+  advantage,
 }: {
   characterName: string;
   avatarUrl?: string;
   hint: string;
   direction: "up" | "down";
+  /** Same conditional advantage/disadvantage shown on the character's own Skills pill — surfaced here too since this chip is often the only place a DM looks before picking who rolls. */
+  advantage?: "advantage" | "disadvantage";
 }) {
   const isUp = direction === "up";
   return (
@@ -438,6 +451,8 @@ function StrengthChip({
         }`}
       >
         <CharacterChip name={characterName} avatarUrl={avatarUrl} showTitle={false} />
+        {advantage === "advantage" && <span className="text-sm font-bold leading-none text-emerald-400">▲</span>}
+        {advantage === "disadvantage" && <span className="text-sm font-bold leading-none text-red-400">▼</span>}
         <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
           {isUp ? "↑" : "↓"}
         </span>

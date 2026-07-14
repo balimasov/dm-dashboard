@@ -97,6 +97,29 @@ describe("computeSkillOverviewEntry", () => {
     expect(entry.status).toBe("Medium");
   });
 
+  test("carries a character's advantage/disadvantage through to best/weakest/all — modifier alone doesn't show it", () => {
+    const lilith = makeCharacter({
+      name: "Lilith",
+      stats: { str: 10, dex: 18, con: 10, int: 10, wis: 10, cha: 10 },
+      skillProficiencies: [{ name: "stealth", proficient: true, expertise: false, advantage: "disadvantage" }],
+    });
+    const ragnar = makeCharacter({
+      name: "Ragnar",
+      stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      skillProficiencies: [],
+    });
+
+    const entry = computeSkillOverviewEntry([lilith, ragnar], "stealth");
+
+    // Lilith still has the higher modifier and is still "best" — but a DM picking her to actually
+    // roll would be missing that the roll itself is at disadvantage, since that's invisible in the
+    // modifier number.
+    expect(entry.best?.characterId).toBe("Lilith");
+    expect(entry.best?.advantage).toBe("disadvantage");
+    expect(entry.weakest?.advantage).toBeUndefined();
+    expect(entry.all.find((s) => s.characterId === "Lilith")?.advantage).toBe("disadvantage");
+  });
+
   test("a character with no skillProficiencies entry still gets a plain ability-mod check", () => {
     const a = makeCharacter({ name: "A", stats: { str: 10, dex: 16, con: 10, int: 10, wis: 10, cha: 10 } });
     const entry = computeSkillOverviewEntry([a], "acrobatics");

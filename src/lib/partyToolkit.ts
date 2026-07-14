@@ -19,6 +19,8 @@ export interface SkillPartyScore {
   characterName: string;
   avatarUrl?: string;
   modifier: number;
+  /** Conditional advantage/disadvantage on this character's checks for this skill (e.g. armor-based Stealth disadvantage) — doesn't change `modifier` (advantage/disadvantage affects the roll, not the flat bonus), so it has to be surfaced separately or a numerically-"best" character can be a worse real-world pick. */
+  advantage?: "advantage" | "disadvantage";
 }
 
 export interface SkillCharacterScore extends SkillPartyScore {
@@ -72,6 +74,7 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
       modifier: skillBonus(c, prof),
       proficient: prof.proficient || prof.expertise,
       expertise: prof.expertise,
+      advantage: prof.advantage,
     };
   });
 
@@ -96,12 +99,14 @@ export function computeSkillOverviewEntry(characters: Character[], skill: SkillN
       characterName: best.characterName,
       avatarUrl: best.avatarUrl,
       modifier: best.modifier,
+      advantage: best.advantage,
     },
     weakest: weakest && {
       characterId: weakest.characterId,
       characterName: weakest.characterName,
       avatarUrl: weakest.avatarUrl,
       modifier: weakest.modifier,
+      advantage: weakest.advantage,
     },
     proficientCount,
     status: coverageStatus(proficientCount),
