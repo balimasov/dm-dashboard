@@ -293,6 +293,22 @@ function polarPoint(cx: number, cy: number, radius: number, angleDeg: number): [
  * N-sided polygon as the data shape (not circles) so the 25/50/75/100%
  * rings visually line up with where the axis lines cross them.
  */
+/**
+ * Shared by the Skills radar and the Spell Slots & Resources gauges — the
+ * two cards sit side by side in a `lg:grid-cols-2` row, but the radar (a
+ * fixed-size SVG) and the gauge stack (a shorter dial plus an optional
+ * SR/LR row) render to different natural heights, so "Passives"/"Spell
+ * Slots" below them landed at different y-coordinates across the two
+ * columns (confirmed: 303px vs 263px). Both chart wrappers get this same
+ * fixed min-height so the section labels that follow always start level
+ * with each other; `justify-center` distributes whatever's left over
+ * between top and bottom instead of dumping it all below the shorter one's
+ * content as a single lopsided gap. `lg:`-only: below that breakpoint the
+ * grid stacks to one column, where the two charts are never side by side
+ * and forcing the height would just waste vertical space on a phone.
+ */
+const CHART_AREA_MIN_HEIGHT_CLASS = "lg:flex lg:min-h-[304px] lg:flex-col lg:justify-center";
+
 function AbilitySkillRadar({ coverage }: { coverage: AbilitySkillCoverage[] }) {
   if (coverage.length < 3) return null;
 
@@ -387,14 +403,14 @@ function SkillsPanel({ characters, passives }: { characters: Character[]; passiv
   return (
     <ToolkitCard title="Skills">
       {abilityCoverage.length >= 3 && (
-        <>
+        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
           <SectionLabel className="text-center">
             <InfoTooltip inline panel={<AbilitySkillRadarHint coverage={abilityCoverage} />}>
               Coverage by Ability
             </InfoTooltip>
           </SectionLabel>
           <AbilitySkillRadar coverage={abilityCoverage} />
-        </>
+        </div>
       )}
 
       <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>Passives</SectionLabel>
@@ -582,6 +598,23 @@ function ResourceGaugeArc({ percent, subtitle, widthClassName = "w-52" }: { perc
   );
 }
 
+/** Same idea as `AbilitySkillRadarHint` — the gauge's own hover hint, since "74%" means nothing without knowing it's an average of equally-weighted pools, not a sum. */
+function PartyResourcesHint({ resourceCount }: { resourceCount: number }) {
+  return (
+    <HintPanel
+      title="Party Resources"
+      description={
+        <>
+          Average of every individually-tracked pool&apos;s own remaining % — each spell slot level, Heroic
+          Inspiration, and every character resource ({resourceCount} total) counts as one equal vote, regardless of
+          its size. A small fully-drained resource (e.g. Rage at 0/2) pulls this down just as much as a big one like
+          spell slots, instead of getting lost next to it.
+        </>
+      }
+    />
+  );
+}
+
 function PartyResourceGaugeDisplay({ gauge }: { gauge: PartyResourceGauge }) {
   return (
     <div className="flex flex-col items-center">
@@ -629,11 +662,15 @@ function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   return (
     <ToolkitCard title="Spell Slots & Resources">
       {gauge && (
-        <>
-          <SectionLabel className="text-center">Party Resources</SectionLabel>
+        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
+          <SectionLabel className="text-center">
+            <InfoTooltip inline panel={<PartyResourcesHint resourceCount={gauge.resourceCount} />}>
+              Party Resources
+            </InfoTooltip>
+          </SectionLabel>
           <PartyResourceGaugeDisplay gauge={gauge} />
           <PartyRestRecoveryDisplay recovery={restRecovery} />
-        </>
+        </div>
       )}
 
       <SectionLabel className={gauge ? "mt-4" : ""}>Spell Slots</SectionLabel>
