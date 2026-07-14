@@ -22,7 +22,7 @@ import { computeLanguages, computeToolProficiencies } from "./ddbParser/proficie
 import { computeResources } from "./ddbParser/resources";
 import { computeFeatures } from "./ddbParser/features";
 import { computeSpellcastingStats, computeSpells, computeSpellSlots } from "./ddbParser/spells";
-import { proficiencyBonus } from "./types";
+import { proficiencyBonus } from "./characterMath";
 
 /**
  * Parses the response of D&D Beyond's undocumented character JSON endpoint

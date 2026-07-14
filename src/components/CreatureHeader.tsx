@@ -1,4 +1,5 @@
-import { Character, Creature, creatureInfoLine } from "@/lib/types";
+import { Character, Creature } from "@/lib/types";
+import { creatureInfoLine } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { CreatureCategoryChip } from "./ui/CreatureCategoryChip";

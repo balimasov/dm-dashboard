@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AbilityScores, formatModifier, RecoveryType } from "../types";
+import { AbilityScores, RecoveryType } from "../types";
+import { formatModifier } from "../format";
+// Re-exported (not duplicated) so `abilities.ts`/`combat.ts`/`spells.ts`/`ddbParser.ts` can keep importing
+// it from "./shared" alongside this file's own DDB-specific helpers, instead of needing a second import
+// line from "../characterMath" in every one of those files just for this one function.
+import { abilityModifier } from "../characterMath";
+export { abilityModifier };
 
 export const ABILITY_BY_ID: Record<number, keyof AbilityScores> = {
   1: "str",
@@ -16,10 +22,6 @@ const RESET_TYPE_MAP: Record<number, RecoveryType> = {
   3: "dawn",
   4: "manual",
 };
-
-export function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
-}
 
 export function titleCase(kebab: string): string {
   return kebab

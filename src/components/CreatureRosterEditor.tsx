@@ -29,8 +29,8 @@ import {
   CreatureCategory,
   CreatureSearchHit,
   CreatureTemplate,
-  creatureInfoLine,
 } from "@/lib/types";
+import { creatureInfoLine } from "@/lib/format";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
 import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";

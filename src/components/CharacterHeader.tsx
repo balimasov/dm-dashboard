@@ -1,4 +1,5 @@
-import { Character, characterInfoLine } from "@/lib/types";
+import { Character } from "@/lib/types";
+import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
 
 /**

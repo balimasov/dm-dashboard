@@ -294,11 +294,6 @@ export interface Currency {
   pp: number;
 }
 
-/** Standard 5e coin conversion (10 cp = 1 sp, 10 sp = 1 gp, 2 gp = 1 ep... expressed directly in GP). */
-export function currencyToGp(currency: Currency): number {
-  return currency.pp * 10 + currency.gp + currency.ep * 0.5 + currency.sp * 0.1 + currency.cp * 0.01;
-}
-
 export interface SkillProficiency {
   name: SkillName;
   /** False for an entry that exists only to carry an advantage/disadvantage note without real training. */
@@ -540,21 +535,6 @@ export const CREATURE_CATEGORY_EMOJI: Record<CreatureCategory, string> = {
   npc: "🧙",
 };
 
-/**
- * Bright, solid-fill chip color per category — companion (player-controlled,
- * emerald), enemy (DM-run threat, red), NPC (non-combat, violet). Deliberately
- * a solid high-contrast badge rather than a subtle border/tint: a border
- * accent on the card itself was tried first, but it visually competed with
- * `StatusRail`'s own colored condition badges, so the category now shows as
- * its own small tag instead (on `CreatureHeader`, shared by the card and its
- * details modal, and on the roster row in Settings).
- */
-export const CREATURE_CATEGORY_CHIP_COLOR: Record<CreatureCategory, string> = {
-  companion: "bg-emerald-500 text-emerald-950",
-  enemy: "bg-red-500 text-red-950",
-  npc: "bg-violet-500 text-violet-950",
-};
-
 export interface Creature {
   id: string;
   /** Every creature belongs to exactly one campaign, same as `Character.campaignId`. */
@@ -618,88 +598,3 @@ export interface Creature {
   hidden?: boolean;
 }
 
-/** e.g. "Large Celestial" — mirrors `characterInfoLine`'s "Race · Class" convention for the compact creature card. */
-export function creatureInfoLine(creature: Pick<Creature, "size" | "creatureType">): string {
-  return [creature.size, creature.creatureType].filter(Boolean).join(" ");
-}
-
-export function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
-}
-
-export function formatModifier(mod: number): string {
-  return mod >= 0 ? `+${mod}` : `${mod}`;
-}
-
-export function ordinalLevel(level: number): string {
-  if (level % 10 === 1 && level % 100 !== 11) return `${level}st`;
-  if (level % 10 === 2 && level % 100 !== 12) return `${level}nd`;
-  if (level % 10 === 3 && level % 100 !== 13) return `${level}rd`;
-  return `${level}th`;
-}
-
-export function proficiencyBonus(level: number): number {
-  return 2 + Math.floor((Math.max(level, 1) - 1) / 4);
-}
-
-/** Ability-mod + proficiency bonus if proficient in that save, else the plain ability mod. */
-export function savingThrowBonus(character: Character, ability: keyof AbilityScores): number {
-  const mod = abilityModifier(character.stats[ability]);
-  return character.savingThrowProficiencies.includes(ability)
-    ? mod + proficiencyBonus(character.level)
-    : mod;
-}
-
-/** Ability-mod + proficiency bonus (doubled for expertise) — plain ability mod if not actually proficient. */
-export function skillBonus(character: Character, skill: SkillProficiency): number {
-  const mod = abilityModifier(character.stats[SKILL_ABILITY[skill.name]]);
-  const extra = skill.bonus ?? 0;
-  if (skill.proficient || skill.expertise) {
-    const multiplier = skill.expertise ? 2 : 1;
-    return mod + proficiencyBonus(character.level) * multiplier + extra;
-  }
-  if (skill.halfProficiency) return mod + Math.floor(proficiencyBonus(character.level) / 2) + extra;
-  return mod + extra;
-}
-
-/** e.g. "Orc · Barbarian/Path of the Berserker" (level shown separately) */
-export function characterInfoLine(character: Character): string {
-  const classPart = character.subclass
-    ? `${character.className}/${character.subclass}`
-    : character.className;
-  return [character.race, classPart].filter(Boolean).join(" · ");
-}
-
-/**
- * Formats an ISO timestamp using the viewer's own local timezone (not the
- * server's) — this app is used from wherever the DM happens to be, so the
- * displayed time has to track the browser's real zone rather than a fixed
- * one. `timeZone` lets `SyncTimestamp` force a deterministic zone (UTC) for
- * its very first render, matching what the server rendered, before
- * correcting to the real local zone right after mounting — omitted, this
- * defaults to the runtime's own ambient zone (the browser's real one, once
- * called client-side). Omits the year (e.g. "5 Jul, 14:32") — this is
- * always a recent sync, so the year is dead weight that's a common culprit
- * for text overflow next to the header's sync button on narrow mobile
- * viewports.
- */
-export function formatSyncTimestamp(iso: string, timeZone?: string): string {
-  return new Date(iso).toLocaleString("en-GB", {
-    ...(timeZone ? { timeZone } : {}),
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export function extractDndBeyondCharacterId(url: string): string | null {
-  try {
-    const parsed = new URL(url.trim());
-    if (!parsed.hostname.endsWith("dndbeyond.com")) return null;
-    const match = parsed.pathname.match(/\/characters\/(\d+)/);
-    return match ? match[1] : null;
-  } catch {
-    return null;
-  }
-}

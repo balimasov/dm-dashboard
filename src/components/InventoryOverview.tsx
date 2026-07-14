@@ -1,7 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { CATEGORY_LABELS, CATEGORY_ORDER, Character, currencyToGp, ItemCategory, ItemRarity } from "@/lib/types";
+import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity } from "@/lib/types";
+import { currencyToGp } from "@/lib/characterMath";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";

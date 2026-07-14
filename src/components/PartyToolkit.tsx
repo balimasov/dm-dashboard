@@ -8,9 +8,8 @@ import {
   SKILL_DESCRIPTIONS,
   SKILL_LABELS,
   SkillName,
-  formatModifier,
-  ordinalLevel,
 } from "@/lib/types";
+import { formatModifier, ordinalLevel } from "@/lib/format";
 import { ReactNode } from "react";
 import {
   AbilitySkillCoverage,

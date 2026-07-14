@@ -2,22 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-  abilityModifier,
   Character,
   Feature,
-  formatModifier,
   KnownSpell,
-  ordinalLevel,
-  proficiencyBonus,
   RecoveryType,
-  savingThrowBonus,
   SKILL_ABBR,
   SKILL_LABELS,
   SkillProficiency,
-  skillBonus,
   SkillName,
   STAT_ORDER,
 } from "@/lib/types";
+import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
+import { formatModifier, ordinalLevel } from "@/lib/format";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { DamageInfoList } from "./ui/DamageInfoList";

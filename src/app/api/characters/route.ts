@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { addCharacterFromUrl, listCharacters } from "@/lib/db";
-import { extractDndBeyondCharacterId } from "@/lib/types";
+import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 
 export async function GET(req: Request) {
   const campaignId = new URL(req.url).searchParams.get("campaignId");

@@ -7,8 +7,8 @@ import {
   CREATURE_CATEGORY_ORDER,
   CreatureCategory,
   CreatureTrait,
-  abilityModifier,
 } from "@/lib/types";
+import { abilityModifier } from "@/lib/characterMath";
 import { NumberInput } from "@/components/NumberInput";
 import { AvatarPicker } from "@/components/AvatarPicker";
 

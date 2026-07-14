@@ -7,10 +7,10 @@ import {
   CampaignSummary,
   Character,
   Creature,
-  extractDndBeyondCharacterId,
   ItemCategory,
   ItemRarity,
 } from "./types";
+import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { demoCharacters } from "./mockData";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at

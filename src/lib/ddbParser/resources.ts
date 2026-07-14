@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AbilityScores, ordinalLevel, Resource } from "../types";
+import { AbilityScores, Resource } from "../types";
+import { ordinalLevel } from "../format";
 import { computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
 import { computePactMagicSlots } from "./spells";
 

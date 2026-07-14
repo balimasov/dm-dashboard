@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatSyncTimestamp } from "@/lib/types";
+import { formatSyncTimestamp } from "@/lib/format";
 import { useTimeZone } from "./TimezoneProvider";
 
 /**

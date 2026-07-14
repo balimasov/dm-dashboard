@@ -1,4 +1,5 @@
-import { abilityModifier, SKILL_LABELS, SkillName } from "./types";
+import { SKILL_LABELS, SkillName } from "./types";
+import { abilityModifier } from "./characterMath";
 
 const SKILL_NAME_BY_LABEL: Partial<Record<string, SkillName>> = Object.fromEntries(
   (Object.keys(SKILL_LABELS) as SkillName[]).map((name) => [SKILL_LABELS[name].toLowerCase(), name])

@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
-import { extractDndBeyondCharacterId } from "@/lib/types";
+import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Character, characterInfoLine } from "@/lib/types";
+import { Character } from "@/lib/types";
+import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";

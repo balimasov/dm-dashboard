@@ -1,4 +1,5 @@
-import { Character, extractDndBeyondCharacterId } from "./types";
+import { Character } from "./types";
+import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { parseDdbCharacter } from "./ddbParser";
 import { apiFetch } from "./apiClient";
 

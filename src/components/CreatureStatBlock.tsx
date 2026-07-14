@@ -1,6 +1,8 @@
 "use client";
 
-import { Creature, CreatureTrait, SKILL_ABBR, SKILL_ABILITY, SKILL_DESCRIPTIONS, STAT_ORDER, abilityModifier, formatModifier } from "@/lib/types";
+import { Creature, CreatureTrait, SKILL_ABBR, SKILL_ABILITY, SKILL_DESCRIPTIONS, STAT_ORDER } from "@/lib/types";
+import { abilityModifier } from "@/lib/characterMath";
+import { formatModifier } from "@/lib/format";
 import { computePassiveSkill, ParsedCreatureSkill, parseCreatureSenses, parseCreatureSkills } from "@/lib/creatureStatText";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";

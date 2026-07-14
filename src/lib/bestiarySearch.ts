@@ -1,5 +1,6 @@
 import "server-only";
-import { AbilityScores, CreatureSearchHit, CreatureTemplate, CreatureTrait, abilityModifier } from "./types";
+import { AbilityScores, CreatureSearchHit, CreatureTemplate, CreatureTrait } from "./types";
+import { abilityModifier } from "./characterMath";
 
 /**
  * SRD stat-block lookup against Open5e's v2 API, using the real two-step

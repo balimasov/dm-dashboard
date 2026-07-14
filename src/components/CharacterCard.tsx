@@ -2,17 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Character,
-  abilityModifier,
-  formatModifier,
-  ordinalLevel,
-  proficiencyBonus,
-  savingThrowBonus,
-  skillBonus,
-  SKILL_ABBR,
-  STAT_ORDER,
-} from "@/lib/types";
+import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
+import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
+import { formatModifier, ordinalLevel } from "@/lib/format";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { DotMeter, ResourceMeter, ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";

@@ -8,9 +8,9 @@ import {
   Sense,
   SkillName,
   SkillProficiency,
-  formatModifier,
-  skillBonus,
 } from "./types";
+import { skillBonus } from "./characterMath";
+import { formatModifier } from "./format";
 
 export type SkillCoverageStatus = "Strong" | "Medium" | "Weak";
 
