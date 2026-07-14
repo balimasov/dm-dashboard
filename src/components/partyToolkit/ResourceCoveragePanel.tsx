@@ -6,6 +6,9 @@ import {
   ResourceAvailability,
   ResourceCoverageCategory,
   ResourceCoverageEntry,
+  computePartyResourceGauge,
+  computePartyRestRecoveryGauge,
+  computePartySpellSlotSummary,
   computeResourceCoverage,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
@@ -13,7 +16,17 @@ import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { HEROIC_INSPIRATION_DESCRIPTION, HintPanel, HolderListPanel, usageColorClass } from "./shared";
+import {
+  CHART_AREA_MIN_HEIGHT_CLASS,
+  HEROIC_INSPIRATION_DESCRIPTION,
+  HintPanel,
+  HolderListPanel,
+  PartyResourceGaugeDisplay,
+  PartyResourcesHint,
+  PartyRestRecoveryDisplay,
+  SpellSlotLevelPanel,
+  usageColorClass,
+} from "./shared";
 
 /**
  * NEW — built alongside `SpellSlotsResourcesPanel`/`CoveragePanel` rather
@@ -206,6 +219,10 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   const categories = showAll ? RESOURCE_COVERAGE_CATEGORY_ORDER : categoriesWithEntries;
   const columns = distributeColumns(categories, coverage, COLUMNS);
 
+  const spellSlots = computePartySpellSlotSummary(characters);
+  const gauge = computePartyResourceGauge(characters);
+  const restRecovery = computePartyRestRecoveryGauge(characters);
+
   return (
     <ToolkitCard
       title="Resources & Coverage"
@@ -219,6 +236,43 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
         </button>
       }
     >
+      {gauge && (
+        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
+          <SectionLabel className="text-center">
+            <InfoTooltip inline panel={<PartyResourcesHint resourceCount={gauge.resourceCount} />}>
+              Party Resources
+            </InfoTooltip>
+          </SectionLabel>
+          <PartyResourceGaugeDisplay gauge={gauge} />
+          <PartyRestRecoveryDisplay recovery={restRecovery} />
+        </div>
+      )}
+
+      <SectionLabel className={gauge ? "mt-4" : ""}>Spell Slots</SectionLabel>
+      {!spellSlots ? (
+        <p className="text-sm text-slate-600">No spell slots in the party.</p>
+      ) : (
+        <div className="divide-y divide-slate-800/60">
+          {spellSlots.levels.map((l) => (
+            <div key={l.level} className="flex items-center justify-between gap-3 py-1 text-sm">
+              <InfoTooltip panel={<SpellSlotLevelPanel level={l.level} holders={l.holders} />}>
+                <span className="text-slate-300">{ordinalLevel(l.level)} Level</span>
+              </InfoTooltip>
+              <span className={`font-medium ${usageColorClass(l.current, l.max)}`}>
+                {l.current}/{l.max}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between gap-3 py-1 text-sm">
+            <span className="text-slate-300">Total</span>
+            <span className={`font-medium ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
+              {spellSlots.totalCurrent}/{spellSlots.totalMax}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <SectionLabel className="mt-4">Coverage</SectionLabel>
       {categories.length === 0 ? (
         <p className="text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
       ) : (

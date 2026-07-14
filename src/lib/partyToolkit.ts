@@ -878,7 +878,11 @@ export function computeSpellAbilityCoverage(characters: Character[]): Record<Cov
 /** `CoverageCategory` plus one bucket for tracked resources that don't match a coverage keyword at all — `Rage`, `Sorcery Points`, and the like, which `COVERAGE_CATEGORY_KEYWORDS` deliberately excludes (see its own doc comment) since they used to live in a separate Resources panel. Now that panel is gone, they need somewhere to land instead of disappearing. */
 export type ResourceCoverageCategory = CoverageCategory | "Other";
 
-export const RESOURCE_COVERAGE_CATEGORY_ORDER: ResourceCoverageCategory[] = [...COVERAGE_CATEGORY_ORDER, "Other"];
+/** Alphabetical (not `COVERAGE_CATEGORY_ORDER`'s hand-picked "most-common-need-first" order) — with `Other` always last, since it's the least specific bucket and shouldn't compete with real categories for the DM's first glance. */
+export const RESOURCE_COVERAGE_CATEGORY_ORDER: ResourceCoverageCategory[] = [
+  ...[...COVERAGE_CATEGORY_ORDER].sort((a, b) => a.localeCompare(b)),
+  "Other",
+];
 
 /**
  * How "used up" a single coverage entry is, so the row can show it directly
@@ -945,27 +949,70 @@ function availabilityRank(availability: ResourceAvailability | undefined): numbe
  * of vanishing — replaces both the old Resources panel and the old Coverage
  * panel with one categorized, quantity-aware list.
  */
+/**
+ * D&D Beyond's own "two casting modes" quirk (see `computeSpells`'s doc
+ * comment): an innate spell with its own free-cast charge pool shows up
+ * *twice* in `knownSpells` under the identical name — once as the charge-
+ * pool entry, once as an ordinary "costs a spell slot" entry — because a
+ * player can genuinely use either. For this merged list that's one ability
+ * with two availabilities, not two abilities: collapses to a single entry
+ * per (character, name), preferring the charge-pool reading (`"pool"`) over
+ * the slot-cost one (`"slot"`) since it's the more specific "you also get
+ * free casts" fact a DM benefits from seeing at a glance.
+ */
+function dedupeSpellsByName(spells: KnownSpell[], character: Character): Array<{ name: string; description?: string; availability?: ResourceAvailability }> {
+  const byName = new Map<string, { name: string; description?: string; availability?: ResourceAvailability }>();
+  for (const s of spells) {
+    const key = s.name.toLowerCase();
+    const availability = spellResourceAvailability(s, character);
+    const existing = byName.get(key);
+    if (!existing || (availability?.kind === "pool" && existing.availability?.kind !== "pool")) {
+      byName.set(key, { name: s.name, description: s.description ?? existing?.description, availability });
+    }
+  }
+  return Array.from(byName.values());
+}
+
+/** D&D Beyond folds a charge-pool spell's level into its `Resource` name (`"Faerie Fire (1st)"` — see `computeResources`'s doc comment), which would otherwise read as a second, unrelated ability next to the properly-categorized plain `"Faerie Fire"` entry above. Stripped before the `Other`-bucket dedup check so the two collapse into the one entry the spell/feature pass already placed. */
+const RESOURCE_LEVEL_SUFFIX = /\s+\(\d+(?:st|nd|rd|th)\)$/i;
+
+/**
+ * Same category matching as `computeSpellAbilityCoverage`, but every entry
+ * now also carries its own `ResourceAvailability`, and nothing a character
+ * has silently disappears: a tracked `Resource` or known spell that doesn't
+ * match a coverage keyword lands in `Other` instead of vanishing — replaces
+ * both the old Resources panel and the old Coverage panel with one
+ * categorized, quantity-aware list. Features are the one exception left
+ * out of `Other` when uncategorized — unlike spells, most of a character's
+ * `features` are pure lore/reference entries (race size, ability-score-
+ * increase writeups...) never meant to answer "what can I use", and dumping
+ * all of them in would bury the entries that do.
+ */
 export function computeResourceCoverage(characters: Character[]): Record<ResourceCoverageCategory, ResourceCoverageEntry[]> {
   const coverage = Object.fromEntries(
     RESOURCE_COVERAGE_CATEGORY_ORDER.map((c) => [c, [] as ResourceCoverageEntry[]])
   ) as Record<ResourceCoverageCategory, ResourceCoverageEntry[]>;
 
-  // Tracks every (character, name) pair already placed via a spell/feature
-  // match, regardless of which category it landed in — a raw `Resource`
-  // sharing that exact name (rare, but possible for a self-charged innate
-  // spell also tracked as a resource) is skipped from `Other` rather than
-  // listed twice.
+  // Tracks every (character, base name) already placed somewhere — a
+  // category, or `Other` — so the raw `Resource` pass below can skip a
+  // charge-pool resource that's just the same ability under its
+  // level-suffixed name (see `RESOURCE_LEVEL_SUFFIX`) instead of listing it
+  // twice.
   const seenNames = new Set<string>();
 
   for (const c of characters) {
-    const named = [
-      ...c.knownSpells.map((s) => ({ name: s.name, description: s.description, availability: spellResourceAvailability(s, c) })),
-      ...c.features.map((f) => ({ name: f.name, description: f.description, availability: featureResourceAvailability(f) })),
-    ];
+    const namedSpells = dedupeSpellsByName(c.knownSpells, c);
+    const namedFeatures = c.features.map((f) => ({ name: f.name, description: f.description, availability: featureResourceAvailability(f) }));
+
     const seenInCategory = new Set<string>();
-    for (const { name, description, availability } of named) {
+    function place(name: string, description: string | undefined, availability: ResourceAvailability | undefined, fallbackToOther: boolean) {
       const categories = COVERAGE_MAP[name.toLowerCase()];
-      if (!categories) continue;
+      if (!categories) {
+        if (!fallbackToOther) return;
+        seenNames.add(`${c.id}:${name.toLowerCase()}`);
+        coverage.Other.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability });
+        return;
+      }
       seenNames.add(`${c.id}:${name.toLowerCase()}`);
       for (const category of categories) {
         const key = `${category}:${name}`;
@@ -974,6 +1021,9 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
         coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability });
       }
     }
+
+    for (const { name, description, availability } of namedSpells) place(name, description, availability, true);
+    for (const { name, description, availability } of namedFeatures) place(name, description, availability, false);
   }
 
   if (characters.length > 0) {
@@ -987,7 +1037,8 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
 
   for (const entry of computePartyResourceSummary(characters)) {
     const owner = characters.find((c) => c.name === entry.characterName);
-    if (owner && seenNames.has(`${owner.id}:${entry.resourceName.toLowerCase()}`)) continue;
+    const baseName = entry.resourceName.replace(RESOURCE_LEVEL_SUFFIX, "");
+    if (owner && seenNames.has(`${owner.id}:${baseName.toLowerCase()}`)) continue;
     coverage.Other.push({
       name: entry.resourceName,
       characterId: owner?.id,

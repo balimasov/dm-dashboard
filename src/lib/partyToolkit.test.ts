@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { Character } from "./types";
 import {
+  RESOURCE_COVERAGE_CATEGORY_ORDER,
   computeAbilitySkillCoverage,
   computeConditionProtectionCoverage,
   computeHeroicInspirationSummary,
@@ -850,5 +851,66 @@ describe("computeResourceCoverage", () => {
     const coverage = computeResourceCoverage([]);
     expect(Object.keys(coverage)).toHaveLength(17);
     expect(coverage.Other).toEqual([]);
+  });
+
+  test("RESOURCE_COVERAGE_CATEGORY_ORDER is alphabetical with Other always last", () => {
+    const alphabetical = RESOURCE_COVERAGE_CATEGORY_ORDER.slice(0, -1);
+    expect(alphabetical).toEqual([...alphabetical].sort((a, b) => a.localeCompare(b)));
+    expect(RESOURCE_COVERAGE_CATEGORY_ORDER[RESOURCE_COVERAGE_CATEGORY_ORDER.length - 1]).toBe("Other");
+  });
+
+  test("a spell known twice under the same name (charge pool + costs-a-slot) collapses to one entry, preferring the charge pool", () => {
+    // D&D Beyond's own quirk (see computeSpells's doc comment): an innate
+    // spell with a free-cast charge pool is listed twice — once with its own
+    // current/max, once as an ordinary slot-cost cast of the same spell.
+    const c = makeCharacter({
+      name: "Runa",
+      knownSpells: [
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Race" },
+        { id: "s2", name: "Faerie Fire", level: 1, source: "Race", current: 1, max: 1, recovery: "long-rest" },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Control).toEqual([
+      {
+        name: "Faerie Fire",
+        characterId: "Runa",
+        characterName: "Runa",
+        description: undefined,
+        availability: { kind: "pool", current: 1, max: 1, recovery: "long-rest" },
+      },
+    ]);
+  });
+
+  test("a known spell not in the coverage keyword map lands in Other instead of vanishing", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Prestidigitation", level: 0, source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Other).toEqual([
+      { name: "Prestidigitation", characterId: "A", characterName: "A", description: undefined, availability: undefined },
+    ]);
+  });
+
+  test("an uncategorized feature does NOT land in Other — too much lore/reference noise, unlike spells", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Ability Score Increases", source: "Race", group: "other", originType: "species" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    const allEntries = Object.values(coverage).flat();
+    expect(allEntries.some((e) => e.name === "Ability Score Increases")).toBe(false);
+  });
+
+  test("a charge-pool resource named with D&D Beyond's level suffix isn't listed again in Other once its plain-named spell is already categorized", () => {
+    const c = makeCharacter({
+      name: "Runa",
+      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Race" }],
+      resources: [{ id: "r1", name: "Faerie Fire (1st)", current: 1, max: 1, recovery: "long-rest", source: "Race" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Control).toHaveLength(1);
+    expect(coverage.Other).toHaveLength(0);
   });
 });
