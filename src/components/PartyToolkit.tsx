@@ -10,6 +10,7 @@ import {
   SkillName,
 } from "@/lib/types";
 import { formatModifier, ordinalLevel } from "@/lib/format";
+import { tierTextClass } from "@/lib/tierColor";
 import { ReactNode } from "react";
 import {
   AbilitySkillCoverage,
@@ -349,7 +350,7 @@ function AbilitySkillRadar({ coverage }: { coverage: AbilitySkillCoverage[] }) {
         ))}
         {coverage.map((c, i) => {
           const [lx, ly] = polarPoint(cx, cy, maxRadius + 26, axisAngle(i));
-          const tierClass = c.percent > 50 ? "text-emerald-400" : c.percent > 25 ? "text-amber-400" : "text-red-400";
+          const tierClass = tierTextClass(c.percent);
           return (
             <g key={c.ability}>
               <text x={lx} y={ly - 6} textAnchor="middle" className="text-xs font-semibold fill-slate-400">
@@ -571,7 +572,7 @@ function SpellSlotLevelPanel({ level, holders }: { level: number; holders: Party
  * completes a second cycle, so there's nothing at the seam to draw.
  */
 function ResourceGaugeArc({ percent, subtitle, widthClassName = "w-52" }: { percent: number; subtitle: string; widthClassName?: string }) {
-  const tierClass = percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
+  const tierClass = tierTextClass(percent);
   const arcPath = "M 16 100 A 84 84 0 0 1 184 100";
 
   return (

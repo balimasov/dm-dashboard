@@ -1,4 +1,5 @@
 import { Resource, SpellSlotLevel } from "@/lib/types";
+import { tierBgClass, tierTextClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
@@ -53,14 +54,6 @@ export function averageSpellSlotPercent(spellSlots: SpellSlotLevel[]): number | 
   const percentages = spellSlots.filter((s) => s.max > 0).map((s) => (s.current / s.max) * 100);
   if (percentages.length === 0) return null;
   return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
-}
-
-function tierTextClass(percent: number): string {
-  return percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
-}
-
-function tierBgClass(percent: number): string {
-  return percent > 50 ? "bg-emerald-400" : percent > 25 ? "bg-amber-400" : "bg-red-400";
 }
 
 /** Mean of every individual pool's own `current/max` across *both* abilities and spell slots at once — one flat list of equally-weighted votes (a Rage charge and a 3rd-level slot don't compare on their own terms, but each still counts as "one pool, topped-up or not" the same as the party-wide gauge treats them). `null` when there's nothing with a `max` to divide by on either side. */

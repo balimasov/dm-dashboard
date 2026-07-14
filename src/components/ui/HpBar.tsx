@@ -1,6 +1,7 @@
 import { NumberInput } from "@/components/NumberInput";
 import { DotMeter } from "@/components/ResourceMeter";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { tierColorClass, tierTextClass } from "@/lib/tierColor";
 
 /** A drop, not a heart — "bloodied" is blood, not health. */
 function BloodDropIcon({ className }: { className?: string }) {
@@ -42,8 +43,11 @@ export function HpBar({
   const barScale = Math.max(maxHp, hp + tempHp, 1);
   const hpBarPct = (hp / barScale) * 100;
   const tempBarPct = (tempHp / barScale) * 100;
-  const hpColor = hpRatio > 50 ? "bg-emerald-500" : hpRatio > 25 ? "bg-amber-500" : "bg-red-600";
-  const hpTextColor = hpRatio > 50 ? "text-emerald-400" : hpRatio > 25 ? "text-amber-400" : "text-red-400";
+  // Slightly darker/more saturated than the shared `tierBgClass` 400-shade preset — this bar is
+  // wider and more prominent than a resource tracker's thin strip, so it reads better a shade
+  // deeper; only the fill uses its own shades, the text stays the standard tier-400 color.
+  const hpColor = tierColorClass(hpRatio, { high: "bg-emerald-500", mid: "bg-amber-500", low: "bg-red-600" });
+  const hpTextColor = tierTextClass(hpRatio);
   // "Bloodied" is a passive threshold (half max HP or less), not something the
   // DM sets — it's derived here rather than stored so it never drifts out of
   // sync with hp/maxHp the way a manually-toggled flag could.
