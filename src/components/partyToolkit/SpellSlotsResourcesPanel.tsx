@@ -18,7 +18,7 @@ import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CANTRIP_HINT, CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, usageColorClass } from "./shared";
+import { CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, SpellSlotLevelPanel, usageColorClass } from "./shared";
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
@@ -69,14 +69,21 @@ function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
 }
 
-/** Same "name + short rules blurb" hint every other trackable row in the Party Toolkit shows (`TrackableHintPanel` in `ResourceCoveragePanel`) — a cantrip also gets the same `CANTRIP_HINT` line the Resources tab's cantrip badge used to show, since removing that badge here shouldn't lose the "no slot needed" fact entirely. */
+/** Identical to `SpellPanel` on a character's own card (`CharacterDetailsModal.tsx`) — same fields in the same order (name+school, source·components, material component, description) — so a DM reading a spell's hint here isn't looking at a differently-shaped panel than the one they'd get by opening that character's own card. */
 function PartySpellHintPanel({ spell }: { spell: PartySpellEntry }) {
   return (
     <div className="space-y-1">
-      <p className="font-medium text-white">{spell.name}</p>
-      {spell.isCantrip && CANTRIP_HINT}
+      <p className="font-medium text-slate-100">
+        {spell.name}
+        {spell.school && <span className="text-slate-500"> ({spell.school})</span>}
+      </p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">
+        {spell.source}
+        {spell.components && ` · ${spell.components}`}
+      </p>
+      {spell.materialComponent && <p className="text-slate-500">Material: {spell.materialComponent}</p>}
       {spell.description && (
-        <p className="text-slate-300">
+        <p>
           <RichText text={spell.description} />
         </p>
       )}
@@ -179,9 +186,11 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
               <SectionLabel className={`flex items-center justify-between gap-3 ${index === 0 ? "" : "mt-4"}`}>
                 <span>{spellLevelLabel(group.level)}</span>
                 {slotLevel && (
-                  <span className={`normal-case tracking-normal ${usageColorClass(slotLevel.current, slotLevel.max)}`}>
-                    {slotLevel.current}/{slotLevel.max}
-                  </span>
+                  <InfoTooltip hoverOnly panel={<SpellSlotLevelPanel level={slotLevel.level} holders={slotLevel.holders} />}>
+                    <span className={`text-sm font-medium normal-case tracking-normal ${usageColorClass(slotLevel.current, slotLevel.max)}`}>
+                      {slotLevel.current}/{slotLevel.max}
+                    </span>
+                  </InfoTooltip>
                 )}
               </SectionLabel>
               <div className="divide-y divide-slate-800/60">

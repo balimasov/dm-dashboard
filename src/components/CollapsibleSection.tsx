@@ -12,7 +12,7 @@ import { useState } from "react";
  * writes back to the same cookie so the next full page load starts correct
  * too.
  */
-function persistOpenCookie(storageKey: string, open: boolean) {
+export function persistOpenCookie(storageKey: string, open: boolean) {
   document.cookie = `${storageKey}=${open ? "1" : "0"}; path=/; max-age=31536000; SameSite=Lax`;
 }
 

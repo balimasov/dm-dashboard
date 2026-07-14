@@ -21,7 +21,13 @@ import { SpellSlotsResourcesPanel } from "./partyToolkit/SpellSlotsResourcesPane
  * handful of pieces more than one panel needs (the generic hover-hint
  * layout, the usage-danger color scale, the coverage count row...).
  */
-export function PartyToolkit({ characters }: { characters: Character[] }) {
+export function PartyToolkit({
+  characters,
+  initialResourceCoverageOpen,
+}: {
+  characters: Character[];
+  initialResourceCoverageOpen: boolean;
+}) {
   const passives = computePartyPassiveSummary(characters);
 
   if (characters.length === 0 || !passives) {
@@ -46,7 +52,7 @@ export function PartyToolkit({ characters }: { characters: Character[] }) {
           gone, confirmed replaced by this one — SpellSlotsResourcesPanel is
           the one panel still pending removal, once it's confirmed too. */}
       <p className="text-xs text-slate-600">Preview below — also merges in Spell Slots &amp; Resources.</p>
-      <ResourceCoveragePanel characters={characters} />
+      <ResourceCoveragePanel characters={characters} initialOpen={initialResourceCoverageOpen} />
     </div>
   );
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
@@ -9,6 +12,7 @@ import {
   computePartySpellSlotSummary,
   computeResourceCoverage,
 } from "@/lib/partyToolkit";
+import { persistOpenCookie } from "../CollapsibleSection";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
@@ -317,7 +321,12 @@ function distributeColumns(
   return columns;
 }
 
-export function ResourceCoveragePanel({ characters }: { characters: Character[] }) {
+const STORAGE_KEY = "dm-dashboard-resource-coverage-open";
+
+/** `initialOpen` is seeded from a cookie read server-side (see `page.tsx`), same reasoning as `CollapsibleSection` — this panel can get long once a party has a lot of tracked spells/resources, so a DM who's already read it once can collapse it, and that choice survives a reload instead of resetting open every time. */
+export function ResourceCoveragePanel({ characters, initialOpen }: { characters: Character[]; initialOpen: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
+
   const coverage = computeResourceCoverage(characters);
   const categories = RESOURCE_COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
   const columns = distributeColumns(categories, coverage, COLUMNS);
@@ -326,7 +335,17 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   const restRecovery = computePartyRestRecoveryGauge(characters);
 
   return (
-    <ToolkitCard title="Resources & Coverage">
+    <ToolkitCard
+      title="Resources & Coverage"
+      collapsible={{
+        open,
+        onToggle: () => {
+          const next = !open;
+          setOpen(next);
+          persistOpenCookie(STORAGE_KEY, next);
+        },
+      }}
+    >
       <SpellChartsRow restRecovery={restRecovery} spellSlots={spellSlots} />
 
       {categories.length === 0 ? (

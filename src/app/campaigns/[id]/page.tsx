@@ -31,6 +31,7 @@ export default async function CampaignDashboardPage({
     campaign: isOpen("dm-dashboard-campaign-open"),
     characters: isOpen("dm-dashboard-characters-open"),
     partyToolkit: isOpen("dm-dashboard-party-toolkit-open"),
+    resourceCoverage: isOpen("dm-dashboard-resource-coverage-open"),
     companions: isOpen("dm-dashboard-companions-open"),
     enemies: isOpen("dm-dashboard-enemies-open"),
     npcs: isOpen("dm-dashboard-npcs-open"),

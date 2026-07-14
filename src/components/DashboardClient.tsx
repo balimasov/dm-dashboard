@@ -142,6 +142,7 @@ export interface OpenSections {
   campaign: boolean;
   characters: boolean;
   partyToolkit: boolean;
+  resourceCoverage: boolean;
   companions: boolean;
   enemies: boolean;
   npcs: boolean;
@@ -405,7 +406,7 @@ export function DashboardClient({
           solve.
         </p>
         <div className="px-3">
-          <PartyToolkit characters={visibleCharacters} />
+          <PartyToolkit characters={visibleCharacters} initialResourceCoverageOpen={initialOpen.resourceCoverage} />
         </div>
       </CollapsibleSection>
 

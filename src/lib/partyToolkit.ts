@@ -351,6 +351,12 @@ export function computePartySpellSlotSummary(characters: Character[]): PartySpel
 export interface PartySpellEntry {
   name: string;
   isCantrip: boolean;
+  school?: string;
+  /** e.g. "V, S, M" — same abbreviation `KnownSpell.components` uses. */
+  components?: string;
+  materialComponent?: string;
+  /** Where it's cast from (e.g. "Class") — like `description` below, taken from whichever holder's copy has one first; a spell known via two different sources across characters just shows the first one encountered. */
+  source?: string;
   /** Short rules blurb for the hover hint — taken from whichever holder's copy has one first, since the same spell's text doesn't vary by character. */
   description?: string;
   holders: CoverageHolder[];
@@ -389,9 +395,22 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
       const existing = levelMap.get(key);
       if (existing) {
         existing.holders.push(holder);
+        existing.school ??= spell.school;
+        existing.components ??= spell.components;
+        existing.materialComponent ??= spell.materialComponent;
+        existing.source ??= spell.source;
         existing.description ??= spell.description;
       } else {
-        levelMap.set(key, { name: spell.name, isCantrip: spell.level <= 0, description: spell.description, holders: [holder] });
+        levelMap.set(key, {
+          name: spell.name,
+          isCantrip: spell.level <= 0,
+          school: spell.school,
+          components: spell.components,
+          materialComponent: spell.materialComponent,
+          source: spell.source,
+          description: spell.description,
+          holders: [holder],
+        });
       }
       byLevel.set(spell.level, levelMap);
     }

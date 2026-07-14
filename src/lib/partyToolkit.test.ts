@@ -391,6 +391,7 @@ describe("computePartySpellsByLevel", () => {
           {
             name: "Shield",
             isCantrip: false,
+            source: "Class",
             holders: [
               { characterId: "A", characterName: "A" },
               { characterId: "B", characterName: "B" },
@@ -410,7 +411,9 @@ describe("computePartySpellsByLevel", () => {
       ],
     });
     const groups = computePartySpellsByLevel([a]);
-    expect(groups).toEqual([{ level: 1, spells: [{ name: "Faerie Fire", isCantrip: false, holders: [{ characterId: "A", characterName: "A" }] }] }]);
+    expect(groups).toEqual([
+      { level: 1, spells: [{ name: "Faerie Fire", isCantrip: false, source: "Race", holders: [{ characterId: "A", characterName: "A" }] }] },
+    ]);
   });
 
   test("spells within a level sort alphabetically", () => {
