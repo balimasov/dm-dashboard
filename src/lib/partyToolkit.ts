@@ -634,7 +634,6 @@ export function computeToolCoverage(characters: Character[]): NamedCoverageEntry
 
 export type CoverageCategory =
   | "Healing"
-  | "Revive"
   | "AOE Damage"
   | "Single Target Burst"
   | "Control"
@@ -642,7 +641,6 @@ export type CoverageCategory =
   | "Mobility"
   | "Detection"
   | "Protection"
-  | "Light / Darkness"
   | "Social"
   | "Stealth"
   | "Survival"
@@ -653,7 +651,6 @@ export type CoverageCategory =
 
 export const COVERAGE_CATEGORY_ORDER: CoverageCategory[] = [
   "Healing",
-  "Revive",
   "AOE Damage",
   "Single Target Burst",
   "Control",
@@ -661,7 +658,6 @@ export const COVERAGE_CATEGORY_ORDER: CoverageCategory[] = [
   "Mobility",
   "Detection",
   "Protection",
-  "Light / Darkness",
   "Social",
   "Stealth",
   "Survival",
@@ -706,7 +702,6 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "lay on hands: healing pool",
     "aura of vitality",
   ],
-  Revive: ["revivify", "raise dead", "resurrection", "true resurrection", "reincarnate"],
   "AOE Damage": [
     "fireball",
     "burning hands",
@@ -802,7 +797,6 @@ const COVERAGE_CATEGORY_KEYWORDS: Record<CoverageCategory, string[]> = {
     "blade ward",
     "bless",
   ],
-  "Light / Darkness": ["light", "daylight", "darkness", "dancing lights", "control flames"],
   Social: ["charm person", "suggestion", "friends", "enthrall", "zone of truth", "vicious mockery", "message"],
   Stealth: ["invisibility", "pass without trace", "nondetection", "disguise self", "minor illusion", "silence"],
   Survival: [
@@ -831,17 +825,16 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
 /**
  * D&D Beyond's own spell `tags` (confirmed against real exports — 21
  * distinct values seen across several characters' full spell lists), mapped
- * to the categories they cleanly correspond to. Deliberately not a
- * *complete* replacement for `COVERAGE_MAP`: `Utility`, `Creation`,
- * `Combat`, `Environment` don't map onto any one of our categories (too
- * generic to mean any one specific thing — see `computeSpellCategories`'s
- * own doc comment), and several of our categories (`Stealth`, `Rerolls`,
- * `Anti-Undead`, `Light / Darkness`, `Revive`) have no tag that reaches
- * them at all — D&D Beyond's tagging just isn't that fine-grained.
- * `computeSpellCategories` below unions this with the existing keyword
- * lookup rather than replacing it, so those gaps keep working exactly as
- * before. `"Damage"` is deliberately absent here — it needs `isAreaEffect`
- * to pick a side (see `computeSpellCategories`), not a flat mapping.
+ * to the categories they cleanly correspond to. `Utility`, `Combat`,
+ * `Creation`, `Environment` don't map onto any one of our categories — too
+ * generic to mean any one specific thing (see `computeSpellCategories`'s own
+ * doc comment). `"Damage"` is deliberately absent here — it needs
+ * `isAreaEffect` to pick a side (see `computeSpellCategories`), not a flat
+ * mapping. `Light / Darkness` and `Revive` used to exist as categories too,
+ * but no D&D Beyond tag ever reached them (they only worked via the
+ * name-keyword fallback below) — removed rather than left permanently
+ * keyword-only, per the same principle that killed the keyword-for-tagged-
+ * spells path.
  */
 const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
   Healing: ["Healing"],
@@ -864,17 +857,16 @@ const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
 };
 
 /**
- * Resolves a known spell's coverage categories from every signal available,
- * most-structural first: D&D Beyond's own `tags` (via `SPELL_TAG_TO_CATEGORY`)
- * plus two fields it doesn't expose as a tag but does expose structurally —
+ * Resolves a known spell's coverage categories. D&D Beyond's own `tags` (via
+ * `SPELL_TAG_TO_CATEGORY`) are the sole signal once a spell has any —
  * `isAreaEffect` splits a `"Damage"`-tagged spell into `AOE Damage` vs
  * `Single Target Burst` (the tag alone doesn't distinguish them), and
  * `isReaction` adds `Reactions` (same `activationType === 4` convention
- * `Feature.group` already uses). The existing name-keyword lookup
- * (`COVERAGE_MAP`) is unioned in on top rather than replaced — it's still
- * the only signal for the handful of categories tags don't reach, and for
- * any spell synced before these fields existed (`tags` absent — falls back
- * to keyword-only, same behavior as before this function existed).
+ * `Feature.group` already uses). The name-keyword lookup (`COVERAGE_MAP`) is
+ * a fallback for the one case tags can't cover at all: a spell synced before
+ * these fields existed, or genuinely untagged by D&D Beyond (`tags` absent
+ * or empty). A spell that *has* tags never falls back to it — no custom
+ * per-spell-name logic once D&D Beyond has actually told us what a spell is.
  */
 function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAreaEffect" | "isReaction">): CoverageCategory[] {
   const categories = new Set<CoverageCategory>();
@@ -885,7 +877,9 @@ function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAre
     categories.add(spell.isAreaEffect ? "AOE Damage" : "Single Target Burst");
   }
   if (spell.isReaction) categories.add("Reactions");
-  for (const category of COVERAGE_MAP[spell.name.toLowerCase()] ?? []) categories.add(category);
+  if (!spell.tags || spell.tags.length === 0) {
+    for (const category of COVERAGE_MAP[spell.name.toLowerCase()] ?? []) categories.add(category);
+  }
   return Array.from(categories);
 }
 

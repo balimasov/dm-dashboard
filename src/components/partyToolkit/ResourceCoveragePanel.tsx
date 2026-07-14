@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
@@ -277,33 +277,24 @@ function categoryLineCount(entries: ResourceCoverageEntry[]): number {
   return special.length + rows.length;
 }
 
-/** The empty-category placeholder was reading as regular (if dim) content and blending into the populated blocks around it in a 4-column layout — italicized and a shade darker than `SectionLabel` itself so it unmistakably reads as "nothing here" rather than a line of real data. */
-function EmptyCategoryPlaceholder() {
-  return <p className="text-xs italic text-slate-700">— none —</p>;
-}
-
+/** Only ever called with a category that already has at least one entry — `ResourceCoveragePanel` filters empty categories out before rendering, so there's no "nothing here" state to design for. */
 function ResourceCoverageCategoryBlock({ category, entries }: { category: ResourceCoverageCategory; entries: ResourceCoverageEntry[] }) {
   const { special, rows } = splitCategoryEntries(entries);
-  const isEmpty = special.length === 0 && rows.length === 0;
   return (
     <div>
       <SectionLabel>{category}</SectionLabel>
-      {isEmpty ? (
-        <EmptyCategoryPlaceholder />
-      ) : (
-        <div className="divide-y divide-slate-800/60">
-          {special.map((e) => (
-            <SpecialRow key={e.name} entry={e} />
-          ))}
-          {rows.map((row) =>
-            row.kind === "trackable" ? (
-              <TrackableRow key={`${row.entry.characterId}-${row.entry.name}`} entry={row.entry} />
-            ) : (
-              <PassivePill key={row.group.name} group={row.group} />
-            )
-          )}
-        </div>
-      )}
+      <div className="divide-y divide-slate-800/60">
+        {special.map((e) => (
+          <SpecialRow key={e.name} entry={e} />
+        ))}
+        {rows.map((row) =>
+          row.kind === "trackable" ? (
+            <TrackableRow key={`${row.entry.characterId}-${row.entry.name}`} entry={row.entry} />
+          ) : (
+            <PassivePill key={row.group.name} group={row.group} />
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -383,10 +374,8 @@ function distributeColumns(
 }
 
 export function ResourceCoveragePanel({ characters }: { characters: Character[] }) {
-  const [showAll, setShowAll] = useState(false);
   const coverage = computeResourceCoverage(characters);
-  const categoriesWithEntries = RESOURCE_COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
-  const categories = showAll ? RESOURCE_COVERAGE_CATEGORY_ORDER : categoriesWithEntries;
+  const categories = RESOURCE_COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
   const columns = distributeColumns(categories, coverage, COLUMNS);
 
   const spellSlots = computePartySpellSlotSummary(characters);
@@ -394,18 +383,7 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   const restRecovery = computePartyRestRecoveryGauge(characters);
 
   return (
-    <ToolkitCard
-      title="Resources & Coverage"
-      actions={
-        <button
-          type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className="shrink-0 text-xs text-sky-400 hover:text-sky-300"
-        >
-          {showAll ? "Show fewer" : `Show all ${RESOURCE_COVERAGE_CATEGORY_ORDER.length} categories`}
-        </button>
-      }
-    >
+    <ToolkitCard title="Resources & Coverage">
       {gauge && (
         <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
           <SectionLabel className="text-center">

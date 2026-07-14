@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-/** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coverage's "Show all" toggle, Coins' party total). */
+/** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coins' party total). */
 export function ToolkitCard({ title, actions, children }: { title: ReactNode; actions?: ReactNode; children: ReactNode }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">

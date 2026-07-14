@@ -802,7 +802,7 @@ describe("computeResourceCoverage", () => {
 
   test("every category is present (possibly empty), including the new Resources bucket", () => {
     const coverage = computeResourceCoverage([]);
-    expect(Object.keys(coverage)).toHaveLength(18);
+    expect(Object.keys(coverage)).toHaveLength(16);
     expect(coverage.Resources).toEqual([]);
   });
 
@@ -918,21 +918,32 @@ describe("computeResourceCoverage", () => {
     expect(coverage.Reactions.map((e) => e.name)).toContain("Homebrew Riposte");
   });
 
-  test("tag-based categories union with an existing name-keyword match rather than replacing it", () => {
+  test("a spell that has D&D Beyond tags never falls back to the name-keyword match, even for a category the tag doesn't reach", () => {
     const c = makeCharacter({
       name: "A",
+      // Faerie Fire's real tags include Detection; the keyword map separately
+      // knows its exact name as Control. Once a spell has tags, D&D Beyond's
+      // classification is authoritative — no name-keyword topping-up.
       knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Race", tags: ["Detection"] }],
     });
     const coverage = computeResourceCoverage([c]);
-    // Detection comes from the tag; Control comes from the pre-existing keyword match on the exact name.
     expect(coverage.Detection.map((e) => e.name)).toContain("Faerie Fire");
-    expect(coverage.Control.map((e) => e.name)).toContain("Faerie Fire");
+    expect(coverage.Control.map((e) => e.name)).not.toContain("Faerie Fire");
   });
 
   test("a spell with no tags at all (not yet re-synced) still categorizes via keyword fallback, unchanged", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
+  });
+
+  test("a spell with an empty tags array (same as absent) still categorizes via keyword fallback", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class", tags: [] }],
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
