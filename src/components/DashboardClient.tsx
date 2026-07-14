@@ -15,6 +15,7 @@ import { RemindersPanel } from "@/components/RemindersPanel";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
+import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -312,46 +313,40 @@ export function DashboardClient({
     <div className="mx-auto max-w-[1800px] px-4 py-8">
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings("campaign")} />
 
-      <div className="mb-4 space-y-2">
-        {/* Below `sm`, the timestamp + all four actions don't fit one line at
-            once and used to wrap onto a second row — same fix already applied
-            to the Party/Creatures card rows: scroll sideways instead of
-            wrapping, so it's always one row. `justify-end` (the normal,
-            everything-fits desktop layout) and horizontal scroll don't mix
-            well — an overflowing `justify-end` row can leave content
-            unreachable by scrolling in some browsers — so the scrollable
-            mobile layout starts left-aligned instead, and only switches back
-            to `justify-end`/wrapping once `sm:` has room to spare. */}
-        <div className="flex flex-nowrap items-center justify-start gap-2 overflow-x-auto scrollbar-themed sm:flex-wrap sm:justify-end sm:overflow-visible">
-          {linkedCharacters.length > 0 && (
-            <>
-              {lastSyncedAt && (
-                <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">
-                  Synced <SyncTimestamp iso={lastSyncedAt} />
-                </span>
-              )}
-              <div className="shrink-0">
-                <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
-              </div>
-            </>
+      {/* `top-[58px]` = the global header's own rendered height (see
+          `layout.tsx`'s `sticky top-0` header) — sits flush below it instead
+          of guessing a Tailwind spacing step that might not match. Sticky
+          rather than living further down the page: Sync/Export/Settings are
+          reached constantly through a session, and scrolling back to the top
+          every time got old fast once Party Toolkit pushed everything below
+          out of view. Compact enough (just Sync + one kebab menu) to always
+          fit one row even at phone width, so unlike before this needs no
+          horizontal-scroll fallback for narrow viewports. */}
+      <div className="sticky top-[58px] z-20 mb-4 border-b border-slate-800 bg-slate-950 py-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {lastSyncedAt && (
+            <span className="hidden shrink-0 whitespace-nowrap text-xs text-slate-500 sm:inline">
+              Synced <SyncTimestamp iso={lastSyncedAt} />
+            </span>
           )}
-          <div className="flex shrink-0 items-center gap-2">
+          {linkedCharacters.length > 0 && (
+            <div className="shrink-0">
+              <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+            </div>
+          )}
+          <MoreMenu>
             <a
               href={`/api/campaigns/${campaign.id}/export`}
               title="Download this campaign (and its characters/creatures) as JSON"
-              className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
+              className={MORE_MENU_ITEM_CLASS}
             >
               Export
             </a>
-            <button
-              type="button"
-              onClick={() => openSettings("campaign")}
-              className="flex h-9 items-center rounded-lg border border-slate-700 px-3 text-sm text-slate-300 hover:bg-slate-800"
-            >
+            <button type="button" onClick={() => openSettings("campaign")} className={MORE_MENU_ITEM_CLASS}>
               Settings
             </button>
-            <CampaignLogo campaign={campaignState} />
-          </div>
+          </MoreMenu>
+          <CampaignLogo campaign={campaignState} />
         </div>
       </div>
 
