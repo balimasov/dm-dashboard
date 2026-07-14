@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { RefreshIcon } from "./ui/icons";
 
 const AUTO_SYNC_OPTIONS: Array<{ minutes: number; label: string }> = [
   { minutes: 0, label: "Off" },
@@ -82,6 +83,7 @@ export function SyncAllButton({
         title={autoSyncMinutes > 0 ? `Sync All (auto-syncing every ${autoSyncMinutes} min)` : "Sync All"}
         className="flex h-9 min-w-[102px] items-center justify-center gap-1.5 rounded-l-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
       >
+        <RefreshIcon className={`h-4 w-4 shrink-0 ${syncing ? "animate-spin" : ""}`} />
         {syncing ? (
           "Syncing..."
         ) : (

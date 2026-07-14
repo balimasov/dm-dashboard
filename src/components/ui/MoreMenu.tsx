@@ -47,4 +47,4 @@ export function MoreMenu({ children, label = "More actions" }: { children: React
 
 /** Shared look for a plain link/button row inside a `MoreMenu` panel — same treatment as `SyncAllButton`'s own interval items. */
 export const MORE_MENU_ITEM_CLASS =
-  "flex w-full items-center px-3 py-1.5 text-left text-sm text-slate-300 hover:bg-slate-800";
+  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-300 hover:bg-slate-800";

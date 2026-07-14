@@ -8,6 +8,7 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { CoinsPanel, InventoryOverview } from "@/components/InventoryOverview";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { NotesEditor } from "@/components/NotesEditor";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
@@ -16,6 +17,7 @@ import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
+import { ClockIcon, DownloadIcon, GearIcon } from "@/components/ui/icons";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -325,9 +327,29 @@ export function DashboardClient({
       <div className="sticky top-[58px] z-20 mb-4 border-b border-slate-800 bg-slate-950 py-2">
         <div className="flex flex-wrap items-center justify-end gap-2">
           {lastSyncedAt && (
-            <span className="hidden shrink-0 whitespace-nowrap text-xs text-slate-500 sm:inline">
-              Synced <SyncTimestamp iso={lastSyncedAt} />
-            </span>
+            <>
+              {/* Full text on desktop, where there's room to spare... */}
+              <span className="hidden shrink-0 whitespace-nowrap text-xs text-slate-500 sm:inline">
+                Synced <SyncTimestamp iso={lastSyncedAt} />
+              </span>
+              {/* ...a tap/hover-able clock icon on mobile instead of hiding this
+                  entirely — otherwise there's no way at all on a phone to tell
+                  when the party last synced. */}
+              <span className="sm:hidden">
+                <InfoTooltip
+                  hoverOnly
+                  panel={
+                    <p className="text-white">
+                      Synced <SyncTimestamp iso={lastSyncedAt} />
+                    </p>
+                  }
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
+                    <ClockIcon className="h-4 w-4" />
+                  </span>
+                </InfoTooltip>
+              </span>
+            </>
           )}
           {linkedCharacters.length > 0 && (
             <div className="shrink-0">
@@ -340,9 +362,11 @@ export function DashboardClient({
               title="Download this campaign (and its characters/creatures) as JSON"
               className={MORE_MENU_ITEM_CLASS}
             >
+              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
               Export
             </a>
             <button type="button" onClick={() => openSettings("campaign")} className={MORE_MENU_ITEM_CLASS}>
+              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
               Settings
             </button>
           </MoreMenu>
