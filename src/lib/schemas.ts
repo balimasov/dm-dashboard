@@ -52,6 +52,9 @@ const knownSpellSchema = z.object({
   current: z.number().optional(),
   max: z.number().optional(),
   recovery: recoveryTypeSchema.optional(),
+  tags: z.array(z.string()).optional(),
+  isAreaEffect: z.boolean().optional(),
+  isReaction: z.boolean().optional(),
 });
 
 const featureSchema = z.object({

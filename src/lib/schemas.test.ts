@@ -10,13 +10,28 @@ function keysExceptId(obj: object): string[] {
     .sort();
 }
 
+/** Same `id`-stripping exception as `keysExceptId`, but for a full deep-equality comparison instead of just a key list. */
+function withoutId<T extends { id?: unknown }>(obj: T): Omit<T, "id"> {
+  const rest = { ...obj };
+  delete rest.id;
+  return rest;
+}
+
 describe("characterUpdateSchema", () => {
   it("accepts every field on the real demo characters without dropping any", () => {
     for (const character of demoCharacters) {
       const result = characterUpdateSchema.safeParse(character);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(keysExceptId(result.data)).toEqual(keysExceptId(character));
+        // Deep equality, not just top-level keys — a nested schema (e.g.
+        // `knownSpellSchema`) silently strips any field on the spell/feature/
+        // resource object it doesn't know about, and a top-level key
+        // comparison alone can't see that (confirmed: this test still
+        // passed with `tags`/`isAreaEffect`/`isReaction` missing from
+        // `knownSpellSchema` for weeks after `KnownSpell` itself gained
+        // them, since the demo characters never carried those fields to
+        // begin with — see the dedicated regression test below).
+        expect(result.data).toEqual(withoutId(character));
       }
     }
   });
@@ -24,6 +39,20 @@ describe("characterUpdateSchema", () => {
   it("rejects a body with the wrong type for a known field", () => {
     const result = characterUpdateSchema.safeParse({ level: "five" });
     expect(result.success).toBe(false);
+  });
+
+  it("doesn't silently strip a spell's D&D Beyond tags/isAreaEffect/isReaction — a real sync PATCH carries these", () => {
+    const character = {
+      ...demoCharacters[0],
+      knownSpells: [
+        { id: "s1", name: "Fireball", level: 3, source: "Class", tags: ["Damage"], isAreaEffect: true, isReaction: false },
+      ],
+    };
+    const result = characterUpdateSchema.safeParse(character);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.knownSpells).toEqual(character.knownSpells);
+    }
   });
 });
 
