@@ -63,7 +63,7 @@ function RestRecoveryMeterRow({ label, bucket }: { label: string; bucket: PartyR
     <div className="flex items-center gap-2 text-xs leading-none">
       <span className="w-20 shrink-0 whitespace-nowrap font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       <InfoTooltip hoverOnly panel={<RestRecoveryHintPanel label={label} bucket={bucket} />}>
-        <div className="h-3.5 w-28 overflow-hidden rounded-full bg-slate-800 sm:w-36">
+        <div className="h-3.5 w-36 overflow-hidden rounded-full bg-slate-800 sm:w-48">
           <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
         </div>
       </InfoTooltip>
@@ -101,7 +101,11 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className={`text-[10px] font-semibold tabular-nums ${usageColorClass(level.current, level.max)}`}>
+      {/* Same `percent` the bar's own fill color reads off (`tierBgClass`) — using
+          `usageColorClass` here instead used to disagree with the bar at the 25%
+          boundary (its 50%-split doesn't line up with the bar's 25%-split tier),
+          so a red (≤25%) column could sit under an amber-labeled number. */}
+      <span className={`text-[10px] font-semibold tabular-nums ${tierTextClass(percent)}`}>
         {level.current}/{level.max}
       </span>
       <InfoTooltip hoverOnly panel={<SpellSlotLevelPanel level={level.level} holders={level.holders} />}>
@@ -117,25 +121,32 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
   );
 }
 
-/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. The "Spell Slots" caption is load-bearing, not decorative — without it the row of bare numeral labels (1, 2, 3...) reads as an unlabeled axis with no clue what it's counting. */
+/** The histogram of every spell slot level the party has, plus the running total off to the side — replaces the old plain-number "1st Level ... 22/24" rows with one glanceable shape: which levels are topped up, which are running dry, at what relative depth. Its own caption lives on the enclosing `ChartBox`, not here. */
 function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
   const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Spell Slots</span>
-      <div className="flex items-end gap-4">
-        <div className="flex items-end gap-2">
-          {spellSlots.levels.map((level) => (
-            <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
-          ))}
-        </div>
-        <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-4">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
-          <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
-            {spellSlots.totalCurrent}/{spellSlots.totalMax}
-          </span>
-        </div>
+    <div className="flex items-end gap-5">
+      <div className="flex items-end gap-3">
+        {spellSlots.levels.map((level) => (
+          <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
+        ))}
       </div>
+      <div className="flex flex-col items-center gap-1 border-l border-slate-800 pl-5">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+        <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
+          {spellSlots.totalCurrent}/{spellSlots.totalMax}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** A bordered mini-panel for one chart, its label inside the top of the box (same idea as `SectionLabel`) — same visual language `SensesPanel`/`DefensesPanel`/`LanguagesToolsPanel` use as full `ToolkitCard`s, just one nesting level down since these two charts share a single "Resources & Coverage" card instead of getting their own. The border also does the separating job a divider line would otherwise need to — two boxed charts read as distinct instruments without one. */
+function ChartBox({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-4 sm:px-8">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
+      {children}
     </div>
   );
 }
@@ -486,11 +497,16 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   return (
     <ToolkitCard title="Resources & Coverage">
       {(hasRestMeters || spellSlots) && (
-        <div className="flex flex-col items-center gap-4 lg:flex-row lg:justify-center lg:gap-8">
-          {hasRestMeters && <RestRecoveryMeters recovery={restRecovery} />}
-          {hasRestMeters && spellSlots && <div className="h-px w-24 bg-slate-800 lg:h-16 lg:w-px lg:self-stretch" />}
+        <div className="mt-2 flex flex-col items-center gap-4 lg:flex-row lg:justify-center lg:gap-6">
+          {hasRestMeters && (
+            <ChartBox title="Rest Recovery">
+              <RestRecoveryMeters recovery={restRecovery} />
+            </ChartBox>
+          )}
           {spellSlots ? (
-            <SpellSlotHistogram spellSlots={spellSlots} />
+            <ChartBox title="Spell Slots">
+              <SpellSlotHistogram spellSlots={spellSlots} />
+            </ChartBox>
           ) : (
             <p className="text-sm text-slate-600">No spell slots in the party.</p>
           )}
