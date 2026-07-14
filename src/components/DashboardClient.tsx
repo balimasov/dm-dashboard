@@ -374,15 +374,6 @@ export function DashboardClient({
         </div>
       </div>
 
-      <RemindersPanel
-        characters={characters}
-        creatures={creatures}
-        onUpdateCharacter={updateCharacter}
-        onUpdateCreature={updateCreature}
-        storageKey="dm-dashboard-reminders-open"
-        initialOpen={initialOpen.reminders}
-      />
-
       <CollapsibleSection
         title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
         storageKey="dm-dashboard-campaign-open"
@@ -396,6 +387,15 @@ export function DashboardClient({
           />
         </div>
       </CollapsibleSection>
+
+      <RemindersPanel
+        characters={characters}
+        creatures={creatures}
+        onUpdateCharacter={updateCharacter}
+        onUpdateCreature={updateCreature}
+        storageKey="dm-dashboard-reminders-open"
+        initialOpen={initialOpen.reminders}
+      />
 
       <CollapsibleSection
         title={<SectionTitle emoji="🧭" label="Party Toolkit" />}

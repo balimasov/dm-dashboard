@@ -7,7 +7,7 @@ import { RecoveryBadge } from "./ui/RecoveryBadge";
 export function DotMeter({
   current,
   max,
-  colorClass = "bg-amber-400",
+  colorClass = "bg-blue-400",
   onSetCount,
 }: {
   current: number;
@@ -73,7 +73,22 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
   return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
 }
 
-/** The hover/tap breakdown for `ResourceTrackerBar` — the bar itself shows only the one blended number, so this is the one place to see it split back out by Abilities vs. Spell Slots. */
+/**
+ * The hover/tap breakdown for `ResourceTrackerBar` — the bar itself shows only
+ * the one blended number, so this is the one place to see it split back out by
+ * Abilities vs. Spell Slots.
+ *
+ * Two different color systems meet here, deliberately: Overall uses the same
+ * danger-tier color as the bar (green/amber/red — "how worried should I be"),
+ * while Abilities/Spell Slots use each pool type's fixed identity color
+ * (blue/violet, matching the dots on `DotMeter` everywhere else in the app —
+ * not `sky`, which this app's theme reskins to a warm brass tone that would
+ * blend right into the amber tier color it needs to stay distinct from)
+ * regardless of how full they are — tinting Abilities amber at low-tier would
+ * collide with the identity color a low-percent Ability dot already reads as
+ * elsewhere, so the item-type color stays constant and only the *bar* carries
+ * the tier signal.
+ */
 function ResourceTrackerHint({
   overallPercent,
   resourcesPercent,
@@ -95,8 +110,7 @@ function ResourceTrackerHint({
       </p>
       {resourcesPercent !== null && (
         <p>
-          <span className={tierTextClass(resourcesPercent)}>●</span> Abilities:{" "}
-          <span className="font-semibold text-white">{resourcesPercent}%</span>
+          <span className="text-blue-400">●</span> Abilities: <span className="font-semibold text-white">{resourcesPercent}%</span>
         </p>
       )}
       {spellSlotsPercent !== null && (
@@ -125,7 +139,13 @@ export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resou
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
   return (
-    <div className="flex items-center gap-2">
+    // `leading-none` here (not just on the number span below) matters: InfoTooltip
+    // wraps its children in its own spans that don't reset their inherited
+    // line-height, so their invisible "strut" space skews ascent-heavy and
+    // visually pushes the number down relative to the bar once flex centers the
+    // taller box. Resetting line-height at this level too keeps every nested
+    // span's strut as tight as the number's own, so centering lines up cleanly.
+    <div className="flex items-center gap-2 leading-none">
       <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
         <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
       </div>
@@ -133,7 +153,11 @@ export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resou
         hoverOnly
         panel={<ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}
       >
-        <span className={`shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
+        {/* `relative -top-px`: even with the strut fixed above, digit glyphs still sit ~1px low in
+            their own box (descender space this font reserves below the baseline, unused by digits).
+            `translate`/`transform` can't nudge this — both are no-ops on a plain (non `inline-block`)
+            inline element like this span — but relative positioning applies to inline boxes fine. */}
+        <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
       </InfoTooltip>
     </div>
   );
