@@ -470,41 +470,28 @@ function ResourceCoverageCategoryBlock({ category, entries }: { category: Resour
 const COLUMNS = 4;
 
 /**
- * Whether `weights` can be split into at most `numColumns` contiguous runs
- * with no run's sum exceeding `maxSum` — the feasibility check the binary
- * search in `distributeColumns` below probes at each candidate `maxSum`.
- */
-function fitsInColumns(weights: number[], numColumns: number, maxSum: number): boolean {
-  let columnsUsed = 1;
-  let currentSum = 0;
-  for (const w of weights) {
-    if (currentSum + w > maxSum) {
-      columnsUsed += 1;
-      currentSum = w;
-      if (columnsUsed > numColumns) return false;
-    } else {
-      currentSum += w;
-    }
-  }
-  return true;
-}
-
-/**
- * Order-preserving column fill that's actually balanced — the classic
- * "split an array into k contiguous parts minimizing the tallest part"
- * problem (binary search over the candidate max-column-weight, using
- * `fitsInColumns` as the feasibility check). An earlier version tried to
- * eyeball this by closing a column once its running weight passed a flat
- * `total / numColumns` average, but that average doesn't account for how
- * the *remaining* categories are distributed — with one very heavy category
- * up front (`Resources`, reliably the biggest bucket) followed by many
- * lighter ones, it closed the first three columns early and dumped
- * everything left over into the last one (confirmed: a visibly lopsided
- * last column). Binary search finds the true minimum-possible tallest
- * column instead of guessing at one, while still walking categories in
- * `RESOURCE_COVERAGE_CATEGORY_ORDER` and keeping each column a contiguous
- * run of that order — the grid still reads top-to-bottom within a column,
- * then across to the next one.
+ * Order-preserving column fill that targets each column's fair share of the
+ * total weight, not just "whatever's left after the earlier columns filled
+ * up." A previous version minimized the *tallest* column via binary search
+ * (the classic "split into k contiguous parts minimizing the max part"
+ * problem) — a different objective than "balanced," and it showed: with a
+ * few heavy categories (`Resources`, `Control`, `Protection`) each anchored
+ * near that shared cap, the light, alphabetically-clustered categories
+ * (`Social`/`Summoning`/`Survival`) all landed in whatever column was left
+ * once the cap was reached, however little that left it (confirmed: a
+ * column with 7 lines sitting next to three columns with 30+). Minimizing
+ * the max never has to fix that, since it's already satisfied once no
+ * column *exceeds* the cap — an unbalanced-but-legal split scores the same
+ * as a balanced one.
+ *
+ * This version instead places each boundary at whichever category's
+ * cumulative weight lands closest to *that column's own* fair-share target
+ * (`total * (columnIndex + 1) / numColumns`) — column 1 aims for the first
+ * quarter of the total, column 2 the first half, and so on, so leftover
+ * weight spreads across every column instead of piling onto the last one.
+ * Still walks categories in `RESOURCE_COVERAGE_CATEGORY_ORDER` and keeps
+ * each column a contiguous run of that order — the grid still reads
+ * top-to-bottom within a column, then across to the next one.
  */
 function distributeColumns(
   categories: ResourceCoverageCategory[],
@@ -514,27 +501,29 @@ function distributeColumns(
   if (categories.length === 0) return Array.from({ length: numColumns }, () => []);
 
   const weights = categories.map((c) => categoryLineCount(coverage[c]) + 1);
-
-  let lo = Math.max(...weights);
-  let hi = weights.reduce((sum, w) => sum + w, 0);
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    if (fitsInColumns(weights, numColumns, mid)) hi = mid;
-    else lo = mid + 1;
-  }
-  const maxColumnWeight = lo;
+  const total = weights.reduce((sum, w) => sum + w, 0);
 
   const columns: ResourceCoverageCategory[][] = [];
   let current: ResourceCoverageCategory[] = [];
-  let currentWeight = 0;
+  let cumulative = 0;
+  let columnsUsed = 0;
+
   categories.forEach((category, i) => {
-    if (current.length > 0 && currentWeight + weights[i] > maxColumnWeight) {
-      columns.push(current);
-      current = [];
-      currentWeight = 0;
+    const isLastColumn = numColumns - columnsUsed <= 1;
+    if (!isLastColumn && current.length > 0) {
+      const target = (total * (columnsUsed + 1)) / numColumns;
+      const withoutThis = cumulative;
+      const withThis = cumulative + weights[i];
+      // Close the column now, before adding this category, if that lands
+      // closer to its fair-share target than including it would.
+      if (Math.abs(withoutThis - target) <= Math.abs(withThis - target)) {
+        columns.push(current);
+        current = [];
+        columnsUsed += 1;
+      }
     }
     current.push(category);
-    currentWeight += weights[i];
+    cumulative += weights[i];
   });
   columns.push(current);
   while (columns.length < numColumns) columns.push([]);
