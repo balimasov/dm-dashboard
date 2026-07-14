@@ -74,11 +74,30 @@ function AvailabilityMetaLine({ availability }: { availability?: ResourceAvailab
   return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
 }
 
+/**
+ * Shows a spell's raw D&D Beyond `tags` verbatim — a sync diagnostic as much
+ * as an info line. Coverage categorization is *derived* from these, but a
+ * category (or the lack of one) can't tell a DM whether a spell just has no
+ * tags D&D Beyond maps to a category, or has no tags at all (not yet
+ * re-synced since this field shipped, or genuinely untagged upstream). This
+ * line answers that directly instead of leaving it to guesswork. Spell-only
+ * — a `Feature`/`Resource` entry has no `tags` field to show.
+ */
+function SpellTagsLine({ kind, tags }: { kind?: ResourceCoverageEntry["kind"]; tags?: string[] }) {
+  if (kind !== "spell") return null;
+  return (
+    <p className="text-[11px] text-slate-500">
+      D&amp;D Beyond tags: {tags && tags.length > 0 ? tags.join(", ") : "none"}
+    </p>
+  );
+}
+
 function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
   return (
     <div className="space-y-1">
       <p className="font-medium text-white">{entry.name}</p>
       <AbilityMetaLine kind={entry.kind} source={entry.source} isCantrip={entry.isCantrip} />
+      <SpellTagsLine kind={entry.kind} tags={entry.tags} />
       <AvailabilityMetaLine availability={entry.availability} />
       {entry.description && (
         <p className="text-slate-300">
@@ -176,6 +195,7 @@ function PassiveHintPanel({ group }: { group: NameGroup }) {
     <div className="space-y-1">
       <p className="font-medium text-white">{group.name}</p>
       <AbilityMetaLine kind={sample?.kind} source={sample?.source} isCantrip={group.isCantrip} />
+      <SpellTagsLine kind={sample?.kind} tags={sample?.tags} />
       {description && (
         <p className="text-slate-300">
           <RichText text={description} />

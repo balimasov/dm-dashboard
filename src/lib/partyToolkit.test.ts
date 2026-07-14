@@ -937,4 +937,22 @@ describe("computeResourceCoverage", () => {
     const coverage = computeResourceCoverage([c]);
     expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
   });
+
+  test("a spell entry carries its raw D&D Beyond tags through for the hint's diagnostic line", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Cure Wounds", level: 1, source: "Class", tags: ["Healing"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Healing.find((e) => e.name === "Cure Wounds")?.tags).toEqual(["Healing"]);
+  });
+
+  test("a feature entry never carries a tags field, even when it lands in a category", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "other", originType: "feat" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Rerolls.find((e) => e.name === "Lucky")?.tags).toBeUndefined();
+  });
 });

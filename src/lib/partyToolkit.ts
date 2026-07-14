@@ -932,6 +932,8 @@ export interface ResourceCoverageEntry {
   source?: string;
   /** A spell at level 0 — the row's "no availability badge" is otherwise indistinguishable from an unlimited passive `Feature`, which reads as a gap rather than an intentional cantrip. */
   isCantrip?: boolean;
+  /** `kind === "spell"` only — D&D Beyond's own raw tags, passed straight through so the hint panel can show a DM directly whether a spell actually carries any (rather than the category result alone, which can't distinguish "no tags at all" from "tagged but none of them map to a category"). Absent (not just empty) for a spell synced before this field existed. */
+  tags?: string[];
 }
 
 function spellResourceAvailability(spell: KnownSpell, character: Character): ResourceAvailability | undefined {
@@ -1041,12 +1043,13 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
       kind: "spell" | "feature",
       source: string | undefined,
       isCantrip: boolean,
-      categories: CoverageCategory[]
+      categories: CoverageCategory[],
+      tags: string[] | undefined
     ) {
       if (categories.length === 0) {
         if (!fallbackToOther) return;
         seenNames.add(`${c.id}:${name.toLowerCase()}`);
-        coverage.Resources.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip });
+        coverage.Resources.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip, tags });
         return;
       }
       seenNames.add(`${c.id}:${name.toLowerCase()}`);
@@ -1054,15 +1057,15 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
         const key = `${category}:${name}`;
         if (seenInCategory.has(key)) continue;
         seenInCategory.add(key);
-        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip });
+        coverage[category].push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip, tags });
       }
     }
 
     for (const spell of namedSpells) {
-      place(spell.name, spell.description, spell.availability, true, "spell", spell.source, spell.isCantrip, computeSpellCategories(spell));
+      place(spell.name, spell.description, spell.availability, true, "spell", spell.source, spell.isCantrip, computeSpellCategories(spell), spell.tags);
     }
     for (const { name, description, source, availability } of namedFeatures) {
-      place(name, description, availability, false, "feature", source, false, COVERAGE_MAP[name.toLowerCase()] ?? []);
+      place(name, description, availability, false, "feature", source, false, COVERAGE_MAP[name.toLowerCase()] ?? [], undefined);
     }
   }
 
