@@ -12,6 +12,19 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [0.117.2] - 2026-07-14
+
+### Changed
+- **`PartyToolkit.tsx` (1122 рядки) розбито на директорію панелей** —
+  `src/components/partyToolkit/{shared,SkillsPanel,SpellSlotsResourcesPanel,
+  SensesPanel,DefensesPanel,LanguagesToolsPanel,CoveragePanel}.tsx`, кожен
+  файл — одна картка Party Toolkit. `shared.tsx` несе те, чим користуються
+  декілька панелей одразу (`HintPanel`, `usageColorClass`,
+  `CHART_AREA_MIN_HEIGHT_CLASS`, `HolderListPanel`, `CoverageCountRow`,
+  `HEROIC_INSPIRATION_DESCRIPTION`). `PartyToolkit.tsx` сам лишився лише
+  розкладкою-оркестратором (45 рядків). Суто структурна зміна — жодного
+  JSX/логіки не чіпали, кожен коментар переїхав разом зі своїм кодом.
+
 ## [0.117.1] - 2026-07-14
 
 ### Changed
