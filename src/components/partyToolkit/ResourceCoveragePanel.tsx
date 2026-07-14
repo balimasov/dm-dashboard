@@ -151,16 +151,27 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
  * one unbroken row — on a phone-width `ChartBox` that overflowed the screen
  * instead of wrapping. Total now stacks below the columns on narrow screens
  * (a divider on top instead of the left) and only moves back beside them at
- * `sm:`, and `overflow-x-auto` on the column row is a safety net for
- * whatever's still too tight below that (a party with several high-level
- * casters can genuinely fill all 9 levels) — scrolling a chart beats it
- * silently pushing the whole card off-screen.
+ * `sm:`, and `overflow-x-auto` on the column row is a mobile-only safety
+ * net for whatever's still too tight below that (a party with several
+ * high-level casters can genuinely fill all 9 levels) — scrolling a chart
+ * beats it silently pushing the whole card off-screen.
+ *
+ * `shrink-0` on that same column row plus switching to `overflow-visible`
+ * at `sm:` both matter, not just one: a flex item that contains any
+ * `overflow-x-auto` descendant loses its normal min-content-width floor (a
+ * CSS flexbox quirk — `overflow: auto` resets `min-width: auto` to `0`),
+ * so its `lg:flex-row` sibling (the Total block, or Rest Recovery's own
+ * `ChartBox` one level up) was free to squeeze it *below* what 9 columns
+ * actually need — producing a scrollbar on a wide desktop screen with
+ * plenty of unused width, confirmed by a screenshot. `shrink-0` keeps that
+ * floor; `sm:overflow-visible` removes the scroll container outright once
+ * the layout is roomy enough that scrolling should never be needed at all.
  */
 function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
   const maxAcrossLevels = Math.max(...spellSlots.levels.map((l) => l.max));
   return (
     <div className="flex w-full max-w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:items-end sm:gap-5">
-      <div className="flex max-w-full items-end gap-2 overflow-x-auto pb-1 sm:gap-3">
+      <div className="flex max-w-full shrink-0 items-end gap-2 overflow-x-auto pb-1 sm:gap-3 sm:overflow-visible sm:pb-0">
         {spellSlots.levels.map((level) => (
           <SpellSlotColumn key={level.level} level={level} maxAcrossLevels={maxAcrossLevels} />
         ))}
