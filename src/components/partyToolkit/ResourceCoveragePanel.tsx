@@ -72,11 +72,11 @@ function RestRecoveryMeterRow({ label, bucket }: { label: string; bucket: PartyR
   );
 }
 
-/** Stacks the Short Rest and Long Rest meters — either row is omitted (not just empty) when the party has no resources of that kind, same as the arcs this replaces used to do. `null` when neither exists, so the caller can skip the whole block instead of rendering an empty wrapper. */
+/** Stacks the Short Rest and Long Rest meters — either row is omitted (not just empty) when the party has no resources of that kind, same as the arcs this replaces used to do. `null` when neither exists, so the caller can skip the whole block instead of rendering an empty wrapper. The row gap is double the old `gap-1.5`: once this sits in a `ChartBox` matched to the taller Spell Slots box's height, cramming both bars right under the caption instead of letting them breathe read as leftover empty space below them rather than a deliberately roomier layout. */
 function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) {
   if (!recovery.shortRest && !recovery.longRest) return null;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-3">
       {recovery.shortRest && <RestRecoveryMeterRow label="Short Rest" bucket={recovery.shortRest} />}
       {recovery.longRest && <RestRecoveryMeterRow label="Long Rest" bucket={recovery.longRest} />}
     </div>
@@ -141,12 +141,28 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
   );
 }
 
-/** A bordered mini-panel for one chart, its label inside the top of the box (same idea as `SectionLabel`) — same visual language `SensesPanel`/`DefensesPanel`/`LanguagesToolsPanel` use as full `ToolkitCard`s, just one nesting level down since these two charts share a single "Resources & Coverage" card instead of getting their own. The border also does the separating job a divider line would otherwise need to — two boxed charts read as distinct instruments without one. */
+/**
+ * A bordered mini-panel for one chart, its label pinned to the top of the box
+ * (same idea as `SectionLabel`) — same visual language `SensesPanel`/
+ * `DefensesPanel`/`LanguagesToolsPanel` use as full `ToolkitCard`s, just one
+ * nesting level down since these two charts share a single "Resources &
+ * Coverage" card instead of getting their own. The border also does the
+ * separating job a divider line would otherwise need to — two boxed charts
+ * read as distinct instruments without one.
+ *
+ * The two boxes rendered side by side (Rest Recovery, Spell Slots) naturally
+ * want different heights — the histogram's tall bars make Spell Slots the
+ * taller of the two. Their shared parent row stretches both boxes to that
+ * same height (see `ResourceCoveragePanel`'s `lg:items-stretch`); the
+ * `flex-1 justify-center` wrapper here is what makes the *shorter* box's
+ * content actually use that extra height instead of sitting cramped under
+ * the caption with dead space below it.
+ */
 function ChartBox({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-6 py-4 sm:px-8">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
-      {children}
+      <div className="flex flex-1 flex-col items-center justify-center">{children}</div>
     </div>
   );
 }
@@ -497,7 +513,7 @@ export function ResourceCoveragePanel({ characters }: { characters: Character[] 
   return (
     <ToolkitCard title="Resources & Coverage">
       {(hasRestMeters || spellSlots) && (
-        <div className="mt-2 flex flex-col items-center gap-4 lg:flex-row lg:justify-center lg:gap-6">
+        <div className="mt-2 flex flex-col items-center gap-4 lg:flex-row lg:items-stretch lg:justify-center lg:gap-6">
           {hasRestMeters && (
             <ChartBox title="Rest Recovery">
               <RestRecoveryMeters recovery={restRecovery} />
