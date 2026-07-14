@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
+import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
@@ -254,9 +255,9 @@ export function DashboardClient({
   }
 
   // The Settings modal shares this page's own `charactersState`/`creaturesState`
-  // instances (passed down below), so roster edits made in there already show
-  // up here live — only the campaign's own name/notes/logo/quickLinks need
-  // copying back.
+  // instances (via `CampaignDataProvider` below), so roster edits made in
+  // there already show up here live — only the campaign's own
+  // name/notes/logo/quickLinks need copying back.
   function closeSettings(updated?: CampaignSummary) {
     setSettingsOpen(false);
     if (!updated) return;
@@ -490,14 +491,14 @@ export function DashboardClient({
       </CollapsibleSection>
 
       {settingsOpen && (
-        <CampaignFormModal
-          campaign={{ ...campaignState, characterCount: characters.length }}
-          initialTab={settingsTab}
-          charactersState={charactersState}
-          creaturesState={creaturesState}
-          actions={{ updateCampaign: patchCampaign }}
-          onClose={closeSettings}
-        />
+        <CampaignDataProvider value={{ charactersState, creaturesState }}>
+          <CampaignFormModal
+            campaign={{ ...campaignState, characterCount: characters.length }}
+            initialTab={settingsTab}
+            actions={{ updateCampaign: patchCampaign }}
+            onClose={closeSettings}
+          />
+        </CampaignDataProvider>
       )}
     </div>
   );

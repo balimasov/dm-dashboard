@@ -20,6 +20,7 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useCampaignData } from "@/contexts/CampaignDataContext";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
@@ -239,8 +240,6 @@ export function CampaignFormModal({
   initialTab = "campaign",
   initialCharacters = [],
   initialCreatures = [],
-  charactersState: externalCharactersState,
-  creaturesState: externalCreaturesState,
   actions,
   onClose,
 }: {
@@ -249,9 +248,6 @@ export function CampaignFormModal({
   initialTab?: ModalTab;
   initialCharacters?: Character[];
   initialCreatures?: Creature[];
-  /** When the caller already renders this same roster elsewhere on the page (e.g. the dashboard's Party/Creatures sections), pass its own `useCharacters()`/`useCreatures()` return value here so edits made inside this modal apply to that same state instead of a disconnected copy — this is what keeps the page in sync without a reload. Callers with no such state of their own (e.g. the campaigns list page) omit these and the modal manages its own, seeded from `initialCharacters`/`initialCreatures`. */
-  charactersState?: ReturnType<typeof useCharacters>;
-  creaturesState?: ReturnType<typeof useCreatures>;
   actions: Actions;
   onClose: (updated?: CampaignSummary) => void;
 }) {
@@ -263,12 +259,14 @@ export function CampaignFormModal({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Always called (rules of hooks) — unused whenever the caller supplies its
-  // own live state above, in which case this "own" instance just sits idle.
+  // Always called (rules of hooks) — unused whenever a page-level
+  // `CampaignDataProvider` supplies its own live state below, in which case
+  // this "own" instance just sits idle.
   const ownCharactersState = useCharacters(initialCharacters);
   const ownCreaturesState = useCreatures(current?.id ?? "", initialCreatures);
-  const charactersState = externalCharactersState ?? ownCharactersState;
-  const creaturesState = externalCreaturesState ?? ownCreaturesState;
+  const campaignData = useCampaignData();
+  const charactersState = campaignData?.charactersState ?? ownCharactersState;
+  const creaturesState = campaignData?.creaturesState ?? ownCreaturesState;
 
   const isEditing = current !== null;
 
