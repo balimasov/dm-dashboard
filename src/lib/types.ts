@@ -69,6 +69,12 @@ export interface KnownSpell {
   current?: number;
   max?: number;
   recovery?: RecoveryType;
+  /** D&D Beyond's own free-text classification (e.g. "Damage", "Healing", "Control", "Warding") — straight passthrough from the spell definition's `tags`, used to auto-categorize Party Toolkit's Coverage grouping without a hand-maintained per-spell-name list. Absent for a spell synced before this field existed (needs a re-sync) or genuinely untagged homebrew content. */
+  tags?: string[];
+  /** Whether the spell has an area of effect (`range.aoeType` set on the definition) — distinguishes an AOE-damage spell from a single-target one, which the `"Damage"` tag alone doesn't. */
+  isAreaEffect?: boolean;
+  /** Cast as a Reaction (`activation.activationType === 4`) — same activation-type convention `Feature.group`'s "reaction" bucket already uses. */
+  isReaction?: boolean;
 }
 
 export interface Feature {

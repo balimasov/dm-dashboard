@@ -878,4 +878,63 @@ describe("computeResourceCoverage", () => {
     expect(coverage.Control).toHaveLength(1);
     expect(coverage.Resources).toHaveLength(0);
   });
+
+  test("a spell categorizes via D&D Beyond's own tags alone, even with a name not in the keyword map", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Totally Homebrew Heal", level: 2, source: "Class", tags: ["Healing"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Healing.map((e) => e.name)).toContain("Totally Homebrew Heal");
+  });
+
+  test("a Damage-tagged spell with isAreaEffect lands in AOE Damage, not Single Target Burst", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Blast", level: 3, source: "Class", tags: ["Damage"], isAreaEffect: true }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Homebrew Blast");
+    expect(coverage["Single Target Burst"].map((e) => e.name)).not.toContain("Homebrew Blast");
+  });
+
+  test("a Damage-tagged spell without isAreaEffect lands in Single Target Burst, not AOE Damage", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Zap", level: 1, source: "Class", tags: ["Damage"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["Single Target Burst"].map((e) => e.name)).toContain("Homebrew Zap");
+    expect(coverage["AOE Damage"].map((e) => e.name)).not.toContain("Homebrew Zap");
+  });
+
+  test("isReaction adds Reactions on top of whatever the tag already contributed", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Homebrew Riposte", level: 1, source: "Class", tags: ["Warding"], isReaction: true }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Protection.map((e) => e.name)).toContain("Homebrew Riposte");
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Homebrew Riposte");
+  });
+
+  test("tag-based categories union with an existing name-keyword match rather than replacing it", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Race", tags: ["Detection"] }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    // Detection comes from the tag; Control comes from the pre-existing keyword match on the exact name.
+    expect(coverage.Detection.map((e) => e.name)).toContain("Faerie Fire");
+    expect(coverage.Control.map((e) => e.name)).toContain("Faerie Fire");
+  });
+
+  test("a spell with no tags at all (not yet re-synced) still categorizes via keyword fallback, unchanged", () => {
+    const c = makeCharacter({
+      name: "A",
+      knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage["AOE Damage"].map((e) => e.name)).toContain("Fireball");
+  });
 });

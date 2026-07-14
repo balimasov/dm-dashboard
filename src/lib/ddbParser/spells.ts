@@ -84,6 +84,7 @@ export function computeSpells(
 
     const rawDescription = shortDescription(df.snippet, df.description);
     const components: number[] = df.components ?? [];
+    const tags: string[] = df.tags ?? [];
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
@@ -98,6 +99,12 @@ export function computeSpells(
         : {}),
       ...(df.componentsDescription ? { materialComponent: df.componentsDescription.trim() } : {}),
       ...(charges ? charges : {}),
+      ...(tags.length > 0 ? { tags } : {}),
+      ...(df.range?.aoeType ? { isAreaEffect: true } : {}),
+      // Same `activationType` convention `Feature.group`'s "reaction" case
+      // uses (see `ddbParser/features.ts`'s own doc comment) — 4 is reaction,
+      // confirmed on real Shield/Counterspell exports.
+      ...(df.activation?.activationType === 4 ? { isReaction: true } : {}),
     };
     spells.push(spell);
   }

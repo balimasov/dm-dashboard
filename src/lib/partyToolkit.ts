@@ -820,6 +820,61 @@ for (const category of COVERAGE_CATEGORY_ORDER) {
   }
 }
 
+/**
+ * D&D Beyond's own spell `tags` (confirmed against real exports — 21
+ * distinct values seen across several characters' full spell lists), mapped
+ * to the categories they cleanly correspond to. Deliberately not a
+ * *complete* replacement for `COVERAGE_MAP`: several tags (`Summoning`,
+ * `Creation`, `Utility`, `Combat`, `Environment`...) don't map onto any one
+ * of our categories, and several of our categories (`Stealth`, `Survival`,
+ * `Rerolls`, `Anti-Undead`, `Light / Darkness`, `Revive`) have no tag that
+ * reaches them at all — D&D Beyond's tagging just isn't that fine-grained.
+ * `computeSpellCategories` below unions this with the existing keyword
+ * lookup rather than replacing it, so those gaps keep working exactly as
+ * before. `"Damage"` is deliberately absent here — it needs `isAreaEffect`
+ * to pick a side (see `computeSpellCategories`), not a flat mapping.
+ */
+const SPELL_TAG_TO_CATEGORY: Record<string, CoverageCategory[]> = {
+  Healing: ["Healing"],
+  Control: ["Control"],
+  Debuff: ["Control"],
+  Teleportation: ["Mobility"],
+  Movement: ["Mobility"],
+  Detection: ["Detection"],
+  Warding: ["Protection"],
+  Buff: ["Protection"],
+  Social: ["Social"],
+  Communication: ["Social"],
+  Deception: ["Social"],
+  Negation: ["Anti-Magic"],
+};
+
+/**
+ * Resolves a known spell's coverage categories from every signal available,
+ * most-structural first: D&D Beyond's own `tags` (via `SPELL_TAG_TO_CATEGORY`)
+ * plus two fields it doesn't expose as a tag but does expose structurally —
+ * `isAreaEffect` splits a `"Damage"`-tagged spell into `AOE Damage` vs
+ * `Single Target Burst` (the tag alone doesn't distinguish them), and
+ * `isReaction` adds `Reactions` (same `activationType === 4` convention
+ * `Feature.group` already uses). The existing name-keyword lookup
+ * (`COVERAGE_MAP`) is unioned in on top rather than replaced — it's still
+ * the only signal for the handful of categories tags don't reach, and for
+ * any spell synced before these fields existed (`tags` absent — falls back
+ * to keyword-only, same behavior as before this function existed).
+ */
+function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAreaEffect" | "isReaction">): CoverageCategory[] {
+  const categories = new Set<CoverageCategory>();
+  for (const tag of spell.tags ?? []) {
+    for (const category of SPELL_TAG_TO_CATEGORY[tag] ?? []) categories.add(category);
+  }
+  if (spell.tags?.includes("Damage")) {
+    categories.add(spell.isAreaEffect ? "AOE Damage" : "Single Target Burst");
+  }
+  if (spell.isReaction) categories.add("Reactions");
+  for (const category of COVERAGE_MAP[spell.name.toLowerCase()] ?? []) categories.add(category);
+  return Array.from(categories);
+}
+
 // ---------------------------------------------------------------------------
 // Resources & Coverage — merges what used to be two separate panels (a
 // Resources list, and a `computeSpellAbilityCoverage`-driven Spell & Ability
@@ -913,11 +968,19 @@ function featureResourceAvailability(feature: Feature): ResourceAvailability | u
  * the slot-cost one (`"slot"`) since it's the more specific "you also get
  * free casts" fact a DM benefits from seeing at a glance.
  */
-function dedupeSpellsByName(
-  spells: KnownSpell[],
-  character: Character
-): Array<{ name: string; description?: string; source?: string; isCantrip: boolean; availability?: ResourceAvailability }> {
-  const byName = new Map<string, { name: string; description?: string; source?: string; isCantrip: boolean; availability?: ResourceAvailability }>();
+interface DedupedSpell {
+  name: string;
+  description?: string;
+  source?: string;
+  isCantrip: boolean;
+  tags?: string[];
+  isAreaEffect?: boolean;
+  isReaction?: boolean;
+  availability?: ResourceAvailability;
+}
+
+function dedupeSpellsByName(spells: KnownSpell[], character: Character): DedupedSpell[] {
+  const byName = new Map<string, DedupedSpell>();
   for (const s of spells) {
     const key = s.name.toLowerCase();
     const availability = spellResourceAvailability(s, character);
@@ -928,6 +991,9 @@ function dedupeSpellsByName(
         description: s.description ?? existing?.description,
         source: s.source,
         isCantrip: s.level <= 0,
+        tags: s.tags ?? existing?.tags,
+        isAreaEffect: s.isAreaEffect ?? existing?.isAreaEffect,
+        isReaction: s.isReaction ?? existing?.isReaction,
         availability,
       });
     }
@@ -974,10 +1040,10 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
       fallbackToOther: boolean,
       kind: "spell" | "feature",
       source: string | undefined,
-      isCantrip: boolean
+      isCantrip: boolean,
+      categories: CoverageCategory[]
     ) {
-      const categories = COVERAGE_MAP[name.toLowerCase()];
-      if (!categories) {
+      if (categories.length === 0) {
         if (!fallbackToOther) return;
         seenNames.add(`${c.id}:${name.toLowerCase()}`);
         coverage.Resources.push({ name, characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, description, availability, kind, source, isCantrip });
@@ -992,8 +1058,12 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
       }
     }
 
-    for (const { name, description, source, isCantrip, availability } of namedSpells) place(name, description, availability, true, "spell", source, isCantrip);
-    for (const { name, description, source, availability } of namedFeatures) place(name, description, availability, false, "feature", source, false);
+    for (const spell of namedSpells) {
+      place(spell.name, spell.description, spell.availability, true, "spell", spell.source, spell.isCantrip, computeSpellCategories(spell));
+    }
+    for (const { name, description, source, availability } of namedFeatures) {
+      place(name, description, availability, false, "feature", source, false, COVERAGE_MAP[name.toLowerCase()] ?? []);
+    }
   }
 
   if (characters.length > 0) {

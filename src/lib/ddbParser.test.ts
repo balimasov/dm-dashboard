@@ -64,6 +64,45 @@ describe("non-caster classes", () => {
   });
 });
 
+describe("spell tags/isAreaEffect/isReaction — Party Toolkit coverage categorization signals", () => {
+  test("Fireball carries D&D Beyond's own Damage tag and is flagged area-effect (range.aoeType set)", () => {
+    const c = load("yorun-all-immunities");
+    const fireball = c.knownSpells.find((s) => s.name === "Fireball");
+    expect(fireball?.tags).toEqual(["Damage"]);
+    expect(fireball?.isAreaEffect).toBe(true);
+  });
+
+  test("Fire Bolt is Damage-tagged but not area-effect (single target — no aoeType)", () => {
+    const c = load("yorun-all-immunities");
+    const fireBolt = c.knownSpells.find((s) => s.name === "Fire Bolt");
+    expect(fireBolt?.tags).toEqual(["Damage"]);
+    expect(fireBolt?.isAreaEffect).toBeUndefined();
+  });
+
+  test("Inflict Wounds (touch, single-target) is Damage-tagged but not area-effect", () => {
+    const c = load("durgin-cleric");
+    const inflictWounds = c.knownSpells.find((s) => s.name === "Inflict Wounds");
+    expect(inflictWounds?.tags).toEqual(["Damage"]);
+    expect(inflictWounds?.isAreaEffect).toBeUndefined();
+  });
+
+  test("Shield and Counterspell are both flagged as reactions (activationType 4)", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Shield")?.isReaction).toBe(true);
+    expect(c.knownSpells.find((s) => s.name === "Counterspell")?.isReaction).toBe(true);
+  });
+
+  test("Fireball (a standard action, not a reaction) has no isReaction flag", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Fireball")?.isReaction).toBeUndefined();
+  });
+
+  test("Cure Wounds carries the Healing tag", () => {
+    const c = load("durgin-cleric");
+    expect(c.knownSpells.find((s) => s.name === "Cure Wounds")?.tags).toEqual(["Healing"]);
+  });
+});
+
 describe("custom defense adjustments (customDefenseAdjustments)", () => {
   test("Yorun with every entry in her Resistances picker added", () => {
     const c = load("yorun-all-resistances");
