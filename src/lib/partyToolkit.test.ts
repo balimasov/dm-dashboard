@@ -1035,3 +1035,102 @@ describe("computeResourceCoverage", () => {
     expect(coverage.Resources.map((e) => e.name)).toContain("Homebrew Gadgetry");
   });
 });
+
+describe("computeFeatureCategories (via computeResourceCoverage) — features have no tags, only name-keyword, group, and description-trigger signals", () => {
+  test("the existing name-keyword match still wins outright, unchanged — Lucky lands in Rerolls", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "other", originType: "feat" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Rerolls.map((e) => e.name)).toContain("Lucky");
+  });
+
+  test("a reaction-group feature with no name match and no description lands in Reactions via the structured group signal", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Deflect Missiles", source: "Class", group: "reaction", originType: "class" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Deflect Missiles");
+  });
+
+  test("a description trigger phrase categorizes a feature with no name match and no reaction group", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [
+        {
+          id: "f1",
+          name: "Totally Homebrew Trance",
+          source: "Race",
+          group: "other",
+          originType: "species",
+          description: "Once per day, you regain hit points equal to your level.",
+        },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Healing.map((e) => e.name)).toContain("Totally Homebrew Trance");
+  });
+
+  test("the first matching category in trigger-priority order wins, not every category whose phrase happens to appear", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [
+        {
+          id: "f1",
+          name: "Totally Homebrew Ward",
+          source: "Class",
+          group: "other",
+          originType: "class",
+          // Matches both Protection ("resistance to") and Survival ("immune to poison") triggers —
+          // Protection is earlier in FEATURE_CATEGORY_TRIGGER_PRIORITY, so it alone wins.
+          description: "You gain resistance to fire damage and become immune to poison.",
+        },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Protection.map((e) => e.name)).toContain("Totally Homebrew Ward");
+    expect(coverage.Survival.map((e) => e.name)).not.toContain("Totally Homebrew Ward");
+  });
+
+  test("name-keyword match takes priority over the reaction group signal", () => {
+    const c = makeCharacter({
+      name: "A",
+      // Contrived: "Lucky" is keyword-mapped to Rerolls; group: "reaction" must not override that.
+      features: [{ id: "f1", name: "Lucky", source: "Feat", group: "reaction", originType: "feat" }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Rerolls.map((e) => e.name)).toContain("Lucky");
+    expect(coverage.Reactions.map((e) => e.name)).not.toContain("Lucky");
+  });
+
+  test("the reaction group signal takes priority over a description trigger phrase", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [
+        {
+          id: "f1",
+          name: "Totally Homebrew Parry",
+          source: "Class",
+          group: "reaction",
+          originType: "class",
+          description: "When you take damage, you regain hit points equal to your proficiency bonus.",
+        },
+      ],
+    });
+    const coverage = computeResourceCoverage([c]);
+    expect(coverage.Reactions.map((e) => e.name)).toContain("Totally Homebrew Parry");
+    expect(coverage.Healing.map((e) => e.name)).not.toContain("Totally Homebrew Parry");
+  });
+
+  test("a feature matching no signal at all still doesn't land in Resources — same rule as any other uncategorized feature", () => {
+    const c = makeCharacter({
+      name: "A",
+      features: [{ id: "f1", name: "Totally Homebrew Lore", source: "Background", group: "other", originType: "background", description: "You know a lot of trivia." }],
+    });
+    const coverage = computeResourceCoverage([c]);
+    const allEntries = Object.values(coverage).flat();
+    expect(allEntries.some((e) => e.name === "Totally Homebrew Lore")).toBe(false);
+  });
+});

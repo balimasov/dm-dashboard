@@ -920,6 +920,79 @@ function computeSpellCategories(spell: Pick<KnownSpell, "name" | "tags" | "isAre
   return Array.from(categories);
 }
 
+/**
+ * A `Feature` (class feature, racial trait, feat) has no equivalent of a
+ * spell's D&D Beyond `tags` — nothing says *what kind* of ability it is,
+ * only `group` (how it's activated) and `originType` (where it's from).
+ * Hand-typing every 5e feature's exact name into `COVERAGE_CATEGORY_KEYWORDS`
+ * (today's only path, via `COVERAGE_MAP[name.toLowerCase()]`) doesn't scale
+ * to the size of that list, so most features that *should* show up in
+ * Coverage simply don't. This is a small, deliberately swappable first pass
+ * at closing that gap: a handful of hand-picked trigger phrases per
+ * category, matched as plain lowercase substrings against the feature's own
+ * rules text (already parsed and available as `description`).
+ *
+ * Both this map and `FEATURE_CATEGORY_TRIGGER_PRIORITY` below are pure data,
+ * and `computeFeatureCategories` is the *only* place that reads them — the
+ * point of keeping the mechanism this narrow is that replacing it later (a
+ * DM-assigned override, a richer heuristic, whatever comes next) only means
+ * changing what's inside that one function. Every caller already treats a
+ * feature as "however many categories `computeFeatureCategories` says",
+ * never how it got there.
+ */
+const FEATURE_DESCRIPTION_TRIGGERS: Partial<Record<CoverageCategory, string[]>> = {
+  Healing: ["regain hit points", "regains hit points", "regain a number of hit points"],
+  Protection: ["reduce the damage", "resistance to", "advantage on saving throws", "you can't be charmed"],
+  Mobility: [
+    "your walking speed increases",
+    "your speed increases",
+    "you can move up to",
+    "without provoking opportunity attacks",
+    "fly speed",
+    "climbing speed",
+    "swimming speed",
+  ],
+  Detection: ["you can sense", "you know the direction", "detect the presence of"],
+  Control: ["target must succeed on a", "frightened of you", "becomes paralyzed"],
+  Survival: ["cure disease", "neutralize poison", "immune to disease", "immune to poison"],
+};
+
+/**
+ * Checked in this order — the first category (if any) whose trigger phrase
+ * appears in the description wins, at most one category per feature. Free
+ * text is noisy enough (a phrase can plausibly appear for reasons other
+ * than the category it's listed under) that "all matches" would mean
+ * stacking guesses on top of guesses; a single best guess, cleanly
+ * attributable to one phrase, is both simpler and more honest about how
+ * approximate this is.
+ */
+const FEATURE_CATEGORY_TRIGGER_PRIORITY: CoverageCategory[] = ["Healing", "Protection", "Mobility", "Detection", "Control", "Survival"];
+
+/**
+ * Resolves a feature's coverage categories. The existing name-keyword lookup
+ * (`COVERAGE_MAP`, shared with spells' own fallback) runs first and wins
+ * outright when it hits — that's how the "Lucky"/"Luck Points" feats already
+ * land in Rerolls today, and this doesn't change that. `group === "reaction"`
+ * (the one *structured* signal available, same `activationType` convention
+ * `KnownSpell.isReaction` uses) is checked next: a reaction ability is most
+ * usefully filed by "when can I use this", same reasoning already applied to
+ * spells. Only once both of those come up empty does the description-trigger
+ * heuristic above get a turn — it's the least reliable signal, so it's the
+ * last resort, not the first guess.
+ */
+function computeFeatureCategories(feature: Pick<Feature, "name" | "description" | "group">): CoverageCategory[] {
+  const byName = COVERAGE_MAP[feature.name.toLowerCase()];
+  if (byName && byName.length > 0) return byName;
+  if (feature.group === "reaction") return ["Reactions"];
+  const text = feature.description?.toLowerCase();
+  if (!text) return [];
+  for (const category of FEATURE_CATEGORY_TRIGGER_PRIORITY) {
+    const triggers = FEATURE_DESCRIPTION_TRIGGERS[category] ?? [];
+    if (triggers.some((phrase) => text.includes(phrase))) return [category];
+  }
+  return [];
+}
+
 // ---------------------------------------------------------------------------
 // Resources & Coverage — merges what used to be two separate panels (a
 // Resources list, and a `computeSpellAbilityCoverage`-driven Spell & Ability
@@ -1077,7 +1150,13 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
 
   for (const c of characters) {
     const namedSpells = dedupeSpellsByName(c.knownSpells, c);
-    const namedFeatures = c.features.map((f) => ({ name: f.name, description: f.description, source: f.source, availability: featureResourceAvailability(f) }));
+    const namedFeatures = c.features.map((f) => ({
+      name: f.name,
+      description: f.description,
+      source: f.source,
+      group: f.group,
+      availability: featureResourceAvailability(f),
+    }));
 
     const seenInCategory = new Set<string>();
     function place(
@@ -1109,8 +1188,8 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
     for (const spell of namedSpells) {
       place(spell.name, spell.description, spell.availability, true, "spell", spell.source, spell.isCantrip, computeSpellCategories(spell), spell.tags);
     }
-    for (const { name, description, source, availability } of namedFeatures) {
-      place(name, description, availability, false, "feature", source, false, COVERAGE_MAP[name.toLowerCase()] ?? [], undefined);
+    for (const { name, description, source, group, availability } of namedFeatures) {
+      place(name, description, availability, false, "feature", source, false, computeFeatureCategories({ name, description, group }), undefined);
     }
   }
 
