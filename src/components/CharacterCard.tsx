@@ -14,7 +14,7 @@ import {
   STAT_ORDER,
 } from "@/lib/types";
 import { useDdbSync } from "@/hooks/useDdbSync";
-import { DotMeter, ResourceMeter, ResourceOverviewBar, averageResourcePercent } from "./ResourceMeter";
+import { DotMeter, ResourceMeter, ResourceTrackerBar, averageResourcePercent, averageSpellSlotPercent } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
@@ -201,46 +201,55 @@ export function CharacterCard({
         </div>
       )}
 
-      {/* Resources */}
-      {c.resources.length > 0 && (
-        <div className="border-t border-slate-800 pt-3 space-y-1.5">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-1.5">Resources</h3>
-          {(() => {
-            const overviewPercent = averageResourcePercent(c.resources);
-            return overviewPercent !== null && <ResourceOverviewBar percent={overviewPercent} />;
-          })()}
-          {c.resources
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((r) => (
-              <ResourceMeter key={r.id} resource={r} />
-            ))}
-        </div>
-      )}
-
-      {/* Spell slots */}
-      {(c.spellSlots.length > 0 || c.spellcasting) && (
+      {/* Resources — Abilities and Spell Slots merged under one umbrella
+          with a single tracker bar summarizing both at the top (see
+          ResourceTrackerBar's own doc comment for why one shared bar
+          instead of two separate ones: a DM glancing at a card wants "how
+          topped-up is this character" as one impression). */}
+      {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
         <div className="border-t border-slate-800 pt-3">
-          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">
-            Spell Slots{c.className.includes("Warlock") ? " (Pact)" : ""}
-          </h3>
-          <div className="space-y-1">
-            {c.spellSlots
-              .slice()
-              .sort((a, b) => a.level - b.level)
-              .map((s) => (
-                <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
-                  {s.max > 0 && s.max <= 6 ? (
-                    <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
-                  ) : (
-                    <span className="font-medium text-slate-100">
-                      {s.current}/{s.max}
-                    </span>
-                  )}
-                </div>
-              ))}
-          </div>
+          <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Resources</h3>
+          <ResourceTrackerBar
+            resourcesPercent={averageResourcePercent(c.resources)}
+            spellSlotsPercent={averageSpellSlotPercent(c.spellSlots)}
+          />
+
+          {c.resources.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Abilities</h4>
+              {c.resources
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((r) => (
+                  <ResourceMeter key={r.id} resource={r} />
+                ))}
+            </div>
+          )}
+
+          {(c.spellSlots.length > 0 || c.spellcasting) && (
+            <div className="mt-3">
+              <h4 className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-600">
+                Spell Slots{c.className.includes("Warlock") ? " (Pact)" : ""}
+              </h4>
+              <div className="space-y-1">
+                {c.spellSlots
+                  .slice()
+                  .sort((a, b) => a.level - b.level)
+                  .map((s) => (
+                    <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
+                      {s.max > 0 && s.max <= 6 ? (
+                        <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
+                      ) : (
+                        <span className="font-medium text-slate-100">
+                          {s.current}/{s.max}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

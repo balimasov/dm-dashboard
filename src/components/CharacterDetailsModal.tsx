@@ -34,7 +34,7 @@ import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { DotMeter } from "./ResourceMeter";
+import { DotMeter, ResourceTrackerBar, averageResourcePercent, averageSpellSlotPercent } from "./ResourceMeter";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
@@ -413,6 +413,21 @@ export function CharacterDetailsModal({
             })}
           </div>
         </div>
+
+        {/* Resources tracker — same compact bar as the main card, quick-glance
+            "how topped-up is this character" before diving into the
+            Features/Spells tabs below (which don't otherwise show it). */}
+        {(() => {
+          const resourcesPercent = averageResourcePercent(c.resources);
+          const spellSlotsPercent = averageSpellSlotPercent(c.spellSlots);
+          if (resourcesPercent === null && spellSlotsPercent === null) return null;
+          return (
+            <div className="border-t border-slate-800 pt-3">
+              <h3 className="mb-1.5 text-xs uppercase tracking-wide text-slate-500">Resources</h3>
+              <ResourceTrackerBar resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />
+            </div>
+          );
+        })()}
 
         {/* Features and Traits / Spells — tabbed instead of side-by-side columns so
             each reads as a single, comfortably narrow list. Only characters with

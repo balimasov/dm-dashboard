@@ -398,7 +398,7 @@ export function DashboardClient({
       </CollapsibleSection>
 
       <CollapsibleSection
-        title={<SectionTitle emoji="🧭" label="Party Toolkit" inProgress />}
+        title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
         storageKey="dm-dashboard-party-toolkit-open"
         initialOpen={initialOpen.partyToolkit}
       >

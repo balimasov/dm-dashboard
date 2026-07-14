@@ -1,4 +1,4 @@
-import { Resource } from "@/lib/types";
+import { Resource, SpellSlotLevel } from "@/lib/types";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
@@ -48,16 +48,94 @@ export function averageResourcePercent(resources: Resource[]): number | null {
   return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
 }
 
-/** Compact single-row summary above the per-resource list — at a glance, how much of this character's *own* resources are left, before reading which specific one is low. */
-export function ResourceOverviewBar({ percent }: { percent: number }) {
-  const tierClass = percent > 50 ? "bg-emerald-400" : percent > 25 ? "bg-amber-400" : "bg-red-400";
-  const textTierClass = percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
+/** Same averaging as `averageResourcePercent`, one vote per spell slot level — mirrors how the party-wide gauge treats spell slots. */
+export function averageSpellSlotPercent(spellSlots: SpellSlotLevel[]): number | null {
+  const percentages = spellSlots.filter((s) => s.max > 0).map((s) => (s.current / s.max) * 100);
+  if (percentages.length === 0) return null;
+  return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
+}
+
+function tierTextClass(percent: number): string {
+  return percent > 50 ? "text-emerald-400" : percent > 25 ? "text-amber-400" : "text-red-400";
+}
+
+function tierBgClass(percent: number): string {
+  return percent > 50 ? "bg-emerald-400" : percent > 25 ? "bg-amber-400" : "bg-red-400";
+}
+
+/** The hover/tap breakdown for `ResourceTrackerBar` — spells out which of the two layers is which, since the bar itself only has color to go on. */
+function ResourceTrackerHint({
+  resourcesPercent,
+  spellSlotsPercent,
+}: {
+  resourcesPercent: number | null;
+  spellSlotsPercent: number | null;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-white">Resource Tracker</p>
+      <p className="text-slate-300">Average remaining % across each tracked pool, one pool one equal vote regardless of its size.</p>
+      {resourcesPercent !== null && (
+        <p>
+          <span className={tierTextClass(resourcesPercent)}>●</span> Abilities:{" "}
+          <span className="font-semibold text-white">{resourcesPercent}%</span>
+        </p>
+      )}
+      {spellSlotsPercent !== null && (
+        <p>
+          <span className="text-violet-400">●</span> Spell Slots: <span className="font-semibold text-white">{spellSlotsPercent}%</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One compact bar for both the Abilities and Spell Slots sub-sections below
+ * it, instead of two separate summary bars — the two are different pools
+ * (a Rage charge and a 3rd-level slot don't compare), but a DM glancing at
+ * a card wants "how topped-up is this character" as one impression, not two
+ * numbers to average in their head. The abilities layer fills the bar's
+ * full height and carries the tier color (green/amber/red — same "is this
+ * dangerously low" signal as everywhere else); the spell slots layer is a
+ * thinner strip nested inside it in the app's established spell-slot violet
+ * (see the dot meters below), so the two stay visually distinguishable by
+ * color and shape even without hovering. Hovering/tapping spells out the
+ * exact numbers and which is which. Either layer is simply omitted when
+ * that pool doesn't exist for this character (a non-caster has no violet
+ * strip at all), and the whole bar disappears if neither does.
+ */
+export function ResourceTrackerBar({
+  resourcesPercent,
+  spellSlotsPercent,
+}: {
+  resourcesPercent: number | null;
+  spellSlotsPercent: number | null;
+}) {
+  if (resourcesPercent === null && spellSlotsPercent === null) return null;
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full rounded-full ${tierClass}`} style={{ width: `${percent}%` }} />
+      <div className="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+        {resourcesPercent !== null && (
+          <div
+            className={`absolute inset-y-0 left-0 rounded-full ${tierBgClass(resourcesPercent)}`}
+            style={{ width: `${resourcesPercent}%` }}
+          />
+        )}
+        {spellSlotsPercent !== null && (
+          <div
+            className="absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-violet-300"
+            style={{ width: `${spellSlotsPercent}%` }}
+          />
+        )}
       </div>
-      <span className={`shrink-0 text-xs font-semibold tabular-nums ${textTierClass}`}>{percent}%</span>
+      <InfoTooltip hoverOnly panel={<ResourceTrackerHint resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}>
+        <span className="shrink-0 text-xs font-semibold tabular-nums">
+          {resourcesPercent !== null && <span className={tierTextClass(resourcesPercent)}>{resourcesPercent}%</span>}
+          {resourcesPercent !== null && spellSlotsPercent !== null && <span className="text-slate-600"> </span>}
+          {spellSlotsPercent !== null && <span className="text-violet-400">{spellSlotsPercent}%</span>}
+        </span>
+      </InfoTooltip>
     </div>
   );
 }
