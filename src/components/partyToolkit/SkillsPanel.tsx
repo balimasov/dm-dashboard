@@ -166,7 +166,7 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
   return (
     <div className="contents">
       <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-        <span className="whitespace-nowrap pr-2 text-sm text-slate-300">{SKILL_LABELS[entry.skill]}</span>
+        <span className="block truncate pr-2 text-sm text-slate-300">{SKILL_LABELS[entry.skill]}</span>
       </InfoTooltip>
       {characters.map((c) => {
         const score = scoreByCharacter.get(c.id)!;
@@ -209,7 +209,7 @@ function HeatmapPassiveRow({
   return (
     <div className="contents">
       <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
-        <span className="whitespace-nowrap pr-2 text-sm text-slate-300">{label}</span>
+        <span className="block truncate pr-2 text-sm text-slate-300">{label}</span>
       </InfoTooltip>
       {characters.map((c) => {
         const score = scoreByCharacter.get(c.id)!;
@@ -245,12 +245,18 @@ function HeatmapPassiveRow({
  * grid so the two still read as one instrument rather than two stacked
  * tables. The character column order is fixed (not re-sorted per row) so
  * a DM's eye can track one character down a single column across the
- * whole grid. Character columns are `minmax(2.5rem, 1fr)` — they grow to
+ * whole grid. Character columns are `minmax(2.25rem, 1fr)` — they grow to
  * fill however wide the card actually is (a 2-column desktop layout
  * stretches this card to match its taller neighbor, so a fixed intrinsic
  * width just left a small island of cells with empty space beside it) and
  * only fall back to their floor once there are enough characters to need
- * it. Deliberately no `overflow-x-auto` scroller here: that combination
+ * it. The label column is capped at `minmax(0, 6.5rem)` with the label
+ * text truncated (full name still one hover away, same as the row's own
+ * tooltip) rather than `auto`-sized to the longest skill name — on a
+ * narrow phone, full names like "Passive Investigation" at `auto` could
+ * by themselves eat most of the available width, squeezing a real party
+ * size below every character column's own floor and overflowing the
+ * card. Deliberately no `overflow-x-auto` scroller here: that combination
  * forces the browser to also treat the vertical axis as non-`visible` per
  * the CSS Overflow Module (see `InfoTooltip`'s own doc comment for the
  * same rule breaking *that* component pre-portal) — with this grid's
@@ -267,7 +273,10 @@ function SkillHeatmap({
   passives: PartyPassiveSummary;
 }) {
   return (
-    <div className="grid items-center gap-1.5" style={{ gridTemplateColumns: `auto repeat(${characters.length}, minmax(2.5rem, 1fr))` }}>
+    <div
+      className="grid items-center gap-1.5"
+      style={{ gridTemplateColumns: `minmax(0, 6.5rem) repeat(${characters.length}, minmax(2.25rem, 1fr))` }}
+    >
       <span />
       {characters.map((c) => (
         <span key={c.id} className="flex justify-center">
