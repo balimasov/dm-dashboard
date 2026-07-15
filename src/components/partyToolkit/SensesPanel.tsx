@@ -8,8 +8,8 @@ import {
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
+import { HintPanel } from "../ui/HintPanel";
 import { ToolkitCard } from "../ui/ToolkitCard";
-import { HintPanel } from "./shared";
 
 /** Short rules reminder for what the sense actually lets a character do — the row itself only says "X of Y", not what that's useful for. */
 const SENSE_BLURBS: Record<string, string> = {

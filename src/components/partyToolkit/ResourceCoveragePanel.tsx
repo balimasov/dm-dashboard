@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
+  CoverageHolder,
   RESOURCE_COVERAGE_CATEGORY_ORDER,
   ResourceAvailability,
   ResourceCoverageCategory,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/partyToolkit";
 import { persistOpenCookie } from "../CollapsibleSection";
 import { InfoTooltip } from "../InfoTooltip";
-import { RichText } from "../RichText";
+import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -43,50 +44,23 @@ const KIND_LABELS: Record<NonNullable<ResourceCoverageEntry["kind"]>, string> = 
 };
 
 /** "SPELL · Wizard" / "FEATURE · Barbarian" / "RESOURCE · Race" — the hint's own small-caps meta line, same tier the old `ResourceHintPanel` used for a resource's `source`, now generalized to spells/features too and folding in the kind so a DM doesn't have to guess what they're looking at. */
-function AbilityMetaLine({ kind, source, isCantrip }: { kind?: ResourceCoverageEntry["kind"]; source?: string; isCantrip?: boolean }) {
+function abilityMetaLine(kind?: ResourceCoverageEntry["kind"], source?: string, isCantrip?: boolean): string | undefined {
   const parts = [kind && KIND_LABELS[kind], isCantrip && "Cantrip", source].filter(Boolean) as string[];
-  if (parts.length === 0) return null;
-  return <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{parts.join(" · ")}</p>;
-}
-
-/** How this specific ability recovers — pool kind only. A slot-cost spell's level/remaining-slot info used to live here too, but that duplicated what `LevelBadge`'s own minimal hint (right below) now says right next to it, so it moved out entirely rather than being said twice in two nearby tooltips. */
-function AvailabilityMetaLine({ availability }: { availability?: ResourceAvailability }) {
-  if (!availability || availability.kind !== "pool") return null;
-  return <p className="text-xs font-medium text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</p>;
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 /**
- * Shows a spell's raw D&D Beyond `tags` verbatim — a sync diagnostic as much
- * as an info line. Coverage categorization is *derived* from these, but a
- * category (or the lack of one) can't tell a DM whether a spell just has no
- * tags D&D Beyond maps to a category, or has no tags at all (not yet
- * re-synced since this field shipped, or genuinely untagged upstream). This
- * line answers that directly instead of leaving it to guesswork. Spell-only
- * — a `Feature`/`Resource` entry has no `tags` field to show.
+ * A spell's raw D&D Beyond `tags` verbatim — a sync diagnostic as much as an
+ * info line. Coverage categorization is *derived* from these, but a category
+ * (or the lack of one) can't tell a DM whether a spell just has no tags
+ * D&D Beyond maps to a category, or has no tags at all (not yet re-synced
+ * since this field shipped, or genuinely untagged upstream). This line
+ * answers that directly instead of leaving it to guesswork. Spell-only — a
+ * `Feature`/`Resource` entry has no `tags` field to show.
  */
-function SpellTagsLine({ kind, tags }: { kind?: ResourceCoverageEntry["kind"]; tags?: string[] }) {
-  if (kind !== "spell") return null;
-  return (
-    <p className="text-[11px] text-slate-500">
-      D&amp;D Beyond tags: {tags && tags.length > 0 ? tags.join(", ") : "none"}
-    </p>
-  );
-}
-
-function TrackableHintPanel({ entry }: { entry: ResourceCoverageEntry }) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-white">{entry.name}</p>
-      <AbilityMetaLine kind={entry.kind} source={entry.source} isCantrip={entry.isCantrip} />
-      <SpellTagsLine kind={entry.kind} tags={entry.tags} />
-      <AvailabilityMetaLine availability={entry.availability} />
-      {entry.description && (
-        <p className="text-slate-300">
-          <RichText text={entry.description} />
-        </p>
-      )}
-    </div>
-  );
+function tagsLine(kind?: ResourceCoverageEntry["kind"], tags?: string[]): string | undefined {
+  if (kind !== "spell") return undefined;
+  return `D&D Beyond tags: ${tags && tags.length > 0 ? tags.join(", ") : "none"}`;
 }
 
 /**
@@ -128,7 +102,16 @@ function TrackableRow({ entry }: { entry: ResourceCoverageEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<TrackableHintPanel entry={entry} />}>
+        <InfoTooltip
+          panel={
+            <AbilityHintPanel
+              name={entry.name}
+              metaLines={[abilityMetaLine(entry.kind, entry.source, entry.isCantrip), tagsLine(entry.kind, entry.tags)]}
+              status={availability.kind === "pool" && <span className="text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</span>}
+              description={entry.description}
+            />
+          }
+        >
           <span className="text-slate-300">{entry.name}</span>
         </InfoTooltip>
       </div>
@@ -146,39 +129,27 @@ interface NameGroup {
   isCantrip: boolean;
 }
 
-function PassiveHintPanel({ group }: { group: NameGroup }) {
-  const holdersWithCharacter = group.holders.filter((h) => h.characterId);
-  const description = group.holders.find((h) => h.description)?.description;
-  const sample = group.holders[0];
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-white">{group.name}</p>
-      <AbilityMetaLine kind={sample?.kind} source={sample?.source} isCantrip={group.isCantrip} />
-      <SpellTagsLine kind={sample?.kind} tags={sample?.tags} />
-      {description && (
-        <p className="text-slate-300">
-          <RichText text={description} />
-        </p>
-      )}
-      {holdersWithCharacter.length > 0 && (
-        <ul className="space-y-0.5 pt-1">
-          {holdersWithCharacter.map((h) => (
-            <li key={h.characterId} className="text-white">
-              {h.characterName}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 /** A small "Cantrip" tag right before the avatar chips — same slot `AvailabilityBadge` sits in on a trackable row, so every row's badge-then-avatar rhythm reads the same regardless of which kind of row it is. Without it, a cantrip's row looks identical to an unlimited passive `Feature`'s (neither has an availability badge), which reads as a gap rather than the intentional "nothing to run out of" it actually is. */
 function PassivePill({ group }: { group: NameGroup }) {
+  const description = group.holders.find((h) => h.description)?.description;
+  const sample = group.holders[0];
+  const holders: CoverageHolder[] = group.holders
+    .filter((h): h is ResourceCoverageEntry & { characterId: string } => Boolean(h.characterId))
+    .map((h) => ({ characterId: h.characterId, characterName: h.characterName, avatarUrl: h.avatarUrl }));
+
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<PassiveHintPanel group={group} />}>
+        <InfoTooltip
+          panel={
+            <AbilityHintPanel
+              name={group.name}
+              metaLines={[abilityMetaLine(sample?.kind, sample?.source, group.isCantrip), tagsLine(sample?.kind, sample?.tags)]}
+              description={description}
+              holders={holders}
+            />
+          }
+        >
           <span className="text-slate-300">{group.name}</span>
         </InfoTooltip>
       </div>

@@ -1,34 +1,52 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useLayoutEffect, useRef, useState } from "react";
 
 const EDGE_MARGIN = 8;
 
 /**
- * Truncating an element requires `overflow: hidden`, which would also clip an
- * absolutely-positioned tooltip nested inside it. So the truncated text and
- * the tooltip panel are siblings under one non-clipping `relative` wrapper —
- * only the text span truncates, the panel is free to render outside its box.
+ * The panel renders through a portal into `document.body`, positioned with
+ * `position: fixed` computed from the trigger's own `getBoundingClientRect()`
+ * — not as an absolutely-positioned DOM child of the trigger. An earlier
+ * version nested the panel directly under the trigger (a sibling under one
+ * non-clipping `relative` wrapper, to dodge the trigger's own `truncate`
+ * `overflow: hidden`), which works right up until some *other* ancestor
+ * — not the trigger itself — sets `overflow-x: auto` for its own reasons
+ * (a horizontally-scrolling row of cards, a horizontally-scrolling row of
+ * histogram columns): the CSS overflow spec forces that ancestor's
+ * `overflow-y` to compute as `auto` too the moment `overflow-x` isn't
+ * `visible`, silently clipping any descendant that pokes out the bottom —
+ * confirmed on the Spell Slots histogram at a phone-width viewport, where
+ * only a sliver of a tapped column's hint survived. Portaling out to
+ * `document.body` sidesteps every such ancestor at once, current and future,
+ * instead of chasing down each new scrolling row as it's added — the same
+ * "fix the root cause, not the symptom" call already made for the
+ * histogram's own column-width overflow (`shared.tsx`'s container queries).
  *
- * Shown on `:hover`/`:focus` for mouse/keyboard users, but neither fires from
- * a tap on a touch screen — confirmed a real tap does nothing on mobile.
- * `open` state adds a tap-to-toggle affordance on top of the existing CSS
- * triggers (a second tap, or a tap outside, closes it) without changing
- * anything for mouse users.
+ * Portaling to `document.body` also moves the panel out of the trigger's DOM
+ * subtree, so the old pure-CSS `:hover`/`:focus` reveal (`group-hover`,
+ * matched by an actual DOM ancestor relationship) can no longer reach it —
+ * replaced with `hovered` state set directly from `onMouseEnter`/
+ * `onMouseLeave`/focus-capture, which also means `visible` (hover OR the
+ * tap-driven `open`) is now the one source of truth for whether the panel
+ * should even be mounted, rather than mounting it always and toggling
+ * `hidden`.
+ *
+ * Neither fires from a tap on a touch screen — confirmed a real tap does
+ * nothing on mobile. `open` state adds a tap-to-toggle affordance on top of
+ * hover/focus (a second tap, or a tap outside, closes it) without changing
+ * anything for mouse/keyboard users.
  *
  * The panel defaults to appearing below and left-aligned with the trigger,
  * which overflows off-screen for a trigger near the right edge or bottom of
- * the viewport (confirmed on a real phone — clipped on both edges for a hint
- * near the corner of a long list). Its actual size is measured and the
- * position clamped/flipped to stay fully on-screen — done on tap/click *and*
- * on mouse enter/focus, not just the tap-driven `open` state: the panel is
- * also shown by plain CSS on `:hover`/`:focus` (see the className below) for
- * desktop mouse users, and that path doesn't touch React state at all. Only
- * repositioning on `open` left the hover path stuck on the unclamped CSS
- * default (confirmed overflowing badly once a narrower container made more
- * triggers sit close to an edge), and since clicking a hovered trigger then
- * *does* snap it to the corrected position, the two together looked exactly
- * like a jumping tooltip.
+ * the viewport — its actual size is measured and the position clamped/
+ * flipped to stay fully on-screen, recomputed on scroll/resize too (a fixed-
+ * position panel doesn't move with the page the way the old in-flow
+ * absolutely-positioned one naturally did, so without this it would drift
+ * away from its trigger the moment either the page or a nested scrolling
+ * row — like the same histogram row above — scrolls while the panel is
+ * open).
  */
 export function InfoTooltip({
   children,
@@ -53,56 +71,54 @@ export function InfoTooltip({
   inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement>(null);
-  const panelRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  function positionPanel() {
-    const panelEl = panelRef.current;
-    const wrapper = wrapperRef.current;
-    if (!panelEl || !wrapper) return;
+  const visible = open || hovered;
 
-    panelEl.style.left = "0px";
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const panelRect = panelEl.getBoundingClientRect();
-
-    const maxLeft = window.innerWidth - panelRect.width - EDGE_MARGIN;
-    const desiredLeft = Math.max(Math.min(wrapperRect.left, maxLeft), EDGE_MARGIN);
-    panelEl.style.left = `${desiredLeft - wrapperRect.left}px`;
-
-    const fitsBelow = wrapperRect.bottom + 4 + panelRect.height <= window.innerHeight - EDGE_MARGIN;
-    if (fitsBelow) {
-      panelEl.style.top = "100%";
-      panelEl.style.bottom = "auto";
-      panelEl.style.marginTop = "4px";
-      panelEl.style.marginBottom = "0";
-    } else {
-      // `top-full` (Tailwind's `top: 100%`) is still active from the
-      // className below — clearing the inline override to "" only means "no
-      // override", not "cancelled", so without an explicit `auto` here it
-      // stacks with the `bottom: 100%` below and the browser stretches the
-      // box between two 100% constraints, collapsing it to near-zero height
-      // (confirmed: a 148px-tall panel measured 18px tall until this was
-      // set explicitly).
-      panelEl.style.top = "auto";
-      panelEl.style.bottom = "100%";
-      panelEl.style.marginTop = "0";
-      panelEl.style.marginBottom = "4px";
-    }
-  }
-
+  // Position is written straight to the portaled panel's own DOM node via
+  // the ref, not through React state — the same call the original
+  // absolutely-positioned version made (see its own past comment), and for
+  // the same reason: a state-driven position would need an extra render to
+  // reach the screen, and setting it synchronously inside this very effect
+  // is exactly what triggers React's "avoid calling setState in an effect"
+  // warning. Direct style mutation happens in the same layout-effect pass,
+  // before the browser paints, with no extra render in between.
   useLayoutEffect(() => {
-    if (open) {
-      positionPanel();
-    } else {
+    if (!visible) return;
+
+    function computePosition() {
+      const wrapper = wrapperRef.current;
       const panelEl = panelRef.current;
-      if (!panelEl) return;
-      panelEl.style.left = "";
-      panelEl.style.top = "";
-      panelEl.style.bottom = "";
-      panelEl.style.marginTop = "";
-      panelEl.style.marginBottom = "";
+      if (!wrapper || !panelEl) return;
+
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const panelRect = panelEl.getBoundingClientRect();
+
+      const maxLeft = window.innerWidth - panelRect.width - EDGE_MARGIN;
+      const left = Math.max(Math.min(wrapperRect.left, maxLeft), EDGE_MARGIN);
+      panelEl.style.left = `${left}px`;
+
+      const fitsBelow = wrapperRect.bottom + 4 + panelRect.height <= window.innerHeight - EDGE_MARGIN;
+      if (fitsBelow) {
+        panelEl.style.top = `${wrapperRect.bottom + 4}px`;
+        panelEl.style.bottom = "auto";
+      } else {
+        panelEl.style.top = "auto";
+        panelEl.style.bottom = `${window.innerHeight - wrapperRect.top + 4}px`;
+      }
+      panelEl.style.visibility = "visible";
     }
-  }, [open]);
+
+    computePosition();
+    window.addEventListener("scroll", computePosition, { capture: true, passive: true });
+    window.addEventListener("resize", computePosition, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", computePosition, { capture: true });
+      window.removeEventListener("resize", computePosition);
+    };
+  }, [visible]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -122,7 +138,7 @@ export function InfoTooltip({
       // reserves extra space below it for descenders in the surrounding line
       // box, which was inflating every row that used this component (most
       // visibly the Inventory item list, where it added ~5px per row).
-      className={`group/tooltip relative inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"}`}
+      className={`inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"}`}
       onClick={
         disableTap
           ? undefined
@@ -131,8 +147,10 @@ export function InfoTooltip({
               setOpen((v) => !v);
             }
       }
-      onMouseEnter={positionPanel}
-      onFocus={positionPanel}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setHovered(true)}
+      onBlurCapture={() => setHovered(false)}
     >
       <span
         className={
@@ -147,12 +165,22 @@ export function InfoTooltip({
       >
         {children}
       </span>
-      <span
-        ref={panelRef}
-        className={`pointer-events-none absolute left-0 top-full z-20 mt-1 ${open ? "block" : "hidden"} w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl group-hover/tooltip:block group-focus/tooltip:block`}
-      >
-        {panel}
-      </span>
+      {visible &&
+        typeof document !== "undefined" &&
+        createPortal(
+          // `left: -9999px`/`visibility: hidden` is the pre-measurement
+          // default for the one frame between this mounting and the layout
+          // effect's synchronous `computePosition()` overwriting it (via the
+          // ref, not a re-render) — never actually visible to the user.
+          <div
+            ref={panelRef}
+            style={{ left: "-9999px", visibility: "hidden" }}
+            className="pointer-events-none fixed z-50 w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+          >
+            {panel}
+          </div>,
+          document.body
+        )}
     </span>
   );
 }

@@ -14,7 +14,7 @@ import {
   computePartySpellsByLevel,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
-import { RichText } from "../RichText";
+import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -35,23 +35,20 @@ function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }
   );
 }
 
-/** Same hover-hint content as `ResourceMeter` on the character card (name/source/description) — resources aren't duplicated data here, just a different view of the same fields. */
-function ResourceHintPanel({ entry }: { entry: PartyResourceEntry }) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-white">{entry.resourceName}</p>
-      {entry.source && <p className="text-xs uppercase tracking-wide text-slate-500">{entry.source}</p>}
-      <p>{RECOVERY_LABELS[entry.recovery]} recovery</p>
-      {entry.description && <p>{entry.description}</p>}
-    </div>
-  );
-}
-
 function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
   return (
     <div className="flex items-center gap-3 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<ResourceHintPanel entry={entry} />}>
+        <InfoTooltip
+          panel={
+            <AbilityHintPanel
+              name={entry.resourceName}
+              metaLines={[entry.source]}
+              status={<span className="text-sky-400">{RECOVERY_LABELS[entry.recovery]} recovery</span>}
+              description={entry.description}
+            />
+          }
+        >
           <span className="text-slate-300">{entry.resourceName}</span>
         </InfoTooltip>
       </div>
@@ -69,34 +66,22 @@ function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
 }
 
-/** Identical to `SpellPanel` on a character's own card (`CharacterDetailsModal.tsx`) — same fields in the same order (name+school, source·components, material component, description) — so a DM reading a spell's hint here isn't looking at a differently-shaped panel than the one they'd get by opening that character's own card. */
-function PartySpellHintPanel({ spell }: { spell: PartySpellEntry }) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">
-        {spell.name}
-        {spell.school && <span className="text-slate-500"> ({spell.school})</span>}
-      </p>
-      <p className="text-xs uppercase tracking-wide text-slate-500">
-        {spell.source}
-        {spell.components && ` · ${spell.components}`}
-      </p>
-      {spell.materialComponent && <p className="text-slate-500">Material: {spell.materialComponent}</p>}
-      {spell.description && (
-        <p>
-          <RichText text={spell.description} />
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** One row per known spell, deduped across the whole party — its level already reads off the group header above it, so the row itself is just the name (with a hover hint for its rules text) and `CharacterChipRow` for who knows it. */
+/** One row per known spell, deduped across the whole party — its level already reads off the group header above it, so the row itself is just the name (with the same `AbilityHintPanel` hover hint a character's own Spells tab shows for the same spell) and `CharacterChipRow` for who knows it. */
 function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<PartySpellHintPanel spell={spell} />}>
+        <InfoTooltip
+          panel={
+            <AbilityHintPanel
+              name={spell.name}
+              subtitle={spell.school}
+              metaLines={[[spell.source, spell.components].filter(Boolean).join(" · ")]}
+              note={spell.materialComponent && `Material: ${spell.materialComponent}`}
+              description={spell.description}
+            />
+          }
+        >
           <span className="text-slate-300">{spell.name}</span>
         </InfoTooltip>
       </div>

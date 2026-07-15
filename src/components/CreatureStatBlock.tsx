@@ -6,6 +6,7 @@ import { formatModifier } from "@/lib/format";
 import { computePassiveSkill, ParsedCreatureSkill, parseCreatureSenses, parseCreatureSkills } from "@/lib/creatureStatText";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { HintPanel } from "./ui/HintPanel";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
@@ -34,13 +35,15 @@ const GROUP_ORDER: Array<NonNullable<CreatureTrait["group"]>> = [
 /** Same hover-hint shape as a character's `SkillPanel`, adapted for a skill parsed from a stat block's free-text Skills line instead of a structured `SkillProficiency`. */
 function CreatureSkillPanel({ skill }: { skill: ParsedCreatureSkill }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">
-        {skill.label}
-        {skill.name && <span className="text-slate-500"> ({SKILL_ABILITY[skill.name].toUpperCase()})</span>}
-      </p>
-      {skill.name && <p>{SKILL_DESCRIPTIONS[skill.name]}</p>}
-    </div>
+    <HintPanel
+      title={
+        <>
+          {skill.label}
+          {skill.name && <span className="text-slate-500"> ({SKILL_ABILITY[skill.name].toUpperCase()})</span>}
+        </>
+      }
+      description={skill.name && SKILL_DESCRIPTIONS[skill.name]}
+    />
   );
 }
 

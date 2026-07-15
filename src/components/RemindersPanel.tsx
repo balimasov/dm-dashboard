@@ -4,7 +4,7 @@ import { Character, Creature, CreatureTrait } from "@/lib/types";
 import { Avatar } from "./Avatar";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { InfoTooltip } from "./InfoTooltip";
-import { RichText } from "./RichText";
+import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -14,22 +14,6 @@ const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = 
   reaction: "Reaction",
   legendary: "Legendary Action",
 };
-
-/** Same shape as `FeaturePanel`/`SpellPanel` (`CharacterDetailsModal.tsx`) — a source/origin line plus the rules description — generalized across a character's Features/Spells and a creature's Traits, so every entry here gets the same standard hover-hint regardless of where it actually came from. */
-function AbilityHint({ source, description }: { source?: string; description?: string }) {
-  return (
-    <div className="space-y-1">
-      {source && <p className="text-xs uppercase tracking-wide text-slate-500">{source}</p>}
-      {description ? (
-        <p>
-          <RichText text={description} />
-        </p>
-      ) : (
-        <p className="text-slate-500">No description.</p>
-      )}
-    </div>
-  );
-}
 
 interface ReminderEntry {
   name: string;
@@ -49,10 +33,25 @@ function characterReminders(character: Character): ReminderGroup | null {
   const entries: ReminderEntry[] = [
     ...character.features
       .filter((f) => flagged.includes(f.name))
-      .map((f) => ({ name: f.name, hint: <AbilityHint source={f.source} description={f.description} /> })),
+      .map((f) => ({
+        name: f.name,
+        hint: <AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />,
+      })),
     ...character.knownSpells
       .filter((s) => flagged.includes(s.name))
-      .map((s) => ({ name: s.name, hint: <AbilityHint source={s.source} description={s.description} /> })),
+      .map((s) => ({
+        name: s.name,
+        hint: (
+          <AbilityHintPanel
+            name={s.name}
+            subtitle={s.school}
+            metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
+            note={s.materialComponent && `Material: ${s.materialComponent}`}
+            description={s.description}
+            emptyDescription="No description."
+          />
+        ),
+      })),
   ];
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -66,7 +65,14 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
     .filter((t) => flagged.includes(t.name))
     .map((t) => ({
       name: t.name,
-      hint: <AbilityHint source={TRAIT_GROUP_LABELS[t.group ?? "trait"]} description={t.description} />,
+      hint: (
+        <AbilityHintPanel
+          name={t.name}
+          metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
+          description={t.description}
+          emptyDescription="No description."
+        />
+      ),
     }));
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -145,13 +151,13 @@ export function RemindersPanel({
         Abilities flagged with the reminder flame across every character and creature — the ones easy to forget mid-session.
       </p>
       {/* `flex-wrap` instead of the `overflow-x-auto` horizontal-scroll rows
-          used elsewhere (Party/Companions/etc.) — an `overflow-x` container
-          also forces its own `overflow-y` to compute as clipped rather than
-          "visible" regardless of what's set (the same quirk documented on
-          the Party row below), which cut off an `InfoTooltip` hint the
-          moment it popped out past a short reminder card's own box. These
-          groups are usually few and short, so wrapping to a second line
-          reads better here anyway than a forced side-scroll. */}
+          used elsewhere (Party/Companions/etc.) — originally chosen to dodge
+          an `InfoTooltip` hint getting clipped by that kind of container's
+          forced `overflow-y` (now fixed at the root in `InfoTooltip` itself,
+          which portals its panel out to `document.body` instead of nesting
+          it under whatever ancestor happens to scroll). Kept as `flex-wrap`
+          anyway — these groups are usually few and short, so wrapping to a
+          second line still reads better here than a forced side-scroll. */}
       <div className="flex flex-wrap gap-3 px-3 pb-2">
         {groups.map((group) => (
           <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">

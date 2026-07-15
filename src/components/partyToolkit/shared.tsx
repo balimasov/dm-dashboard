@@ -11,6 +11,7 @@ import {
   PartySpellSlotSummary,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
+import { HintPanel } from "../ui/HintPanel";
 import { MetaBadge } from "../ui/MetaBadge";
 
 /**
@@ -32,56 +33,6 @@ export function usageColorClass(current: number, max: number): string {
   if (max <= 0 || current <= 0) return "text-red-400";
   if (current <= max / 2) return "text-amber-400";
   return "text-white";
-}
-
-/**
- * The shared shape behind every hover-hint panel in the Party Toolkit: a
- * title, an optional description (rules text or a short explainer), then an
- * optional `<ul>` of rows — same "description first, then who has it" order
- * the DM asked for everywhere. `emptyText` covers the few panels that show a
- * fallback line instead of an empty list ("No one currently has it.").
- *
- * Every row defaults to plain white text (`<li>`'s own color, inherited by
- * any span inside that doesn't set its own) — noticeably brighter than the
- * panel's dim `text-slate-300` description/prose, so a character name stays
- * scannable at a glance instead of blending into the surrounding text. A
- * `renderRow` callback only needs its own color class for an actual
- * semantic override (proficient → green, low resource → amber/red).
- */
-export function HintPanel<T>({
-  title,
-  description,
-  rows = [],
-  rowKey,
-  renderRow,
-  rowClassName = "",
-  emptyText,
-}: {
-  title: ReactNode;
-  description?: ReactNode;
-  rows?: T[];
-  rowKey?: (row: T) => string;
-  renderRow?: (row: T) => ReactNode;
-  rowClassName?: string;
-  emptyText?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-white">{title}</p>
-      {description && <p className="text-slate-300">{description}</p>}
-      {rows.length > 0 ? (
-        <ul className="space-y-0.5 pt-1">
-          {rows.map((row) => (
-            <li key={rowKey!(row)} className={`text-white ${rowClassName}`}>
-              {renderRow!(row)}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        emptyText && <p className="text-white">{emptyText}</p>
-      )}
-    </div>
-  );
 }
 
 /**

@@ -35,7 +35,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
-import { RichText } from "./RichText";
+import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -109,41 +109,6 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
   ]);
 }
 
-function SpellPanel({ spell }: { spell: KnownSpell }) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">
-        {spell.name}
-        {spell.school && <span className="text-slate-500"> ({spell.school})</span>}
-      </p>
-      <p className="text-xs uppercase tracking-wide text-slate-500">
-        {spell.source}
-        {spell.components && ` · ${spell.components}`}
-      </p>
-      {spell.materialComponent && <p className="text-slate-500">Material: {spell.materialComponent}</p>}
-      {spell.description && (
-        <p>
-          <RichText text={spell.description} />
-        </p>
-      )}
-    </div>
-  );
-}
-
-function FeaturePanel({ feature }: { feature: Feature }) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium text-slate-100">{feature.name}</p>
-      <p className="text-xs uppercase tracking-wide text-slate-500">{feature.source}</p>
-      {feature.description && (
-        <p>
-          <RichText text={feature.description} />
-        </p>
-      )}
-    </div>
-  );
-}
-
 function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
   return (
     <FlaggableRow
@@ -151,7 +116,9 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
       onToggleFlag={onToggleFlag}
       trailing={feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
     >
-      <InfoTooltip panel={<FeaturePanel feature={feature} />}>{feature.name}</InfoTooltip>
+      <InfoTooltip panel={<AbilityHintPanel name={feature.name} metaLines={[feature.source]} description={feature.description} />}>
+        {feature.name}
+      </InfoTooltip>
     </FlaggableRow>
   );
 }
@@ -536,7 +503,19 @@ export function CharacterDetailsModal({
                                   </>
                                 }
                               >
-                                <InfoTooltip panel={<SpellPanel spell={spell} />}>{spell.name}</InfoTooltip>
+                                <InfoTooltip
+                                  panel={
+                                    <AbilityHintPanel
+                                      name={spell.name}
+                                      subtitle={spell.school}
+                                      metaLines={[[spell.source, spell.components].filter(Boolean).join(" · ")]}
+                                      note={spell.materialComponent && `Material: ${spell.materialComponent}`}
+                                      description={spell.description}
+                                    />
+                                  }
+                                >
+                                  {spell.name}
+                                </InfoTooltip>
                               </FlaggableRow>
                             );
                           })}

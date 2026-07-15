@@ -14,8 +14,9 @@ import {
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
 import { CharacterChip } from "../ui/CharacterChip";
+import { HintPanel } from "../ui/HintPanel";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CHART_AREA_MIN_HEIGHT_CLASS, HintPanel } from "./shared";
+import { CHART_AREA_MIN_HEIGHT_CLASS } from "./shared";
 
 /** Same green/amber/red family as `HpBar`'s danger-tier colors — one shared "how worried should I be" palette across the whole app instead of coverage inventing its own. */
 const STATUS_BADGE_CLASS: Record<SkillCoverageStatus, string> = {
