@@ -1,4 +1,4 @@
-import { Character, SKILL_ABBR, SKILL_ABILITY, SKILL_DESCRIPTIONS, SKILL_LABELS, SkillName } from "@/lib/types";
+import { Character, SKILL_ABILITY, SKILL_DESCRIPTIONS, SKILL_LABELS, SkillName } from "@/lib/types";
 import { formatModifier } from "@/lib/format";
 import { tierTextClass } from "@/lib/tierColor";
 import {
@@ -131,28 +131,29 @@ function StrengthChip({
 }
 
 /**
- * Sequential 4-step amber ramp, one hue (the app's own brand accent),
- * light→dark — cell 0 recedes toward the card surface (this row's own
- * *worst* modifier, not a fixed "bad" color), cell 3 is the brightest (this
- * row's own best). The scale is row-relative on purpose: it answers "who's
- * my best pick for *this* skill" at a glance, which a fixed global scale
- * would wash out for a high-level party (everything reads uniformly bright)
- * or a low-level one (everything reads uniformly dim). Proficiency is a
- * second, independent fact carried by a ring rather than folded into this
- * same hue — collapsing "how big is the number" and "is this character
- * trained" into one channel would hide whichever one didn't win the color.
+ * Sequential 4-step cold→hot ramp — cell 0 (this row's own *worst*
+ * modifier) is cool blue, cell 3 (this row's own best) is bright amber, with
+ * a neutral slate step either side of the row's midpoint. The classic
+ * "heatmap" association (cold = low, hot = high) reads faster at a glance
+ * than a single-hue hue ramp. The scale is row-relative on purpose: it
+ * answers "who's my best pick for *this* skill", which a fixed global scale
+ * would wash out for a high-level party (everything reads uniformly hot) or
+ * a low-level one (everything reads uniformly cold). Proficiency is a
+ * second, independent fact carried by a small corner dot/star rather than
+ * folded into this same color — collapsing "how big is the number" and "is
+ * this character trained" into one channel would hide whichever one didn't
+ * win the color.
  */
-const HEATMAP_STEP_CLASS = ["bg-slate-800/70", "bg-amber-950/70", "bg-amber-800/70", "bg-amber-600/80"];
+const HEATMAP_STEP_CLASS = ["bg-blue-900/70", "bg-slate-700/60", "bg-amber-900/60", "bg-amber-500/80"];
 
-/** Row-relative bucket (0-3) for a modifier against that skill's own best/worst spread — a flat row (every character tied) always buckets to 2, a plain "nothing to distinguish" mid-tone rather than arbitrarily picking an end. */
+/** Row-relative bucket (0-3) for a modifier against that skill's own best/worst spread — a flat row (every character tied) always buckets to 1, the cooler of the two neutral mid-steps rather than arbitrarily picking an end. */
 function heatmapBucket(modifier: number, rowMin: number, rowMax: number): number {
-  if (rowMax === rowMin) return 2;
+  if (rowMax === rowMin) return 1;
   return Math.min(3, Math.round(((modifier - rowMin) / (rowMax - rowMin)) * 3));
 }
 
-/** One data cell — fill is the row-relative bucket, ring is proficiency (thin = proficient, thick = expertise, none = untrained), independent of each other by design (see `HEATMAP_STEP_CLASS`). */
+/** One data cell — fill is the row-relative bucket; a small corner marker carries proficiency independently of that color (a dot for proficient, a star for expertise, nothing for untrained). */
 function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: number }) {
-  const ring = score.expertise ? "ring-2 ring-emerald-400" : score.proficient ? "ring-1 ring-emerald-600" : "";
   return (
     <InfoTooltip
       hoverOnly
@@ -166,9 +167,15 @@ function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: nu
       }
     >
       <span
-        className={`flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-semibold tabular-nums text-slate-100 ${HEATMAP_STEP_CLASS[bucket]} ${ring}`}
+        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${HEATMAP_STEP_CLASS[bucket]}`}
       >
         {formatModifier(score.modifier)}
+        {score.proficient &&
+          (score.expertise ? (
+            <span className="absolute right-1 top-0.5 text-[9px] leading-none text-emerald-300">★</span>
+          ) : (
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          ))}
       </span>
     </InfoTooltip>
   );
@@ -189,7 +196,7 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
   return (
     <div className="contents">
       <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-        <span className="text-[11px] text-slate-400">{SKILL_ABBR[entry.skill]}</span>
+        <span className="whitespace-nowrap pr-2 text-xs text-slate-400">{SKILL_LABELS[entry.skill]}</span>
       </InfoTooltip>
       {characters.map((c) => {
         const score = scoreByCharacter.get(c.id)!;
@@ -205,23 +212,30 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
  * our bench" in one glance, instead of hovering 18 rows one at a time. The
  * character column order is fixed (not re-sorted per row) so a DM's eye
  * can track one character down a single column across the whole grid.
- * `overflow-x-auto` guards a party with many characters on a narrow
- * screen; the grid itself doesn't reflow.
+ * Character columns are `minmax(2.5rem, 1fr)` — they grow to fill however
+ * wide the card actually is (a 2-column desktop layout stretches this card
+ * to match its taller neighbor, so a fixed intrinsic width just left a
+ * small island of cells with empty space beside it) and only fall back to
+ * their floor once there are enough characters to need it. Deliberately no
+ * `overflow-x-auto` scroller here: that combination forces the browser to
+ * also treat the vertical axis as non-`visible` per the CSS Overflow
+ * Module (see `InfoTooltip`'s own doc comment for the same rule breaking
+ * *that* component pre-portal) — with this grid's height driven by its
+ * grid-stretched parent, that quietly clipped the bottom rows instead of
+ * ever actually needing to scroll.
  */
 function SkillHeatmap({ characters, entries }: { characters: Character[]; entries: SkillOverviewEntry[] }) {
   return (
-    <div className="overflow-x-auto">
-      <div className="inline-grid items-center gap-1" style={{ gridTemplateColumns: `2.5rem repeat(${characters.length}, 1.75rem)` }}>
-        <span />
-        {characters.map((c) => (
-          <span key={c.id} className="flex justify-center">
-            <CharacterChip name={c.name} avatarUrl={c.avatarUrl} />
-          </span>
-        ))}
-        {entries.map((entry) => (
-          <HeatmapRow key={entry.skill} entry={entry} characters={characters} />
-        ))}
-      </div>
+    <div className="grid items-center gap-1.5" style={{ gridTemplateColumns: `auto repeat(${characters.length}, minmax(2.5rem, 1fr))` }}>
+      <span />
+      {characters.map((c) => (
+        <span key={c.id} className="flex justify-center">
+          <CharacterChip name={c.name} avatarUrl={c.avatarUrl} />
+        </span>
+      ))}
+      {entries.map((entry) => (
+        <HeatmapRow key={entry.skill} entry={entry} characters={characters} />
+      ))}
     </div>
   );
 }
@@ -451,9 +465,9 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
           inline
           panel={
             <p className="text-white">
-              Every character&apos;s modifier for every skill. Color is scaled per row — brightest is this
-              skill&apos;s best in the party, dimmest is its worst — so you can spot your pick at a glance. The ring
-              marks proficiency: thin for proficient, thick for expertise, none for untrained.
+              Every character&apos;s modifier for every skill. Color is scaled per row, cold to hot — amber is this
+              skill&apos;s best in the party, blue is its worst — so you can spot your pick at a glance. The corner
+              marker shows proficiency: a dot for proficient, a star for expertise, nothing for untrained.
             </p>
           }
         >
