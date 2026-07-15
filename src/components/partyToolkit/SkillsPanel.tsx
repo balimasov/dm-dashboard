@@ -1,4 +1,4 @@
-import { Character, SKILL_ABILITY, SKILL_DESCRIPTIONS, SKILL_LABELS, SkillName } from "@/lib/types";
+import { Character, SKILL_ABBR, SKILL_ABILITY, SKILL_DESCRIPTIONS, SKILL_LABELS, SkillName } from "@/lib/types";
 import { formatModifier } from "@/lib/format";
 import { tierTextClass } from "@/lib/tierColor";
 import {
@@ -130,52 +130,98 @@ function StrengthChip({
   );
 }
 
-/** How many `Party Gaps` rows to show — enough to be useful, few enough to still read at a glance. */
-const PARTY_GAPS_LIMIT = 5;
-
 /**
- * The skills worst-covered by the party right now, worst first — answers a
- * different question than the ability radar above it: not "is the party's
- * whole Intelligence thin" but "which specific checks are most likely to
- * trip someone up tonight, and who's my fallback if it comes up". Ties on
- * coverage break on the best character's own modifier (a Weak skill where
- * even the best character is a +0 is a bigger problem than one where the
- * best is already +5), so the list is ordered by actual risk, not just the
- * coverage tier. Strong-coverage skills never show up here — there's
- * nothing to warn about. `[]` for an empty party (nothing to rank).
+ * Sequential 4-step amber ramp, one hue (the app's own brand accent),
+ * light→dark — cell 0 recedes toward the card surface (this row's own
+ * *worst* modifier, not a fixed "bad" color), cell 3 is the brightest (this
+ * row's own best). The scale is row-relative on purpose: it answers "who's
+ * my best pick for *this* skill" at a glance, which a fixed global scale
+ * would wash out for a high-level party (everything reads uniformly bright)
+ * or a low-level one (everything reads uniformly dim). Proficiency is a
+ * second, independent fact carried by a ring rather than folded into this
+ * same hue — collapsing "how big is the number" and "is this character
+ * trained" into one channel would hide whichever one didn't win the color.
  */
-function computePartySkillGaps(entries: SkillOverviewEntry[]): SkillOverviewEntry[] {
-  return entries
-    .filter((e) => e.status !== "Strong")
-    .sort((a, b) => a.proficientCount - b.proficientCount || (a.best?.modifier ?? -Infinity) - (b.best?.modifier ?? -Infinity))
-    .slice(0, PARTY_GAPS_LIMIT);
+const HEATMAP_STEP_CLASS = ["bg-slate-800/70", "bg-amber-950/70", "bg-amber-800/70", "bg-amber-600/80"];
+
+/** Row-relative bucket (0-3) for a modifier against that skill's own best/worst spread — a flat row (every character tied) always buckets to 2, a plain "nothing to distinguish" mid-tone rather than arbitrarily picking an end. */
+function heatmapBucket(modifier: number, rowMin: number, rowMax: number): number {
+  if (rowMax === rowMin) return 2;
+  return Math.min(3, Math.round(((modifier - rowMin) / (rowMax - rowMin)) * 3));
+}
+
+/** One data cell — fill is the row-relative bucket, ring is proficiency (thin = proficient, thick = expertise, none = untrained), independent of each other by design (see `HEATMAP_STEP_CLASS`). */
+function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: number }) {
+  const ring = score.expertise ? "ring-2 ring-emerald-400" : score.proficient ? "ring-1 ring-emerald-600" : "";
+  return (
+    <InfoTooltip
+      hoverOnly
+      panel={
+        <p className="text-white">
+          {score.characterName}: {formatModifier(score.modifier)}
+          {score.expertise ? " · expertise" : score.proficient ? " · proficient" : ""}
+          {score.advantage === "advantage" && " (advantage)"}
+          {score.advantage === "disadvantage" && " (disadvantage)"}
+        </p>
+      }
+    >
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-semibold tabular-nums text-slate-100 ${HEATMAP_STEP_CLASS[bucket]} ${ring}`}
+      >
+        {formatModifier(score.modifier)}
+      </span>
+    </InfoTooltip>
+  );
 }
 
 /**
- * Same shape as `SkillRow` minus the `weakest` chip — this row already
- * means "this is a weak spot", so a second weakest-character callout would
- * just repeat the point; the `best` chip is the useful piece here (your
- * fallback pick even when nobody's actually proficient).
+ * One skill's row of cells, in `characters`' own (stable) order — not
+ * `entry.all`'s order, which is sorted best-first and would shuffle every
+ * row differently. Every character always has a score here: `entry.all` is
+ * built by mapping over this same `characters` array in
+ * `computeSkillOverviewEntry`, so the lookup can't miss.
  */
-function GapRow({ entry }: { entry: SkillOverviewEntry }) {
-  const label = SKILL_LABELS[entry.skill];
+function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characters: Character[] }) {
+  const scoreByCharacter = new Map(entry.all.map((s) => [s.characterId, s]));
+  const modifiers = entry.all.map((s) => s.modifier);
+  const rowMin = Math.min(...modifiers);
+  const rowMax = Math.max(...modifiers);
   return (
-    <div className="flex items-center gap-3 py-1.5 text-sm">
-      <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-          <span className="text-slate-300">{label}</span>
-        </InfoTooltip>
+    <div className="contents">
+      <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
+        <span className="text-[11px] text-slate-400">{SKILL_ABBR[entry.skill]}</span>
+      </InfoTooltip>
+      {characters.map((c) => {
+        const score = scoreByCharacter.get(c.id)!;
+        return <HeatmapCell key={c.id} score={score} bucket={heatmapBucket(score.modifier, rowMin, rowMax)} />;
+      })}
+    </div>
+  );
+}
+
+/**
+ * Every character's modifier for every skill in one scannable grid —
+ * answers "who's my best pick for this specific check" and "how deep is
+ * our bench" in one glance, instead of hovering 18 rows one at a time. The
+ * character column order is fixed (not re-sorted per row) so a DM's eye
+ * can track one character down a single column across the whole grid.
+ * `overflow-x-auto` guards a party with many characters on a narrow
+ * screen; the grid itself doesn't reflow.
+ */
+function SkillHeatmap({ characters, entries }: { characters: Character[]; entries: SkillOverviewEntry[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-grid items-center gap-1" style={{ gridTemplateColumns: `2.5rem repeat(${characters.length}, 1.75rem)` }}>
+        <span />
+        {characters.map((c) => (
+          <span key={c.id} className="flex justify-center">
+            <CharacterChip name={c.name} avatarUrl={c.avatarUrl} />
+          </span>
+        ))}
+        {entries.map((entry) => (
+          <HeatmapRow key={entry.skill} entry={entry} characters={characters} />
+        ))}
       </div>
-      {entry.best && (
-        <StrengthChip
-          characterName={entry.best.characterName}
-          avatarUrl={entry.best.avatarUrl}
-          hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.best.advantage ?? ""] ?? ""}`}
-          direction="up"
-          advantage={entry.best.advantage}
-        />
-      )}
-      <CoverageBadge proficientCount={entry.proficientCount} partySize={entry.all.length} status={entry.status} />
     </div>
   );
 }
@@ -386,8 +432,6 @@ function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] 
 export function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const skillEntries = computePartySkillOverview(characters);
   const abilityCoverage = computeAbilitySkillCoverage(characters);
-  const gaps = computePartySkillGaps(skillEntries);
-  const hasLeadIn = abilityCoverage.length >= 3 || gaps.length > 0;
 
   return (
     <ToolkitCard title="Skills">
@@ -402,30 +446,25 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
         </div>
       )}
 
-      {gaps.length > 0 && (
-        <>
-          <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
-            <InfoTooltip
-              inline
-              panel={
-                <p className="text-white">
-                  The skills with the thinnest party coverage (Weak or Medium), worst first — most likely to trip
-                  someone up tonight. The chip is your best fallback, even when nobody&apos;s actually proficient.
-                </p>
-              }
-            >
-              Party Gaps
-            </InfoTooltip>
-          </SectionLabel>
-          <div className="divide-y divide-slate-800/60">
-            {gaps.map((entry) => (
-              <GapRow key={entry.skill} entry={entry} />
-            ))}
-          </div>
-        </>
-      )}
+      <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
+        <InfoTooltip
+          inline
+          panel={
+            <p className="text-white">
+              Every character&apos;s modifier for every skill. Color is scaled per row — brightest is this
+              skill&apos;s best in the party, dimmest is its worst — so you can spot your pick at a glance. The ring
+              marks proficiency: thin for proficient, thick for expertise, none for untrained.
+            </p>
+          }
+        >
+          Skill Heatmap
+        </InfoTooltip>
+      </SectionLabel>
+      <div className="mt-2">
+        <SkillHeatmap characters={characters} entries={skillEntries} />
+      </div>
 
-      <SectionLabel className={hasLeadIn ? "mt-4" : ""}>Passives</SectionLabel>
+      <SectionLabel className="mt-4">Passives</SectionLabel>
       <div className="divide-y divide-slate-800/60">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
