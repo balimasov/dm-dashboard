@@ -1,4 +1,4 @@
-import { Resource, SpellSlotLevel } from "@/lib/types";
+import { RECOVERY_LABELS, Resource, SpellSlotLevel } from "@/lib/types";
 import { tierBgClass, tierTextClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
@@ -69,16 +69,17 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
 /**
  * The hover/tap breakdown for `ResourceTrackerBar` — the bar itself shows only
  * the one blended number, so this is the one place to see it split back out by
- * Abilities vs. Spell Slots.
+ * Limited Use vs. Spell Slots (same "Limited Use" label the card's own
+ * subheading uses for this resource list, right below).
  *
  * Two different color systems meet here, deliberately: Overall uses the same
  * danger-tier color as the bar (green/amber/red — "how worried should I be"),
- * while Abilities/Spell Slots use each pool type's fixed identity color
+ * while Limited Use/Spell Slots use each pool type's fixed identity color
  * (blue/violet, matching the dots on `DotMeter` everywhere else in the app —
  * not `sky`, which this app's theme reskins to a warm brass tone that would
  * blend right into the amber tier color it needs to stay distinct from)
- * regardless of how full they are — tinting Abilities amber at low-tier would
- * collide with the identity color a low-percent Ability dot already reads as
+ * regardless of how full they are — tinting Limited Use amber at low-tier
+ * would collide with the identity color a low-percent dot already reads as
  * elsewhere, so the item-type color stays constant and only the *bar* carries
  * the tier signal.
  */
@@ -103,7 +104,7 @@ function ResourceTrackerHint({
       </p>
       {resourcesPercent !== null && (
         <p>
-          <span className="text-blue-400">●</span> Abilities: <span className="font-semibold text-white">{resourcesPercent}%</span>
+          <span className="text-blue-400">●</span> Limited Use: <span className="font-semibold text-white">{resourcesPercent}%</span>
         </p>
       )}
       {spellSlotsPercent !== null && (
@@ -116,15 +117,15 @@ function ResourceTrackerHint({
 }
 
 /**
- * One bar, one number, for both the Abilities and Spell Slots sub-sections
+ * One bar, one number, for both the Limited Use and Spell Slots sub-sections
  * below it — a DM glancing at a card wants "how topped-up is this
  * character" as one combined impression, not two separate bars to compare
- * in their head. Abilities and spell slots are pooled into a single average
- * (see `averageOverallPercent`); the bar's tier color (green/amber/red)
- * reflects that one number. The per-pool-type split (which is low, which
- * isn't) lives one hover/tap away in the hint instead of being crammed into
- * the bar itself. `null` (nothing to show a bar for at all) only when
- * neither abilities nor spell slots have anything tracked.
+ * in their head. Limited-use resources and spell slots are pooled into a
+ * single average (see `averageOverallPercent`); the bar's tier color
+ * (green/amber/red) reflects that one number. The per-pool-type split
+ * (which is low, which isn't) lives one hover/tap away in the hint instead
+ * of being crammed into the bar itself. `null` (nothing to show a bar for
+ * at all) only when neither has anything tracked.
  */
 export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resource[]; spellSlots: SpellSlotLevel[] }) {
   const overallPercent = averageOverallPercent(resources, spellSlots);
@@ -163,7 +164,16 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="min-w-0 flex-1 text-slate-300">
         {hasHint ? (
-          <InfoTooltip panel={<AbilityHintPanel name={resource.name} metaLines={[resource.source]} description={resource.description} />}>
+          <InfoTooltip
+            panel={
+              <AbilityHintPanel
+                name={resource.name}
+                metaLines={[resource.source]}
+                status={<span className="text-sky-400">{RECOVERY_LABELS[resource.recovery]} recovery</span>}
+                description={resource.description}
+              />
+            }
+          >
             {resource.name}
           </InfoTooltip>
         ) : (

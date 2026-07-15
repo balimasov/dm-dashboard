@@ -195,7 +195,7 @@ export function CharacterCard({
         </SectionDivider>
       )}
 
-      {/* Resources — Abilities and Spell Slots merged under one umbrella
+      {/* Resources — Limited Use and Spell Slots merged under one umbrella
           with a single tracker bar summarizing both at the top (see
           ResourceTrackerBar's own doc comment for why one shared bar
           instead of two separate ones: a DM glancing at a card wants "how
@@ -207,7 +207,7 @@ export function CharacterCard({
 
           {c.resources.length > 0 && (
             <div className="mt-3 space-y-1.5">
-              <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Abilities</h4>
+              <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Limited Use</h4>
               {c.resources
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name))

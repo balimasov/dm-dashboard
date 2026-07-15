@@ -100,7 +100,7 @@ type PartyDetailsTab = "features" | "spells";
  *
  * Below that, tabbed the same way `CharacterDetailsModal` tabs a single
  * character's own Features and Traits / Spells — "Features and Traits"
- * keeps this panel's existing Heroic Inspiration + Resources content
+ * keeps this panel's existing Heroic Inspiration + Limited Use content
  * unchanged, "Spells" is new: every known spell across the party, grouped
  * by level like a character's own Spells tab, deduped by name so a spell
  * several characters share shows as one row with several avatar chips
@@ -150,7 +150,7 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
           <SectionLabel className={tabs.length > 1 ? "" : "mt-4"}>Heroic Inspiration</SectionLabel>
           <HeroicInspirationRow summary={inspiration} />
 
-          <SectionLabel className="mt-4">Resources</SectionLabel>
+          <SectionLabel className="mt-4">Limited Use</SectionLabel>
           {resources.length === 0 ? (
             <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
           ) : (

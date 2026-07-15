@@ -5,6 +5,7 @@ import {
   Character,
   Feature,
   KnownSpell,
+  RECOVERY_LABELS,
   RecoveryType,
   SKILL_ABBR,
   SKILL_LABELS,
@@ -62,6 +63,11 @@ function TypeTag({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
+/** Same "when does this come back" status line every other `AbilityHintPanel` shows for a pool-kind resource (Party Toolkit's Resources & Coverage, Spell Slots & Resources) — only for a Feature/Spell that has its own charge pool (`ChargeBadge` already shown on the row), since one with no pool has nothing to recover. */
+function recoveryStatus(recovery: RecoveryType) {
+  return <span className="text-sky-400">{RECOVERY_LABELS[recovery]} recovery</span>;
+}
+
 const GROUP_LABELS: Record<Feature["group"], string> = {
   action: "Action",
   bonusAction: "Bonus Action",
@@ -116,7 +122,16 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
       onToggleFlag={onToggleFlag}
       trailing={feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
     >
-      <InfoTooltip panel={<AbilityHintPanel name={feature.name} metaLines={[feature.source]} description={feature.description} />}>
+      <InfoTooltip
+        panel={
+          <AbilityHintPanel
+            name={feature.name}
+            metaLines={[feature.source]}
+            status={feature.max !== undefined && recoveryStatus(feature.recovery!)}
+            description={feature.description}
+          />
+        }
+      >
         {feature.name}
       </InfoTooltip>
     </FlaggableRow>
@@ -510,6 +525,7 @@ export function CharacterDetailsModal({
                                       subtitle={spell.school}
                                       metaLines={[[spell.source, spell.components].filter(Boolean).join(" · ")]}
                                       note={spell.materialComponent && `Material: ${spell.materialComponent}`}
+                                      status={spell.max !== undefined && recoveryStatus(spell.recovery!)}
                                       description={spell.description}
                                     />
                                   }
