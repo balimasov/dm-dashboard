@@ -130,6 +130,56 @@ function StrengthChip({
   );
 }
 
+/** How many `Party Gaps` rows to show — enough to be useful, few enough to still read at a glance. */
+const PARTY_GAPS_LIMIT = 5;
+
+/**
+ * The skills worst-covered by the party right now, worst first — answers a
+ * different question than the ability radar above it: not "is the party's
+ * whole Intelligence thin" but "which specific checks are most likely to
+ * trip someone up tonight, and who's my fallback if it comes up". Ties on
+ * coverage break on the best character's own modifier (a Weak skill where
+ * even the best character is a +0 is a bigger problem than one where the
+ * best is already +5), so the list is ordered by actual risk, not just the
+ * coverage tier. Strong-coverage skills never show up here — there's
+ * nothing to warn about. `[]` for an empty party (nothing to rank).
+ */
+function computePartySkillGaps(entries: SkillOverviewEntry[]): SkillOverviewEntry[] {
+  return entries
+    .filter((e) => e.status !== "Strong")
+    .sort((a, b) => a.proficientCount - b.proficientCount || (a.best?.modifier ?? -Infinity) - (b.best?.modifier ?? -Infinity))
+    .slice(0, PARTY_GAPS_LIMIT);
+}
+
+/**
+ * Same shape as `SkillRow` minus the `weakest` chip — this row already
+ * means "this is a weak spot", so a second weakest-character callout would
+ * just repeat the point; the `best` chip is the useful piece here (your
+ * fallback pick even when nobody's actually proficient).
+ */
+function GapRow({ entry }: { entry: SkillOverviewEntry }) {
+  const label = SKILL_LABELS[entry.skill];
+  return (
+    <div className="flex items-center gap-3 py-1.5 text-sm">
+      <div className="min-w-0 flex-1">
+        <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
+          <span className="text-slate-300">{label}</span>
+        </InfoTooltip>
+      </div>
+      {entry.best && (
+        <StrengthChip
+          characterName={entry.best.characterName}
+          avatarUrl={entry.best.avatarUrl}
+          hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.best.advantage ?? ""] ?? ""}`}
+          direction="up"
+          advantage={entry.best.advantage}
+        />
+      )}
+      <CoverageBadge proficientCount={entry.proficientCount} partySize={entry.all.length} status={entry.status} />
+    </div>
+  );
+}
+
 function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
   const label = SKILL_LABELS[entry.skill];
   return (
@@ -336,6 +386,8 @@ function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] 
 export function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const skillEntries = computePartySkillOverview(characters);
   const abilityCoverage = computeAbilitySkillCoverage(characters);
+  const gaps = computePartySkillGaps(skillEntries);
+  const hasLeadIn = abilityCoverage.length >= 3 || gaps.length > 0;
 
   return (
     <ToolkitCard title="Skills">
@@ -350,7 +402,30 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
         </div>
       )}
 
-      <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>Passives</SectionLabel>
+      {gaps.length > 0 && (
+        <>
+          <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
+            <InfoTooltip
+              inline
+              panel={
+                <p className="text-white">
+                  The skills with the thinnest party coverage (Weak or Medium), worst first — most likely to trip
+                  someone up tonight. The chip is your best fallback, even when nobody&apos;s actually proficient.
+                </p>
+              }
+            >
+              Party Gaps
+            </InfoTooltip>
+          </SectionLabel>
+          <div className="divide-y divide-slate-800/60">
+            {gaps.map((entry) => (
+              <GapRow key={entry.skill} entry={entry} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionLabel className={hasLeadIn ? "mt-4" : ""}>Passives</SectionLabel>
       <div className="divide-y divide-slate-800/60">
         <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
         <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
