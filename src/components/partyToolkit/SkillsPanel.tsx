@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Character, SKILL_ABILITY, SKILL_DESCRIPTIONS, SKILL_LABELS, SkillName } from "@/lib/types";
 import { formatModifier } from "@/lib/format";
 import { tierTextClass } from "@/lib/tierColor";
@@ -7,7 +8,6 @@ import {
   PassiveCharacterScore,
   PassiveStatSummary,
   SkillCharacterScore,
-  SkillCoverageStatus,
   SkillOverviewEntry,
   computeAbilitySkillCoverage,
   computePartySkillOverview,
@@ -18,39 +18,7 @@ import { HintPanel } from "../ui/HintPanel";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { CHART_AREA_MIN_HEIGHT_CLASS } from "./shared";
 
-/** Same green/amber/red family as `HpBar`'s danger-tier colors — one shared "how worried should I be" palette across the whole app instead of coverage inventing its own. */
-const STATUS_BADGE_CLASS: Record<SkillCoverageStatus, string> = {
-  Strong: "border-emerald-700 bg-emerald-950/30 text-emerald-400",
-  Medium: "border-amber-700 bg-amber-950/30 text-amber-400",
-  Weak: "border-red-800 bg-red-950/30 text-red-400",
-};
-
-const STATUS_LABEL: Record<SkillCoverageStatus, string> = {
-  Strong: "Strong coverage",
-  Medium: "Medium coverage",
-  Weak: "Weak coverage",
-};
-
-/**
- * Replaces the old Strong/Medium/Weak text chip (too wide) and the dot that
- * replaced it (too small to read anything from at a glance) — the actual
- * `proficientCount / partySize` ratio, colored by the same tier, is exactly
- * as compact as the dot but tells the DM the real numbers instead of making
- * them hover for it.
- */
-function CoverageBadge({ proficientCount, partySize, status }: { proficientCount: number; partySize: number; status: SkillCoverageStatus }) {
-  return (
-    <InfoTooltip hoverOnly panel={<p className="text-white">{STATUS_LABEL[status]} — {proficientCount} of {partySize} proficient</p>}>
-      <span
-        className={`shrink-0 rounded-md border px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums ${STATUS_BADGE_CLASS[status]}`}
-      >
-        {proficientCount}/{partySize}
-      </span>
-    </InfoTooltip>
-  );
-}
-
-/** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives): green when proficient/expertise, otherwise inherits the row's own white. */
+/** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives), and reused verbatim in the heatmap cells' own hover hints so both surfaces read as one color language: green when proficient/expertise, otherwise inherits the row's own white. */
 function scoreRowClass(proficient: boolean): string {
   return `shrink-0 whitespace-nowrap ${proficient ? "text-emerald-400" : ""}`;
 }
@@ -83,53 +51,6 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
   );
 }
 
-/** Appended to a best/weakest chip's hover hint — `modifier` alone doesn't say whether the roll behind it is actually helped or hurt by advantage/disadvantage, so a numerically-"best" pick (e.g. highest Stealth modifier) can still be a bad real pick if it's rolled at disadvantage. */
-const ADVANTAGE_HINT_SUFFIX: Record<string, string> = {
-  advantage: " (advantage)",
-  disadvantage: " (disadvantage)",
-};
-
-/**
- * Best/weakest character for a skill or passive stat, shown as their chip +
- * an up/down arrow — `hint` carries the full "Best: Name +N" detail as our
- * own styled hover panel (not a native `title`, which is slow to appear and
- * only responds to a precise hover over the tiny glyph). Wrapped in a
- * bordered pill (not just a bare chip+glyph) so the whole thing reads as
- * one unit and gives the tooltip a real hit target to hover.
- */
-function StrengthChip({
-  characterName,
-  avatarUrl,
-  hint,
-  direction,
-  advantage,
-}: {
-  characterName: string;
-  avatarUrl?: string;
-  hint: string;
-  direction: "up" | "down";
-  /** Same conditional advantage/disadvantage shown on the character's own Skills pill — surfaced here too since this chip is often the only place a DM looks before picking who rolls. */
-  advantage?: "advantage" | "disadvantage";
-}) {
-  const isUp = direction === "up";
-  return (
-    <InfoTooltip hoverOnly panel={<p className="text-white">{hint}</p>}>
-      <span
-        className={`flex shrink-0 items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-1.5 ${
-          isUp ? "border-emerald-800 bg-emerald-950/30" : "border-red-800 bg-red-950/30"
-        }`}
-      >
-        <CharacterChip name={characterName} avatarUrl={avatarUrl} showTitle={false} />
-        {advantage === "advantage" && <span className="text-sm font-bold leading-none text-emerald-400">▲</span>}
-        {advantage === "disadvantage" && <span className="text-sm font-bold leading-none text-red-400">▼</span>}
-        <span className={`text-sm font-bold leading-none ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-          {isUp ? "↑" : "↓"}
-        </span>
-      </span>
-    </InfoTooltip>
-  );
-}
-
 /**
  * Cold (negative modifiers) → neutral (0) → hot (positive modifiers), three
  * steps per side keyed to how far the modifier sits from zero — an absolute
@@ -155,45 +76,68 @@ function heatmapStepClass(modifier: number): string {
 }
 
 /**
- * One data cell — fill is the absolute cold/hot step for this modifier.
- * Advantage/disadvantage (top-left, same ▲/▼ + color convention as every
- * other hint in this file) and proficiency (top-right: a dot for
- * proficient, a star for expertise) are independent corner markers, not
- * folded into the fill color, so a DM can read "how good", "is it
- * trained", and "is the roll itself helped or hurt" as three separate
- * glances instead of guessing which fact a blended color is showing.
+ * One data cell — fill is the absolute cold/hot step for `colorValue`
+ * (a skill's own modifier, or a passive's value minus 10 so it sits on the
+ * same zero-centered scale). Advantage/disadvantage (top-left, same ▲/▼ +
+ * color convention as every other hint in this file) and proficiency
+ * (top-right: a dot for proficient, a star for expertise) are independent
+ * corner markers, not folded into the fill color, so a DM can read "how
+ * good", "is it trained", and "is the roll itself helped or hurt" as three
+ * separate glances instead of guessing which fact a blended color is
+ * showing. `tooltip` is built by the caller so skill and passive rows can
+ * each match their own existing hint's wording (a passive score is never
+ * "rolled", so it has no advantage/disadvantage line).
  */
-function HeatmapCell({ score }: { score: SkillCharacterScore }) {
+function HeatmapCell({
+  displayValue,
+  colorValue,
+  proficient,
+  expertise,
+  advantage,
+  tooltip,
+}: {
+  displayValue: string;
+  colorValue: number;
+  proficient: boolean;
+  expertise?: boolean;
+  advantage?: "advantage" | "disadvantage";
+  tooltip: ReactNode;
+}) {
   return (
-    <InfoTooltip
-      hoverOnly
-      panel={
-        <p className="text-white">
-          {score.characterName}: {formatModifier(score.modifier)}
-          {score.expertise ? " · expertise" : score.proficient ? " · proficient" : ""}
-          {score.advantage === "advantage" && " (advantage)"}
-          {score.advantage === "disadvantage" && " (disadvantage)"}
-        </p>
-      }
-    >
+    <InfoTooltip hoverOnly panel={tooltip}>
       <span
-        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${heatmapStepClass(score.modifier)}`}
+        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${heatmapStepClass(colorValue)}`}
       >
-        {formatModifier(score.modifier)}
-        {score.advantage === "advantage" && (
+        {displayValue}
+        {advantage === "advantage" && (
           <span className="absolute left-1 top-0.5 text-[9px] leading-none text-emerald-400">▲</span>
         )}
-        {score.advantage === "disadvantage" && (
+        {advantage === "disadvantage" && (
           <span className="absolute left-1 top-0.5 text-[9px] leading-none text-red-400">▼</span>
         )}
-        {score.proficient &&
-          (score.expertise ? (
+        {proficient &&
+          (expertise ? (
             <span className="absolute right-1 top-0.5 text-[9px] leading-none text-emerald-300">★</span>
           ) : (
             <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
           ))}
       </span>
     </InfoTooltip>
+  );
+}
+
+/** The heatmap cell tooltip's content, matching `SkillAllScoresPanel`'s own row styling exactly (same `scoreRowClass` + ▲/▼ colors) so hovering a cell and hovering the row label read as the same color language. */
+function skillCellTooltip(score: SkillCharacterScore): ReactNode {
+  return (
+    <p className="text-white">
+      {score.characterName}:{" "}
+      <span className={scoreRowClass(score.proficient)}>
+        {formatModifier(score.modifier)}
+        {score.expertise ? " · expertise" : score.proficient ? " · proficient" : ""}
+        {score.advantage === "advantage" && <span className="ml-1 text-emerald-400">▲</span>}
+        {score.advantage === "disadvantage" && <span className="ml-1 text-red-400">▼</span>}
+      </span>
+    </p>
   );
 }
 
@@ -209,34 +153,106 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
   return (
     <div className="contents">
       <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-        <span className="whitespace-nowrap pr-2 text-xs text-slate-400">{SKILL_LABELS[entry.skill]}</span>
+        <span className="whitespace-nowrap pr-2 text-sm text-slate-300">{SKILL_LABELS[entry.skill]}</span>
       </InfoTooltip>
-      {characters.map((c) => (
-        <HeatmapCell key={c.id} score={scoreByCharacter.get(c.id)!} />
-      ))}
+      {characters.map((c) => {
+        const score = scoreByCharacter.get(c.id)!;
+        return (
+          <HeatmapCell
+            key={c.id}
+            displayValue={formatModifier(score.modifier)}
+            colorValue={score.modifier}
+            proficient={score.proficient}
+            expertise={score.expertise}
+            advantage={score.advantage}
+            tooltip={skillCellTooltip(score)}
+          />
+        );
+      })}
     </div>
   );
 }
 
 /**
- * Every character's modifier for every skill in one scannable grid —
- * answers "who's my best pick for this specific check" and "how deep is
- * our bench" in one glance, instead of hovering 18 rows one at a time. The
- * character column order is fixed (not re-sorted per row) so a DM's eye
- * can track one character down a single column across the whole grid.
- * Character columns are `minmax(2.5rem, 1fr)` — they grow to fill however
- * wide the card actually is (a 2-column desktop layout stretches this card
- * to match its taller neighbor, so a fixed intrinsic width just left a
- * small island of cells with empty space beside it) and only fall back to
- * their floor once there are enough characters to need it. Deliberately no
- * `overflow-x-auto` scroller here: that combination forces the browser to
- * also treat the vertical axis as non-`visible` per the CSS Overflow
- * Module (see `InfoTooltip`'s own doc comment for the same rule breaking
- * *that* component pre-portal) — with this grid's height driven by its
- * grid-stretched parent, that quietly clipped the bottom rows instead of
- * ever actually needing to scroll.
+ * Passive row, same shape as `HeatmapRow` — colored against the underlying
+ * modifier (`value - 10`, since a passive score is just 10 + modifier with
+ * no roll) so it sits on the exact same cold/hot scale as every skill row,
+ * but *displayed* as the actual passive score, which is what a DM compares
+ * against a monster's own passive/DC. No advantage/disadvantage marker: a
+ * passive is never rolled, so the concept doesn't apply.
  */
-function SkillHeatmap({ characters, entries }: { characters: Character[]; entries: SkillOverviewEntry[] }) {
+function HeatmapPassiveRow({
+  label,
+  skill,
+  summary,
+  characters,
+}: {
+  label: string;
+  skill: SkillName;
+  summary: PassiveStatSummary;
+  characters: Character[];
+}) {
+  const scoreByCharacter = new Map(summary.all.map((s) => [s.characterId, s]));
+  return (
+    <div className="contents">
+      <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
+        <span className="whitespace-nowrap pr-2 text-sm text-slate-300">{label}</span>
+      </InfoTooltip>
+      {characters.map((c) => {
+        const score = scoreByCharacter.get(c.id)!;
+        return (
+          <HeatmapCell
+            key={c.id}
+            displayValue={String(score.value)}
+            colorValue={score.value - 10}
+            proficient={score.proficient}
+            tooltip={
+              <p className="text-white">
+                {score.characterName}:{" "}
+                <span className={scoreRowClass(score.proficient)}>
+                  {score.value}
+                  {score.proficient ? " · proficient" : ""}
+                </span>
+              </p>
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Every character's passive and active skill score in one scannable grid —
+ * answers "who's my best pick for this specific check" and "how deep is
+ * our bench" in one glance, instead of hovering rows one at a time.
+ * Passives lead (a DM checks them far more often mid-session — "does
+ * anyone notice this" beats "who should roll Arcana" in raw frequency),
+ * skills follow, each family under its own subheader within the same
+ * grid so the two still read as one instrument rather than two stacked
+ * tables. The character column order is fixed (not re-sorted per row) so
+ * a DM's eye can track one character down a single column across the
+ * whole grid. Character columns are `minmax(2.5rem, 1fr)` — they grow to
+ * fill however wide the card actually is (a 2-column desktop layout
+ * stretches this card to match its taller neighbor, so a fixed intrinsic
+ * width just left a small island of cells with empty space beside it) and
+ * only fall back to their floor once there are enough characters to need
+ * it. Deliberately no `overflow-x-auto` scroller here: that combination
+ * forces the browser to also treat the vertical axis as non-`visible` per
+ * the CSS Overflow Module (see `InfoTooltip`'s own doc comment for the
+ * same rule breaking *that* component pre-portal) — with this grid's
+ * height driven by its grid-stretched parent, that quietly clipped the
+ * bottom rows instead of ever actually needing to scroll.
+ */
+function SkillHeatmap({
+  characters,
+  entries,
+  passives,
+}: {
+  characters: Character[];
+  entries: SkillOverviewEntry[];
+  passives: PartyPassiveSummary;
+}) {
   return (
     <div className="grid items-center gap-1.5" style={{ gridTemplateColumns: `auto repeat(${characters.length}, minmax(2.5rem, 1fr))` }}>
       <span />
@@ -245,45 +261,16 @@ function SkillHeatmap({ characters, entries }: { characters: Character[]; entrie
           <CharacterChip name={c.name} avatarUrl={c.avatarUrl} size="md" />
         </span>
       ))}
+
+      <SectionLabel className="col-span-full">Passives</SectionLabel>
+      <HeatmapPassiveRow label="Passive Perception" skill="perception" summary={passives.perception} characters={characters} />
+      <HeatmapPassiveRow label="Passive Insight" skill="insight" summary={passives.insight} characters={characters} />
+      <HeatmapPassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} characters={characters} />
+
+      <SectionLabel className="col-span-full mt-2">Skills</SectionLabel>
       {entries.map((entry) => (
         <HeatmapRow key={entry.skill} entry={entry} characters={characters} />
       ))}
-    </div>
-  );
-}
-
-function SkillRow({ entry }: { entry: SkillOverviewEntry }) {
-  const label = SKILL_LABELS[entry.skill];
-  return (
-    <div className="flex items-center gap-3 py-1.5 text-sm">
-      <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
-          <span className="text-slate-300">{label}</span>
-        </InfoTooltip>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        {entry.best && (
-          <StrengthChip
-            key={`best-${entry.best.characterId}`}
-            characterName={entry.best.characterName}
-            avatarUrl={entry.best.avatarUrl}
-            hint={`Best: ${entry.best.characterName} ${formatModifier(entry.best.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.best.advantage ?? ""] ?? ""}`}
-            direction="up"
-            advantage={entry.best.advantage}
-          />
-        )}
-        {entry.weakest && (
-          <StrengthChip
-            key={`weakest-${entry.weakest.characterId}`}
-            characterName={entry.weakest.characterName}
-            avatarUrl={entry.weakest.avatarUrl}
-            hint={`Weakest: ${entry.weakest.characterName} ${formatModifier(entry.weakest.modifier)}${ADVANTAGE_HINT_SUFFIX[entry.weakest.advantage ?? ""] ?? ""}`}
-            direction="down"
-            advantage={entry.weakest.advantage}
-          />
-        )}
-      </div>
-      <CoverageBadge proficientCount={entry.proficientCount} partySize={entry.all.length} status={entry.status} />
     </div>
   );
 }
@@ -307,38 +294,6 @@ function PassiveAllScoresPanel({ label, skill, all }: { label: string; skill: Sk
         </>
       )}
     />
-  );
-}
-
-/** Same shape as `SkillRow` (name with a hover hint, best/weakest chips, status dot) — Passives is a subsection of the same Skills card, so the two need to read as one family of rows. Average/lowest are one hover away in the tooltip rather than crammed into a subtitle. */
-function PassiveRow({ label, skill, summary }: { label: string; skill: SkillName; summary: PassiveStatSummary }) {
-  return (
-    <div className="flex items-center gap-3 py-1.5 text-sm">
-      <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<PassiveAllScoresPanel label={label} skill={skill} all={summary.all} />}>
-          <span className="text-slate-300">{label}</span>
-        </InfoTooltip>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <StrengthChip
-          key={`best-${summary.best.characterId}`}
-          characterName={summary.best.characterName}
-          avatarUrl={summary.best.avatarUrl}
-          hint={`Best: ${summary.best.characterName} ${summary.best.value}`}
-          direction="up"
-        />
-        {summary.weakest && (
-          <StrengthChip
-            key={`weakest-${summary.weakest.characterId}`}
-            characterName={summary.weakest.characterName}
-            avatarUrl={summary.weakest.avatarUrl}
-            hint={`Weakest: ${summary.weakest.characterName} ${summary.weakest.value}`}
-            direction="down"
-          />
-        )}
-      </div>
-      <CoverageBadge proficientCount={summary.proficientCount} partySize={summary.all.length} status={summary.status} />
-    </div>
   );
 }
 
@@ -447,13 +402,13 @@ function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] 
 }
 
 /**
- * Skills — merges Passives and the Party Skill Overview into one card:
- * Passives first (same row shape as the skills below it), then all 18
- * skills (no compact/"show all" split — a DM mid-session doesn't know in
- * advance which skill they'll need, so hiding most of them just adds an
- * extra click). Every row name carries a hover hint listing each
- * character's own score, so the list stays scannable at a glance while
- * still answering "what does everyone else have" on demand.
+ * Skills — the ability radar, then the Skill Heatmap (passives first, all
+ * 18 skills after, see `SkillHeatmap`'s own doc comment). No compact/"show
+ * all" split on the skill rows — a DM mid-session doesn't know in advance
+ * which skill they'll need, so hiding most of them just adds an extra
+ * click. Every row label still carries the same full-breakdown hover hint
+ * the old list rows had; the heatmap grid replaces the rows themselves,
+ * not the interaction.
  */
 export function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const skillEntries = computePartySkillOverview(characters);
@@ -477,9 +432,10 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
           inline
           panel={
             <p className="text-white">
-              Every character&apos;s modifier for every skill. Color runs cold to hot by the modifier itself — blue
-              for negative, slate for +0, amber the higher it climbs. Top-left marks advantage (▲) or disadvantage
-              (▼) on the roll; top-right marks proficiency — a dot for proficient, a star for expertise.
+              Every character&apos;s passive scores, then every skill modifier — one grid, one glance. Color runs
+              cold to hot by the number itself (a passive by its underlying modifier) — blue for negative, slate for
+              +0, amber the higher it climbs. Top-left marks advantage (▲) or disadvantage (▼) on the roll; top-right
+              marks proficiency — a dot for proficient, a star for expertise.
             </p>
           }
         >
@@ -487,21 +443,7 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
         </InfoTooltip>
       </SectionLabel>
       <div className="mt-2">
-        <SkillHeatmap characters={characters} entries={skillEntries} />
-      </div>
-
-      <SectionLabel className="mt-4">Passives</SectionLabel>
-      <div className="divide-y divide-slate-800/60">
-        <PassiveRow label="Passive Perception" skill="perception" summary={passives.perception} />
-        <PassiveRow label="Passive Insight" skill="insight" summary={passives.insight} />
-        <PassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} />
-      </div>
-
-      <SectionLabel className="mt-4">Skills</SectionLabel>
-      <div className="divide-y divide-slate-800/60">
-        {skillEntries.map((entry) => (
-          <SkillRow key={entry.skill} entry={entry} />
-        ))}
+        <SkillHeatmap characters={characters} entries={skillEntries} passives={passives} />
       </div>
     </ToolkitCard>
   );
