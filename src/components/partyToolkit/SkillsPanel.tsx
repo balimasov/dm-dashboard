@@ -52,27 +52,38 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
 }
 
 /**
- * Cold (negative modifiers) → neutral (0) → hot (positive modifiers), three
- * steps per side keyed to how far the modifier sits from zero — an absolute
- * scale, not row-relative: a +0 always reads as the same neutral slate
- * whether it's the best or worst score in its row, because a flat coin-flip
- * modifier isn't "good" just for being the best of a bad bunch. Magnitude
- * beyond `HEAT_SATURATION_CAP` clamps to the most saturated step on its
- * side — skill modifiers in practice rarely exceed roughly ±8, so the ramp
- * still shows contrast across the range that actually occurs instead of
- * everything pinning to one end. Proficiency is a second, independent fact
- * carried by a small corner marker rather than folded into this color.
+ * A monotonic near-black → gold ramp, keyed on the absolute value itself
+ * (a skill's own modifier, or a passive's value minus 10 — see
+ * `HeatmapCell`) rather than split into a cold/hot pair around zero: a
+ * flat +0 isn't meaningfully "cold" on its own, just unremarkable, so it
+ * sits at the dark end of one continuous scale instead of anchoring a
+ * second hue family. Custom hex stops (not the Tailwind ramp) per design
+ * request. Text flips from light to dark once the fill gets bright enough
+ * that white stops clearing WCAG's 4.5:1 body-text contrast (from the
+ * 9-10 stop up) — a bold 12px number still counts as body text, not the
+ * "large text" WCAG exempts down to 3:1.
  */
-const COLD_STEPS = ["bg-blue-950/60", "bg-blue-800/65", "bg-blue-600/75"];
-const WARM_STEPS = ["bg-amber-950/60", "bg-amber-800/65", "bg-amber-500/80"];
-const NEUTRAL_STEP = "bg-slate-700/60";
-const HEAT_SATURATION_CAP = 8;
+interface HeatmapColorStop {
+  /** Inclusive upper bound of this stop's range. */
+  max: number;
+  bg: string;
+  text: string;
+}
 
-function heatmapStepClass(modifier: number): string {
-  if (modifier === 0) return NEUTRAL_STEP;
-  const steps = modifier > 0 ? WARM_STEPS : COLD_STEPS;
-  const magnitude = Math.min(Math.abs(modifier), HEAT_SATURATION_CAP) / HEAT_SATURATION_CAP;
-  return steps[Math.min(steps.length - 1, Math.floor(magnitude * steps.length))];
+const HEATMAP_COLOR_STOPS: HeatmapColorStop[] = [
+  { max: 0, bg: "#232129", text: "text-slate-100" },
+  { max: 2, bg: "#312C38", text: "text-slate-100" },
+  { max: 4, bg: "#43362F", text: "text-slate-100" },
+  { max: 6, bg: "#5E4228", text: "text-slate-100" },
+  { max: 8, bg: "#84571F", text: "text-slate-100" },
+  { max: 10, bg: "#B06E19", text: "text-slate-900" },
+  { max: 13, bg: "#D8921F", text: "text-slate-900" },
+];
+/** >= 14 — past the last explicit stop's range. */
+const HEATMAP_COLOR_TOP: HeatmapColorStop = { max: Infinity, bg: "#F2B437", text: "text-slate-900" };
+
+function heatmapColorStop(value: number): HeatmapColorStop {
+  return HEATMAP_COLOR_STOPS.find((stop) => value <= stop.max) ?? HEATMAP_COLOR_TOP;
 }
 
 /**
@@ -103,10 +114,12 @@ function HeatmapCell({
   advantage?: "advantage" | "disadvantage";
   tooltip: ReactNode;
 }) {
+  const stop = heatmapColorStop(colorValue);
   return (
     <InfoTooltip hoverOnly panel={tooltip}>
       <span
-        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${heatmapStepClass(colorValue)}`}
+        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums ${stop.text}`}
+        style={{ backgroundColor: stop.bg }}
       >
         {displayValue}
         {advantage === "advantage" && (
@@ -433,9 +446,9 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
           panel={
             <p className="text-white">
               Every character&apos;s passive scores, then every skill modifier — one grid, one glance. Color runs
-              cold to hot by the number itself (a passive by its underlying modifier) — blue for negative, slate for
-              +0, amber the higher it climbs. Top-left marks advantage (▲) or disadvantage (▼) on the roll; top-right
-              marks proficiency — a dot for proficient, a star for expertise.
+              from near-black to gold by the number itself (a passive by its underlying modifier). Top-left marks
+              advantage (▲) or disadvantage (▼) on the roll; top-right marks proficiency — a dot for proficient, a
+              star for expertise.
             </p>
           }
         >
