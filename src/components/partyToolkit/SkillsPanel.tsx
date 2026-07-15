@@ -131,29 +131,39 @@ function StrengthChip({
 }
 
 /**
- * Sequential 4-step cold→hot ramp — cell 0 (this row's own *worst*
- * modifier) is cool blue, cell 3 (this row's own best) is bright amber, with
- * a neutral slate step either side of the row's midpoint. The classic
- * "heatmap" association (cold = low, hot = high) reads faster at a glance
- * than a single-hue hue ramp. The scale is row-relative on purpose: it
- * answers "who's my best pick for *this* skill", which a fixed global scale
- * would wash out for a high-level party (everything reads uniformly hot) or
- * a low-level one (everything reads uniformly cold). Proficiency is a
- * second, independent fact carried by a small corner dot/star rather than
- * folded into this same color — collapsing "how big is the number" and "is
- * this character trained" into one channel would hide whichever one didn't
- * win the color.
+ * Cold (negative modifiers) → neutral (0) → hot (positive modifiers), three
+ * steps per side keyed to how far the modifier sits from zero — an absolute
+ * scale, not row-relative: a +0 always reads as the same neutral slate
+ * whether it's the best or worst score in its row, because a flat coin-flip
+ * modifier isn't "good" just for being the best of a bad bunch. Magnitude
+ * beyond `HEAT_SATURATION_CAP` clamps to the most saturated step on its
+ * side — skill modifiers in practice rarely exceed roughly ±8, so the ramp
+ * still shows contrast across the range that actually occurs instead of
+ * everything pinning to one end. Proficiency is a second, independent fact
+ * carried by a small corner marker rather than folded into this color.
  */
-const HEATMAP_STEP_CLASS = ["bg-blue-900/70", "bg-slate-700/60", "bg-amber-900/60", "bg-amber-500/80"];
+const COLD_STEPS = ["bg-blue-950/60", "bg-blue-800/65", "bg-blue-600/75"];
+const WARM_STEPS = ["bg-amber-950/60", "bg-amber-800/65", "bg-amber-500/80"];
+const NEUTRAL_STEP = "bg-slate-700/60";
+const HEAT_SATURATION_CAP = 8;
 
-/** Row-relative bucket (0-3) for a modifier against that skill's own best/worst spread — a flat row (every character tied) always buckets to 1, the cooler of the two neutral mid-steps rather than arbitrarily picking an end. */
-function heatmapBucket(modifier: number, rowMin: number, rowMax: number): number {
-  if (rowMax === rowMin) return 1;
-  return Math.min(3, Math.round(((modifier - rowMin) / (rowMax - rowMin)) * 3));
+function heatmapStepClass(modifier: number): string {
+  if (modifier === 0) return NEUTRAL_STEP;
+  const steps = modifier > 0 ? WARM_STEPS : COLD_STEPS;
+  const magnitude = Math.min(Math.abs(modifier), HEAT_SATURATION_CAP) / HEAT_SATURATION_CAP;
+  return steps[Math.min(steps.length - 1, Math.floor(magnitude * steps.length))];
 }
 
-/** One data cell — fill is the row-relative bucket; a small corner marker carries proficiency independently of that color (a dot for proficient, a star for expertise, nothing for untrained). */
-function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: number }) {
+/**
+ * One data cell — fill is the absolute cold/hot step for this modifier.
+ * Advantage/disadvantage (top-left, same ▲/▼ + color convention as every
+ * other hint in this file) and proficiency (top-right: a dot for
+ * proficient, a star for expertise) are independent corner markers, not
+ * folded into the fill color, so a DM can read "how good", "is it
+ * trained", and "is the roll itself helped or hurt" as three separate
+ * glances instead of guessing which fact a blended color is showing.
+ */
+function HeatmapCell({ score }: { score: SkillCharacterScore }) {
   return (
     <InfoTooltip
       hoverOnly
@@ -167,9 +177,15 @@ function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: nu
       }
     >
       <span
-        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${HEATMAP_STEP_CLASS[bucket]}`}
+        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums text-slate-100 ${heatmapStepClass(score.modifier)}`}
       >
         {formatModifier(score.modifier)}
+        {score.advantage === "advantage" && (
+          <span className="absolute left-1 top-0.5 text-[9px] leading-none text-emerald-400">▲</span>
+        )}
+        {score.advantage === "disadvantage" && (
+          <span className="absolute left-1 top-0.5 text-[9px] leading-none text-red-400">▼</span>
+        )}
         {score.proficient &&
           (score.expertise ? (
             <span className="absolute right-1 top-0.5 text-[9px] leading-none text-emerald-300">★</span>
@@ -190,18 +206,14 @@ function HeatmapCell({ score, bucket }: { score: SkillCharacterScore; bucket: nu
  */
 function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characters: Character[] }) {
   const scoreByCharacter = new Map(entry.all.map((s) => [s.characterId, s]));
-  const modifiers = entry.all.map((s) => s.modifier);
-  const rowMin = Math.min(...modifiers);
-  const rowMax = Math.max(...modifiers);
   return (
     <div className="contents">
       <InfoTooltip panel={<SkillAllScoresPanel skill={entry.skill} all={entry.all} />}>
         <span className="whitespace-nowrap pr-2 text-xs text-slate-400">{SKILL_LABELS[entry.skill]}</span>
       </InfoTooltip>
-      {characters.map((c) => {
-        const score = scoreByCharacter.get(c.id)!;
-        return <HeatmapCell key={c.id} score={score} bucket={heatmapBucket(score.modifier, rowMin, rowMax)} />;
-      })}
+      {characters.map((c) => (
+        <HeatmapCell key={c.id} score={scoreByCharacter.get(c.id)!} />
+      ))}
     </div>
   );
 }
@@ -230,7 +242,7 @@ function SkillHeatmap({ characters, entries }: { characters: Character[]; entrie
       <span />
       {characters.map((c) => (
         <span key={c.id} className="flex justify-center">
-          <CharacterChip name={c.name} avatarUrl={c.avatarUrl} />
+          <CharacterChip name={c.name} avatarUrl={c.avatarUrl} size="md" />
         </span>
       ))}
       {entries.map((entry) => (
@@ -465,9 +477,9 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
           inline
           panel={
             <p className="text-white">
-              Every character&apos;s modifier for every skill. Color is scaled per row, cold to hot — amber is this
-              skill&apos;s best in the party, blue is its worst — so you can spot your pick at a glance. The corner
-              marker shows proficiency: a dot for proficient, a star for expertise, nothing for untrained.
+              Every character&apos;s modifier for every skill. Color runs cold to hot by the modifier itself — blue
+              for negative, slate for +0, amber the higher it climbs. Top-left marks advantage (▲) or disadvantage
+              (▼) on the roll; top-right marks proficiency — a dot for proficient, a star for expertise.
             </p>
           }
         >

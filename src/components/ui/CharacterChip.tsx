@@ -18,6 +18,12 @@ function chipColorClass(name: string): string {
   return CHARACTER_CHIP_COLORS[Math.abs(hash) % CHARACTER_CHIP_COLORS.length];
 }
 
+/** `sm` (20px) is the original, default size used everywhere else; `md` (36px) exists for the rare spot that needs a bigger, still-recognizable chip — the Skill Heatmap's column-header avatars, sized to match its own data-cell height. */
+const CHARACTER_CHIP_SIZE_CLASS = {
+  sm: "h-5 w-5 text-[10px]",
+  md: "h-9 w-9 text-sm",
+};
+
 /**
  * A compact stand-in for a full character name — their avatar if one's set,
  * otherwise the first letter of their name in a small colored circle, full
@@ -38,14 +44,17 @@ export function CharacterChip({
   avatarUrl,
   title,
   showTitle = true,
+  size = "sm",
 }: {
   name: string;
   avatarUrl?: string;
   title?: string;
   showTitle?: boolean;
+  size?: "sm" | "md";
 }) {
   const [failed, setFailed] = useState(false);
   const label = showTitle ? (title ?? name) : undefined;
+  const sizeClass = CHARACTER_CHIP_SIZE_CLASS[size];
   if (avatarUrl && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small chip
@@ -54,14 +63,14 @@ export function CharacterChip({
         alt=""
         title={label}
         onError={() => setFailed(true)}
-        className="h-5 w-5 shrink-0 rounded-full border border-slate-700 object-cover"
+        className={`shrink-0 rounded-full border border-slate-700 object-cover ${sizeClass}`}
       />
     );
   }
   return (
     <span
       title={label}
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${chipColorClass(name)}`}
+      className={`flex shrink-0 items-center justify-center rounded-full border font-semibold ${chipColorClass(name)} ${sizeClass}`}
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>
