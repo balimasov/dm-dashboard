@@ -36,45 +36,49 @@ function CampaignRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
-      <CampaignLogo campaign={campaign} />
-      <div className="min-w-0 flex-1">
-        <Link
-          href={`/campaigns/${campaign.id}`}
-          className="block break-words text-lg font-semibold text-slate-100 hover:underline"
-        >
-          {campaign.name}
-        </Link>
-        <p className="text-sm text-slate-500">
-          {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
-        </p>
+    <li className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <CampaignLogo campaign={campaign} />
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/campaigns/${campaign.id}`}
+            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 hover:underline"
+          >
+            {campaign.name}
+          </Link>
+          <p className="text-sm text-slate-500">
+            {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
+          </p>
+        </div>
       </div>
-      <a
-        href={`/api/campaigns/${campaign.id}/export`}
-        title="Download this campaign (and its characters/creatures) as JSON"
-        className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-      >
-        Export
-      </a>
-      <button
-        type="button"
-        onClick={() => onEdit(campaign)}
-        className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-      >
-        Edit
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          const confirmed = window.confirm(
-            `Delete "${campaign.name}"? This also deletes all ${campaign.characterCount} character(s) in it. This can't be undone.`
-          );
-          if (confirmed) onRemove(campaign.id);
-        }}
-        className="shrink-0 text-sm text-red-500/80 hover:text-red-400"
-      >
-        Remove
-      </button>
+      <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
+        <a
+          href={`/api/campaigns/${campaign.id}/export`}
+          title="Download this campaign (and its characters/creatures) as JSON"
+          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+        >
+          Export
+        </a>
+        <button
+          type="button"
+          onClick={() => onEdit(campaign)}
+          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const confirmed = window.confirm(
+              `Delete "${campaign.name}"? This also deletes all ${campaign.characterCount} character(s) in it. This can't be undone.`
+            );
+            if (confirmed) onRemove(campaign.id);
+          }}
+          className="shrink-0 text-sm text-red-500/80 hover:text-red-400"
+        >
+          Remove
+        </button>
+      </div>
     </li>
   );
 }
