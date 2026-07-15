@@ -57,19 +57,30 @@ interface HeatmapLevel {
 }
 
 /**
- * 7 fixed hex steps, dark → bright (design-provided) — text flips from
- * light to dark at the point the fill gets bright enough that white drops
- * below WCAG's 4.5:1 body-text contrast (a bold 12px number still counts
- * as body text, not the "large text" WCAG exempts down to 3:1).
+ * 7 steps, dark → bright. The original design-provided stops packed all
+ * the contrast into lightness alone, and spent it unevenly: steps 0-1 were
+ * both near-black blue-violet (barely distinguishable from each other),
+ * while steps 2-6 were all some shade of brown/amber/gold — five steps
+ * sharing one hue family. Since most real skill spreads land in the
+ * middle of the range, that's exactly where the old ramp was hardest to
+ * read. This ramp sweeps hue smoothly across the whole range instead —
+ * deep violet → magenta → wine-red → rust → amber → gold — so every
+ * adjacent pair differs in hue *and* lightness, not lightness alone; two
+ * cues instead of one make each step easier to place at a glance,
+ * especially in the busy middle of the scale. Text flips from light to
+ * dark only at the single step bright enough that white drops below
+ * WCAG's 4.5:1 body-text contrast (a bold 12px number still counts as
+ * body text, not the "large text" WCAG exempts down to 3:1) — every
+ * darker step keeps white.
  */
 const HEATMAP_LEVELS: HeatmapLevel[] = [
-  { bg: "#26233A", text: "text-slate-100" },
-  { bg: "#3A3450", text: "text-slate-100" },
-  { bg: "#54463D", text: "text-slate-100" },
-  { bg: "#735631", text: "text-slate-100" },
-  { bg: "#A06A22", text: "text-slate-900" },
-  { bg: "#D2871E", text: "text-slate-900" },
-  { bg: "#F2BC2E", text: "text-slate-900" },
+  { bg: "#241130", text: "text-slate-100" },
+  { bg: "#3D1440", text: "text-slate-100" },
+  { bg: "#591A3C", text: "text-slate-100" },
+  { bg: "#7A2430", text: "text-slate-100" },
+  { bg: "#9C3B22", text: "text-slate-100" },
+  { bg: "#B05818", text: "text-slate-100" },
+  { bg: "#F2B93E", text: "text-slate-900" },
 ];
 /** Every value in the group ties — same "nothing to distinguish" middle step `heatmapBucket`-style code elsewhere in this file uses for a flat row, here for a flat group. */
 const HEATMAP_MID_LEVEL = HEATMAP_LEVELS[3];
@@ -161,16 +172,16 @@ function HeatmapCell({
       >
         {displayValue}
         {advantage === "advantage" && (
-          <span className="absolute left-1 top-0.5 text-[9px] leading-none text-emerald-400">▲</span>
+          <span className="absolute left-1 top-1 text-[9px] leading-none text-emerald-400">▲</span>
         )}
         {advantage === "disadvantage" && (
-          <span className="absolute left-1 top-0.5 text-[9px] leading-none text-red-400">▼</span>
+          <span className="absolute left-1 top-1 text-[9px] leading-none text-red-400">▼</span>
         )}
         {proficient &&
           (expertise ? (
-            <span className="absolute right-1 top-0.5 text-[9px] leading-none text-cyan-300">★</span>
+            <span className="absolute right-1 top-1 text-[9px] leading-none text-cyan-300">★</span>
           ) : (
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-cyan-400" />
           ))}
       </span>
     </InfoTooltip>
