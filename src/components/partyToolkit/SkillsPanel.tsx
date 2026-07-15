@@ -51,75 +51,113 @@ function SkillAllScoresPanel({ skill, all }: { skill: SkillName; all: SkillChara
   );
 }
 
-/**
- * A monotonic near-black → gold ramp, keyed on the absolute value itself
- * (a skill's own modifier, or a passive's value minus 10 — see
- * `HeatmapCell`) rather than split into a cold/hot pair around zero: a
- * flat +0 isn't meaningfully "cold" on its own, just unremarkable, so it
- * sits at the dark end of one continuous scale instead of anchoring a
- * second hue family. Custom hex stops (not the Tailwind ramp) per design
- * request. Text flips from light to dark once the fill gets bright enough
- * that white stops clearing WCAG's 4.5:1 body-text contrast (from the
- * 9-10 stop up) — a bold 12px number still counts as body text, not the
- * "large text" WCAG exempts down to 3:1.
- */
-interface HeatmapColorStop {
-  /** Inclusive upper bound of this stop's range. */
-  max: number;
+interface HeatmapLevel {
   bg: string;
   text: string;
 }
 
-const HEATMAP_COLOR_STOPS: HeatmapColorStop[] = [
-  { max: 0, bg: "#232129", text: "text-slate-100" },
-  { max: 2, bg: "#312C38", text: "text-slate-100" },
-  { max: 4, bg: "#43362F", text: "text-slate-100" },
-  { max: 6, bg: "#5E4228", text: "text-slate-100" },
-  { max: 8, bg: "#84571F", text: "text-slate-100" },
-  { max: 10, bg: "#B06E19", text: "text-slate-900" },
-  { max: 13, bg: "#D8921F", text: "text-slate-900" },
+/**
+ * 7 fixed hex steps, dark → bright (design-provided) — text flips from
+ * light to dark at the point the fill gets bright enough that white drops
+ * below WCAG's 4.5:1 body-text contrast (a bold 12px number still counts
+ * as body text, not the "large text" WCAG exempts down to 3:1).
+ */
+const HEATMAP_LEVELS: HeatmapLevel[] = [
+  { bg: "#26233A", text: "text-slate-100" },
+  { bg: "#3A3450", text: "text-slate-100" },
+  { bg: "#54463D", text: "text-slate-100" },
+  { bg: "#735631", text: "text-slate-100" },
+  { bg: "#A06A22", text: "text-slate-900" },
+  { bg: "#D2871E", text: "text-slate-900" },
+  { bg: "#F2BC2E", text: "text-slate-900" },
 ];
-/** >= 14 — past the last explicit stop's range. */
-const HEATMAP_COLOR_TOP: HeatmapColorStop = { max: Infinity, bg: "#F2B437", text: "text-slate-900" };
+/** Every value in the group ties — same "nothing to distinguish" middle step `heatmapBucket`-style code elsewhere in this file uses for a flat row, here for a flat group. */
+const HEATMAP_MID_LEVEL = HEATMAP_LEVELS[3];
+/** A value with no group to compare against (or a non-finite one) reads as plainly "no data", never as the coldest real score. */
+const HEATMAP_NEUTRAL_LEVEL: HeatmapLevel = { bg: "#334155", text: "text-slate-400" };
+/** A real spread narrower than this gets padded to it (centered on the group's own midpoint) so a handful of points a couple of numbers apart don't get stretched across the full dark-to-bright range and read as more dramatic than they are. */
+const HEATMAP_MIN_SPAN = 6;
 
-function heatmapColorStop(value: number): HeatmapColorStop {
-  return HEATMAP_COLOR_STOPS.find((stop) => value <= stop.max) ?? HEATMAP_COLOR_TOP;
+/** A group's min/max — `null` when the group has no finite values to compare (nothing to be relative to). */
+type HeatmapGroupRange = { min: number; max: number } | null;
+
+/**
+ * Active Skills and Passives are normalized separately (`SkillHeatmap`
+ * computes one `HeatmapGroupRange` per family and threads it down) — they
+ * live on different numeric scales (a raw modifier vs. 10 + modifier), so
+ * sharing one min/max would let one family's spread swamp the other's.
+ * Non-finite inputs (nothing in this app's data model currently produces
+ * one, but the aggregation stays defensive) are dropped before min/max,
+ * matching "missing values don't count toward the range" — see
+ * `heatmapLevelFor` for how a missing value itself renders.
+ */
+function computeHeatmapGroupRange(values: number[]): HeatmapGroupRange {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length === 0) return null;
+  return { min: Math.min(...finite), max: Math.max(...finite) };
 }
 
 /**
- * One data cell — fill is the absolute cold/hot step for `colorValue`
- * (a skill's own modifier, or a passive's value minus 10 so it sits on the
- * same zero-centered scale). Advantage/disadvantage (top-left, same ▲/▼ +
- * color convention as every other hint in this file) and proficiency
- * (top-right: a dot for proficient, a star for expertise) are independent
- * corner markers, not folded into the fill color, so a DM can read "how
- * good", "is it trained", and "is the roll itself helped or hurt" as three
- * separate glances instead of guessing which fact a blended color is
- * showing. `tooltip` is built by the caller so skill and passive rows can
- * each match their own existing hint's wording (a passive score is never
- * "rolled", so it has no advantage/disadvantage line).
+ * Normalizes `value` against its group's own `range` — `(value - min) /
+ * (max - min)`, bucketed into the 7 `HEATMAP_LEVELS` steps — so color
+ * shows *relative* standing within the current party/group, not the
+ * absolute bonus (a lone +7 reads as the brightest step in one party, the
+ * dimmest in another where everyone's pushing +12+). Recomputed fresh
+ * every render straight from `characters`/`entries`/`passives`, so a sync
+ * or a roster change (new/removed character) reshapes the whole scale
+ * automatically — there's no cached range to go stale.
+ */
+function heatmapLevelFor(value: number, range: HeatmapGroupRange): HeatmapLevel {
+  if (range === null || !Number.isFinite(value)) return HEATMAP_NEUTRAL_LEVEL;
+  const { min, max } = range;
+  if (min === max) return HEATMAP_MID_LEVEL;
+
+  let effectiveMin = min;
+  let effectiveMax = max;
+  if (max - min < HEATMAP_MIN_SPAN) {
+    const mid = (min + max) / 2;
+    effectiveMin = mid - HEATMAP_MIN_SPAN / 2;
+    effectiveMax = mid + HEATMAP_MIN_SPAN / 2;
+  }
+
+  const t = Math.min(1, Math.max(0, (value - effectiveMin) / (effectiveMax - effectiveMin)));
+  return HEATMAP_LEVELS[Math.min(HEATMAP_LEVELS.length - 1, Math.floor(t * HEATMAP_LEVELS.length))];
+}
+
+/**
+ * One data cell — fill is the pre-resolved `level` (the caller normalizes
+ * against its own group's range; see `heatmapLevelFor`). Advantage/
+ * disadvantage (top-left, same ▲/▼ + color convention as every other hint
+ * in this file) and proficiency (top-right: a turquoise dot for
+ * proficient, a turquoise star for expertise) are independent corner
+ * markers, not folded into the fill color, so a DM can read "how good
+ * relative to the rest of the party", "is it trained", and "is the roll
+ * itself helped or hurt" as three separate glances instead of guessing
+ * which fact a blended color is showing. `tooltip` is built by the caller
+ * so skill and passive rows can each match their own existing hint's
+ * wording (a passive score is never "rolled", so it has no advantage/
+ * disadvantage line).
  */
 function HeatmapCell({
   displayValue,
-  colorValue,
+  level,
   proficient,
   expertise,
   advantage,
   tooltip,
 }: {
   displayValue: string;
-  colorValue: number;
+  level: HeatmapLevel;
   proficient: boolean;
   expertise?: boolean;
   advantage?: "advantage" | "disadvantage";
   tooltip: ReactNode;
 }) {
-  const stop = heatmapColorStop(colorValue);
   return (
     <InfoTooltip hoverOnly panel={tooltip}>
       <span
-        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums ${stop.text}`}
-        style={{ backgroundColor: stop.bg }}
+        className={`relative flex h-9 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums ${level.text}`}
+        style={{ backgroundColor: level.bg }}
       >
         {displayValue}
         {advantage === "advantage" && (
@@ -130,9 +168,9 @@ function HeatmapCell({
         )}
         {proficient &&
           (expertise ? (
-            <span className="absolute right-1 top-0.5 text-[9px] leading-none text-emerald-300">★</span>
+            <span className="absolute right-1 top-0.5 text-[9px] leading-none text-cyan-300">★</span>
           ) : (
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-cyan-400" />
           ))}
       </span>
     </InfoTooltip>
@@ -159,9 +197,12 @@ function skillCellTooltip(score: SkillCharacterScore): ReactNode {
  * `entry.all`'s order, which is sorted best-first and would shuffle every
  * row differently. Every character always has a score here: `entry.all` is
  * built by mapping over this same `characters` array in
- * `computeSkillOverviewEntry`, so the lookup can't miss.
+ * `computeSkillOverviewEntry`, so the lookup can't miss. `range` is the
+ * whole Active Skills group's own min/max (every skill × every character),
+ * computed once by `SkillHeatmap` and threaded down — not recomputed per
+ * row, which would make each row relative to itself instead of the group.
  */
-function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characters: Character[] }) {
+function HeatmapRow({ entry, characters, range }: { entry: SkillOverviewEntry; characters: Character[]; range: HeatmapGroupRange }) {
   const scoreByCharacter = new Map(entry.all.map((s) => [s.characterId, s]));
   return (
     <div className="contents">
@@ -174,7 +215,7 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
           <HeatmapCell
             key={c.id}
             displayValue={formatModifier(score.modifier)}
-            colorValue={score.modifier}
+            level={heatmapLevelFor(score.modifier, range)}
             proficient={score.proficient}
             expertise={score.expertise}
             advantage={score.advantage}
@@ -187,23 +228,25 @@ function HeatmapRow({ entry, characters }: { entry: SkillOverviewEntry; characte
 }
 
 /**
- * Passive row, same shape as `HeatmapRow` — colored against the underlying
- * modifier (`value - 10`, since a passive score is just 10 + modifier with
- * no roll) so it sits on the exact same cold/hot scale as every skill row,
- * but *displayed* as the actual passive score, which is what a DM compares
- * against a monster's own passive/DC. No advantage/disadvantage marker: a
- * passive is never rolled, so the concept doesn't apply.
+ * Passive row, same shape as `HeatmapRow` — normalized against the
+ * Passives group's own range (`range`, every passive stat × every
+ * character), a separate scale from Active Skills since a raw passive
+ * score (10 + modifier) and a plain modifier don't live in the same
+ * numeric space. No advantage/disadvantage marker: a passive is never
+ * rolled, so the concept doesn't apply.
  */
 function HeatmapPassiveRow({
   label,
   skill,
   summary,
   characters,
+  range,
 }: {
   label: string;
   skill: SkillName;
   summary: PassiveStatSummary;
   characters: Character[];
+  range: HeatmapGroupRange;
 }) {
   const scoreByCharacter = new Map(summary.all.map((s) => [s.characterId, s]));
   return (
@@ -217,7 +260,7 @@ function HeatmapPassiveRow({
           <HeatmapCell
             key={c.id}
             displayValue={String(score.value)}
-            colorValue={score.value - 10}
+            level={heatmapLevelFor(score.value, range)}
             proficient={score.proficient}
             tooltip={
               <p className="text-white">
@@ -262,6 +305,13 @@ function HeatmapPassiveRow({
  * same rule breaking *that* component pre-portal) — with this grid's
  * height driven by its grid-stretched parent, that quietly clipped the
  * bottom rows instead of ever actually needing to scroll.
+ *
+ * Color: Active Skills and Passives are each normalized against their own
+ * group's min/max (every skill × every character is one pool; every
+ * passive × every character is the other) — see `heatmapLevelFor`. Both
+ * ranges are recomputed straight from this render's `entries`/`passives`,
+ * so a D&D Beyond sync or a roster change reshapes both scales on the
+ * very next render, nothing cached to invalidate.
  */
 function SkillHeatmap({
   characters,
@@ -272,6 +322,10 @@ function SkillHeatmap({
   entries: SkillOverviewEntry[];
   passives: PartyPassiveSummary;
 }) {
+  const passiveSummaries = [passives.perception, passives.insight, passives.investigation];
+  const passiveRange = computeHeatmapGroupRange(passiveSummaries.flatMap((p) => p.all.map((s) => s.value)));
+  const skillRange = computeHeatmapGroupRange(entries.flatMap((entry) => entry.all.map((s) => s.modifier)));
+
   return (
     <div
       className="grid items-center gap-1.5"
@@ -285,13 +339,13 @@ function SkillHeatmap({
       ))}
 
       <SectionLabel className="col-span-full">Passives</SectionLabel>
-      <HeatmapPassiveRow label="Passive Perception" skill="perception" summary={passives.perception} characters={characters} />
-      <HeatmapPassiveRow label="Passive Insight" skill="insight" summary={passives.insight} characters={characters} />
-      <HeatmapPassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} characters={characters} />
+      <HeatmapPassiveRow label="Passive Perception" skill="perception" summary={passives.perception} characters={characters} range={passiveRange} />
+      <HeatmapPassiveRow label="Passive Insight" skill="insight" summary={passives.insight} characters={characters} range={passiveRange} />
+      <HeatmapPassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} characters={characters} range={passiveRange} />
 
       <SectionLabel className="col-span-full mt-2">Skills</SectionLabel>
       {entries.map((entry) => (
-        <HeatmapRow key={entry.skill} entry={entry} characters={characters} />
+        <HeatmapRow key={entry.skill} entry={entry} characters={characters} range={skillRange} />
       ))}
     </div>
   );
@@ -454,10 +508,11 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
           inline
           panel={
             <p className="text-white">
-              Every character&apos;s passive scores, then every skill modifier — one grid, one glance. Color runs
-              from near-black to gold by the number itself (a passive by its underlying modifier). Top-left marks
-              advantage (▲) or disadvantage (▼) on the roll; top-right marks proficiency — a dot for proficient, a
-              star for expertise.
+              Every character&apos;s passive scores, then every skill modifier — one grid, one glance. Color is
+              relative, not absolute: darkest is the lowest score in the party right now, brightest is the highest —
+              Passives and Skills are scaled separately since they run on different number ranges. Top-left marks
+              advantage (▲) or disadvantage (▼) on the roll; top-right marks proficiency — a turquoise dot for
+              proficient, a turquoise star for expertise.
             </p>
           }
         >
