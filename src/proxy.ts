@@ -31,5 +31,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|api/health|_next/static|_next/image|favicon.ico|icon.svg).*)"],
+  // `logo.png` is rendered by the header on /login itself (before there's
+  // any session cookie to check) — without this exclusion the <img> request
+  // got redirected to the /login HTML page instead of image bytes, which a
+  // browser renders as a broken image (confirmed on a real login screen).
+  matcher: ["/((?!login|api/health|_next/static|_next/image|favicon.ico|icon.svg|logo.png).*)"],
 };

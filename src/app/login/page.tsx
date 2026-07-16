@@ -15,11 +15,11 @@ export default function LoginPage() {
       >
         <div>
           <h1 className="text-lg font-semibold text-slate-100">DM Dashboard</h1>
-          <p className="text-sm text-slate-500">Введи пароль, щоб продовжити.</p>
+          <p className="text-sm text-slate-500">Enter your password to continue.</p>
         </div>
         <div>
           <label htmlFor="password" className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
-            Пароль
+            Password
           </label>
           <input
             id="password"
@@ -46,7 +46,7 @@ export default function LoginPage() {
         </div>
         {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? "Перевірка..." : "Увійти"}
+          {pending ? "Checking..." : "Log in"}
         </Button>
       </form>
     </div>

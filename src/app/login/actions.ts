@@ -24,12 +24,12 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     const ip = await getClientIp();
     const lockedForMs = checkLoginRateLimit(ip);
     if (lockedForMs !== null) {
-      return { error: `Забагато невдалих спроб. Спробуй ще раз через ${Math.ceil(lockedForMs / 60000)} хв.` };
+      return { error: `Too many failed attempts. Try again in ${Math.ceil(lockedForMs / 60000)} min.` };
     }
     const resolved = resolveRole(password);
     if (!resolved) {
       recordFailedLogin(ip);
-      return { error: "Невірний пароль." };
+      return { error: "Incorrect password." };
     }
     role = resolved;
     clearLoginAttempts(ip);
