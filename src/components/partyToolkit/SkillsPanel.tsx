@@ -136,18 +136,33 @@ function heatmapLevelFor(value: number, range: HeatmapGroupRange): HeatmapLevel 
 }
 
 /**
+ * Both corner markers below share this exact box (same `top-1`, same
+ * `h-3 w-3` growing to `h-3.5 w-3.5` on `sm:`) — only `left-1`/`right-1`
+ * differs. Earlier attempts positioned the ▲/▼/★ *glyphs* directly with a
+ * `top-*` offset each and still drifted, because a Unicode triangle, star,
+ * and a plain `div` dot each carry a different ink-to-em-box offset per
+ * font — matching `top` values on the text spans themselves doesn't mean
+ * matching visual centers. Drawing every marker as a plain geometric shape
+ * (CSS border-triangle, an SVG star, a `div` dot — no font glyphs at all)
+ * inside this one identical flex-centered box sidesteps the problem
+ * entirely: the box's position is pixel-identical across all three, and
+ * flex centering places each shape's actual geometry, not a font's
+ * opinion of where a character "sits", at that box's center.
+ */
+const MARKER_BOX = "absolute top-1 flex h-3 w-3 items-center justify-center sm:h-3.5 sm:w-3.5";
+
+/**
  * One data cell — fill is the pre-resolved `level` (the caller normalizes
  * against its own group's range; see `heatmapLevelFor`). Advantage/
- * disadvantage (top-left, same ▲/▼ + color convention as every other hint
- * in this file) and proficiency (top-right: a turquoise dot for
- * proficient, a turquoise star for expertise) are independent corner
- * markers, not folded into the fill color, so a DM can read "how good
- * relative to the rest of the party", "is it trained", and "is the roll
- * itself helped or hurt" as three separate glances instead of guessing
- * which fact a blended color is showing. `tooltip` is built by the caller
- * so skill and passive rows can each match their own existing hint's
- * wording (a passive score is never "rolled", so it has no advantage/
- * disadvantage line).
+ * disadvantage (top-left, green up/red down triangle) and proficiency
+ * (top-right: an emerald dot for proficient, an emerald star for
+ * expertise) are independent corner markers, not folded into the fill
+ * color, so a DM can read "how good relative to the rest of the party",
+ * "is it trained", and "is the roll itself helped or hurt" as three
+ * separate glances instead of guessing which fact a blended color is
+ * showing. `tooltip` is built by the caller so skill and passive rows can
+ * each match their own existing hint's wording (a passive score is never
+ * "rolled", so it has no advantage/disadvantage line).
  */
 function HeatmapCell({
   displayValue,
@@ -172,16 +187,26 @@ function HeatmapCell({
       >
         {displayValue}
         {advantage === "advantage" && (
-          <span className="absolute left-1 top-1 text-[9px] leading-none text-emerald-400">▲</span>
+          <span className={`${MARKER_BOX} left-1`}>
+            <span className="h-0 w-0 border-x-[4px] border-b-[6px] border-x-transparent border-b-emerald-400 sm:border-x-[5px] sm:border-b-[7px]" />
+          </span>
         )}
         {advantage === "disadvantage" && (
-          <span className="absolute left-1 top-1 text-[9px] leading-none text-red-400">▼</span>
+          <span className={`${MARKER_BOX} left-1`}>
+            <span className="h-0 w-0 border-x-[4px] border-t-[6px] border-x-transparent border-t-red-400 sm:border-x-[5px] sm:border-t-[7px]" />
+          </span>
         )}
         {proficient &&
           (expertise ? (
-            <span className="absolute right-1 top-1 text-[9px] leading-none text-cyan-300">★</span>
+            <span className={`${MARKER_BOX} right-1`}>
+              <svg viewBox="0 0 20 20" className="h-2.5 w-2.5 fill-emerald-300 sm:h-3 sm:w-3">
+                <polygon points="10,1 12.6,7.6 19.5,7.9 14,12.3 15.8,19 10,15.1 4.2,19 6,12.3 0.5,7.9 7.4,7.6" />
+              </svg>
+            </span>
           ) : (
-            <span className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span className={`${MARKER_BOX} right-1`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 sm:h-2 sm:w-2" />
+            </span>
           ))}
       </span>
     </InfoTooltip>
@@ -304,18 +329,24 @@ function HeatmapPassiveRow({
  * stretches this card to match its taller neighbor, so a fixed intrinsic
  * width just left a small island of cells with empty space beside it) and
  * only fall back to their floor once there are enough characters to need
- * it. The label column is capped at `minmax(0, 6.5rem)` with the label
- * text truncated (full name still one hover away, same as the row's own
- * tooltip) rather than `auto`-sized to the longest skill name — on a
- * narrow phone, full names like "Passive Investigation" at `auto` could
- * by themselves eat most of the available width, squeezing a real party
- * size below every character column's own floor and overflowing the
- * card. Deliberately no `overflow-x-auto` scroller here: that combination
- * forces the browser to also treat the vertical axis as non-`visible` per
- * the CSS Overflow Module (see `InfoTooltip`'s own doc comment for the
- * same rule breaking *that* component pre-portal) — with this grid's
- * height driven by its grid-stretched parent, that quietly clipped the
- * bottom rows instead of ever actually needing to scroll.
+ * it. The label column is `minmax(6.5rem, 8rem)` with the label text
+ * truncated (full name still one hover away, same as the row's own
+ * tooltip) rather than `auto`-sized to the longest skill name — at `8rem`
+ * a name like "Passive Investigation" would by itself eat most of a
+ * narrow phone's available width, squeezing a real party size below every
+ * character column's own floor; `6.5rem` is the floor it shrinks to under
+ * that pressure. Once even the character-column floors don't fit
+ * (`8rem` + `characters.length × 2.25rem` + gaps wider than the card),
+ * the grid isn't allowed to compress further — `overflow-x-auto` on the
+ * wrapper below lets the excess scroll horizontally instead of squeezing
+ * cells unreadably thin or overflowing the card. That wrapper only sets
+ * `overflow-x`, not `overflow-y`; per the CSS Overflow Module the browser
+ * still computes the wrapper's own `overflow-y` as `auto` too (see
+ * `InfoTooltip`'s own doc comment for the same rule breaking *that*
+ * component pre-portal), but this wrapper's height is plain `auto` block
+ * flow — nothing here forces it to a shorter definite height the way the
+ * grid-stretched *card* is, so the vertical axis never actually has
+ * anything to clip.
  *
  * Color: Active Skills and Passives are each normalized against their own
  * group's min/max (every skill × every character is one pool; every
@@ -338,26 +369,28 @@ function SkillHeatmap({
   const skillRange = computeHeatmapGroupRange(entries.flatMap((entry) => entry.all.map((s) => s.modifier)));
 
   return (
-    <div
-      className="grid items-center gap-1.5"
-      style={{ gridTemplateColumns: `minmax(0, 6.5rem) repeat(${characters.length}, minmax(2.25rem, 1fr))` }}
-    >
-      <span />
-      {characters.map((c) => (
-        <span key={c.id} className="flex justify-center">
-          <CharacterChip name={c.name} avatarUrl={c.avatarUrl} size="md" />
-        </span>
-      ))}
+    <div className="overflow-x-auto">
+      <div
+        className="grid items-center gap-1.5"
+        style={{ gridTemplateColumns: `minmax(6.5rem, 8rem) repeat(${characters.length}, minmax(2.25rem, 1fr))` }}
+      >
+        <span />
+        {characters.map((c) => (
+          <span key={c.id} className="flex justify-center">
+            <CharacterChip name={c.name} avatarUrl={c.avatarUrl} size="md" />
+          </span>
+        ))}
 
-      <SectionLabel className="col-span-full">Passives</SectionLabel>
-      <HeatmapPassiveRow label="Passive Perception" skill="perception" summary={passives.perception} characters={characters} range={passiveRange} />
-      <HeatmapPassiveRow label="Passive Insight" skill="insight" summary={passives.insight} characters={characters} range={passiveRange} />
-      <HeatmapPassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} characters={characters} range={passiveRange} />
+        <SectionLabel className="col-span-full">Passives</SectionLabel>
+        <HeatmapPassiveRow label="Passive Perception" skill="perception" summary={passives.perception} characters={characters} range={passiveRange} />
+        <HeatmapPassiveRow label="Passive Insight" skill="insight" summary={passives.insight} characters={characters} range={passiveRange} />
+        <HeatmapPassiveRow label="Passive Investigation" skill="investigation" summary={passives.investigation} characters={characters} range={passiveRange} />
 
-      <SectionLabel className="col-span-full mt-2">Skills</SectionLabel>
-      {entries.map((entry) => (
-        <HeatmapRow key={entry.skill} entry={entry} characters={characters} range={skillRange} />
-      ))}
+        <SectionLabel className="col-span-full mt-2">Skills</SectionLabel>
+        {entries.map((entry) => (
+          <HeatmapRow key={entry.skill} entry={entry} characters={characters} range={skillRange} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -514,23 +547,7 @@ export function SkillsPanel({ characters, passives }: { characters: Character[];
         </div>
       )}
 
-      <SectionLabel className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
-        <InfoTooltip
-          inline
-          panel={
-            <p className="text-white">
-              Every character&apos;s passive scores, then every skill modifier — one grid, one glance. Color is
-              relative, not absolute: darkest is the lowest score in the party right now, brightest is the highest —
-              Passives and Skills are scaled separately since they run on different number ranges. Top-left marks
-              advantage (▲) or disadvantage (▼) on the roll; top-right marks proficiency — a turquoise dot for
-              proficient, a turquoise star for expertise.
-            </p>
-          }
-        >
-          Skill Heatmap
-        </InfoTooltip>
-      </SectionLabel>
-      <div className="mt-2">
+      <div className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
         <SkillHeatmap characters={characters} entries={skillEntries} passives={passives} />
       </div>
     </ToolkitCard>
