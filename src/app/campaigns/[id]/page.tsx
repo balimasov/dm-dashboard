@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getCampaign, listCharacters, listCreatures } from "@/lib/db";
 import { DashboardClient } from "@/components/DashboardClient";
+import { AUTH_COOKIE_NAME, isValidSession } from "@/lib/auth";
 
 // Campaign/character data changes at runtime and lives in a local SQLite
 // file — this page must never be statically cached at build time.
@@ -25,6 +26,7 @@ export default async function CampaignDashboardPage({
   // guess a default and the client visibly snaps to the real value right
   // after hydration, every single page load.
   const cookieStore = await cookies();
+  const { role } = isValidSession(cookieStore.get(AUTH_COOKIE_NAME)?.value);
   const isOpen = (key: string) => cookieStore.get(key)?.value !== "0";
   const initialOpen = {
     reminders: isOpen("dm-dashboard-reminders-open"),
@@ -44,6 +46,7 @@ export default async function CampaignDashboardPage({
       initialCharacters={characters}
       initialCreatures={creatures}
       initialOpen={initialOpen}
+      role={role}
     />
   );
 }

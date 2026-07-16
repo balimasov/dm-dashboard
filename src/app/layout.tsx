@@ -6,7 +6,7 @@ import packageJson from "../../package.json";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import { TimezoneProvider } from "@/components/TimezoneProvider";
 import { TimezoneSync } from "@/components/TimezoneSync";
-import { AUTH_COOKIE_NAME, isValidSessionToken } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, isValidSession } from "@/lib/auth";
 import { TZ_COOKIE_NAME } from "@/lib/timezone";
 import { logout } from "@/app/login/actions";
 
@@ -23,7 +23,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const authenticated = isValidSessionToken(cookieStore.get(AUTH_COOKIE_NAME)?.value);
+  const authenticated = isValidSession(cookieStore.get(AUTH_COOKIE_NAME)?.value).valid;
   const timeZone = cookieStore.get(TZ_COOKIE_NAME)?.value;
 
   return (

@@ -31,6 +31,7 @@ import {
   Creature,
   CreatureCategory,
 } from "@/lib/types";
+import { UserRole } from "@/lib/auth";
 
 type SettingsTab = "campaign" | "roster";
 
@@ -102,14 +103,16 @@ function SectionTitle({
   );
 }
 
-/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action (jumping straight to the roster tab), so adding either always starts from the one place both actually live. */
-function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpenSettings: () => void }) {
+/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action (jumping straight to the roster tab), so adding either always starts from the one place both actually live. `onOpenSettings` is omitted entirely for a player, who has no Settings to jump to (the button just wouldn't do anything for them). */
+function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpenSettings?: () => void }) {
   return (
     <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
       <p>{message}</p>
-      <Button type="button" onClick={onOpenSettings}>
-        Open Settings
-      </Button>
+      {onOpenSettings && (
+        <Button type="button" onClick={onOpenSettings}>
+          Open Settings
+        </Button>
+      )}
     </div>
   );
 }
@@ -179,7 +182,7 @@ function CreatureCategorySection({
   initialOpen: boolean;
   onUpdate: (id: string, updates: Partial<Creature>) => void;
   onRemove: (id: string) => void;
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
 }) {
   const inCategory = creatures.filter((c) => c.category === category);
   const filtered = inCategory.filter((c) => !c.hidden);
@@ -225,12 +228,15 @@ export function DashboardClient({
   initialCharacters,
   initialCreatures,
   initialOpen,
+  role,
 }: {
   campaign: Campaign;
   initialCharacters: Character[];
   initialCreatures: Creature[];
   initialOpen: OpenSections;
+  role: UserRole;
 }) {
+  const isDm = role === "dm";
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
   const { characters, removeCharacter, updateCharacter } = charactersState;
@@ -241,7 +247,11 @@ export function DashboardClient({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("campaign");
 
+  // A player has no Settings modal to open at all — guarded here too (not
+  // just by hiding every button that calls this), so nothing short of
+  // editing this component's own source can pop it open for that role.
   function openSettings(tab: SettingsTab = "campaign") {
+    if (!isDm) return;
     setSettingsTab(tab);
     setSettingsOpen(true);
   }
@@ -355,46 +365,57 @@ export function DashboardClient({
               <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
             </div>
           )}
-          <MoreMenu>
-            <a
-              href={`/api/campaigns/${campaign.id}/export`}
-              title="Download this campaign (and its characters/creatures) as JSON"
-              className={MORE_MENU_ITEM_CLASS}
-            >
-              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Export
-            </a>
-            <button type="button" onClick={() => openSettings("campaign")} className={MORE_MENU_ITEM_CLASS}>
-              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Settings
-            </button>
-          </MoreMenu>
+          {/* A player has nothing in this menu — Export dumps the whole
+              campaign (including the enemies/NPCs/notes this role otherwise
+              never sees), and Settings has no reduced view of its own — so
+              the menu itself is skipped rather than left open with an empty
+              or half-working dropdown. */}
+          {isDm && (
+            <MoreMenu>
+              <a
+                href={`/api/campaigns/${campaign.id}/export`}
+                title="Download this campaign (and its characters/creatures) as JSON"
+                className={MORE_MENU_ITEM_CLASS}
+              >
+                <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Export
+              </a>
+              <button type="button" onClick={() => openSettings("campaign")} className={MORE_MENU_ITEM_CLASS}>
+                <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Settings
+              </button>
+            </MoreMenu>
+          )}
           <CampaignLogo campaign={campaignState} />
         </div>
       </div>
 
-      <CollapsibleSection
-        title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
-        storageKey="dm-dashboard-campaign-open"
-        initialOpen={initialOpen.campaign}
-      >
-        <div className="px-3">
-          <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
-          <CampaignNotes
-            campaign={campaignState}
-            onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
-          />
-        </div>
-      </CollapsibleSection>
+      {isDm && (
+        <CollapsibleSection
+          title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
+          storageKey="dm-dashboard-campaign-open"
+          initialOpen={initialOpen.campaign}
+        >
+          <div className="px-3">
+            <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
+            <CampaignNotes
+              campaign={campaignState}
+              onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
+            />
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <RemindersPanel
-        characters={characters}
-        creatures={creatures}
-        onUpdateCharacter={updateCharacter}
-        onUpdateCreature={updateCreature}
-        storageKey="dm-dashboard-reminders-open"
-        initialOpen={initialOpen.reminders}
-      />
+      {isDm && (
+        <RemindersPanel
+          characters={characters}
+          creatures={creatures}
+          onUpdateCharacter={updateCharacter}
+          onUpdateCreature={updateCreature}
+          storageKey="dm-dashboard-reminders-open"
+          initialOpen={initialOpen.reminders}
+        />
+      )}
 
       <CollapsibleSection
         title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
@@ -422,7 +443,7 @@ export function DashboardClient({
         {visibleCharacters.length === 0 ? (
           <EmptyRosterState
             message={characters.length > 0 ? "All characters are hidden — unhide them in Settings." : "No characters yet."}
-            onOpenSettings={() => openSettings("roster")}
+            onOpenSettings={isDm ? () => openSettings("roster") : undefined}
           />
         ) : (
           // Status badges straddle each card's *top* border and can bleed
@@ -454,30 +475,38 @@ export function DashboardClient({
         initialOpen={initialOpen.companions}
         onUpdate={updateCreature}
         onRemove={removeCreature}
-        onOpenSettings={() => openSettings("roster")}
+        onOpenSettings={isDm ? () => openSettings("roster") : undefined}
       />
 
-      <CreatureCategorySection
-        category="enemy"
-        creatures={creatures}
-        characters={characters}
-        storageKey="dm-dashboard-enemies-open"
-        initialOpen={initialOpen.enemies}
-        onUpdate={updateCreature}
-        onRemove={removeCreature}
-        onOpenSettings={() => openSettings("roster")}
-      />
+      {/* Enemies and NPCs are DM-only — a player at the table isn't meant
+          to see monster stat blocks or NPC secrets the DM hasn't revealed
+          yet. Companions stay visible above: those are the players' own
+          summons/mounts/familiars, no different from their characters. */}
+      {isDm && (
+        <>
+          <CreatureCategorySection
+            category="enemy"
+            creatures={creatures}
+            characters={characters}
+            storageKey="dm-dashboard-enemies-open"
+            initialOpen={initialOpen.enemies}
+            onUpdate={updateCreature}
+            onRemove={removeCreature}
+            onOpenSettings={() => openSettings("roster")}
+          />
 
-      <CreatureCategorySection
-        category="npc"
-        creatures={creatures}
-        characters={characters}
-        storageKey="dm-dashboard-npcs-open"
-        initialOpen={initialOpen.npcs}
-        onUpdate={updateCreature}
-        onRemove={removeCreature}
-        onOpenSettings={() => openSettings("roster")}
-      />
+          <CreatureCategorySection
+            category="npc"
+            creatures={creatures}
+            characters={characters}
+            storageKey="dm-dashboard-npcs-open"
+            initialOpen={initialOpen.npcs}
+            onUpdate={updateCreature}
+            onRemove={removeCreature}
+            onOpenSettings={() => openSettings("roster")}
+          />
+        </>
+      )}
 
       <CollapsibleSection
         title={<SectionTitle emoji="💎" label="Inventory" />}

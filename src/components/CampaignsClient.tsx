@@ -6,6 +6,7 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { Button } from "@/components/ui/Button";
 import { apiFetch } from "@/lib/apiClient";
+import { UserRole } from "@/lib/auth";
 import { CampaignSummary, Character, Creature } from "@/lib/types";
 
 function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
@@ -26,14 +27,15 @@ function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
   );
 }
 
+/** `onEdit`/`onRemove` are omitted entirely for a player — same reasoning as `DashboardClient`'s own Settings gating: no reduced version of "delete this campaign" or "edit its roster" exists for that role, so the actions just aren't there rather than being present and broken. Export is skipped too — it dumps the same enemies/NPCs/notes a player never sees on the dashboard itself. */
 function CampaignRow({
   campaign,
   onEdit,
   onRemove,
 }: {
   campaign: CampaignSummary;
-  onEdit: (campaign: CampaignSummary) => void;
-  onRemove: (id: string) => void;
+  onEdit?: (campaign: CampaignSummary) => void;
+  onRemove?: (id: string) => void;
 }) {
   return (
     <li className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 sm:flex-row sm:items-center">
@@ -51,34 +53,40 @@ function CampaignRow({
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
-        <a
-          href={`/api/campaigns/${campaign.id}/export`}
-          title="Download this campaign (and its characters/creatures) as JSON"
-          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-        >
-          Export
-        </a>
-        <button
-          type="button"
-          onClick={() => onEdit(campaign)}
-          className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const confirmed = window.confirm(
-              `Delete "${campaign.name}"? This also deletes all ${campaign.characterCount} character(s) in it. This can't be undone.`
-            );
-            if (confirmed) onRemove(campaign.id);
-          }}
-          className="shrink-0 text-sm text-red-500/80 hover:text-red-400"
-        >
-          Remove
-        </button>
-      </div>
+      {(onEdit || onRemove) && (
+        <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
+          <a
+            href={`/api/campaigns/${campaign.id}/export`}
+            title="Download this campaign (and its characters/creatures) as JSON"
+            className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            Export
+          </a>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(campaign)}
+              className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+            >
+              Edit
+            </button>
+          )}
+          {onRemove && (
+            <button
+              type="button"
+              onClick={() => {
+                const confirmed = window.confirm(
+                  `Delete "${campaign.name}"? This also deletes all ${campaign.characterCount} character(s) in it. This can't be undone.`
+                );
+                if (confirmed) onRemove(campaign.id);
+              }}
+              className="shrink-0 text-sm text-red-500/80 hover:text-red-400"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      )}
     </li>
   );
 }
@@ -98,7 +106,8 @@ function Hero() {
   );
 }
 
-export function CampaignsClient({ initialCampaigns }: { initialCampaigns: CampaignSummary[] }) {
+export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: CampaignSummary[]; role: UserRole }) {
+  const isDm = role === "dm";
   const { campaigns, addCampaign, updateCampaign, removeCampaign, setCampaignSummary } =
     useCampaigns(initialCampaigns);
   const [modalState, setModalState] = useState<{
@@ -134,9 +143,11 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
-        <Button type="button" onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}>
-          + New Campaign
-        </Button>
+        {isDm && (
+          <Button type="button" onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}>
+            + New Campaign
+          </Button>
+        )}
       </div>
 
       {campaigns.length === 0 ? (
@@ -147,8 +158,8 @@ export function CampaignsClient({ initialCampaigns }: { initialCampaigns: Campai
             <CampaignRow
               key={c.id}
               campaign={c}
-              onEdit={() => openEdit(c)}
-              onRemove={removeCampaign}
+              onEdit={isDm ? () => openEdit(c) : undefined}
+              onRemove={isDm ? removeCampaign : undefined}
             />
           ))}
         </ul>

@@ -2,7 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE_NAME, checkPassword, createSessionToken, isPasswordConfigured } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, createSessionToken, isPasswordConfigured, resolveRole } from "@/lib/auth";
 import { checkLoginRateLimit, clearLoginAttempts, recordFailedLogin } from "@/lib/loginRateLimit";
 
 export type LoginState = { error?: string } | undefined;
@@ -15,6 +15,10 @@ async function getClientIp(): Promise<string> {
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const password = String(formData.get("password") ?? "");
+  // One password field for both roles — whichever configured password
+  // matches decides the role, so the login page itself never has to ask
+  // "are you the DM or a player."
+  let role: "dm" | "player" = "dm";
 
   if (isPasswordConfigured()) {
     const ip = await getClientIp();
@@ -22,15 +26,17 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     if (lockedForMs !== null) {
       return { error: `Забагато невдалих спроб. Спробуй ще раз через ${Math.ceil(lockedForMs / 60000)} хв.` };
     }
-    if (!checkPassword(password)) {
+    const resolved = resolveRole(password);
+    if (!resolved) {
       recordFailedLogin(ip);
       return { error: "Невірний пароль." };
     }
+    role = resolved;
     clearLoginAttempts(ip);
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE_NAME, createSessionToken(), {
+  cookieStore.set(AUTH_COOKIE_NAME, createSessionToken(role), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

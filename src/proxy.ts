@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME, isPasswordConfigured, isValidSessionToken } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, isPasswordConfigured, isValidSession } from "@/lib/auth";
 
 if (!isPasswordConfigured()) {
   console.warn(
@@ -11,13 +11,15 @@ if (!isPasswordConfigured()) {
 /**
  * Named `proxy` (not `middleware`) per this fork's v16 rename — see
  * node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md.
- * A single shared-password gate: everything except the login page/assets
- * requires a valid session cookie, page requests redirect to /login and API
- * requests get a plain 401 (no redirect — a `fetch()` following a redirect
- * to an HTML login page would otherwise fail confusingly on `res.json()`).
+ * A shared-password gate: everything except the login page/assets requires a
+ * valid session cookie (DM or player role, either is enough to get past this
+ * gate — which blocks stay hidden for a player is decided per-page, not
+ * here), page requests redirect to /login and API requests get a plain 401
+ * (no redirect — a `fetch()` following a redirect to an HTML login page
+ * would otherwise fail confusingly on `res.json()`).
  */
 export function proxy(request: NextRequest) {
-  if (isValidSessionToken(request.cookies.get(AUTH_COOKIE_NAME)?.value)) {
+  if (isValidSession(request.cookies.get(AUTH_COOKIE_NAME)?.value).valid) {
     return NextResponse.next();
   }
 
