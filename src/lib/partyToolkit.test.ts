@@ -489,6 +489,48 @@ describe("computePartyHpSummary", () => {
     const chars = [makeCharacter({ name: "A", combat: { hp: 0, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } })];
     expect(computePartyHpSummary(chars).characters[0].isDown).toBe(true);
   });
+
+  test("carries AC, conditions, exhaustion, concentrating, and death saves straight through per character", () => {
+    const chars = [
+      makeCharacter({
+        name: "A",
+        concentrating: true,
+        combat: {
+          hp: 0,
+          maxHp: 10,
+          tempHp: 0,
+          ac: 16,
+          speed: 30,
+          passivePerception: 10,
+          passiveInvestigation: 10,
+          passiveInsight: 10,
+          conditions: ["poisoned", "prone"],
+          exhaustion: 2,
+          deathSaves: { successes: 1, failures: 2 },
+        },
+      }),
+    ];
+    expect(computePartyHpSummary(chars).characters[0]).toMatchObject({
+      ac: 16,
+      conditions: ["poisoned", "prone"],
+      exhaustion: 2,
+      concentrating: true,
+      deathSaves: { successes: 1, failures: 2 },
+    });
+  });
+
+  test("concentrating defaults to false when unset on the character", () => {
+    const chars = [makeCharacter({ name: "A" })];
+    expect(computePartyHpSummary(chars).characters[0].concentrating).toBe(false);
+  });
+
+  test("totalTempHp sums temp HP across the party", () => {
+    const chars = [
+      makeCharacter({ name: "A", combat: { hp: 5, maxHp: 10, tempHp: 3, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+      makeCharacter({ name: "B", combat: { hp: 20, maxHp: 40, tempHp: 4, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+    ];
+    expect(computePartyHpSummary(chars).totalTempHp).toBe(7);
+  });
 });
 
 describe("computeResourceStatus", () => {

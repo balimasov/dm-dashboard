@@ -3,12 +3,12 @@
 import { Character } from "@/lib/types";
 import { computePartyPassiveSummary } from "@/lib/partyToolkit";
 import { DefensesPanel } from "./partyToolkit/DefensesPanel";
-import { HpOverviewPanel } from "./partyToolkit/HpOverviewPanel";
 import { LanguagesToolsPanel } from "./partyToolkit/LanguagesToolsPanel";
 import { ResourceCoveragePanel } from "./partyToolkit/ResourceCoveragePanel";
 import { SensesPanel } from "./partyToolkit/SensesPanel";
 import { SkillsPanel } from "./partyToolkit/SkillsPanel";
 import { SpellSlotsResourcesPanel } from "./partyToolkit/SpellSlotsResourcesPanel";
+import { VitalsPanel } from "./partyToolkit/VitalsPanel";
 
 /**
  * Party Toolkit — Iterations 1-4: Skills, Passives, Spell Slots, Resources,
@@ -37,7 +37,7 @@ export function PartyToolkit({
 
   return (
     <div className="space-y-4">
-      <HpOverviewPanel characters={characters} />
+      <VitalsPanel characters={characters} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SkillsPanel characters={characters} passives={passives} />
         <SpellSlotsResourcesPanel characters={characters} />

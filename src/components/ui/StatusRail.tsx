@@ -72,7 +72,7 @@ const STATUS_BADGE_SIZE = "flex h-9 w-9 shrink-0 items-center justify-center rou
  * hash could easily collide on. Deliberately excludes violet/red, since
  * those are already reserved for Concentration/Exhaustion.
  */
-const CONDITION_HUES = [16, 48, 80, 112, 144, 176, 208, 320];
+export const CONDITION_HUES = [16, 48, 80, 112, 144, 176, 208, 320];
 
 function ConditionBadge({ condition, index }: { condition: string; index: number }) {
   const hue = CONDITION_HUES[index % CONDITION_HUES.length];
