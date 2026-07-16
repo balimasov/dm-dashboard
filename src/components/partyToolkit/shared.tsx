@@ -279,7 +279,7 @@ function ChartBox({ title, hint, children }: { title: string; hint?: ReactNode; 
   return (
     <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 @[1024px]:w-auto @[1024px]:px-8">
       {hint ? (
-        <InfoTooltip inline panel={<p className="text-white">{hint}</p>}>
+        <InfoTooltip inline panel={hint}>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
         </InfoTooltip>
       ) : (
@@ -287,6 +287,51 @@ function ChartBox({ title, hint, children }: { title: string; hint?: ReactNode; 
       )}
       <div className="flex w-full flex-1 flex-col items-center justify-center">{children}</div>
     </div>
+  );
+}
+
+/** Same shape as `AbilitySkillRadarHint` (title, description, then a row per reading the chart itself shows) — the meters below already show these same percentages, but restating them as text here matches every other chart-header hint in the Party Toolkit and gives a screen reader/no-hover reader the same summary at a glance. */
+function RestRecoveryHeaderHint({ recovery }: { recovery: PartyRestRecoveryGauge }) {
+  const rows = [
+    recovery.shortRest && { label: "Short Rest", bucket: recovery.shortRest },
+    recovery.longRest && { label: "Long Rest", bucket: recovery.longRest },
+    recovery.shortRest && recovery.longRest && recovery.total && { label: "Total", bucket: recovery.total },
+  ].filter((r): r is { label: string; bucket: PartyRestRecoveryBucket } => Boolean(r));
+  return (
+    <HintPanel
+      title="Rest Recovery"
+      description="How rested the party is right now — average % of resources back for each rest type."
+      rows={rows}
+      rowKey={(r) => r.label}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(r) => (
+        <>
+          <span>{r.label}</span>
+          <span className={`shrink-0 font-semibold tabular-nums ${tierTextClass(r.bucket.percent)}`}>{r.bucket.percent}%</span>
+        </>
+      )}
+    />
+  );
+}
+
+/** Same shape as `RestRecoveryHeaderHint` — one row per spell level, same current/max the histogram's own columns show. */
+function SpellSlotsHeaderHint({ spellSlots }: { spellSlots: PartySpellSlotSummary }) {
+  return (
+    <HintPanel
+      title="Spell Slots"
+      description="Spell slots left vs. max, one level at a time — taller columns on the chart are levels the party has more of."
+      rows={spellSlots.levels}
+      rowKey={(l) => String(l.level)}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(l) => (
+        <>
+          <span>{ordinalLevel(l.level)} Level</span>
+          <span className={`shrink-0 font-semibold tabular-nums ${usageColorClass(l.current, l.max)}`}>
+            {l.current}/{l.max}
+          </span>
+        </>
+      )}
+    />
   );
 }
 
@@ -316,12 +361,12 @@ export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: Par
   return (
     <div className="@container mt-2 flex flex-col items-center gap-4 @[1024px]:flex-row @[1024px]:items-stretch @[1024px]:justify-center @[1024px]:gap-6">
       {hasRestMeters && (
-        <ChartBox title="Rest Recovery" hint="How rested the party is right now — average % of resources back, for a Short Rest, a Long Rest, and both combined.">
+        <ChartBox title="Rest Recovery" hint={<RestRecoveryHeaderHint recovery={restRecovery} />}>
           <RestRecoveryMeters recovery={restRecovery} />
         </ChartBox>
       )}
       {spellSlots ? (
-        <ChartBox title="Spell Slots" hint="Spell slots left vs. max, one column per level — taller columns are levels the party has more of.">
+        <ChartBox title="Spell Slots" hint={<SpellSlotsHeaderHint spellSlots={spellSlots} />}>
           <SpellSlotHistogram spellSlots={spellSlots} />
         </ChartBox>
       ) : (
