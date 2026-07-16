@@ -17,6 +17,7 @@ import {
   computeSenses,
   computeSpeed,
 } from "./ddbParser/combat";
+import { computeAttacks } from "./ddbParser/attacks";
 import { computeAdvantages, computeDamageModifiers } from "./ddbParser/damage";
 import { computeCurrency, computeInventory } from "./ddbParser/inventory";
 import { computeLanguages, computeToolProficiencies } from "./ddbParser/proficiencies";
@@ -107,6 +108,7 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
     spellcasting: computeSpellcastingStats(data, abilities, profBonus),
     knownSpells: computeSpells(data, abilities, profBonus, level, speed, spellSlots),
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
+    attacks: computeAttacks(data, abilities, profBonus, mods),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data), abilities),
     ...computeDamageModifiers(mods, data.customDefenseAdjustments),

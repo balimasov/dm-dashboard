@@ -282,6 +282,39 @@ export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   Gear: "Gear",
 };
 
+/**
+ * The eight 2024 PHB weapon mastery properties. A weapon's own `properties`
+ * list (from D&D Beyond) always includes its one canonical mastery property
+ * alongside its other tags (Finesse/Light/Thrown/...) — this is what
+ * `computeAttacks` uses to split `Attack.mastery` out from `Attack.properties`.
+ */
+export const WEAPON_MASTERY_PROPERTIES = ["Cleave", "Graze", "Nick", "Push", "Sap", "Slow", "Topple", "Vex"];
+
+/**
+ * A single weapon attack a character can make right now — everything on the
+ * "Combat" tab is one of these. Deliberately scoped to equipped weapons only
+ * (see `computeAttacks`'s own doc comment for why natural weapons/Unarmed
+ * Strike aren't covered).
+ */
+export interface Attack {
+  id: string;
+  name: string;
+  attackType: "melee" | "ranged";
+  /** To-hit modifier, proficiency (if any) already folded in. */
+  attackBonus: number;
+  /** Dice plus flat bonus already combined into one string, e.g. "1d12 +4". */
+  damage: string;
+  damageType?: string;
+  /** Weapon properties other than its mastery — Finesse, Light, Thrown, Versatile, Heavy, Reach, Two-Handed, Ammunition... */
+  properties: string[];
+  /** This weapon's 2024 mastery property (one of `WEAPON_MASTERY_PROPERTIES`), when it has one. */
+  mastery?: string;
+  /** e.g. "150/600 ft." — only set for ranged attacks and thrown melee weapons. */
+  range?: string;
+  /** An unproficient attack still gets an ability-mod-only bonus, so this is shown as a caveat rather than hidden. */
+  proficient: boolean;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -387,6 +420,8 @@ export interface Character {
   spellcasting?: SpellcastingStats;
   knownSpells: KnownSpell[];
   features: Feature[];
+  /** Non-spell weapon attacks (see `Attack`'s own doc comment for scope) — shown on the character card's "Combat" tab. */
+  attacks: Attack[];
   savingThrowProficiencies: Array<keyof AbilityScores>;
   skillProficiencies: SkillProficiency[];
   resistances: string[];

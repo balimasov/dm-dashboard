@@ -64,6 +64,69 @@ describe("non-caster classes", () => {
   });
 });
 
+describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
+  test("Alor (Fighter 5, computed Dex 18) — martial-weapons proficiency covers Scimitar/Shortsword/Longbow, Finesse picks the better modifier, unequipped Spear/Whisper of the Underdark are excluded", () => {
+    const c = load("alor-fighter");
+    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Longbow", "Scimitar", "Shortsword"]);
+    expect(c.stats.dex).toBe(18); // confirms the +4 modifier the rest of this test relies on
+
+    const scimitar = c.attacks.find((a) => a.name === "Scimitar")!;
+    expect(scimitar).toMatchObject({
+      attackType: "melee",
+      attackBonus: 7, // dex +4 (Finesse beats str +2) + proficiency +3
+      damage: "1d6 +4",
+      damageType: "Slashing",
+      properties: ["Finesse", "Light"],
+      mastery: "Nick",
+      proficient: true,
+    });
+    expect(scimitar.range).toBeUndefined();
+
+    const longbow = c.attacks.find((a) => a.name === "Longbow")!;
+    expect(longbow).toMatchObject({
+      attackType: "ranged",
+      attackBonus: 7, // dex +4 + proficiency +3
+      damage: "1d8 +4",
+      properties: ["Ammunition", "Heavy", "Range", "Two-Handed"],
+      mastery: "Slow",
+      range: "150/600 ft.",
+      proficient: true,
+    });
+  });
+
+  test("Esmeralda (Bard 5, only Simple Weapons proficiency) — Rapier/Crossbow are martial and unproficient (ability mod only), Dagger is simple and proficient, +1 Rapier's magic bonus lands on both attack and damage", () => {
+    const c = load("esmeralda-bard");
+    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Crossbow, Hand", "Dagger", "Rapier, +1"]);
+
+    const rapier = c.attacks.find((a) => a.name === "Rapier, +1")!;
+    expect(rapier).toMatchObject({
+      attackType: "melee",
+      attackBonus: 3, // dex +2 (Finesse) + magic +1, no proficiency bonus
+      damage: "1d8 +3",
+      mastery: "Vex",
+      proficient: false,
+    });
+
+    const crossbow = c.attacks.find((a) => a.name === "Crossbow, Hand")!;
+    expect(crossbow).toMatchObject({
+      attackType: "ranged",
+      attackBonus: 2, // dex +2 only, not proficient with a Martial weapon
+      damage: "1d6 +2",
+      range: "30/120 ft.",
+      proficient: false,
+    });
+
+    const dagger = c.attacks.find((a) => a.name === "Dagger")!;
+    expect(dagger).toMatchObject({
+      attackBonus: 5, // dex +2 (Finesse) + proficiency +3 (Simple weapon)
+      damage: "1d4 +2",
+      range: "20/60 ft.", // Thrown
+      mastery: "Nick",
+      proficient: true,
+    });
+  });
+});
+
 describe("spell tags/isAreaEffect/isReaction — Party Toolkit coverage categorization signals", () => {
   test("Fireball carries D&D Beyond's own Damage tag and is flagged area-effect (range.aoeType set)", () => {
     const c = load("yorun-all-immunities");

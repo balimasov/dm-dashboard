@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
+  Attack,
   Character,
   Feature,
   KnownSpell,
@@ -138,7 +139,51 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
   );
 }
 
-type DetailsTab = "features" | "spells";
+/**
+ * One weapon attack — bonus, damage (dice + type), any weapon properties,
+ * and mastery are all shown directly on the row (not hidden behind a
+ * hover), since those are exactly the numbers a DM needs mid-combat without
+ * an extra click. The hover panel only adds range and the "not proficient"
+ * caveat, which matter less often.
+ */
+function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
+  return (
+    <FlaggableRow
+      flagged={flagged}
+      onToggleFlag={onToggleFlag}
+      trailing={
+        <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
+          {attack.mastery && (
+            <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
+              {attack.mastery}
+            </span>
+          )}
+          <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
+          <span className="text-slate-400">
+            {attack.damage}
+            {attack.damageType ? ` ${attack.damageType}` : ""}
+          </span>
+        </span>
+      }
+    >
+      <InfoTooltip
+        panel={
+          <AbilityHintPanel
+            name={attack.name}
+            subtitle={attack.attackType === "ranged" ? "Ranged" : "Melee"}
+            metaLines={[attack.range]}
+            note={!attack.proficient ? "Not proficient with this weapon — bonus is ability modifier only." : undefined}
+          />
+        }
+      >
+        <span className="block">{attack.name}</span>
+      </InfoTooltip>
+      {attack.properties.length > 0 && <span className="block text-[11px] text-slate-500">{attack.properties.join(" · ")}</span>}
+    </FlaggableRow>
+  );
+}
+
+type DetailsTab = "combat" | "features" | "spells";
 
 export function CharacterDetailsModal({
   character,
@@ -189,10 +234,13 @@ export function CharacterDetailsModal({
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
   const groupedFeatures = groupFeaturesByGroup(c.features);
+  const sortedAttacks = c.attacks.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const hasAttacks = sortedAttacks.length > 0;
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
 
   const tabs: Array<{ key: DetailsTab; label: string }> = [
+    ...(hasAttacks ? [{ key: "combat" as const, label: "Combat" }] : []),
     ...(hasFeatures ? [{ key: "features" as const, label: "Features and Traits" }] : []),
     ...(hasSpells ? [{ key: "spells" as const, label: "Spells" }] : []),
   ];
@@ -424,6 +472,19 @@ export function CharacterDetailsModal({
                   >
                     {tab.label}
                   </button>
+                ))}
+              </div>
+            )}
+
+            {currentTab === "combat" && (
+              <div className="space-y-1">
+                {sortedAttacks.map((attack) => (
+                  <AttackRow
+                    key={attack.id}
+                    attack={attack}
+                    flagged={flaggedAbilities.includes(attack.name)}
+                    onToggleFlag={() => toggleFlag(attack.name)}
+                  />
                 ))}
               </div>
             )}

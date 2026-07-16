@@ -69,6 +69,19 @@ const featureSchema = z.object({
   recovery: recoveryTypeSchema.optional(),
 });
 
+const attackSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  attackType: z.enum(["melee", "ranged"]),
+  attackBonus: z.number(),
+  damage: z.string(),
+  damageType: z.string().optional(),
+  properties: z.array(z.string()),
+  mastery: z.string().optional(),
+  range: z.string().optional(),
+  proficient: z.boolean(),
+});
+
 const spellcastingStatsSchema = z.object({
   modifier: z.number(),
   attack: z.number(),
@@ -206,6 +219,7 @@ export const characterUpdateSchema = z
     spellcasting: spellcastingStatsSchema.optional(),
     knownSpells: z.array(knownSpellSchema),
     features: z.array(featureSchema),
+    attacks: z.array(attackSchema),
     savingThrowProficiencies: z.array(z.enum(["str", "dex", "con", "int", "wis", "cha"])),
     skillProficiencies: z.array(skillProficiencySchema),
     resistances: z.array(z.string()),

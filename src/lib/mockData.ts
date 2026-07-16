@@ -458,6 +458,31 @@ export const demoCharacters: Character[] = [
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
+    "attacks": [
+      {
+        "id": "attack-0",
+        "name": "Greataxe",
+        "attackType": "melee",
+        "attackBonus": 7,
+        "damage": "1d12 +4",
+        "damageType": "Slashing",
+        "properties": ["Heavy", "Two-Handed"],
+        "mastery": "Cleave",
+        "proficient": true
+      },
+      {
+        "id": "attack-1",
+        "name": "Handaxe",
+        "attackType": "melee",
+        "attackBonus": 7,
+        "damage": "1d6 +4",
+        "damageType": "Slashing",
+        "properties": ["Light", "Thrown"],
+        "mastery": "Vex",
+        "range": "20/60 ft.",
+        "proficient": true
+      }
+    ],
     "notes": "A Berserker who trades caution for raw damage output — Frenzy and Reckless Attack turn every Rage into an all-in swing. Give him enemies worth hitting hard and consequences (exhaustion, no room to retreat) for going all-in every fight.",
     "quickNotes": [
       {
@@ -1340,6 +1365,7 @@ export const demoCharacters: Character[] = [
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
+    "attacks": [],
     "notes": "An Oath of Glory paladin chasing legendary deeds — Inspiring Smite and Peerless Athlete reward big, showy moments. Scenes with an audience, a rival to outshine, or a feat of athletics/glory work well for her.",
     "quickNotes": [
       {
@@ -2180,6 +2206,7 @@ export const demoCharacters: Character[] = [
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
+    "attacks": [],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",
     "quickNotes": [
       {
@@ -2831,6 +2858,31 @@ export const demoCharacters: Character[] = [
         "group": "other",
         "originType": "background",
         "description": "You have a reliable and trustworthy contact who acts as your liaison to a network of other criminals. You know how to get messages to and from your contact, even over great distances; specifically, you know the local messengers, corrupt caravan masters, and seedy sailors who can deliver messages for you."
+      }
+    ],
+    "attacks": [
+      {
+        "id": "attack-0",
+        "name": "Rapier, +1",
+        "attackType": "melee",
+        "attackBonus": 6,
+        "damage": "1d8 +3",
+        "damageType": "Piercing",
+        "properties": ["Finesse"],
+        "mastery": "Vex",
+        "proficient": true
+      },
+      {
+        "id": "attack-1",
+        "name": "Crossbow, Hand",
+        "attackType": "ranged",
+        "attackBonus": 5,
+        "damage": "1d6 +2",
+        "damageType": "Piercing",
+        "properties": ["Ammunition", "Light", "Loading"],
+        "mastery": "Vex",
+        "range": "30/120 ft.",
+        "proficient": true
       }
     ],
     "notes": "A College of Dance bard who fights unarmored and up close — Dazzling Footwork and Bardic Inspiration make her as much a battlefield conductor as a performer. Social scenes and chances to show off both work.",
