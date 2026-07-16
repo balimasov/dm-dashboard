@@ -6,6 +6,7 @@ import {
   computeConditionProtectionCoverage,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
+  computePartyHpSummary,
   computePartyPassiveSummary,
   computePartyResourceSummary,
   computePartyRestRecoveryGauge,
@@ -457,6 +458,36 @@ describe("computeHeroicInspirationSummary", () => {
         { characterId: "C", characterName: "C" },
       ],
     });
+  });
+});
+
+describe("computePartyHpSummary", () => {
+  test("computes each character's percent and sorts worst-off first", () => {
+    const chars = [
+      makeCharacter({ name: "A", combat: { hp: 8, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+      makeCharacter({ name: "B", combat: { hp: 2, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+      makeCharacter({ name: "C", combat: { hp: 10, maxHp: 10, tempHp: 5, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+    ];
+    const summary = computePartyHpSummary(chars);
+    expect(summary.characters.map((c) => c.characterName)).toEqual(["B", "A", "C"]);
+    expect(summary.characters[0]).toMatchObject({ hp: 2, maxHp: 10, percent: 20, isDown: false });
+    expect(summary.characters[2]).toMatchObject({ hp: 10, maxHp: 10, tempHp: 5, percent: 100 });
+  });
+
+  test("totals sum raw hp/maxHp across the party, not an average of percentages", () => {
+    const chars = [
+      makeCharacter({ name: "A", combat: { hp: 5, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+      makeCharacter({ name: "B", combat: { hp: 20, maxHp: 40, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
+    ];
+    const summary = computePartyHpSummary(chars);
+    expect(summary.totalHp).toBe(25);
+    expect(summary.totalMaxHp).toBe(50);
+    expect(summary.totalPercent).toBe(50);
+  });
+
+  test("0 hp is marked down", () => {
+    const chars = [makeCharacter({ name: "A", combat: { hp: 0, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } })];
+    expect(computePartyHpSummary(chars).characters[0].isDown).toBe(true);
   });
 });
 

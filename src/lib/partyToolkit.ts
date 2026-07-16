@@ -1311,3 +1311,52 @@ export function computeResourceCoverage(characters: Character[]): Record<Resourc
 
   return coverage;
 }
+
+// ---------------------------------------------------------------------------
+// HP Overview
+// ---------------------------------------------------------------------------
+
+export interface PartyHpCharacterEntry {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+  hp: number;
+  maxHp: number;
+  tempHp: number;
+  /** `hp / maxHp` as a 0-100 int, clamped — drives the ring's fill and its danger-tier color the same way every other gauge in this app reads a percentage. 0 for a 0-max character (shouldn't happen in practice, but division-by-zero-safe regardless). */
+  percent: number;
+  isDown: boolean;
+}
+
+export interface PartyHpSummary {
+  /** Ascending by `percent` — the character in the worst shape sorts first, since that's the one a DM scanning this row actually needs to spot fastest. */
+  characters: PartyHpCharacterEntry[];
+  totalHp: number;
+  totalMaxHp: number;
+  totalPercent: number;
+}
+
+/** One entry per character (party's current/max HP, live from `Character.combat`) plus a same-shaped total across the whole party — the ratio a DM actually watches turn to turn, not a static roster stat. */
+export function computePartyHpSummary(characters: Character[]): PartyHpSummary {
+  const entries: PartyHpCharacterEntry[] = characters.map((c) => {
+    const { hp, maxHp, tempHp } = c.combat;
+    const percent = maxHp > 0 ? Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100))) : 0;
+    return {
+      characterId: c.id,
+      characterName: c.name,
+      avatarUrl: c.avatarUrl,
+      hp,
+      maxHp,
+      tempHp,
+      percent,
+      isDown: hp <= 0,
+    };
+  });
+
+  const sorted = [...entries].sort((a, b) => a.percent - b.percent);
+  const totalHp = entries.reduce((sum, e) => sum + e.hp, 0);
+  const totalMaxHp = entries.reduce((sum, e) => sum + e.maxHp, 0);
+  const totalPercent = totalMaxHp > 0 ? Math.max(0, Math.min(100, Math.round((totalHp / totalMaxHp) * 100))) : 0;
+
+  return { characters: sorted, totalHp, totalMaxHp, totalPercent };
+}
