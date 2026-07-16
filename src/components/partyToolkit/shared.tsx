@@ -275,10 +275,16 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
  * to its own content width once `SpellChartsRow`'s container is actually
  * roomy enough for that to look intentional rather than cramped.
  */
-function ChartBox({ title, children }: { title: string; children: ReactNode }) {
+function ChartBox({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 @[1024px]:w-auto @[1024px]:px-8">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
+      {hint ? (
+        <InfoTooltip inline panel={<p className="text-white">{hint}</p>}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
+        </InfoTooltip>
+      ) : (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
+      )}
       <div className="flex w-full flex-1 flex-col items-center justify-center">{children}</div>
     </div>
   );
@@ -310,12 +316,12 @@ export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: Par
   return (
     <div className="@container mt-2 flex flex-col items-center gap-4 @[1024px]:flex-row @[1024px]:items-stretch @[1024px]:justify-center @[1024px]:gap-6">
       {hasRestMeters && (
-        <ChartBox title="Rest Recovery">
+        <ChartBox title="Rest Recovery" hint="How rested the party is right now — average % of resources back, for a Short Rest, a Long Rest, and both combined.">
           <RestRecoveryMeters recovery={restRecovery} />
         </ChartBox>
       )}
       {spellSlots ? (
-        <ChartBox title="Spell Slots">
+        <ChartBox title="Spell Slots" hint="Spell slots left vs. max, one column per level — taller columns are levels the party has more of.">
           <SpellSlotHistogram spellSlots={spellSlots} />
         </ChartBox>
       ) : (
