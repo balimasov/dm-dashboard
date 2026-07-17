@@ -103,19 +103,7 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
   );
 }
 
-/** Attack name (rarity-colored, with the shared hover hint) plus its range on the line beneath — the "what am I looking at, how far can it reach" half of a row, paired with `AttackTrailing`'s numbers on the other side. Used on a character's own Weapons tab and Party Toolkit's grouped list; Reminders uses `AttackName` instead, whose row carries no `AttackTrailing`. */
-export function AttackNameAndRange({ attack }: { attack: Attack }) {
-  return (
-    <>
-      <InfoTooltip panel={<AttackHintPanel attack={attack} />}>
-        <span className={`block ${RARITY_COLOR[attack.rarity ?? "Common"]}`}>{attack.name}</span>
-      </InfoTooltip>
-      {attack.range && <span className="block text-[11px] text-slate-500">{attack.range}</span>}
-    </>
-  );
-}
-
-/** A weapon attack's row content in Reminders — just the name (rarity-colored the same way an inventory item's name is), with the shared `AttackHintPanel` carrying everything else since the row itself shows nothing more. */
+/** A weapon attack's name (rarity-colored, with the shared hover hint carrying range/to-hit/damage/mastery) — used everywhere an attack row shows up, since `AttackHintPanel` already spells out the range there's no need to repeat it on the row itself. */
 export function AttackName({ attack }: { attack: Attack }) {
   return (
     <InfoTooltip panel={<AttackHintPanel attack={attack} />}>

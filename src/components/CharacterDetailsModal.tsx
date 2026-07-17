@@ -19,7 +19,7 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
-import { AttackNameAndRange, AttackTrailing } from "./ui/AttackDisplay";
+import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
@@ -142,11 +142,11 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
   );
 }
 
-/** One weapon attack, flaggable like any Feature/Spell — the actual row visuals (name/hint, range, bonus/damage/mastery) are shared with Party Toolkit's grouped Weapons list via `AttackNameAndRange`/`AttackTrailing`. Reminders shows a different, name-only row instead (see `AttackName` in `ui/AttackDisplay`). */
+/** One weapon attack, flaggable like any Feature/Spell — the actual row visuals (name/hint, bonus/damage/mastery) are shared with Party Toolkit's grouped Weapons list and Reminders via `AttackName`/`AttackTrailing`. */
 function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
   return (
     <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} trailing={<AttackTrailing attack={attack} />}>
-      <AttackNameAndRange attack={attack} />
+      <AttackName attack={attack} />
     </FlaggableRow>
   );
 }

@@ -321,7 +321,7 @@ export function DashboardClient({
   }
 
   return (
-    <div className="mx-auto max-w-[1800px] px-4 py-8">
+    <div className="mx-auto max-w-[1800px] px-4 pb-8">
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings("campaign")} />
 
       {/* `top-[58px]` = the global header's own rendered height (see
