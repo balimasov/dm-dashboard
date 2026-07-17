@@ -2258,6 +2258,21 @@ export const demoCharacters: Character[] = [
         "properties": [],
         "range": "5 ft.",
         "proficient": true
+      },
+      {
+        "id": "attack-ferols-staff",
+        "name": "Ferol’s Staff of Acid",
+        "attackType": "melee",
+        "attackBonus": 2,
+        "damage": "1d6 -1",
+        "damageType": "Bludgeoning",
+        "properties": ["Versatile"],
+        "category": "Simple",
+        "range": "5 ft.",
+        "proficient": true,
+        "weaponType": "Quarterstaff",
+        "rarity": "Rare",
+        "description": "Description:** This staff, crafted from porous, strange wood, is topped with a glass vial where a green fluid perpetually churns. The staff has 6 charges and regains 1d6 expended charges daily at dawn. Spells.** You can expend 1 charge to cast Melf's Acid Arrow as a 3rd-level spell from the staff (using your **spell attack bonus or +7**, whichever is higher). Corrosive Reagents.** The acid produced by this staff is exceptionally potent. When you hit a creature with an attack roll using this staff, the acid not only deals damage but also temporarily degrades the target's defenses. The target suffers a -1 penalty to its Armor Class** until the start of your next turn. Volatile Core.** The alchemical mixture inside is unstable. If you roll a 1 on the d20 for a spell attack roll with this staff, the staff leaks hazardous fluids, and you take **2**d4 acid damage**. Fragile Magic.** If you expend the last charge, roll a d20. On a 1, the glass vial shatters, the fluid evaporates, and the staff becomes a nonmagical quarterstaff."
       }
     ],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",

@@ -137,6 +137,24 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
     });
     expect(dagger.mastery).toBeUndefined();
   });
+
+  test("Yorun (Sorcerer 5, Str 8) — an equipped Staff (Ferol's Staff of Acid) has no weapon stats of its own on D&D Beyond, but is wielded per the 2024 PHB rule as a Quarterstaff: Simple, Versatile, proficient via her class's Simple Weapons grant, Str modifier (not spellcasting) sets the bonus", () => {
+    const c = load("yorun-all-immunities");
+    const staff = c.attacks.find((a) => a.name === "Ferol’s Staff of Acid")!;
+    expect(staff).toBeDefined();
+    expect(staff).toMatchObject({
+      attackType: "melee",
+      attackBonus: 2, // str -1 + proficiency +3 (Simple Weapons)
+      damage: "1d6 -1",
+      damageType: "Bludgeoning",
+      properties: ["Versatile"],
+      category: "Simple",
+      range: "5 ft.",
+      proficient: true,
+      weaponType: "Quarterstaff",
+      rarity: "Rare",
+    });
+  });
 });
 
 describe("Unarmed Strike — always present, computed without needing weapon data", () => {

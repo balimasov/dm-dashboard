@@ -93,6 +93,14 @@ export function InfoTooltip({
       const panelEl = panelRef.current;
       if (!wrapper || !panelEl) return;
 
+      // Reset any cap a previous call left behind before measuring — a
+      // panel that no longer needs to scroll (say, after a resize freed up
+      // room) must be measured at its real, uncapped height, not whatever
+      // was set last time.
+      panelEl.style.maxHeight = "none";
+      panelEl.style.overflowY = "visible";
+      panelEl.style.pointerEvents = "none";
+
       const wrapperRect = wrapper.getBoundingClientRect();
       const panelRect = panelEl.getBoundingClientRect();
 
@@ -100,8 +108,32 @@ export function InfoTooltip({
       const left = Math.max(Math.min(wrapperRect.left, maxLeft), EDGE_MARGIN);
       panelEl.style.left = `${left}px`;
 
-      const fitsBelow = wrapperRect.bottom + 4 + panelRect.height <= window.innerHeight - EDGE_MARGIN;
-      if (fitsBelow) {
+      const spaceBelow = window.innerHeight - EDGE_MARGIN - (wrapperRect.bottom + 4);
+      const spaceAbove = wrapperRect.top - 4 - EDGE_MARGIN;
+      // Below whenever it fully fits there (matches the old behavior for
+      // every normal-sized hint exactly) — otherwise whichever side
+      // actually has more room, rather than always flipping to "above"
+      // regardless of whether above has even less space (the previous
+      // logic's bug: a hint opened near the *top* of the page has almost no
+      // room above it, so unconditionally flipping there still clipped it).
+      const openBelow = panelRect.height <= spaceBelow || spaceBelow >= spaceAbove;
+      const available = openBelow ? spaceBelow : spaceAbove;
+
+      if (panelRect.height > available) {
+        // Doesn't fit even on the roomier side — a long hint (e.g. a magic
+        // weapon's full rules text) would otherwise run off the top or
+        // bottom of the viewport with no way to reach the missing part, since
+        // a `position: fixed` panel doesn't scroll with the page. Capped and
+        // made internally scrollable instead, with real pointer events so a
+        // mouse wheel or touch drag actually reaches it (`pointer-events:
+        // none` is the default the rest of the time, so a normal-sized hint
+        // never blocks clicks on whatever it happens to overlap).
+        panelEl.style.maxHeight = `${Math.max(available, 0)}px`;
+        panelEl.style.overflowY = "auto";
+        panelEl.style.pointerEvents = "auto";
+      }
+
+      if (openBelow) {
         panelEl.style.top = `${wrapperRect.bottom + 4}px`;
         panelEl.style.bottom = "auto";
       } else {
@@ -176,6 +208,14 @@ export function InfoTooltip({
             ref={panelRef}
             style={{ left: "-9999px", visibility: "hidden" }}
             className="pointer-events-none fixed z-50 w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+            // No-ops while the panel is `pointer-events: none` (the common
+            // case — the browser never dispatches mouse events to it then),
+            // and only actually fire once `computePosition` switches it to
+            // `auto` for a tall, internally-scrolled panel — keeping
+            // `hovered` true while the mouse is over the panel itself, so
+            // moving off the trigger to scroll the hint doesn't close it.
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
           >
             {panel}
           </div>,

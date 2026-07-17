@@ -164,8 +164,8 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
     { key: "features", label: `${CONTENT_KIND_ICON.features} Features and Traits` },
     ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
   ];
-  const [activeTab, setActiveTab] = useState<PartyDetailsTab>("features");
-  const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : "features";
+  const [activeTab, setActiveTab] = useState<PartyDetailsTab | undefined>(tabs[0]?.key);
+  const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
 
   return (
     <ToolkitCard title="Actions & Resources">

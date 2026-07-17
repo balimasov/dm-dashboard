@@ -17,6 +17,21 @@ function normalizeWeaponType(type: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** D&D Beyond's `filterType` for a rod, staff, or wand — none of these carry their own `damage` field, but the 2024 PHB lets any of them be wielded as an Improvised Weapon with a Quarterstaff's statistics, and D&D Beyond's own client computes exactly that (confirmed on a real export: Ferol's Staff of Acid, no `damage` of its own, shown with Quarterstaff's 1d6 Bludgeoning/Versatile/Topple/Simple stats). Nothing in the raw JSON names this rule — it's a fixed PHB rule, not per-character data — so it's hardcoded here rather than read off a field that doesn't exist. */
+const ROD_STAFF_WAND_TYPES = new Set(["Rod", "Staff", "Wand"]);
+
+/** The stat block a rod/staff/wand borrows when swung as a melee weapon — see `ROD_STAFF_WAND_TYPES`. Spread over the item's own `definition` (keeping its real name/rarity/description/grantedModifiers) so a magic rod/staff/wand's melee attack still shows the item's own flavor and any magic bonus, just with Quarterstaff's combat stats standing in for the missing weapon fields. */
+const QUARTERSTAFF_STATS = {
+  damage: { diceString: "1d6" },
+  damageType: "Bludgeoning",
+  properties: [{ name: "Versatile" }, { name: "Topple" }],
+  attackType: 1,
+  categoryId: 1,
+  type: "Quarterstaff",
+  range: 5,
+  longRange: 5,
+};
+
 /**
  * D&D Beyond's own weapon-category convention (confirmed on every weapon
  * across every real fixture): `categoryId` 1 = Simple, 2 = Martial —
@@ -144,15 +159,24 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
 
   for (const item of (data.inventory ?? []) as RawDdbAny[]) {
     const df = item.definition ?? {};
-    if (!item.equipped || df.filterType !== "Weapon" || !df.damage?.diceString) continue;
+    const isRealWeapon = df.filterType === "Weapon" && Boolean(df.damage?.diceString);
+    const isImprovisedRodStaffWand = !isRealWeapon && ROD_STAFF_WAND_TYPES.has(df.filterType);
+    if (!item.equipped || (!isRealWeapon && !isImprovisedRodStaffWand)) continue;
     if (seen.has(df.name)) continue;
     seen.add(df.name);
 
-    const isRanged = df.attackType === 2;
-    const propertyNames: string[] = (df.properties ?? []).map((p: RawDdbAny) => p.name).filter(Boolean);
+    // For a rod/staff/wand, every stat field below comes from
+    // `QUARTERSTAFF_STATS` instead of the item's own `definition` (which has
+    // none) — everything else (name, rarity, description, grantedModifiers)
+    // still comes from the real item, so a magic staff's melee attack still
+    // shows its own flavor text and rarity, just with borrowed combat stats.
+    const weapon = isRealWeapon ? df : { ...df, ...QUARTERSTAFF_STATS };
+
+    const isRanged = weapon.attackType === 2;
+    const propertyNames: string[] = (weapon.properties ?? []).map((p: RawDdbAny) => p.name).filter(Boolean);
     const masteryCandidate = propertyNames.find((p) => WEAPON_MASTERY_PROPERTIES.includes(p));
     const mastery =
-      masteryCandidate && hasMasteryAccess(df.type || df.name, masteryCandidate, data) ? masteryCandidate : undefined;
+      masteryCandidate && hasMasteryAccess(weapon.type || weapon.name, masteryCandidate, data) ? masteryCandidate : undefined;
     const properties = propertyNames.filter((p) => p !== masteryCandidate);
     const isFinesse = propertyNames.includes("Finesse");
     const isThrown = propertyNames.includes("Thrown");
@@ -163,7 +187,7 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
         ? Math.max(abilityModifier(abilities.str), abilityModifier(abilities.dex))
         : abilityModifier(abilities.str);
 
-    const grantedMods = (df.grantedModifiers ?? []) as RawDdbAny[];
+    const grantedMods = (weapon.grantedModifiers ?? []) as RawDdbAny[];
     const magicBonus = grantedMods
       .filter((gm) => gm.type === "bonus" && gm.subType === "magic")
       .reduce((sum, gm) => sum + (gm.value ?? gm.fixedValue ?? 0), 0);
@@ -179,7 +203,7 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
             .join(", ")
         : undefined;
 
-    const proficient = isProficientWithWeapon(df.type || df.name, df.categoryId, profSubtypes);
+    const proficient = isProficientWithWeapon(weapon.type || weapon.name, weapon.categoryId, profSubtypes);
     const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus;
     const damageBonus = abilityMod + magicBonus;
 
@@ -189,8 +213,8 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
     // same way here rather than left blank for a plain melee swing.
     const range =
       isRanged || isThrown
-        ? df.range
-          ? formatRange(df.range, df.longRange)
+        ? weapon.range
+          ? formatRange(weapon.range, weapon.longRange)
           : undefined
         : propertyNames.includes("Reach")
           ? "10 ft."
@@ -202,23 +226,23 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
     // matching inventory entry, computed the same way here regardless of
     // rarity. It's `attack.rarity`, not description-presence, that gates
     // whether the hint actually surfaces this text (see `AttackHintPanel`).
-    const description = shortDescription(df.snippet, df.description);
+    const description = shortDescription(weapon.snippet, weapon.description);
 
     attacks.push({
       id: `attack-${attacks.length}`,
-      name: df.name,
+      name: weapon.name,
       attackType: isRanged ? "ranged" : "melee",
       attackBonus,
-      damage: `${df.damage.diceString}${damageBonus !== 0 ? ` ${formatModifier(damageBonus)}` : ""}`,
-      ...(df.damageType ? { damageType: df.damageType } : {}),
+      damage: `${weapon.damage.diceString}${damageBonus !== 0 ? ` ${formatModifier(damageBonus)}` : ""}`,
+      ...(weapon.damageType ? { damageType: weapon.damageType } : {}),
       properties,
       ...(mastery ? { mastery } : {}),
-      ...(df.categoryId === 1 ? { category: "Simple" } : df.categoryId === 2 ? { category: "Martial" } : {}),
+      ...(weapon.categoryId === 1 ? { category: "Simple" } : weapon.categoryId === 2 ? { category: "Martial" } : {}),
       ...(extraDamage ? { extraDamage } : {}),
       ...(range ? { range } : {}),
       proficient,
-      ...(df.type ? { weaponType: df.type } : {}),
-      rarity: rarityFromDdb(df.rarity),
+      ...(weapon.type ? { weaponType: weapon.type } : {}),
+      rarity: rarityFromDdb(weapon.rarity),
       ...(description ? { description } : {}),
     });
   }
