@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth";
 import { deleteCampaign, getCampaign, updateCampaign } from "@/lib/db";
 import { campaignUpdateSchema } from "@/lib/schemas";
 
+/** Editing/removing a campaign is DM-only — `CampaignsClient.tsx` only wires `onEdit`/`onRemove` up for `isDm`, a player never sees these actions in the UI at all. */
 export async function PATCH(req: Request, ctx: RouteContext<"/api/campaigns/[id]">) {
+  const denied = await requireRole("dm");
+  if (denied) return denied;
+
   const { id } = await ctx.params;
   const body = await req.json().catch(() => null);
   const result = campaignUpdateSchema.safeParse(body);
@@ -18,6 +23,9 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/campaigns/[id]
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext<"/api/campaigns/[id]">) {
+  const denied = await requireRole("dm");
+  if (denied) return denied;
+
   const { id } = await ctx.params;
   const existing = getCampaign(id);
   if (!existing) {

@@ -27,6 +27,13 @@ export default async function CampaignDashboardPage({
   // after hydration, every single page load.
   const cookieStore = await cookies();
   const { role } = isValidSession(cookieStore.get(AUTH_COOKIE_NAME)?.value);
+  // Enemies/NPCs never render for a player (`DashboardClient` skips those
+  // sections outright for `!isDm`), but that's a rendering choice, not a
+  // data one — without filtering here too, the full stat blocks (including
+  // HP a DM hasn't revealed yet) would still ship to the player's browser
+  // as React props, readable from the page source or devtools regardless of
+  // what the DOM ends up showing.
+  const visibleCreatures = role === "dm" ? creatures : creatures.filter((c) => c.category === "companion");
   const isOpen = (key: string) => cookieStore.get(key)?.value !== "0";
   const initialOpen = {
     reminders: isOpen("dm-dashboard-reminders-open"),
@@ -44,7 +51,7 @@ export default async function CampaignDashboardPage({
     <DashboardClient
       campaign={campaign}
       initialCharacters={characters}
-      initialCreatures={creatures}
+      initialCreatures={visibleCreatures}
       initialOpen={initialOpen}
       role={role}
     />

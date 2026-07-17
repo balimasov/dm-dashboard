@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSessionRole, requireRole } from "@/lib/auth";
 import { createCreature, listCreatures } from "@/lib/db";
 import { AbilityScores, CreatureCategory, CreatureTrait } from "@/lib/types";
 
@@ -25,12 +26,16 @@ function parseOptionalNumber(raw: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** A player never sees Enemies/NPCs in the UI (see `DashboardClient.tsx`'s own comment on that split) — filtered out here too, not just hidden client-side, so a player session can't read them straight off this endpoint either. */
 export async function GET(req: Request) {
   const campaignId = new URL(req.url).searchParams.get("campaignId");
   if (!campaignId) {
     return NextResponse.json({ error: "campaignId query param is required." }, { status: 400 });
   }
-  return NextResponse.json(listCreatures(campaignId));
+  const creatures = listCreatures(campaignId);
+  const role = await getSessionRole();
+  const visible = role === "dm" ? creatures : creatures.filter((c) => c.category === "companion");
+  return NextResponse.json(visible);
 }
 
 /**
@@ -39,8 +44,16 @@ export async function GET(req: Request) {
  * back to `templateName` if omitted): the bestiary is keyed by the former, so
  * two differently-named Unicorns owned by two different characters both
  * save/reuse the same "Unicorn" stat block instead of creating duplicates.
+ *
+ * DM-only regardless of category — every add flow (companion included) only
+ * exists inside `CreatureRosterEditor`, itself only reachable through the
+ * DM-gated Settings modal (`EmptyRosterState`'s own "Open Settings" action is
+ * `isDm ? ... : undefined` even for the Companions section).
  */
 export async function POST(req: Request) {
+  const denied = await requireRole("dm");
+  if (denied) return denied;
+
   const body = await req.json().catch(() => null);
   const campaignId = typeof body?.campaignId === "string" ? body.campaignId : "";
   const templateName = typeof body?.templateName === "string" ? body.templateName.trim() : "";

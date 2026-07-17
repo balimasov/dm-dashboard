@@ -1,4 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export const AUTH_COOKIE_NAME = "dm-dashboard-auth";
 
@@ -72,4 +74,28 @@ export function isValidSession(cookieValue: string | undefined): { valid: boolea
   const password = rolePassword(role);
   if (!password) return { valid: false, role };
   return { valid: timingSafeStringEqual(token, computeToken(password, role)), role };
+}
+
+/** Re-reads the session cookie via `next/headers` (works in both Server Components and Route Handlers) and returns just its role — for read paths that need to know "dm or player" but aren't rejecting the request outright (e.g. filtering a creature list down to companions for a player). Trusts `proxy.ts` already rejected an invalid session before the request got this far, same as `requireRole` below; a caller that actually needs to *enforce* a role should use `requireRole` instead, not this. */
+export async function getSessionRole(): Promise<UserRole> {
+  const cookieStore = await cookies();
+  return isValidSession(cookieStore.get(AUTH_COOKIE_NAME)?.value).role;
+}
+
+/**
+ * Independently re-verifies the session and its role inside a Route
+ * Handler — `proxy.ts` already rejects an invalid session before the
+ * request reaches here, but re-checking keeps this guard self-contained
+ * (still correct even if `proxy.ts`'s matcher is ever narrowed to exclude a
+ * route that later gains a role-restricted handler) rather than assuming
+ * middleware already ran. Returns a ready-to-return `NextResponse` on
+ * failure, `null` on success, so a route handler stays a one-line guard:
+ * `const denied = await requireRole("dm"); if (denied) return denied;`
+ */
+export async function requireRole(role: UserRole): Promise<NextResponse | null> {
+  const cookieStore = await cookies();
+  const session = isValidSession(cookieStore.get(AUTH_COOKIE_NAME)?.value);
+  if (!session.valid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== role) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return null;
 }

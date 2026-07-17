@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth";
 import { getCampaign, listCharacters, listCreatures } from "@/lib/db";
 import packageJson from "../../../../../../package.json";
 
@@ -21,7 +22,11 @@ function filenameSlug(name: string): string {
   );
 }
 
+/** Export is DM-only — the "Export" link only ever renders inside `isDm && <MoreMenu>` (see `DashboardClient.tsx`), and it dumps every character/creature in the campaign (including DM-only enemy/NPC stat blocks a player is never shown). */
 export async function GET(_req: Request, ctx: RouteContext<"/api/campaigns/[id]/export">) {
+  const denied = await requireRole("dm");
+  if (denied) return denied;
+
   const { id } = await ctx.params;
   const campaign = getCampaign(id);
   if (!campaign) {
