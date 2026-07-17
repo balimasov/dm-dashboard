@@ -16,6 +16,7 @@ import {
 } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier, ordinalLevel } from "@/lib/format";
+import { getMasteryInfo } from "@/lib/masteryInfo";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { DamageInfoList } from "./ui/DamageInfoList";
@@ -154,9 +155,19 @@ function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged:
       trailing={
         <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
           {attack.mastery && (
-            <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
-              {attack.mastery}
-            </span>
+            <InfoTooltip
+              hoverOnly
+              panel={
+                <p className="text-white">
+                  <span className="font-semibold">{attack.mastery}</span>
+                  {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
+                </p>
+              }
+            >
+              <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
+                {attack.mastery}
+              </span>
+            </InfoTooltip>
           )}
           <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
           <span className="text-slate-400">

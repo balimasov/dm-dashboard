@@ -65,9 +65,9 @@ describe("non-caster classes", () => {
 });
 
 describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
-  test("Alor (Fighter 5, computed Dex 18) — martial-weapons proficiency covers Scimitar/Shortsword/Longbow, Finesse picks the better modifier, unequipped Spear/Whisper of the Underdark are excluded", () => {
+  test("Alor (Fighter 5, computed Dex 18) — martial-weapons proficiency covers Scimitar/Shortsword/Longbow, Finesse picks the better modifier, unequipped Spear/Whisper of the Underdark are excluded, Weapon Mastery is unlocked via his Fighter feat's actions/options entries", () => {
     const c = load("alor-fighter");
-    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Longbow", "Scimitar", "Shortsword"]);
+    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Longbow", "Scimitar", "Shortsword", "Unarmed Strike"]);
     expect(c.stats.dex).toBe(18); // confirms the +4 modifier the rest of this test relies on
 
     const scimitar = c.attacks.find((a) => a.name === "Scimitar")!;
@@ -94,18 +94,18 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
     });
   });
 
-  test("Esmeralda (Bard 5, only Simple Weapons proficiency) — Rapier/Crossbow are martial and unproficient (ability mod only), Dagger is simple and proficient, +1 Rapier's magic bonus lands on both attack and damage", () => {
+  test("Esmeralda (Bard 5, only Simple Weapons proficiency, no Weapon Mastery feature at all) — Rapier/Crossbow are martial and unproficient (ability mod only), Dagger is simple and proficient, +1 Rapier's magic bonus lands on both attack and damage, and none of the three show a mastery badge despite each weapon's own canonical mastery property existing in the raw data", () => {
     const c = load("esmeralda-bard");
-    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Crossbow, Hand", "Dagger", "Rapier, +1"]);
+    expect(c.attacks.map((a) => a.name).sort()).toEqual(["Crossbow, Hand", "Dagger", "Rapier, +1", "Unarmed Strike"]);
 
     const rapier = c.attacks.find((a) => a.name === "Rapier, +1")!;
     expect(rapier).toMatchObject({
       attackType: "melee",
       attackBonus: 3, // dex +2 (Finesse) + magic +1, no proficiency bonus
       damage: "1d8 +3",
-      mastery: "Vex",
       proficient: false,
     });
+    expect(rapier.mastery).toBeUndefined(); // weapon's own property is Vex, but a Bard never unlocks Weapon Mastery
 
     const crossbow = c.attacks.find((a) => a.name === "Crossbow, Hand")!;
     expect(crossbow).toMatchObject({
@@ -115,13 +115,41 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       range: "30/120 ft.",
       proficient: false,
     });
+    expect(crossbow.mastery).toBeUndefined();
 
     const dagger = c.attacks.find((a) => a.name === "Dagger")!;
     expect(dagger).toMatchObject({
       attackBonus: 5, // dex +2 (Finesse) + proficiency +3 (Simple weapon)
       damage: "1d4 +2",
       range: "20/60 ft.", // Thrown
-      mastery: "Nick",
+      proficient: true,
+    });
+    expect(dagger.mastery).toBeUndefined();
+  });
+});
+
+describe("Unarmed Strike — always present, computed without needing weapon data", () => {
+  test("Alor (Fighter 5, Str 14) — 2024 baseline: 1 + Str modifier Bludgeoning, always proficient", () => {
+    const c = load("alor-fighter");
+    const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
+    expect(unarmed).toMatchObject({
+      attackType: "melee",
+      attackBonus: 5, // str +2 + proficiency +3
+      damage: "3", // 1 + str +2
+      damageType: "Bludgeoning",
+      properties: [],
+      proficient: true,
+    });
+  });
+
+  test("Chem (Monk 8, has the Tavern Brawler feat, Str 12) — D&D Beyond's resolved 'Enhanced Unarmed Strike' action (1d4, Str-based) replaces the flat baseline", () => {
+    const c = load("chem-monk");
+    const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
+    expect(unarmed).toMatchObject({
+      attackType: "melee",
+      attackBonus: 4, // str +1 + proficiency +3
+      damage: "1d4 +1",
+      damageType: "Bludgeoning",
       proficient: true,
     });
   });

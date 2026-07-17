@@ -460,6 +460,16 @@ export const demoCharacters: Character[] = [
     ],
     "attacks": [
       {
+        "id": "attack-unarmed",
+        "name": "Unarmed Strike",
+        "attackType": "melee",
+        "attackBonus": 7,
+        "damage": "5",
+        "damageType": "Bludgeoning",
+        "properties": [],
+        "proficient": true
+      },
+      {
         "id": "attack-0",
         "name": "Greataxe",
         "attackType": "melee",
@@ -1365,7 +1375,18 @@ export const demoCharacters: Character[] = [
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
-    "attacks": [],
+    "attacks": [
+      {
+        "id": "attack-unarmed",
+        "name": "Unarmed Strike",
+        "attackType": "melee",
+        "attackBonus": 4,
+        "damage": "2",
+        "damageType": "Bludgeoning",
+        "properties": [],
+        "proficient": true
+      }
+    ],
     "notes": "An Oath of Glory paladin chasing legendary deeds — Inspiring Smite and Peerless Athlete reward big, showy moments. Scenes with an audience, a rival to outshine, or a feat of athletics/glory work well for her.",
     "quickNotes": [
       {
@@ -2206,7 +2227,18 @@ export const demoCharacters: Character[] = [
         "description": "Increase one of these scores by 2 and a different score by 1."
       }
     ],
-    "attacks": [],
+    "attacks": [
+      {
+        "id": "attack-unarmed",
+        "name": "Unarmed Strike",
+        "attackType": "melee",
+        "attackBonus": 2,
+        "damage": "0",
+        "damageType": "Bludgeoning",
+        "properties": [],
+        "proficient": true
+      }
+    ],
     "notes": "A Spellfire Sorcerer built around Metamagic-twisted blasts and Sorcery Point economy. Fights that reward creative spell-slot management (or punish burning through Sorcery Points too early) suit her best.",
     "quickNotes": [
       {
@@ -2862,27 +2894,35 @@ export const demoCharacters: Character[] = [
     ],
     "attacks": [
       {
+        "id": "attack-unarmed",
+        "name": "Unarmed Strike",
+        "attackType": "melee",
+        "attackBonus": 2,
+        "damage": "0",
+        "damageType": "Bludgeoning",
+        "properties": [],
+        "proficient": true
+      },
+      {
         "id": "attack-0",
         "name": "Rapier, +1",
         "attackType": "melee",
-        "attackBonus": 6,
+        "attackBonus": 3,
         "damage": "1d8 +3",
         "damageType": "Piercing",
         "properties": ["Finesse"],
-        "mastery": "Vex",
-        "proficient": true
+        "proficient": false
       },
       {
         "id": "attack-1",
         "name": "Crossbow, Hand",
         "attackType": "ranged",
-        "attackBonus": 5,
+        "attackBonus": 2,
         "damage": "1d6 +2",
         "damageType": "Piercing",
         "properties": ["Ammunition", "Light", "Loading"],
-        "mastery": "Vex",
         "range": "30/120 ft.",
-        "proficient": true
+        "proficient": false
       }
     ],
     "notes": "A College of Dance bard who fights unarmored and up close — Dazzling Footwork and Bardic Inspiration make her as much a battlefield conductor as a performer. Social scenes and chances to show off both work.",
