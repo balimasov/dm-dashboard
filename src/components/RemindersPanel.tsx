@@ -1,22 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { Character, Creature, CreatureTrait } from "@/lib/types";
 import { CONTENT_KIND_ICON, ContentKind } from "@/lib/contentKindIcons";
 import { Avatar } from "./Avatar";
+import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { AttackName } from "./ui/AttackDisplay";
 import { FlaggableRow } from "./ui/FlaggableRow";
-
-/** Scrolls a character/creature's own dashboard card into view — same DOM id `DashboardClient` stamps on every roster card wrapper — and briefly rings it, so clicking a Reminders group header jumps straight to that card's header instead of leaving the DM to hunt for it across Party/Companions/Enemies/NPCs. A no-op if the card's section happens to be collapsed (its wrapper isn't in the DOM at all then). */
-function jumpToRosterCard(id: string) {
-  const el = document.getElementById(`roster-card-${id}`);
-  if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-  el.classList.add("roster-jump-highlight");
-  window.setTimeout(() => el.classList.remove("roster-jump-highlight"), 1400);
-}
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Trait",
@@ -160,6 +154,18 @@ export function RemindersPanel({
     ...creatures.filter((c) => !c.hidden).map(creatureReminders),
   ].filter((g): g is ReminderGroup => g !== null);
   const totalCount = groups.reduce((sum, g) => sum + g.entries.length, 0);
+
+  // Reminders renders its own instance of the details modal rather than
+  // reaching into whichever `CharacterCard`/`CreatureCard` happens to be on
+  // the dashboard — that card's own `detailsOpen` state is local to it and
+  // isn't reachable from here, and a card for a hidden or currently-
+  // collapsed section might not even be mounted. Opening a fresh modal
+  // instance for the clicked owner's real data sidesteps all of that.
+  const [openCharacterId, setOpenCharacterId] = useState<string | null>(null);
+  const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
+  const openCharacter = characters.find((c) => c.id === openCharacterId);
+  const openCreature = creatures.find((c) => c.id === openCreatureId);
+
   if (totalCount === 0) return null;
 
   function toggleOff(group: ReminderGroup, name: string) {
@@ -174,62 +180,81 @@ export function RemindersPanel({
     }
   }
 
+  function openOwnerModal(ownerId: string) {
+    if (characters.some((c) => c.id === ownerId)) {
+      setOpenCharacterId(ownerId);
+    } else {
+      setOpenCreatureId(ownerId);
+    }
+  }
+
   return (
-    <CollapsibleSection
-      title={
-        <>
-          <span aria-hidden="true" className="mr-2">
-            🔥
-          </span>
-          Reminders
-          <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">
-            ({totalCount} reminder{totalCount === 1 ? "" : "s"})
-          </span>
-        </>
-      }
-      storageKey={storageKey}
-      initialOpen={initialOpen}
-    >
-      <p className="mb-4 px-3 text-sm text-slate-500">
-        Abilities flagged with the reminder flame across every character and creature — the ones easy to forget mid-session.
-      </p>
-      {/* `flex-wrap` instead of the `overflow-x-auto` horizontal-scroll rows
-          used elsewhere (Party/Companions/etc.) — originally chosen to dodge
-          an `InfoTooltip` hint getting clipped by that kind of container's
-          forced `overflow-y` (now fixed at the root in `InfoTooltip` itself,
-          which portals its panel out to `document.body` instead of nesting
-          it under whatever ancestor happens to scroll). Kept as `flex-wrap`
-          anyway — these groups are usually few and short, so wrapping to a
-          second line still reads better here than a forced side-scroll. */}
-      <div className="flex flex-wrap gap-3 px-3 pb-2">
-        {groups.map((group) => (
-          <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
-            <button
-              type="button"
-              onClick={() => jumpToRosterCard(group.ownerId)}
-              title={`Jump to ${group.ownerName}'s card`}
-              className="mb-2 flex w-full items-center gap-2 text-left hover:opacity-80"
-            >
-              <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
-              <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
-                {group.ownerName}
-              </p>
-            </button>
-            <div className="space-y-0.5">
-              {group.entries.map((entry) => (
-                <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span aria-hidden="true" className="shrink-0 text-xs leading-none">
-                      {CONTENT_KIND_ICON[entry.kind]}
+    <>
+      {openCharacter && <CharacterDetailsModal character={openCharacter} onClose={() => setOpenCharacterId(null)} onUpdate={onUpdateCharacter} />}
+      {openCreature && (
+        <CreatureDetailsModal
+          creature={openCreature}
+          owner={characters.find((c) => c.id === openCreature.ownerCharacterId)}
+          onClose={() => setOpenCreatureId(null)}
+          onUpdate={onUpdateCreature}
+        />
+      )}
+      <CollapsibleSection
+        title={
+          <>
+            <span aria-hidden="true" className="mr-2">
+              🔥
+            </span>
+            Reminders
+            <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">
+              ({totalCount} reminder{totalCount === 1 ? "" : "s"})
+            </span>
+          </>
+        }
+        storageKey={storageKey}
+        initialOpen={initialOpen}
+      >
+        <p className="mb-4 px-3 text-sm text-slate-500">
+          Abilities flagged with the reminder flame across every character and creature — the ones easy to forget mid-session.
+        </p>
+        {/* `flex-wrap` instead of the `overflow-x-auto` horizontal-scroll rows
+            used elsewhere (Party/Companions/etc.) — originally chosen to dodge
+            an `InfoTooltip` hint getting clipped by that kind of container's
+            forced `overflow-y` (now fixed at the root in `InfoTooltip` itself,
+            which portals its panel out to `document.body` instead of nesting
+            it under whatever ancestor happens to scroll). Kept as `flex-wrap`
+            anyway — these groups are usually few and short, so wrapping to a
+            second line still reads better here than a forced side-scroll. */}
+        <div className="flex flex-wrap gap-3 px-3 pb-2">
+          {groups.map((group) => (
+            <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
+              <button
+                type="button"
+                onClick={() => openOwnerModal(group.ownerId)}
+                title={`Open ${group.ownerName}`}
+                className="mb-2 flex w-full items-center gap-2 text-left hover:opacity-80"
+              >
+                <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
+                <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
+                  {group.ownerName}
+                </p>
+              </button>
+              <div className="space-y-0.5">
+                {group.entries.map((entry) => (
+                  <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span aria-hidden="true" className="shrink-0 text-xs leading-none">
+                        {CONTENT_KIND_ICON[entry.kind]}
+                      </span>
+                      <span className="min-w-0 flex-1">{entry.content}</span>
                     </span>
-                    <span className="min-w-0 flex-1">{entry.content}</span>
-                  </span>
-                </FlaggableRow>
-              ))}
+                  </FlaggableRow>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </CollapsibleSection>
+          ))}
+        </div>
+      </CollapsibleSection>
+    </>
   );
 }

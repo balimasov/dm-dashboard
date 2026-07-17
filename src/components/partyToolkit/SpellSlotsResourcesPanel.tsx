@@ -19,7 +19,7 @@ import {
 import { Avatar } from "../Avatar";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
-import { AttackName } from "../ui/AttackDisplay";
+import { AttackNameAndRange, AttackTrailing } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -95,11 +95,14 @@ function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   );
 }
 
-/** One attack row inside a character's group in the Weapons tab — just the (rarity-colored) name, built from the exact same `AttackName` piece `CharacterDetailsModal`'s own Weapons tab renders, so a DM sees the identical hint (bonus/damage/mastery/range/notes) here as on that character's own card. */
+/** One attack row inside a character's group in the Weapons tab — same flex-row shape `ResourceRow`/`PartySpellRow` use (name flex-1 on the left, numbers shrink-0 on the right), built from the exact same `AttackNameAndRange`/`AttackTrailing` pieces `CharacterDetailsModal`'s own Weapons tab renders, so a DM sees the identical bonus/damage/mastery/range numbers here as on that character's own card. */
 function PartyAttackRow({ attack }: { attack: Attack }) {
   return (
-    <div className="py-1 text-sm">
-      <AttackName attack={attack} />
+    <div className="flex items-center gap-3 py-1 text-sm">
+      <div className="min-w-0 flex-1">
+        <AttackNameAndRange attack={attack} />
+      </div>
+      <AttackTrailing attack={attack} />
     </div>
   );
 }

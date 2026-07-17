@@ -10,8 +10,8 @@
  */
 export const CONTENT_KIND_ICON = {
   weapons: "⚔️",
-  features: "⭐",
-  spells: "✨",
+  features: "💠",
+  spells: "🔮",
 } as const;
 
 export type ContentKind = keyof typeof CONTENT_KIND_ICON;

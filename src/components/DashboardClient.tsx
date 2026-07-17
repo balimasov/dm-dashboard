@@ -212,7 +212,7 @@ function CreatureCategorySection({
           {filtered.map((creature) => {
             const owner = characters.find((c) => c.id === creature.ownerCharacterId);
             return (
-              <div id={`roster-card-${creature.id}`} key={creature.id} className="w-[300px] shrink-0 scroll-mt-[130px] rounded-xl">
+              <div key={creature.id} className="w-[300px] shrink-0">
                 <CreatureCard creature={creature} owner={owner} onUpdate={onUpdate} onRemove={onRemove} />
               </div>
             );
@@ -459,7 +459,7 @@ export function DashboardClient({
           // blocks' own inset so all three line up on the same left edge.
           <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
             {visibleCharacters.map((character) => (
-              <div id={`roster-card-${character.id}`} key={character.id} className="w-[300px] shrink-0 scroll-mt-[130px] rounded-xl">
+              <div key={character.id} className="w-[300px] shrink-0">
                 <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
               </div>
             ))}
