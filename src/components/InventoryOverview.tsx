@@ -1,23 +1,12 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity } from "@/lib/types";
+import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity, RARITY_COLOR } from "@/lib/types";
 import { currencyToGp } from "@/lib/characterMath";
 import { InfoTooltip } from "./InfoTooltip";
 import { RichText } from "./RichText";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { ToolkitCard } from "./ui/ToolkitCard";
-
-const RARITY_COLOR: Record<ItemRarity, string> = {
-  Common: "text-slate-300",
-  Uncommon: "text-emerald-400",
-  Rare: "text-blue-400",
-  "Very Rare": "text-violet-400",
-  Legendary: "text-amber-400",
-  Artifact: "text-red-400",
-  Varies: "text-slate-500",
-  Unknown: "text-slate-500",
-};
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 

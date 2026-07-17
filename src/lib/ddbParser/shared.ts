@@ -1,4 +1,4 @@
-import { AbilityScores, RecoveryType } from "../types";
+import { AbilityScores, ItemRarity, RecoveryType } from "../types";
 import { formatModifier } from "../format";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 // Re-exported (not duplicated) so `abilities.ts`/`combat.ts`/`spells.ts`/`ddbParser.ts` can keep importing
@@ -116,6 +116,21 @@ export function shortDescription(snippet?: string | null, description?: string |
   if (!raw) return undefined;
   const cleaned = cleanRulesText(raw);
   return cleaned || undefined;
+}
+
+const RARITY_MAP: Record<string, ItemRarity> = {
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  "very rare": "Very Rare",
+  legendary: "Legendary",
+  artifact: "Artifact",
+  varies: "Varies",
+};
+
+/** D&D Beyond's own `rarity` string (an inventory item's or an equipped weapon's), normalized to `ItemRarity` — shared so an item and the weapon `Attack` computed from it always agree on the same value instead of two independent lookups drifting apart. */
+export function rarityFromDdb(rarity: string | null | undefined): ItemRarity {
+  return RARITY_MAP[String(rarity ?? "").toLowerCase()] ?? "Unknown";
 }
 
 /** Thrown for anything the placeholder evaluator below can't resolve — an unknown variable/modifier keyword, bad syntax, or `scalevalue`/`limiteduse` with no charge count available. Callers catch it and drop just that one placeholder. */

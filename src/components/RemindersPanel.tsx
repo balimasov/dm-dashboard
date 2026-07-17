@@ -1,12 +1,22 @@
 "use client";
 
 import { Character, Creature, CreatureTrait } from "@/lib/types";
+import { CONTENT_KIND_ICON, ContentKind } from "@/lib/contentKindIcons";
 import { Avatar } from "./Avatar";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { AttackHintPanel, AttackTrailing } from "./ui/AttackDisplay";
+import { AttackName } from "./ui/AttackDisplay";
 import { FlaggableRow } from "./ui/FlaggableRow";
+
+/** Scrolls a character/creature's own dashboard card into view — same DOM id `DashboardClient` stamps on every roster card wrapper — and briefly rings it, so clicking a Reminders group header jumps straight to that card's header instead of leaving the DM to hunt for it across Party/Companions/Enemies/NPCs. A no-op if the card's section happens to be collapsed (its wrapper isn't in the DOM at all then). */
+function jumpToRosterCard(id: string) {
+  const el = document.getElementById(`roster-card-${id}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.classList.add("roster-jump-highlight");
+  window.setTimeout(() => el.classList.remove("roster-jump-highlight"), 1400);
+}
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Trait",
@@ -17,10 +27,12 @@ const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = 
 };
 
 interface ReminderEntry {
+  /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `content`). */
   name: string;
-  hint: React.ReactNode;
-  /** Only weapon attacks carry this — their bonus/damage/mastery, shown the same way `AttackTrailing` shows it everywhere else an attack appears. */
-  trailing?: React.ReactNode;
+  /** The fully-rendered row content — a plain hinted name for a feature/spell, or the shared, rarity-colored `AttackName` for a weapon attack. */
+  content: React.ReactNode;
+  /** Which `CONTENT_KIND_ICON` glyph this row gets — same one shown on the matching tab, so a DM can tell a weapon reminder from a feature/spell one at a glance in a group that mixes all three. A creature trait uses "features", the closest match (same "ability with a description" shape as a character's own Features and Traits tab). */
+  kind: ContentKind;
 }
 
 interface ReminderGroup {
@@ -38,29 +50,43 @@ function characterReminders(character: Character): ReminderGroup | null {
       .filter((a) => flagged.includes(a.name))
       .map((a) => ({
         name: a.name,
-        hint: <AttackHintPanel attack={a} />,
-        trailing: <AttackTrailing attack={a} />,
+        content: <AttackName attack={a} />,
+        kind: "weapons" as const,
       })),
     ...character.features
       .filter((f) => flagged.includes(f.name))
       .map((f) => ({
         name: f.name,
-        hint: <AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />,
+        content: (
+          <InfoTooltip
+            panel={<AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />}
+          >
+            {f.name}
+          </InfoTooltip>
+        ),
+        kind: "features" as const,
       })),
     ...character.knownSpells
       .filter((s) => flagged.includes(s.name))
       .map((s) => ({
         name: s.name,
-        hint: (
-          <AbilityHintPanel
-            name={s.name}
-            subtitle={s.school}
-            metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
-            note={s.materialComponent && `Material: ${s.materialComponent}`}
-            description={s.description}
-            emptyDescription="No description."
-          />
+        content: (
+          <InfoTooltip
+            panel={
+              <AbilityHintPanel
+                name={s.name}
+                subtitle={s.school}
+                metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
+                note={s.materialComponent && `Material: ${s.materialComponent}`}
+                description={s.description}
+                emptyDescription="No description."
+              />
+            }
+          >
+            {s.name}
+          </InfoTooltip>
         ),
+        kind: "spells" as const,
       })),
   ];
   if (entries.length === 0) return null;
@@ -75,14 +101,21 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
     .filter((t) => flagged.includes(t.name))
     .map((t) => ({
       name: t.name,
-      hint: (
-        <AbilityHintPanel
-          name={t.name}
-          metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
-          description={t.description}
-          emptyDescription="No description."
-        />
+      content: (
+        <InfoTooltip
+          panel={
+            <AbilityHintPanel
+              name={t.name}
+              metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
+              description={t.description}
+              emptyDescription="No description."
+            />
+          }
+        >
+          {t.name}
+        </InfoTooltip>
       ),
+      kind: "features" as const,
     }));
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -171,16 +204,26 @@ export function RemindersPanel({
       <div className="flex flex-wrap gap-3 px-3 pb-2">
         {groups.map((group) => (
           <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
-            <div className="mb-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => jumpToRosterCard(group.ownerId)}
+              title={`Jump to ${group.ownerName}'s card`}
+              className="mb-2 flex w-full items-center gap-2 text-left hover:opacity-80"
+            >
               <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
               <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
                 {group.ownerName}
               </p>
-            </div>
+            </button>
             <div className="space-y-0.5">
               {group.entries.map((entry) => (
-                <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)} trailing={entry.trailing}>
-                  <InfoTooltip panel={entry.hint}>{entry.name}</InfoTooltip>
+                <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span aria-hidden="true" className="shrink-0 text-xs leading-none">
+                      {CONTENT_KIND_ICON[entry.kind]}
+                    </span>
+                    <span className="min-w-0 flex-1">{entry.content}</span>
+                  </span>
                 </FlaggableRow>
               ))}
             </div>

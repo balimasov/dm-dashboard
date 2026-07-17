@@ -186,6 +186,24 @@ body {
   animation: ring-glow 2s ease-in-out infinite;
 }
 
+/* One-shot "look here" ring for a roster card jumped to from Reminders
+   (`RemindersPanel`'s `jumpToRosterCard`) — same `ring-glow` keyframe as the
+   other rings above, just a finite `3` iterations instead of `infinite` so it
+   settles back to nothing once the DM has had a moment to spot the card,
+   removed from the DOM entirely by a matching `setTimeout` shortly after
+   (CSS alone can't un-apply a class once its animation ends). A distinct sky
+   hue keeps it from reading as any of the state-meaning rings above
+   (violet=concentrating, red=exhaustion, per-condition dynamic). */
+.roster-jump-highlight {
+  --glow-base:
+    0 0 0 3px rgba(56, 189, 248, 0.55),
+    0 0 14px 3px rgba(56, 189, 248, 0.3);
+  --glow-peak:
+    0 0 0 3px rgba(56, 189, 248, 0.95),
+    0 0 26px 8px rgba(56, 189, 248, 0.6);
+  animation: ring-glow 0.45s ease-in-out 3;
+}
+
 /* Heroic Inspiration star — a minimal pulsing glow (text-shadow, not the
    box-shadow ring used above, since this is a bare glyph with no card edge
    to trace) so an available inspiration point catches the eye instead of

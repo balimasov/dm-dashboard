@@ -81,6 +81,8 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       category: "Martial",
       range: "5 ft.", // no Reach property
       proficient: true,
+      weaponType: "Scimitar",
+      rarity: "Common",
     });
 
     const longbow = c.attacks.find((a) => a.name === "Longbow")!;
@@ -108,6 +110,9 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       category: "Martial",
       range: "5 ft.",
       proficient: false,
+      weaponType: "Rapier",
+      rarity: "Uncommon",
+      description: "You have a +1 bonus to attack and damage rolls made with this magic weapon.",
     });
     expect(rapier.mastery).toBeUndefined(); // weapon's own property is Vex, but a Bard never unlocks Weapon Mastery
 
@@ -147,6 +152,9 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
       range: "5 ft.",
       proficient: true,
     });
+    expect(unarmed.weaponType).toBeUndefined(); // a natural attack, not an actual weapon
+    expect(unarmed.rarity).toBeUndefined();
+    expect(unarmed.description).toBeUndefined();
   });
 
   test("Chem (Monk 8, has the Tavern Brawler feat, Str 12) — D&D Beyond's resolved 'Enhanced Unarmed Strike' action (1d4, Str-based) replaces the flat baseline", () => {

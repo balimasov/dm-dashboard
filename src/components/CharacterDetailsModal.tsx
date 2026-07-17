@@ -15,10 +15,11 @@ import {
   STAT_ORDER,
 } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
+import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
-import { AttackNameAndRange, AttackTrailing } from "./ui/AttackDisplay";
+import { AttackName } from "./ui/AttackDisplay";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
@@ -141,11 +142,11 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
   );
 }
 
-/** One weapon attack, flaggable like any Feature/Spell — the actual row visuals (name/hint, range, bonus/damage/mastery) are shared with Party Toolkit's grouped Weapons list and Reminders via `AttackNameAndRange`/`AttackTrailing`. */
+/** One weapon attack, flaggable like any Feature/Spell — the row shows only its (rarity-colored) name, everything else (range, bonus, damage, mastery, notes) lives in the shared hint, same as Party Toolkit's grouped Weapons list and Reminders via `AttackName`. */
 function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
   return (
-    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} trailing={<AttackTrailing attack={attack} />}>
-      <AttackNameAndRange attack={attack} />
+    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag}>
+      <AttackName attack={attack} />
     </FlaggableRow>
   );
 }
@@ -197,9 +198,9 @@ export function CharacterDetailsModal({
   const hasFeatures = c.features.length > 0;
 
   const tabs: Array<{ key: DetailsTab; label: string }> = [
-    ...(hasAttacks ? [{ key: "weapons" as const, label: "Weapons" }] : []),
-    ...(hasFeatures ? [{ key: "features" as const, label: "Features and Traits" }] : []),
-    ...(hasSpells ? [{ key: "spells" as const, label: "Spells" }] : []),
+    ...(hasAttacks ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
+    ...(hasFeatures ? [{ key: "features" as const, label: `${CONTENT_KIND_ICON.features} Features and Traits` }] : []),
+    ...(hasSpells ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
   ];
   const [activeTab, setActiveTab] = useState<DetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;

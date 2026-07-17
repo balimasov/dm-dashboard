@@ -1,6 +1,6 @@
 import { AbilityScores, Attack, WEAPON_MASTERY_PROPERTIES } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier, titleCase } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, rarityFromDdb, shortDescription, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 
 /** "150" + "600" -> "150/600 ft."; "150" + null/same -> "150 ft." */
@@ -196,6 +196,14 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
           ? "10 ft."
           : "5 ft.";
 
+    // Every weapon has *some* description text on D&D Beyond, even a mundane
+    // one (a generic "how proficiency/mastery works" blurb, confirmed on a
+    // plain Scimitar) — same source `computeInventory` reads for the
+    // matching inventory entry, computed the same way here regardless of
+    // rarity. It's `attack.rarity`, not description-presence, that gates
+    // whether the hint actually surfaces this text (see `AttackHintPanel`).
+    const description = shortDescription(df.snippet, df.description);
+
     attacks.push({
       id: `attack-${attacks.length}`,
       name: df.name,
@@ -209,6 +217,9 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
       ...(extraDamage ? { extraDamage } : {}),
       ...(range ? { range } : {}),
       proficient,
+      ...(df.type ? { weaponType: df.type } : {}),
+      rarity: rarityFromDdb(df.rarity),
+      ...(description ? { description } : {}),
     });
   }
 

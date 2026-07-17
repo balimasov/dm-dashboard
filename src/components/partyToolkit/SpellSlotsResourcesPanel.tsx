@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Attack, Character, RECOVERY_LABELS } from "@/lib/types";
+import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { ordinalLevel } from "@/lib/format";
 import {
   HeroicInspirationSummary,
@@ -18,7 +19,7 @@ import {
 import { Avatar } from "../Avatar";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
-import { AttackNameAndRange, AttackTrailing } from "../ui/AttackDisplay";
+import { AttackName } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -94,14 +95,11 @@ function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   );
 }
 
-/** One attack row inside a character's group in the Weapons tab — same flex-row shape `ResourceRow`/`PartySpellRow` use (name flex-1 on the left, numbers shrink-0 on the right), built from the exact same `AttackNameAndRange`/`AttackTrailing` pieces `CharacterDetailsModal`'s own Weapons tab renders, so a DM sees the identical bonus/damage/mastery/range numbers here as on that character's own card. */
+/** One attack row inside a character's group in the Weapons tab — just the (rarity-colored) name, built from the exact same `AttackName` piece `CharacterDetailsModal`'s own Weapons tab renders, so a DM sees the identical hint (bonus/damage/mastery/range/notes) here as on that character's own card. */
 function PartyAttackRow({ attack }: { attack: Attack }) {
   return (
-    <div className="flex items-center gap-3 py-1 text-sm">
-      <div className="min-w-0 flex-1">
-        <AttackNameAndRange attack={attack} />
-      </div>
-      <AttackTrailing attack={attack} />
+    <div className="py-1 text-sm">
+      <AttackName attack={attack} />
     </div>
   );
 }
@@ -159,9 +157,9 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
   const partyAttacks = computePartyAttacks(characters);
 
   const tabs: Array<{ key: PartyDetailsTab; label: string }> = [
-    ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, label: "Weapons" }] : []),
-    { key: "features", label: "Features and Traits" },
-    ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: "Spells" }] : []),
+    ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
+    { key: "features", label: `${CONTENT_KIND_ICON.features} Features and Traits` },
+    ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
   ];
   const [activeTab, setActiveTab] = useState<PartyDetailsTab>("features");
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : "features";

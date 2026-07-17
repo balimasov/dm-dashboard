@@ -268,6 +268,18 @@ export const RARITY_ORDER: ItemRarity[] = [
   "Unknown",
 ];
 
+/** Shared rarity → text-color lookup — an inventory item and a magic weapon's `Attack` entry both get colored the same way, so this lives here rather than duplicated per component. */
+export const RARITY_COLOR: Record<ItemRarity, string> = {
+  Common: "text-slate-300",
+  Uncommon: "text-emerald-400",
+  Rare: "text-blue-400",
+  "Very Rare": "text-violet-400",
+  Legendary: "text-amber-400",
+  Artifact: "text-red-400",
+  Varies: "text-slate-500",
+  Unknown: "text-slate-500",
+};
+
 export type ItemCategory = "Weapon" | "Armor" | "Consumable" | "Magic Item" | "Gear";
 
 /** Display order for grouping the party inventory. */
@@ -317,6 +329,12 @@ export interface Attack {
   range?: string;
   /** An unproficient attack still gets an ability-mod-only bonus, so this is shown as a caveat rather than hidden. */
   proficient: boolean;
+  /** The weapon's base type (e.g. "Shortsword", "Rapier") — omitted for Unarmed Strike. Only shown in the hint for a non-Common weapon, since a mundane Greataxe's own name already says everything its type would. */
+  weaponType?: string;
+  /** Uncommon+ for a magic weapon, "Common" for mundane gear — drives both the hint's "is this special" block and the row's rarity-colored name (same `RARITY_COLOR` an inventory item uses). Omitted (never colored/expanded) for Unarmed Strike. */
+  rarity?: ItemRarity;
+  /** A magic weapon's own rules text (D&D Beyond's item description/snippet) — shown in the hint alongside `weaponType`/`rarity`, same as `InventoryItem.description`. Absent for mundane weapons. */
+  description?: string;
 }
 
 export interface InventoryItem {

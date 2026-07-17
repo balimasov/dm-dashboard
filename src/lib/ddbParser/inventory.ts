@@ -1,16 +1,6 @@
 import { Currency, InventoryItem, ItemCategory, ItemRarity } from "../types";
-import { shortDescription } from "./shared";
+import { rarityFromDdb, shortDescription } from "./shared";
 import { RawDdbData } from "./rawTypes";
-
-const RARITY_MAP: Record<string, ItemRarity> = {
-  common: "Common",
-  uncommon: "Uncommon",
-  rare: "Rare",
-  "very rare": "Very Rare",
-  legendary: "Legendary",
-  artifact: "Artifact",
-  varies: "Varies",
-};
 
 const CATEGORY_MAP: Record<string, ItemCategory> = {
   weapon: "Weapon",
@@ -42,7 +32,7 @@ function computeItemCategory(filterType: string | undefined, rarity: ItemRarity)
 
 export function computeInventory(data: RawDdbData): InventoryItem[] {
   return (data.inventory ?? []).map((item, idx) => {
-    const rarity: ItemRarity = RARITY_MAP[String(item.definition?.rarity ?? "").toLowerCase()] ?? "Unknown";
+    const rarity: ItemRarity = rarityFromDdb(item.definition?.rarity);
     const description = shortDescription(item.definition?.snippet, item.definition?.description);
     return {
       id: `item-${idx}`,

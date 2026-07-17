@@ -1,68 +1,79 @@
-import { Attack } from "@/lib/types";
+import { Attack, RARITY_COLOR } from "@/lib/types";
 import { attackNotes } from "@/lib/attackFormat";
 import { formatModifier } from "@/lib/format";
 import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
-import { AbilityHintPanel } from "./AbilityHintPanel";
+import { RichText } from "../RichText";
+import { HintPanel } from "./HintPanel";
 
 /**
  * Same hover-hint shape everywhere a weapon attack shows up — a character's
  * own Weapons tab, Party Toolkit's grouped list, a Reminders entry — one
- * definition so all three stay in sync instead of drifting apart.
+ * definition so all three stay in sync instead of drifting apart. Unlike
+ * every other row in the app, the row itself shows nothing but the weapon's
+ * name (see `AttackName`): range, to-hit, damage, mastery, and notes all
+ * live here instead, since a DM opens the hint anyway to identify *which*
+ * weapon this is and wants every number in the same place once they have.
  */
 export function AttackHintPanel({ attack }: { attack: Attack }) {
   const notes = attackNotes(attack);
+  const masteryInfo = attack.mastery ? getMasteryInfo(attack.mastery) : undefined;
+  // Gated on rarity, not description-presence — D&D Beyond attaches *some*
+  // description to every weapon, even a mundane one (a generic "how
+  // proficiency/mastery works" blurb that says nothing item-specific), so a
+  // plain Common Scimitar would otherwise show this block too.
+  const isSpecialWeapon = Boolean(attack.rarity && attack.rarity !== "Common" && attack.rarity !== "Unknown" && attack.description);
+
   return (
-    <AbilityHintPanel
-      name={attack.name}
-      subtitle={attack.attackType === "ranged" ? "Ranged" : "Melee"}
-      note={notes ? `Notes: ${notes}` : undefined}
-      status={!attack.proficient && <span className="text-amber-400">Not proficient — bonus is ability modifier only.</span>}
+    <HintPanel
+      title={<span className={RARITY_COLOR[attack.rarity ?? "Common"]}>{attack.name}</span>}
+      description={
+        <span className="block space-y-1.5">
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            {attack.attackType === "ranged" ? "Ranged" : "Melee"}
+            {attack.range ? ` · ${attack.range}` : ""}
+          </span>
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            <span>
+              <span className="text-slate-500">To Hit</span>{" "}
+              <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
+            </span>
+            <span>
+              <span className="text-slate-500">Damage</span> <span className="font-semibold text-slate-100">{attack.damage}</span>
+              {attack.damageType && <span className="text-slate-400"> {attack.damageType}</span>}
+            </span>
+          </span>
+          {!attack.proficient && (
+            <span className="block text-xs font-medium text-amber-400">Not proficient — bonus is ability modifier only.</span>
+          )}
+          {attack.mastery && (
+            <span className="block text-violet-300">
+              <span className="font-semibold">{attack.mastery}</span>
+              {masteryInfo ? `: ${masteryInfo}` : ""}
+            </span>
+          )}
+          {notes && <span className="block text-slate-500">Notes: {notes}</span>}
+          {isSpecialWeapon && (
+            <span className="block space-y-1 border-t border-slate-800 pt-1.5">
+              <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                {[attack.rarity, attack.weaponType].filter(Boolean).join(" ")}
+              </span>
+              <span className="block">
+                <RichText text={attack.description!} />
+              </span>
+            </span>
+          )}
+        </span>
+      }
     />
   );
 }
 
-/**
- * The mastery badge (with its own short rules hint) plus attack bonus and
- * damage — shown directly on the row everywhere an attack appears, not
- * hidden behind a hover, since those are exactly the numbers a DM needs
- * mid-combat without an extra click.
- */
-export function AttackTrailing({ attack }: { attack: Attack }) {
+/** A weapon attack's row content, everywhere one appears — just the name (rarity-colored the same way an inventory item's name is), with the shared hint above carrying everything else. */
+export function AttackName({ attack }: { attack: Attack }) {
   return (
-    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
-      {attack.mastery && (
-        <InfoTooltip
-          hoverOnly
-          panel={
-            <p className="text-white">
-              <span className="font-semibold">{attack.mastery}</span>
-              {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
-            </p>
-          }
-        >
-          <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
-            {attack.mastery}
-          </span>
-        </InfoTooltip>
-      )}
-      <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
-      <span className="text-slate-400">
-        {attack.damage}
-        {attack.damageType ? ` ${attack.damageType}` : ""}
-      </span>
-    </span>
-  );
-}
-
-/** Attack name (with the shared hover hint) plus its range on the line beneath — the "what am I looking at, how far can it reach" half of a row, paired with `AttackTrailing`'s numbers on the other side. */
-export function AttackNameAndRange({ attack }: { attack: Attack }) {
-  return (
-    <>
-      <InfoTooltip panel={<AttackHintPanel attack={attack} />}>
-        <span className="block">{attack.name}</span>
-      </InfoTooltip>
-      {attack.range && <span className="block text-[11px] text-slate-500">{attack.range}</span>}
-    </>
+    <InfoTooltip panel={<AttackHintPanel attack={attack} />}>
+      <span className={`block ${RARITY_COLOR[attack.rarity ?? "Common"]}`}>{attack.name}</span>
+    </InfoTooltip>
   );
 }

@@ -69,6 +69,17 @@ const featureSchema = z.object({
   recovery: recoveryTypeSchema.optional(),
 });
 
+const itemRaritySchema = z.enum([
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Very Rare",
+  "Legendary",
+  "Artifact",
+  "Varies",
+  "Unknown",
+]);
+
 const attackSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -82,6 +93,9 @@ const attackSchema = z.object({
   extraDamage: z.string().optional(),
   range: z.string().optional(),
   proficient: z.boolean(),
+  weaponType: z.string().optional(),
+  rarity: itemRaritySchema.optional(),
+  description: z.string().optional(),
 });
 
 const spellcastingStatsSchema = z.object({
@@ -145,17 +159,6 @@ const quickNoteSchema = z.object({
   text: z.string(),
   createdAt: z.string(),
 });
-
-const itemRaritySchema = z.enum([
-  "Common",
-  "Uncommon",
-  "Rare",
-  "Very Rare",
-  "Legendary",
-  "Artifact",
-  "Varies",
-  "Unknown",
-]);
 
 const itemCategorySchema = z.enum(["Weapon", "Armor", "Consumable", "Magic Item", "Gear"]);
 
