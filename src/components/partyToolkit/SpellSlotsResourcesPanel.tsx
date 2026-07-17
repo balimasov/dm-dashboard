@@ -1,20 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Character, RECOVERY_LABELS } from "@/lib/types";
+import { Attack, Character, RECOVERY_LABELS } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
   HeroicInspirationSummary,
+  PartyCharacterAttacks,
   PartyResourceEntry,
   PartySpellEntry,
   computeHeroicInspirationSummary,
+  computePartyAttacks,
   computePartyResourceSummary,
   computePartyRestRecoveryGauge,
   computePartySpellSlotSummary,
   computePartySpellsByLevel,
 } from "@/lib/partyToolkit";
+import { Avatar } from "../Avatar";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
+import { AttackNameAndRange, AttackTrailing } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -90,23 +94,61 @@ function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   );
 }
 
-type PartyDetailsTab = "features" | "spells";
+/** One attack row inside a character's group in the Weapons tab — same flex-row shape `ResourceRow`/`PartySpellRow` use (name flex-1 on the left, numbers shrink-0 on the right), built from the exact same `AttackNameAndRange`/`AttackTrailing` pieces `CharacterDetailsModal`'s own Weapons tab renders, so a DM sees the identical bonus/damage/mastery/range numbers here as on that character's own card. */
+function PartyAttackRow({ attack }: { attack: Attack }) {
+  return (
+    <div className="flex items-center gap-3 py-1 text-sm">
+      <div className="min-w-0 flex-1">
+        <AttackNameAndRange attack={attack} />
+      </div>
+      <AttackTrailing attack={attack} />
+    </div>
+  );
+}
+
+/** One character's own group of attacks — an avatar+name header (same shape `RemindersPanel`'s per-character groups use) above that character's own attack list, `divide-y`'d the same way every other grouped list in this panel is. */
+function PartyCharacterWeapons({ entry, isFirst }: { entry: PartyCharacterAttacks; isFirst: boolean }) {
+  return (
+    <div className={isFirst ? "" : "mt-4"}>
+      <div className="mb-1 flex items-center gap-2">
+        <Avatar src={entry.avatarUrl} label={entry.characterName} size="xs" />
+        <p title={entry.characterName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
+          {entry.characterName}
+        </p>
+      </div>
+      <div className="divide-y divide-slate-800/60">
+        {entry.attacks.map((attack) => (
+          <PartyAttackRow key={attack.id} attack={attack} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type PartyDetailsTab = "weapons" | "features" | "spells";
 
 /**
- * Spell Slots & Resources — the same Rest Recovery/Spell Slots charts
+ * Actions & Resources — the same Rest Recovery/Spell Slots charts
  * `ResourceCoveragePanel` shows (via the shared `SpellChartsRow`), so both
  * panels read as one consistent instrument instead of this one showing an
- * older, different chart style.
+ * older, different chart style. Started life as "Spell Slots & Resources"
+ * (hence `SpellSlotsResourcesPanel`'s own file/component name, kept
+ * unchanged since renaming it would ripple into every import for no
+ * behavioral gain) — the visible title moved to "Actions & Resources" once
+ * Weapons joined Spells as a second kind of "what can this character DO"
+ * content sitting alongside the resource/slot tracking.
  *
- * Below that, tabbed the same way `CharacterDetailsModal` tabs a single
- * character's own Features and Traits / Spells — "Features and Traits"
- * keeps this panel's existing Heroic Inspiration + Limited Use content
- * unchanged, "Spells" is new: every known spell across the party, grouped
- * by level like a character's own Spells tab, deduped by name so a spell
- * several characters share shows as one row with several avatar chips
- * instead of once per character. No tab switcher (and no "Spells" tab at
- * all) for an all-martial party with nothing to show there — same "don't
- * show an empty tab" rule the character modal already follows.
+ * Below the charts, tabbed the same way `CharacterDetailsModal` tabs a
+ * single character's own Weapons/Features and Traits/Spells — "Features
+ * and Traits" keeps this panel's existing Heroic Inspiration + Limited Use
+ * content unchanged, "Spells" is every known spell across the party,
+ * grouped by level like a character's own Spells tab and deduped by name
+ * (a spell several characters share shows as one row with several avatar
+ * chips instead of once per character). "Weapons" is different from
+ * "Spells" on purpose: it groups by *character* instead of deduping across
+ * the party (see `computePartyAttacks`'s own doc comment for why). No tab
+ * switcher (and no tab at all) for content nobody has — same "don't show
+ * an empty tab" rule the character modal already follows.
  */
 export function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const spellSlots = computePartySpellSlotSummary(characters);
@@ -114,8 +156,10 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
   const resources = computePartyResourceSummary(characters);
   const restRecovery = computePartyRestRecoveryGauge(characters);
   const spellLevelGroups = computePartySpellsByLevel(characters);
+  const partyAttacks = computePartyAttacks(characters);
 
   const tabs: Array<{ key: PartyDetailsTab; label: string }> = [
+    ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, label: "Weapons" }] : []),
     { key: "features", label: "Features and Traits" },
     ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: "Spells" }] : []),
   ];
@@ -123,7 +167,7 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : "features";
 
   return (
-    <ToolkitCard title="Spell Slots & Resources">
+    <ToolkitCard title="Actions & Resources">
       <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
         <SpellChartsRow restRecovery={restRecovery} spellSlots={spellSlots} />
       </div>
@@ -144,6 +188,9 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
           ))}
         </div>
       )}
+
+      {currentTab === "weapons" &&
+        partyAttacks.map((entry, index) => <PartyCharacterWeapons key={entry.characterId} entry={entry} isFirst={index === 0} />)}
 
       {currentTab === "features" && (
         <>

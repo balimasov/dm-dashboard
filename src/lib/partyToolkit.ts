@@ -1,5 +1,6 @@
 import {
   AbilityScores,
+  Attack,
   Character,
   Feature,
   KnownSpell,
@@ -1372,4 +1373,34 @@ export function computePartyHpSummary(characters: Character[]): PartyHpSummary {
   const totalPercent = totalMaxHp > 0 ? Math.max(0, Math.min(100, Math.round((totalHp / totalMaxHp) * 100))) : 0;
 
   return { characters: sorted, totalHp, totalMaxHp, totalTempHp, totalPercent };
+}
+
+export interface PartyCharacterAttacks {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+  /** Alphabetical — same convention `CharacterDetailsModal`'s own Weapons tab sorts by. */
+  attacks: Attack[];
+}
+
+/**
+ * One entry per character with at least one weapon attack, each character's
+ * own list sorted the same way as their own Weapons tab — Party Toolkit's
+ * Weapons tab groups by character instead of deduping across the party
+ * (unlike `computePartySpellsByLevel`), since two characters rarely swing
+ * the same weapon for the same numbers the way they might know the same
+ * spell, and a DM scanning this mid-combat wants "what does *this*
+ * character hit with", not a merged list. Every synced character carries at
+ * least the baseline Unarmed Strike, so in practice this covers the whole
+ * visible roster.
+ */
+export function computePartyAttacks(characters: Character[]): PartyCharacterAttacks[] {
+  return characters
+    .filter((c) => c.attacks.length > 0)
+    .map((c) => ({
+      characterId: c.id,
+      characterName: c.name,
+      avatarUrl: c.avatarUrl,
+      attacks: c.attacks.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    }));
 }

@@ -36,7 +36,7 @@ export function usageColorClass(current: number, max: number): string {
 }
 
 /**
- * Shared by the Skills radar and the Spell Slots & Resources gauges — the
+ * Shared by the Skills radar and the Actions & Resources gauges — the
  * two cards sit side by side in a `lg:grid-cols-2` row, but the radar (a
  * fixed-size SVG) and the gauge stack (a shorter dial plus an optional
  * SR/LR row) render to different natural heights, so "Passives"/"Spell
@@ -224,7 +224,7 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
  * These are **container** queries (`@[…]:`), not viewport ones (`sm:`/
  * `lg:`) — this histogram sits in two very differently-sized places: the
  * full-width "Resources & Coverage" card (~1400px) and the half-width
- * "Spell Slots & Resources" card, which sits in a 2-column grid next to
+ * "Actions & Resources" card, which sits in a 2-column grid next to
  * Skills and measures only ~680px even on a wide desktop viewport. A
  * viewport breakpoint like `sm:`/`lg:` can't tell those two apart — it only
  * knows the browser window is wide, not that *this* box only got half of
@@ -348,7 +348,7 @@ function SpellSlotsHeaderHint({ spellSlots }: { spellSlots: PartySpellSlotSummar
  * rendered width — not the browser viewport's. That distinction matters
  * because this exact component renders inside two very differently-sized
  * places: the full-width "Resources & Coverage" card and the half-width
- * "Spell Slots & Resources" card (paired with Skills in a 2-column grid,
+ * "Actions & Resources" card (paired with Skills in a 2-column grid,
  * confirmed ~680px wide even on a 1500px-wide desktop viewport) — a `lg:`
  * viewport breakpoint can't distinguish those, only a container query can.
  * The side-by-side switch itself waits for `@[1024px]` (not the `@[512px]`

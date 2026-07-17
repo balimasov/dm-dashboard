@@ -48,12 +48,12 @@ export function PartyToolkit({
         <LanguagesToolsPanel characters={characters} />
       </div>
 
-      {/* PREVIEW — merges Spell Slots & Resources + Spell & Ability Coverage
+      {/* PREVIEW — merges Actions & Resources + Spell & Ability Coverage
           into one categorized, quantity-aware list (see ResourceCoveragePanel's
           own doc comment). The old Spell & Ability Coverage panel is already
           gone, confirmed replaced by this one — SpellSlotsResourcesPanel is
           the one panel still pending removal, once it's confirmed too. */}
-      <p className="text-xs text-slate-600">Preview below — also merges in Spell Slots &amp; Resources.</p>
+      <p className="text-xs text-slate-600">Preview below — also merges in Actions &amp; Resources.</p>
       <ResourceCoveragePanel characters={characters} initialOpen={initialResourceCoverageOpen} />
     </div>
   );

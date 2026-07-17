@@ -6,6 +6,7 @@ import {
   computeConditionProtectionCoverage,
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
+  computePartyAttacks,
   computePartyHpSummary,
   computePartyPassiveSummary,
   computePartyResourceSummary,
@@ -49,6 +50,7 @@ function makeCharacter(overrides: Partial<Character> & { name: string }): Charac
     spellSlots: [],
     knownSpells: [],
     features: [],
+    attacks: [],
     savingThrowProficiencies: [],
     skillProficiencies: [],
     resistances: [],
@@ -1280,5 +1282,34 @@ describe("COVERAGE_CATEGORY_PRIORITY — every real keyword overlap in COVERAGE_
       for (const entry of entries) nameCounts.set(entry.name, (nameCounts.get(entry.name) ?? 0) + 1);
     }
     for (const [name, count] of nameCounts) expect(count, `${name} appeared in ${count} categories`).toBe(1);
+  });
+});
+
+describe("computePartyAttacks", () => {
+  test("groups by character, sorts each character's own list alphabetically, and skips a character with no attacks at all", () => {
+    const withAttacks = makeCharacter({
+      name: "Ragnar",
+      attacks: [
+        { id: "a1", name: "Unarmed Strike", attackType: "melee", attackBonus: 7, damage: "5", properties: [], proficient: true },
+        { id: "a2", name: "Greataxe", attackType: "melee", attackBonus: 7, damage: "1d12 +4", properties: [], proficient: true },
+      ],
+    });
+    const noAttacks = makeCharacter({ name: "Yorun", attacks: [] });
+    const result = computePartyAttacks([withAttacks, noAttacks]);
+    expect(result).toHaveLength(1);
+    expect(result[0].characterName).toBe("Ragnar");
+    expect(result[0].attacks.map((a) => a.name)).toEqual(["Greataxe", "Unarmed Strike"]);
+  });
+
+  test("mutating the returned per-character list doesn't affect the character's own stored attacks array", () => {
+    const character = makeCharacter({
+      name: "Esmeralda",
+      attacks: [
+        { id: "a1", name: "Rapier", attackType: "melee", attackBonus: 3, damage: "1d8 +3", properties: [], proficient: false },
+      ],
+    });
+    const [entry] = computePartyAttacks([character]);
+    entry.attacks.push({ id: "fake", name: "Fake", attackType: "melee", attackBonus: 0, damage: "0", properties: [], proficient: true });
+    expect(character.attacks).toHaveLength(1);
   });
 });

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
@@ -8,6 +7,7 @@ import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 /**
  * Same shape as `CharacterDetailsModal` — opened by clicking a creature's
@@ -34,18 +34,7 @@ export function CreatureDetailsModal({
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
 }) {
   useEscapeToClose(onClose);
-
-  // Without this, touch-scrolling the modal's backdrop on mobile also scrolls
-  // the dashboard page underneath it — the backdrop is `fixed`, but the body
-  // behind it is still a normal scrollable document as far as the browser's
-  // touch-scroll gesture is concerned.
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
+  useScrollLock();
 
   return (
     <div

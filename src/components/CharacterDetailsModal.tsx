@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Attack,
   Character,
@@ -16,9 +16,9 @@ import {
 } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier, ordinalLevel } from "@/lib/format";
-import { getMasteryInfo } from "@/lib/masteryInfo";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
+import { AttackNameAndRange, AttackTrailing } from "./ui/AttackDisplay";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
@@ -35,6 +35,7 @@ import { StatusRail } from "./ui/StatusRail";
 import { SubHeading } from "./ui/SubHeading";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
@@ -65,7 +66,7 @@ function TypeTag({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
-/** Same "when does this come back" status line every other `AbilityHintPanel` shows for a pool-kind resource (Party Toolkit's Resources & Coverage, Spell Slots & Resources) — only for a Feature/Spell that has its own charge pool (`ChargeBadge` already shown on the row), since one with no pool has nothing to recover. */
+/** Same "when does this come back" status line every other `AbilityHintPanel` shows for a pool-kind resource (Party Toolkit's Resources & Coverage, Actions & Resources) — only for a Feature/Spell that has its own charge pool (`ChargeBadge` already shown on the row), since one with no pool has nothing to recover. */
 function recoveryStatus(recovery: RecoveryType) {
   return <span className="text-sky-400">{RECOVERY_LABELS[recovery]} recovery</span>;
 }
@@ -140,69 +141,16 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
   );
 }
 
-/** D&D Beyond's own "Notes" column, condensed: extra granted damage, weapon category, properties, and mastery name — all as one comma list, matching its wording so the hint reads familiar to a DM who already knows that sheet. */
-function attackNotes(attack: Attack): string | undefined {
-  const parts = [attack.extraDamage, attack.category, ...attack.properties, attack.mastery].filter(Boolean);
-  return parts.length > 0 ? parts.join(", ") : undefined;
-}
-
-/**
- * One weapon attack — bonus, damage (dice + type), range, and mastery are
- * all shown directly on the row (not hidden behind a hover), since those
- * are exactly the numbers a DM needs mid-combat without an extra click.
- * Weapon properties/category move into the hover hint as "Notes" (see
- * `attackNotes`) — useful detail, but not something read at a glance the
- * way the bonus/damage/range numbers are.
- */
+/** One weapon attack, flaggable like any Feature/Spell — the actual row visuals (name/hint, range, bonus/damage/mastery) are shared with Party Toolkit's grouped Weapons list and Reminders via `AttackNameAndRange`/`AttackTrailing`. */
 function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
-  const notes = attackNotes(attack);
   return (
-    <FlaggableRow
-      flagged={flagged}
-      onToggleFlag={onToggleFlag}
-      trailing={
-        <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
-          {attack.mastery && (
-            <InfoTooltip
-              hoverOnly
-              panel={
-                <p className="text-white">
-                  <span className="font-semibold">{attack.mastery}</span>
-                  {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
-                </p>
-              }
-            >
-              <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
-                {attack.mastery}
-              </span>
-            </InfoTooltip>
-          )}
-          <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
-          <span className="text-slate-400">
-            {attack.damage}
-            {attack.damageType ? ` ${attack.damageType}` : ""}
-          </span>
-        </span>
-      }
-    >
-      <InfoTooltip
-        panel={
-          <AbilityHintPanel
-            name={attack.name}
-            subtitle={attack.attackType === "ranged" ? "Ranged" : "Melee"}
-            note={notes ? `Notes: ${notes}` : undefined}
-            status={!attack.proficient && <span className="text-amber-400">Not proficient — bonus is ability modifier only.</span>}
-          />
-        }
-      >
-        <span className="block">{attack.name}</span>
-      </InfoTooltip>
-      {attack.range && <span className="block text-[11px] text-slate-500">{attack.range}</span>}
+    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} trailing={<AttackTrailing attack={attack} />}>
+      <AttackNameAndRange attack={attack} />
     </FlaggableRow>
   );
 }
 
-type DetailsTab = "combat" | "features" | "spells";
+type DetailsTab = "weapons" | "features" | "spells";
 
 export function CharacterDetailsModal({
   character,
@@ -226,17 +174,7 @@ export function CharacterDetailsModal({
 
   useEscapeToClose(onClose);
 
-  // Without this, touch-scrolling the modal's backdrop on mobile also scrolls
-  // the dashboard page underneath it — the backdrop is `fixed`, but the body
-  // behind it is still a normal scrollable document as far as the browser's
-  // touch-scroll gesture is concerned.
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
+  useScrollLock();
 
   const isDown = c.combat.hp <= 0;
 
@@ -259,7 +197,7 @@ export function CharacterDetailsModal({
   const hasFeatures = c.features.length > 0;
 
   const tabs: Array<{ key: DetailsTab; label: string }> = [
-    ...(hasAttacks ? [{ key: "combat" as const, label: "Combat" }] : []),
+    ...(hasAttacks ? [{ key: "weapons" as const, label: "Weapons" }] : []),
     ...(hasFeatures ? [{ key: "features" as const, label: "Features and Traits" }] : []),
     ...(hasSpells ? [{ key: "spells" as const, label: "Spells" }] : []),
   ];
@@ -495,7 +433,7 @@ export function CharacterDetailsModal({
               </div>
             )}
 
-            {currentTab === "combat" && (
+            {currentTab === "weapons" && (
               <div className="space-y-1">
                 {sortedAttacks.map((attack) => (
                   <AttackRow

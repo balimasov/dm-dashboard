@@ -5,6 +5,7 @@ import { Avatar } from "./Avatar";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { AttackHintPanel, AttackTrailing } from "./ui/AttackDisplay";
 import { FlaggableRow } from "./ui/FlaggableRow";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -18,6 +19,8 @@ const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = 
 interface ReminderEntry {
   name: string;
   hint: React.ReactNode;
+  /** Only weapon attacks carry this — their bonus/damage/mastery, shown the same way `AttackTrailing` shows it everywhere else an attack appears. */
+  trailing?: React.ReactNode;
 }
 
 interface ReminderGroup {
@@ -31,6 +34,13 @@ function characterReminders(character: Character): ReminderGroup | null {
   const flagged = character.flaggedAbilities ?? [];
   if (flagged.length === 0) return null;
   const entries: ReminderEntry[] = [
+    ...character.attacks
+      .filter((a) => flagged.includes(a.name))
+      .map((a) => ({
+        name: a.name,
+        hint: <AttackHintPanel attack={a} />,
+        trailing: <AttackTrailing attack={a} />,
+      })),
     ...character.features
       .filter((f) => flagged.includes(f.name))
       .map((f) => ({
@@ -169,7 +179,7 @@ export function RemindersPanel({
             </div>
             <div className="space-y-0.5">
               {group.entries.map((entry) => (
-                <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
+                <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)} trailing={entry.trailing}>
                   <InfoTooltip panel={entry.hint}>{entry.name}</InfoTooltip>
                 </FlaggableRow>
               ))}

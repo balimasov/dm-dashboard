@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -20,6 +20,7 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { useCampaignData } from "@/contexts/CampaignDataContext";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
@@ -270,18 +271,7 @@ export function CampaignFormModal({
 
   const isEditing = current !== null;
 
-  // Without this, scrolling this modal's own content on a page too short to
-  // need scrolling itself instead scrolls the dashboard behind it (the
-  // backdrop is `fixed`, but the body underneath is still a normal
-  // scrollable document as far as the browser's wheel/touch-scroll gesture
-  // is concerned) — same fix already applied to CharacterDetailsModal.
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
+  useScrollLock();
 
   function close() {
     onClose(current ? { ...current, characterCount: charactersState.characters.length } : undefined);
