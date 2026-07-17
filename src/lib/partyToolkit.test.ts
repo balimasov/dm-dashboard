@@ -464,15 +464,15 @@ describe("computeHeroicInspirationSummary", () => {
 });
 
 describe("computePartyHpSummary", () => {
-  test("computes each character's percent and sorts worst-off first", () => {
+  test("computes each character's percent and keeps the input order (same as the Party card row)", () => {
     const chars = [
       makeCharacter({ name: "A", combat: { hp: 8, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
       makeCharacter({ name: "B", combat: { hp: 2, maxHp: 10, tempHp: 0, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
       makeCharacter({ name: "C", combat: { hp: 10, maxHp: 10, tempHp: 5, ac: 10, speed: 30, passivePerception: 10, passiveInvestigation: 10, passiveInsight: 10, conditions: [], exhaustion: 0 } }),
     ];
     const summary = computePartyHpSummary(chars);
-    expect(summary.characters.map((c) => c.characterName)).toEqual(["B", "A", "C"]);
-    expect(summary.characters[0]).toMatchObject({ hp: 2, maxHp: 10, percent: 20, isDown: false });
+    expect(summary.characters.map((c) => c.characterName)).toEqual(["A", "B", "C"]);
+    expect(summary.characters[1]).toMatchObject({ hp: 2, maxHp: 10, percent: 20, isDown: false });
     expect(summary.characters[2]).toMatchObject({ hp: 10, maxHp: 10, tempHp: 5, percent: 100 });
   });
 

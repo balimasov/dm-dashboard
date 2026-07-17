@@ -20,12 +20,15 @@ const TOTAL_RING_RADIUS = (TOTAL_RING_SIZE - TOTAL_RING_STROKE) / 2;
 const TOTAL_RING_CIRCUMFERENCE = 2 * Math.PI * TOTAL_RING_RADIUS;
 
 /**
- * Small uniform dot for a status marker (concentration/exhaustion/condition)
- * — same 10px footprint regardless of what it means, so the row reads as
- * one consistent language; color and hover text are what carry the actual
- * meaning. `inline-block` is load-bearing, not decorative: each dot sits
- * inside `InfoTooltip`'s own wrapper spans (for the hover panel), and CSS
- * only honors `width`/`height` on a non-replaced element that's block,
+ * Small solid dot, used only for Concentration below — the one state of the
+ * three that's binary (on/off, no level or name to show), so a plain color
+ * dot loses nothing. Exhaustion and conditions used to share this same dot,
+ * which read as one undifferentiated blob of color once a death-saves row
+ * sat right above it; they now carry their own number/letters instead (see
+ * `ExhaustionDot`/`ConditionDot` below), so a dot only ever means
+ * "Concentrating" in this panel. `inline-block` is load-bearing, not
+ * decorative: it sits inside `InfoTooltip`'s own wrapper span, and CSS only
+ * honors `width`/`height` on a non-replaced element that's block,
  * inline-block, or flex — a bare inline `<span>` two levels deep silently
  * collapsed to 0×0 without it (confirmed; same rule `DotMeter`'s own doc
  * comment already flags for *its* dots, there solved by being a direct
@@ -33,6 +36,9 @@ const TOTAL_RING_CIRCUMFERENCE = 2 * Math.PI * TOTAL_RING_RADIUS;
  * between this dot and the row's flex container).
  */
 const STATUS_DOT_CLASS = "inline-block h-2.5 w-2.5 shrink-0 rounded-full";
+
+/** Shared footprint for the exhaustion/condition mini-badges below — same size so they line up with each other, distinct in shape (filled vs outlined) and content (number vs letters) from each other and from the plain `STATUS_DOT_CLASS` dot. */
+const STATUS_BADGE_CLASS = "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-0.5 text-[8px] font-bold leading-none";
 
 /**
  * A donut gauge — track + a `currentColor` arc rotated to start at 12
@@ -129,7 +135,7 @@ function DeathSavesRow({ deathSaves }: { deathSaves?: { successes: number; failu
   );
 }
 
-/** Same hue-by-position convention `StatusRail`'s own condition badges use (`CONDITION_HUES`) — a DM who's learned that color language on the character cards doesn't have to learn a second one here. */
+/** Same hue-by-position convention `StatusRail`'s own condition badges use (`CONDITION_HUES`), and the same 2-letter abbreviation those badges show — a DM who's learned that language on the character cards doesn't have to learn a second one here. Outlined (not filled) so it reads as a distinct shape from `ExhaustionDot`'s solid number badge even at a glance, not just a different color. */
 function ConditionDot({ condition, index }: { condition: string; index: number }) {
   const hue = CONDITION_HUES[index % CONDITION_HUES.length];
   const info = getConditionInfo(condition);
@@ -143,26 +149,51 @@ function ConditionDot({ condition, index }: { condition: string; index: number }
         </p>
       }
     >
-      <span className={STATUS_DOT_CLASS} style={{ backgroundColor: `hsl(${hue}, 75%, 55%)` }} />
+      <span
+        className={`${STATUS_BADGE_CLASS} border uppercase`}
+        style={{ borderColor: `hsl(${hue}, 75%, 55%)`, color: `hsl(${hue}, 85%, 78%)` }}
+      >
+        {condition.trim().slice(0, 2)}
+      </span>
     </InfoTooltip>
   );
 }
 
-/** Concentration + exhaustion + every active condition, as a row of small dots — the same three states `StatusRail` badges on each character's own card, condensed to fit a mini gauge row instead of full-size 36px badges. `null` when nothing's active, so a clean character's cell doesn't reserve empty row height. */
-function StatusDots({ entry }: { entry: PartyHpCharacterEntry }) {
+/** The exhaustion level itself, not just a color standing in for "some level or other" — a DM reads the severity straight off the badge instead of having to hover every time to find out whether it's a 1 or a 5. Filled solid (not outlined, unlike `ConditionDot`) so the two read as different shapes, not just different colors. */
+function ExhaustionDot({ level }: { level: number }) {
+  return (
+    <InfoTooltip hoverOnly panel={<p className="text-white">Exhaustion level {level}</p>}>
+      <span className={`${STATUS_BADGE_CLASS} bg-red-600 text-white`}>{level}</span>
+    </InfoTooltip>
+  );
+}
+
+/**
+ * Concentration + exhaustion + every active condition — the same three
+ * states `StatusRail` badges on each character's own card, condensed to fit
+ * a mini gauge row instead of full-size 36px badges. `null` when nothing's
+ * active, so a clean character's cell doesn't reserve empty row height.
+ * Deliberately three different shapes (plain dot / filled number / outlined
+ * letters), not the same dot recolored three ways — recoloring alone read as
+ * one undifferentiated blob once this row sat directly under a death-saves
+ * row of *also*-colored dots. `separated` draws a thin top divider for
+ * exactly that case, so the two rows read as two categories stacked, not one
+ * continuous smear of circles.
+ */
+function StatusDots({ entry, separated }: { entry: PartyHpCharacterEntry; separated?: boolean }) {
   if (!entry.concentrating && entry.exhaustion === 0 && entry.conditions.length === 0) return null;
   return (
-    <div className="flex max-w-[72px] flex-wrap items-center justify-center gap-1">
+    <div
+      className={`flex max-w-[96px] flex-wrap items-center justify-center gap-1 ${
+        separated ? "mt-0.5 border-t border-slate-800 pt-1.5" : ""
+      }`}
+    >
       {entry.concentrating && (
         <InfoTooltip hoverOnly panel={<p className="text-white">Concentrating</p>}>
           <span className={`${STATUS_DOT_CLASS} bg-violet-400`} />
         </InfoTooltip>
       )}
-      {entry.exhaustion > 0 && (
-        <InfoTooltip hoverOnly panel={<p className="text-white">Exhaustion level {entry.exhaustion}</p>}>
-          <span className={`${STATUS_DOT_CLASS} bg-red-500`} />
-        </InfoTooltip>
-      )}
+      {entry.exhaustion > 0 && <ExhaustionDot level={entry.exhaustion} />}
       {entry.conditions.map((condition, index) => (
         <ConditionDot key={condition} condition={condition} index={index} />
       ))}
@@ -206,7 +237,7 @@ function CharacterRing({ entry }: { entry: PartyHpCharacterEntry }) {
         {entry.tempHp > 0 && <span className="text-amber-400"> +{entry.tempHp}</span>}
       </span>
       {entry.isDown && <DeathSavesRow deathSaves={entry.deathSaves} />}
-      <StatusDots entry={entry} />
+      <StatusDots entry={entry} separated={entry.isDown} />
     </div>
   );
 }
@@ -251,9 +282,11 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
 /**
  * Party vitals at a glance — HP ring, AC, and active states (conditions,
  * exhaustion, concentration) per character, plus one bigger "Total" ring
- * for the party's combined HP pool. Worst-off character sorts first, so
- * the one a DM most needs to see doesn't get buried alphabetically. Reads
- * live off `Character.combat` every render, same as `HpBar`/`StatusRail`
+ * for the party's combined HP pool. Same character order as the Party card
+ * row below it (whatever `characters` arrives in) rather than sorted by HP
+ * — a DM who already spotted someone in the card row shouldn't have to
+ * re-locate them in a different order up here. Reads live off
+ * `Character.combat` every render, same as `HpBar`/`StatusRail`
  * on each character's own card — no separate "refresh" step, an edit
  * anywhere else on the dashboard shows up here immediately. Started as an
  * HP-only gauge (hence `computePartyHpSummary`'s own name); the panel

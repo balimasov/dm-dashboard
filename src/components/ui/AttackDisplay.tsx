@@ -78,7 +78,7 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
  */
 export function AttackTrailing({ attack }: { attack: Attack }) {
   return (
-    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
+    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
       {attack.mastery && (
         <InfoTooltip
           hoverOnly

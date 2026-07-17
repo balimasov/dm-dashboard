@@ -1336,7 +1336,7 @@ export interface PartyHpCharacterEntry {
 }
 
 export interface PartyHpSummary {
-  /** Ascending by `percent` — the character in the worst shape sorts first, since that's the one a DM scanning this row actually needs to spot fastest. */
+  /** Same order as the `characters` array passed in — the same roster order the Party card row and every other panel use, so a DM doesn't have to re-locate a character here after already finding them elsewhere. */
   characters: PartyHpCharacterEntry[];
   totalHp: number;
   totalMaxHp: number;
@@ -1366,13 +1366,12 @@ export function computePartyHpSummary(characters: Character[]): PartyHpSummary {
     };
   });
 
-  const sorted = [...entries].sort((a, b) => a.percent - b.percent);
   const totalHp = entries.reduce((sum, e) => sum + e.hp, 0);
   const totalMaxHp = entries.reduce((sum, e) => sum + e.maxHp, 0);
   const totalTempHp = entries.reduce((sum, e) => sum + e.tempHp, 0);
   const totalPercent = totalMaxHp > 0 ? Math.max(0, Math.min(100, Math.round((totalHp / totalMaxHp) * 100))) : 0;
 
-  return { characters: sorted, totalHp, totalMaxHp, totalTempHp, totalPercent };
+  return { characters: entries, totalHp, totalMaxHp, totalTempHp, totalPercent };
 }
 
 export interface PartyCharacterAttacks {
