@@ -38,18 +38,24 @@ export function usageColorClass(current: number, max: number): string {
 /**
  * Shared by the Skills radar and the Actions & Resources gauges — the
  * two cards sit side by side in a `lg:grid-cols-2` row, but the radar (a
- * fixed-size SVG) and the gauge stack (a shorter dial plus an optional
- * SR/LR row) render to different natural heights, so "Passives"/"Spell
- * Slots" below them landed at different y-coordinates across the two
- * columns (confirmed: 303px vs 263px). Both chart wrappers get this same
- * fixed min-height so the section labels that follow always start level
- * with each other; `justify-center` distributes whatever's left over
- * between top and bottom instead of dumping it all below the shorter one's
- * content as a single lopsided gap. `lg:`-only: below that breakpoint the
- * grid stacks to one column, where the two charts are never side by side
- * and forcing the height would just waste vertical space on a phone.
+ * fixed-size SVG) and the gauge stack render to different natural heights,
+ * so "Passives"/the tab bar below them landed at different y-coordinates
+ * across the two columns. Both chart wrappers get this same fixed
+ * min-height so the section labels that follow always start level with
+ * each other; `justify-center` distributes whatever's left over between top
+ * and bottom instead of dumping it all below the shorter one's content as a
+ * single lopsided gap. `lg:`-only: below that breakpoint the grid stacks to
+ * one column, where the two charts are never side by side and forcing the
+ * height would just waste vertical space on a phone.
+ *
+ * 338px is calibrated against `SpellChartsRow`'s own tallest common case at
+ * this card's actual width: at a `lg:grid-cols-2` column's width (~660px),
+ * `SpellChartsRow`'s `@[1024px]:flex-row` container query doesn't fire, so
+ * Rest Recovery and Spell Slots stack vertically — taller than the Skills
+ * radar's fixed-size SVG, which the old 304px was tuned to instead
+ * (confirmed measured: 337px vs 304px, the gap this constant closes).
  */
-export const CHART_AREA_MIN_HEIGHT_CLASS = "lg:flex lg:min-h-[304px] lg:flex-col lg:justify-center";
+export const CHART_AREA_MIN_HEIGHT_CLASS = "lg:flex lg:min-h-[338px] lg:flex-col lg:justify-center";
 
 export const HEROIC_INSPIRATION_DESCRIPTION =
   "Spend it to gain advantage on one attack roll, saving throw, or ability check.";

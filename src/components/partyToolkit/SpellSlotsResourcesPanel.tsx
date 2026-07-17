@@ -174,7 +174,13 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
       </div>
 
       {tabs.length > 1 && (
-        <div className="mb-3 mt-4 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
+        // `mb-1.5` (not the more typical `mb-3`) matches the Skills panel's
+        // own `gap-1.5` between its avatar-chip row and "Passives" — the two
+        // panels sit side by side in a `lg:grid-cols-2` row, and this tab
+        // bar is this panel's equivalent "chrome before the first section
+        // label" to that avatar row, so the same gap keeps "Heroic
+        // Inspiration" level with "Passives" instead of landing 6px lower.
+        <div className="mb-1.5 mt-4 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
           {tabs.map((tab) => (
             <button
               key={tab.key}
