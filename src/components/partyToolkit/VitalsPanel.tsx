@@ -267,7 +267,12 @@ export function VitalsPanel({ characters }: { characters: Character[] }) {
 
   return (
     <ToolkitCard title="Party Vitals">
-      <div className="flex flex-wrap items-start gap-4 px-3">
+      {/* `justify-center` — this card spans the dashboard's full width (not
+          boxed into a 2-column grid like Skills/Actions & Resources), so a
+          handful of rings left-aligned under a wide title bar left a lopsided
+          slab of empty space on the right; centering reads as a deliberately
+          compact instrument instead of a left-clumped, unfinished row. */}
+      <div className="flex flex-wrap items-start justify-center gap-4 px-3">
         <TotalRing summary={summary} />
         <div className="my-1 w-px self-stretch bg-slate-800" />
         <div className="flex flex-wrap items-start gap-3">

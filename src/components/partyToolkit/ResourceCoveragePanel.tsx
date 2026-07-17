@@ -307,7 +307,11 @@ export function ResourceCoveragePanel({ characters, initialOpen }: { characters:
 
   return (
     <ToolkitCard
-      title="Resources & Coverage"
+      title={
+        <>
+          Resources & Coverage <span className="normal-case text-slate-600">(in progress)</span>
+        </>
+      }
       collapsible={{
         open,
         onToggle: () => {
