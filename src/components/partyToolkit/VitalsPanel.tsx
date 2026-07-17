@@ -5,6 +5,7 @@ import { PartyHpCharacterEntry, PartyHpSummary, computePartyHpSummary } from "@/
 import { InfoTooltip } from "../InfoTooltip";
 import { DotMeter } from "../ResourceMeter";
 import { CharacterChip } from "../ui/CharacterChip";
+import { ShieldIcon } from "../ui/icons";
 import { CONDITION_HUES } from "../ui/StatusRail";
 import { ToolkitCard } from "../ui/ToolkitCard";
 
@@ -35,17 +36,27 @@ const STATUS_DOT_CLASS = "inline-block h-2.5 w-2.5 shrink-0 rounded-full";
 
 /**
  * A donut gauge — track + a `currentColor` arc rotated to start at 12
- * o'clock, filled clockwise by `percent`. Deliberately a different shape
- * from every other gauge in the Party Toolkit (bars in Rest Recovery,
- * columns in the Spell Slots histogram, a grid in the Skill Heatmap) — the
- * point of this panel is to read as visually distinct at a glance, not one
- * more bar to tell apart from the others. `cornerBadge` overlaps the ring's
- * bottom-right edge (same convention `CreatureCard` uses for its category
- * chip on the avatar) — a corner badge instead of a separate text line
- * keeps AC attached to *this* character's ring without adding row height.
+ * o'clock, filled clockwise by current HP, with temp HP continuing on as a
+ * second amber arc right where the HP arc ends (`strokeDashoffset` shifted
+ * back by the HP arc's own length — the standard multi-segment ring trick).
+ * Deliberately a different shape from every other gauge in the Party
+ * Toolkit (bars in Rest Recovery, columns in the Spell Slots histogram, a
+ * grid in the Skill Heatmap) — the point of this panel is to read as
+ * visually distinct at a glance, not one more bar to tell apart from the
+ * others. `cornerBadge` overlaps the ring's bottom-right edge (same
+ * convention `CreatureCard` uses for its category chip on the avatar) — a
+ * corner badge instead of a separate text line keeps AC attached to *this*
+ * character's ring without adding row height.
+ *
+ * Fill lengths use the same `barScale` math `HpBar`'s own linear bar uses:
+ * temp HP first eats into whatever ring is still unfilled below max, and
+ * only once `hp + tempHp` exceeds `maxHp` does the HP arc itself shrink to
+ * make room — the ring's total fill never exceeds one full lap.
  */
-function Ring({ percent, size, strokeWidth, radius, circumference, colorClass, cornerBadge, children }: {
-  percent: number;
+function Ring({ hp, maxHp, tempHp, size, strokeWidth, radius, circumference, colorClass, cornerBadge, children }: {
+  hp: number;
+  maxHp: number;
+  tempHp: number;
   size: number;
   strokeWidth: number;
   radius: number;
@@ -54,7 +65,9 @@ function Ring({ percent, size, strokeWidth, radius, circumference, colorClass, c
   cornerBadge?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const dash = (percent / 100) * circumference;
+  const barScale = Math.max(maxHp, hp + tempHp, 1);
+  const hpDash = (hp / barScale) * circumference;
+  const tempDash = (tempHp / barScale) * circumference;
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
@@ -68,8 +81,22 @@ function Ring({ percent, size, strokeWidth, radius, circumference, colorClass, c
           strokeLinecap="round"
           stroke="currentColor"
           className={colorClass}
-          strokeDasharray={`${dash} ${circumference - dash}`}
+          strokeDasharray={`${hpDash} ${circumference - hpDash}`}
         />
+        {tempDash > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            stroke="currentColor"
+            className="text-amber-400"
+            strokeDasharray={`${tempDash} ${circumference - tempDash}`}
+            strokeDashoffset={-hpDash}
+          />
+        )}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
       {cornerBadge}
@@ -80,7 +107,8 @@ function Ring({ percent, size, strokeWidth, radius, circumference, colorClass, c
 function AcBadge({ ac }: { ac: number }) {
   return (
     <InfoTooltip hoverOnly panel={<p className="text-white">Armor Class {ac}</p>}>
-      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-slate-700 bg-slate-950 text-[9px] font-bold text-slate-300">
+      <span className="absolute -bottom-1 -right-1 flex h-6 min-w-[26px] items-center justify-center gap-0.5 rounded-full border border-slate-700 bg-slate-950 px-1.5 text-[10px] font-bold text-slate-300">
+        <ShieldIcon className="h-3 w-3 shrink-0 text-slate-500" />
         {ac}
       </span>
     </InfoTooltip>
@@ -160,7 +188,9 @@ function CharacterRing({ entry }: { entry: PartyHpCharacterEntry }) {
     <div className="flex flex-col items-center gap-1">
       <InfoTooltip hoverOnly panel={<HpRingHint entry={entry} />}>
         <Ring
-          percent={entry.percent}
+          hp={entry.hp}
+          maxHp={entry.maxHp}
+          tempHp={entry.tempHp}
           size={RING_SIZE}
           strokeWidth={RING_STROKE}
           radius={RING_RADIUS}
@@ -198,7 +228,9 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
         }
       >
         <Ring
-          percent={summary.totalPercent}
+          hp={summary.totalHp}
+          maxHp={summary.totalMaxHp}
+          tempHp={summary.totalTempHp}
           size={TOTAL_RING_SIZE}
           strokeWidth={TOTAL_RING_STROKE}
           radius={TOTAL_RING_RADIUS}
