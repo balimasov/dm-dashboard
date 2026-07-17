@@ -28,6 +28,17 @@ jobs:
 
       - run: npm ci
 
+      # `RouteContext<'...'>` (used in every dynamic API route handler) is a
+      # Next.js-generated global type, not something this repo declares
+      # itself — it only exists after `next dev`, `next build`, or this
+      # command runs at least once. A fresh CI checkout has none of those
+      # yet, so `tsc --noEmit` below would otherwise fail with "Cannot find
+      # name 'RouteContext'" on every dynamic route (confirmed: this bit the
+      # very first CI run, passing locally only because a local `next dev`/
+      # `next build` had already generated `.next/types` beforehand).
+      - name: Generate Next.js route types
+        run: npx next typegen
+
       - name: Type check
         run: npx tsc --noEmit
 
