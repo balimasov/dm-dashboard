@@ -1,8 +1,17 @@
 name: CI
 
+# No `branches:` filter on `push` — every push, on every branch, gets a run.
+# This isn't for coverage's sake: the "verify" check is required on `main`
+# via a ruleset, and a direct push to a protected branch is only allowed
+# once GitHub already has a passing check *for that exact commit SHA*. This
+# repo never opens a PR — a commit gets its check run on
+# claude/dm-character-dashboard-1ti81k first, then lands on `main` via a
+# fast-forward that keeps the same SHA, carrying the already-green check
+# with it. Scoping `push` to `main` only (the more typical setup) would
+# mean the check never runs until *after* the push it's supposed to gate,
+# which GitHub's required-status-check rule would simply reject outright.
 on:
   push:
-    branches: [main]
   pull_request:
     branches: [main]
 
