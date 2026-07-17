@@ -78,9 +78,10 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       damageType: "Slashing",
       properties: ["Finesse", "Light"],
       mastery: "Nick",
+      category: "Martial",
+      range: "5 ft.", // no Reach property
       proficient: true,
     });
-    expect(scimitar.range).toBeUndefined();
 
     const longbow = c.attacks.find((a) => a.name === "Longbow")!;
     expect(longbow).toMatchObject({
@@ -89,6 +90,7 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       damage: "1d8 +4",
       properties: ["Ammunition", "Heavy", "Range", "Two-Handed"],
       mastery: "Slow",
+      category: "Martial",
       range: "150/600 ft.",
       proficient: true,
     });
@@ -103,6 +105,8 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       attackType: "melee",
       attackBonus: 3, // dex +2 (Finesse) + magic +1, no proficiency bonus
       damage: "1d8 +3",
+      category: "Martial",
+      range: "5 ft.",
       proficient: false,
     });
     expect(rapier.mastery).toBeUndefined(); // weapon's own property is Vex, but a Bard never unlocks Weapon Mastery
@@ -112,6 +116,7 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       attackType: "ranged",
       attackBonus: 2, // dex +2 only, not proficient with a Martial weapon
       damage: "1d6 +2",
+      category: "Martial",
       range: "30/120 ft.",
       proficient: false,
     });
@@ -121,6 +126,7 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
     expect(dagger).toMatchObject({
       attackBonus: 5, // dex +2 (Finesse) + proficiency +3 (Simple weapon)
       damage: "1d4 +2",
+      category: "Simple",
       range: "20/60 ft.", // Thrown
       proficient: true,
     });
@@ -138,6 +144,7 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
       damage: "3", // 1 + str +2
       damageType: "Bludgeoning",
       properties: [],
+      range: "5 ft.",
       proficient: true,
     });
   });

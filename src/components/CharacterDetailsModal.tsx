@@ -140,14 +140,22 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
   );
 }
 
+/** D&D Beyond's own "Notes" column, condensed: extra granted damage, weapon category, properties, and mastery name — all as one comma list, matching its wording so the hint reads familiar to a DM who already knows that sheet. */
+function attackNotes(attack: Attack): string | undefined {
+  const parts = [attack.extraDamage, attack.category, ...attack.properties, attack.mastery].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : undefined;
+}
+
 /**
- * One weapon attack — bonus, damage (dice + type), any weapon properties,
- * and mastery are all shown directly on the row (not hidden behind a
- * hover), since those are exactly the numbers a DM needs mid-combat without
- * an extra click. The hover panel only adds range and the "not proficient"
- * caveat, which matter less often.
+ * One weapon attack — bonus, damage (dice + type), range, and mastery are
+ * all shown directly on the row (not hidden behind a hover), since those
+ * are exactly the numbers a DM needs mid-combat without an extra click.
+ * Weapon properties/category move into the hover hint as "Notes" (see
+ * `attackNotes`) — useful detail, but not something read at a glance the
+ * way the bonus/damage/range numbers are.
  */
 function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
+  const notes = attackNotes(attack);
   return (
     <FlaggableRow
       flagged={flagged}
@@ -182,14 +190,14 @@ function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged:
           <AbilityHintPanel
             name={attack.name}
             subtitle={attack.attackType === "ranged" ? "Ranged" : "Melee"}
-            metaLines={[attack.range]}
-            note={!attack.proficient ? "Not proficient with this weapon — bonus is ability modifier only." : undefined}
+            note={notes ? `Notes: ${notes}` : undefined}
+            status={!attack.proficient && <span className="text-amber-400">Not proficient — bonus is ability modifier only.</span>}
           />
         }
       >
         <span className="block">{attack.name}</span>
       </InfoTooltip>
-      {attack.properties.length > 0 && <span className="block text-[11px] text-slate-500">{attack.properties.join(" · ")}</span>}
+      {attack.range && <span className="block text-[11px] text-slate-500">{attack.range}</span>}
     </FlaggableRow>
   );
 }

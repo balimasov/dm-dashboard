@@ -305,11 +305,15 @@ export interface Attack {
   /** Dice plus flat bonus already combined into one string, e.g. "1d12 +4". */
   damage: string;
   damageType?: string;
-  /** Weapon properties other than its mastery — Finesse, Light, Thrown, Versatile, Heavy, Reach, Two-Handed, Ammunition... */
+  /** Weapon properties other than its mastery — Finesse, Light, Thrown, Versatile, Heavy, Reach, Two-Handed, Ammunition... — shown in the hover hint (D&D Beyond's own "Notes"), not inline. */
   properties: string[];
   /** This weapon's 2024 mastery property (one of `WEAPON_MASTERY_PROPERTIES`), when it has one. */
   mastery?: string;
-  /** e.g. "150/600 ft." — only set for ranged attacks and thrown melee weapons. */
+  /** "Simple" or "Martial" — omitted for Unarmed Strike, which has no weapon category. */
+  category?: "Simple" | "Martial";
+  /** Bonus damage a magic property grants beyond the weapon's own dice (e.g. a poisoned blade's "+2d10 Poison") — D&D Beyond's own `grantedModifiers` entries of `type: "damage"`. Rare; most weapons have none. */
+  extraDamage?: string;
+  /** e.g. "5 ft." (melee) or "150/600 ft." (ranged/thrown) — always set, matching D&D Beyond's own Range column showing a melee weapon's reach too. */
   range?: string;
   /** An unproficient attack still gets an ability-mod-only bonus, so this is shown as a caveat rather than hidden. */
   proficient: boolean;

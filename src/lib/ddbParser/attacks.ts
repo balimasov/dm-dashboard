@@ -1,7 +1,12 @@
 import { AbilityScores, Attack, WEAPON_MASTERY_PROPERTIES } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
+
+/** "150" + "600" -> "150/600 ft."; "150" + null/same -> "150 ft." */
+function formatRange(range: number, longRange: number | null | undefined): string {
+  return `${range}${longRange && longRange !== range ? `/${longRange}` : ""} ft.`;
+}
 
 /** "Crossbow, Hand" -> "crossbow-hand" — matches D&D Beyond's own kebab-casing of a weapon's `type` field when it names a specific-weapon proficiency subType (confirmed on real exports, see `isProficientWithWeapon`). */
 function normalizeWeaponType(type: string): string {
@@ -95,6 +100,7 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
         damage: `${action.dice.diceString}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
         damageType: "Bludgeoning",
         properties: [],
+        range: "5 ft.",
         proficient,
       };
     }
@@ -109,6 +115,7 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
     damage: String(Math.max(0, 1 + strMod)),
     damageType: "Bludgeoning",
     properties: [],
+    range: "5 ft.",
     proficient: true,
   };
 }
@@ -156,13 +163,38 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
         ? Math.max(abilityModifier(abilities.str), abilityModifier(abilities.dex))
         : abilityModifier(abilities.str);
 
-    const magicBonus = ((df.grantedModifiers ?? []) as RawDdbAny[])
+    const grantedMods = (df.grantedModifiers ?? []) as RawDdbAny[];
+    const magicBonus = grantedMods
       .filter((gm) => gm.type === "bonus" && gm.subType === "magic")
       .reduce((sum, gm) => sum + (gm.value ?? gm.fixedValue ?? 0), 0);
+    // Bonus damage a rune/coating/etc. grants beyond the weapon's own dice
+    // (e.g. a poisoned blade) — D&D Beyond's own "Notes" column shows this
+    // as "+2d10 Poison" alongside the property list, confirmed on a real
+    // export (`type: "damage"`, `dice.diceString`, `friendlySubtypeName`).
+    const extraDamageMods = grantedMods.filter((gm) => gm.type === "damage" && gm.dice?.diceString);
+    const extraDamage =
+      extraDamageMods.length > 0
+        ? extraDamageMods
+            .map((gm) => `+${gm.dice.diceString} ${gm.friendlySubtypeName || titleCase(gm.subType ?? "")}`)
+            .join(", ")
+        : undefined;
 
     const proficient = isProficientWithWeapon(df.type || df.name, df.categoryId, profSubtypes);
     const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus;
     const damageBonus = abilityMod + magicBonus;
+
+    // Every melee weapon's range is its reach (10 ft. only with the Reach
+    // property, 5 ft. otherwise) — D&D Beyond's own Range column shows this
+    // for every attack, not just ranged/thrown ones, so it's computed the
+    // same way here rather than left blank for a plain melee swing.
+    const range =
+      isRanged || isThrown
+        ? df.range
+          ? formatRange(df.range, df.longRange)
+          : undefined
+        : propertyNames.includes("Reach")
+          ? "10 ft."
+          : "5 ft.";
 
     attacks.push({
       id: `attack-${attacks.length}`,
@@ -173,9 +205,9 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
       ...(df.damageType ? { damageType: df.damageType } : {}),
       properties,
       ...(mastery ? { mastery } : {}),
-      ...((isRanged || isThrown) && df.range
-        ? { range: `${df.range}${df.longRange && df.longRange !== df.range ? `/${df.longRange}` : ""} ft.` }
-        : {}),
+      ...(df.categoryId === 1 ? { category: "Simple" } : df.categoryId === 2 ? { category: "Martial" } : {}),
+      ...(extraDamage ? { extraDamage } : {}),
+      ...(range ? { range } : {}),
       proficient,
     });
   }

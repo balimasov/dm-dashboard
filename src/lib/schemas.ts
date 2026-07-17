@@ -78,6 +78,8 @@ const attackSchema = z.object({
   damageType: z.string().optional(),
   properties: z.array(z.string()),
   mastery: z.string().optional(),
+  category: z.enum(["Simple", "Martial"]).optional(),
+  extraDamage: z.string().optional(),
   range: z.string().optional(),
   proficient: z.boolean(),
 });

@@ -467,6 +467,7 @@ export const demoCharacters: Character[] = [
         "damage": "5",
         "damageType": "Bludgeoning",
         "properties": [],
+        "range": "5 ft.",
         "proficient": true
       },
       {
@@ -478,6 +479,8 @@ export const demoCharacters: Character[] = [
         "damageType": "Slashing",
         "properties": ["Heavy", "Two-Handed"],
         "mastery": "Cleave",
+        "category": "Martial",
+        "range": "5 ft.",
         "proficient": true
       },
       {
@@ -489,6 +492,7 @@ export const demoCharacters: Character[] = [
         "damageType": "Slashing",
         "properties": ["Light", "Thrown"],
         "mastery": "Vex",
+        "category": "Simple",
         "range": "20/60 ft.",
         "proficient": true
       }
@@ -1384,6 +1388,7 @@ export const demoCharacters: Character[] = [
         "damage": "2",
         "damageType": "Bludgeoning",
         "properties": [],
+        "range": "5 ft.",
         "proficient": true
       }
     ],
@@ -2236,6 +2241,7 @@ export const demoCharacters: Character[] = [
         "damage": "0",
         "damageType": "Bludgeoning",
         "properties": [],
+        "range": "5 ft.",
         "proficient": true
       }
     ],
@@ -2901,6 +2907,7 @@ export const demoCharacters: Character[] = [
         "damage": "0",
         "damageType": "Bludgeoning",
         "properties": [],
+        "range": "5 ft.",
         "proficient": true
       },
       {
@@ -2911,6 +2918,8 @@ export const demoCharacters: Character[] = [
         "damage": "1d8 +3",
         "damageType": "Piercing",
         "properties": ["Finesse"],
+        "category": "Martial",
+        "range": "5 ft.",
         "proficient": false
       },
       {
@@ -2921,6 +2930,7 @@ export const demoCharacters: Character[] = [
         "damage": "1d6 +2",
         "damageType": "Piercing",
         "properties": ["Ammunition", "Light", "Loading"],
+        "category": "Martial",
         "range": "30/120 ft.",
         "proficient": false
       }
