@@ -217,7 +217,7 @@ function HeatmapCell({
 function skillCellTooltip(score: SkillCharacterScore): ReactNode {
   return (
     <p>
-      {score.characterName}:{" "}
+      <span className="font-semibold text-white">{score.characterName}</span>:{" "}
       <span className={scoreRowClass(score.proficient)}>
         {formatModifier(score.modifier)}
         {score.expertise ? " · expertise" : score.proficient ? " · proficient" : ""}
@@ -300,7 +300,7 @@ function HeatmapPassiveRow({
             proficient={score.proficient}
             tooltip={
               <p>
-                {score.characterName}:{" "}
+                <span className="font-semibold text-white">{score.characterName}</span>:{" "}
                 <span className={scoreRowClass(score.proficient)}>
                   {score.value}
                   {score.proficient ? " · proficient" : ""}

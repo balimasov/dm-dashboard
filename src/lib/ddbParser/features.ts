@@ -170,6 +170,41 @@ export function computeFeatures(
     }
   }
 
+  // Parallel to `actionChargesById` above (same `definition.id` == action's
+  // own `componentId` cross-reference), but for a class feature/racial
+  // trait/feat's own per-level-scaling value rather than its resource charge
+  // count — this is what a snippet's `{{scalevalue}}`/`{{limiteduse}}`
+  // actually resolves from whenever there's no charge pool to fall back to.
+  // Sometimes a plain number (e.g. "You know {{scalevalue}} Metamagic
+  // options" from a `fixedValue`), sometimes a die notation used as the
+  // whole placeholder's value (a Dazzling Footwork Bard's Unarmed Strike
+  // damage die — "you can deal {{scalevalue}}{{modifier:dex#signed}}
+  // Bludgeoning damage" needs literally "1d8", not a count). Confirmed on a
+  // real level-5 Bard export: the "Bardic Damage" *action* has no
+  // `limitedUse` at all (it's not a charge-tracked resource, just a
+  // damage-die swap), so without this the snippet silently dropped the whole
+  // "{{scalevalue}}" placeholder and rendered "+2" instead of "1d8+2" —
+  // while the parent "Dazzling Footwork" class feature carries exactly that
+  // die, already resolved to the character's current level, on its own
+  // `levelScale.dice`.
+  const levelScaleById = new Map<number, number | string>();
+  function registerLevelScale(id: number | null | undefined, levelScale: RawDdbAny | null | undefined) {
+    if (id == null) return;
+    const value = levelScale?.dice?.diceString ?? (levelScale?.fixedValue != null ? levelScale.fixedValue : undefined);
+    if (value !== undefined) levelScaleById.set(id, value);
+  }
+  for (const trait of data.race?.racialTraits ?? []) {
+    registerLevelScale(trait.definition?.id, trait.levelScale);
+  }
+  for (const cls of data.classes ?? []) {
+    for (const cf of cls.classFeatures ?? []) {
+      registerLevelScale(cf.definition?.id, cf.levelScale);
+    }
+  }
+  for (const feat of data.feats ?? []) {
+    registerLevelScale(feat.definition?.id, feat.levelScale);
+  }
+
   function add(
     name: string | undefined,
     rawDescription: string | undefined,
@@ -177,7 +212,8 @@ export function computeFeatures(
     group: Feature["group"],
     originType: Feature["originType"],
     explicitCharges?: { current: number; max: number; recovery: RecoveryType },
-    dice?: RawDdbAny
+    dice?: RawDdbAny,
+    scaleValue?: number | string
   ) {
     const trimmedName = (name || "").trim();
     // The exact (non-normalized) name is the de-dupe key — normalizing away a
@@ -193,7 +229,7 @@ export function computeFeatures(
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === normalizeFeatureName(trimmedName));
     const charges = explicitCharges ?? matchedResource;
     const description = rawDescription
-      ? (resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed) +
+      ? (resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed, scaleValue) +
           diceTypeNote(trimmedName, dice)
         ).trim()
       : undefined;
@@ -228,6 +264,22 @@ export function computeFeatures(
     for (const action of data.actions?.[group] ?? []) {
       if (!action.name) continue;
       const parentInfo = parentInfoById.get(action.componentId);
+      // D&D Beyond injects "Initiate a Circle Spell" and its six "Circle
+      // Spell: Augment/Distribute/Expand/Prolong/Safeguard/Supplant"
+      // siblings — the group-spellcasting "Circle Casting" optional rule —
+      // onto *every* caster's actions list regardless of class or subclass,
+      // confirmed on real Bard/Cleric/Druid/Artificer/Rogue/Sorcerer
+      // exports, none of which show it on D&D Beyond's own character sheet.
+      // Every genuine class-feature action shares this same `componentTypeId`
+      // (12168134 — distinct from 258900837, which options like Maneuvers/
+      // Metamagic use, and which legitimately never resolve to a
+      // classFeature either) but still cross-references back to a real
+      // granted classFeature/racialTrait/feat via `componentId` (e.g. Bardic
+      // Damage -> Dazzling Footwork); Circle Casting's componentId never
+      // resolves to anything on any of the eight sample exports that carry
+      // it, regardless of class — the one reliable, data-driven way to tell
+      // it apart from a real feature sharing the same type.
+      if (action.componentTypeId === 12168134 && !parentInfo) continue;
       const source = parentInfo?.name || actionFallbackSource[group];
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       const charges = action.limitedUse ? computeLimitedUseCharges(action.limitedUse, abilities, profBonus) ?? undefined : undefined;
@@ -238,7 +290,8 @@ export function computeFeatures(
         activationGroup(action.activation?.activationType),
         originType,
         charges,
-        action.dice
+        action.dice,
+        levelScaleById.get(action.componentId)
       );
     }
   }
@@ -246,7 +299,16 @@ export function computeFeatures(
   for (const trait of data.race?.racialTraits ?? []) {
     const df = trait.definition ?? {};
     if (df.hideOnDetailsPage || df.hideInSheet) continue;
-    add(df.name, shortDescription(df.snippet, df.description), "Race", "other", "species", actionChargesById.get(df.id));
+    add(
+      df.name,
+      shortDescription(df.snippet, df.description),
+      "Race",
+      "other",
+      "species",
+      actionChargesById.get(df.id),
+      undefined,
+      levelScaleById.get(df.id)
+    );
   }
 
   for (const cls of data.classes ?? []) {
@@ -264,14 +326,25 @@ export function computeFeatures(
         isSubclassFeature ? subclassName : className,
         "other",
         "class",
-        actionChargesById.get(df.id)
+        actionChargesById.get(df.id),
+        undefined,
+        levelScaleById.get(df.id)
       );
     }
   }
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    add(df.name, shortDescription(df.snippet, df.description), "Feat", "other", "feat", actionChargesById.get(df.id));
+    add(
+      df.name,
+      shortDescription(df.snippet, df.description),
+      "Feat",
+      "other",
+      "feat",
+      actionChargesById.get(df.id),
+      undefined,
+      levelScaleById.get(df.id)
+    );
   }
 
   // The *specific* choices a player made for a feature that offers options —

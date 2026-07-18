@@ -191,8 +191,23 @@ type TemplateMod =
  */
 function evaluateTemplatePlaceholder(
   expr: string,
-  ctx: { level: number; abilities: AbilityScores; profBonus: number; maxUses?: number; speed?: number }
+  ctx: { level: number; abilities: AbilityScores; profBonus: number; maxUses?: number; speed?: number; scaleValue?: number | string }
 ): string {
+  // A bare `{{scalevalue}}`/`{{limiteduse}}` can mean a dice notation string
+  // (e.g. "1d8") rather than a plain number — D&D Beyond uses this whenever a
+  // feature replaces a fixed damage die instead of adding a flat bonus (a
+  // Dazzling Footwork Bard's Unarmed Strike damage die, which grows from d6
+  // to d12 by level: "...you can deal {{scalevalue}}{{modifier:dex#signed}}
+  // Bludgeoning damage" needs literally "1d8", not a count). That can't flow
+  // through the arithmetic grammar below (no real content ever combines a
+  // die notation with `+`/rounddown/etc., confirmed against every sample
+  // export — the numeric `scalevalue` cases, like a sorcery feature's
+  // `(modifier:cha+scalevalue)`, always come from a plain `fixedValue`
+  // instead), so it short-circuits here before any parsing happens.
+  if (/^(?:scalevalue|limiteduse)$/i.test(expr.trim()) && ctx.maxUses === undefined && typeof ctx.scaleValue === "string") {
+    return ctx.scaleValue;
+  }
+
   let i = 0;
   const n = expr.length;
 
@@ -266,8 +281,9 @@ function evaluateTemplatePlaceholder(
         return ctx.profBonus;
       case "scalevalue":
       case "limiteduse":
-        if (ctx.maxUses === undefined) throw new TemplateEvalError("scalevalue unavailable");
-        return ctx.maxUses;
+        if (ctx.maxUses !== undefined) return ctx.maxUses;
+        if (typeof ctx.scaleValue === "number") return ctx.scaleValue;
+        throw new TemplateEvalError("scalevalue unavailable");
       case "speed":
         if (ctx.speed === undefined) throw new TemplateEvalError("speed unavailable");
         return ctx.speed;
@@ -378,12 +394,13 @@ export function resolveSnippetTemplate(
   abilities: AbilityScores,
   profBonus: number,
   maxUses?: number,
-  speed?: number
+  speed?: number,
+  scaleValue?: number | string
 ): string {
   return text
     .replace(/\{\{([^}]+)\}\}/g, (_match, expr) => {
       try {
-        return evaluateTemplatePlaceholder(String(expr).trim(), { level, abilities, profBonus, maxUses, speed });
+        return evaluateTemplatePlaceholder(String(expr).trim(), { level, abilities, profBonus, maxUses, speed, scaleValue });
       } catch {
         return "";
       }

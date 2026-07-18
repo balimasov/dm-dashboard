@@ -59,7 +59,7 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
           )}
           {attack.mastery && (
             <span className="block">
-              <span className="font-semibold text-violet-200">{attack.mastery}</span>
+              <span className="font-semibold text-violet-100">{attack.mastery}</span>
               {masteryInfo ? `: ${masteryInfo}` : ""}
             </span>
           )}
@@ -98,7 +98,7 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
           hoverOnly
           panel={
             <p>
-              <span className="font-semibold text-violet-200">{attack.mastery}</span>
+              <span className="font-semibold text-violet-100">{attack.mastery}</span>
               {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
             </p>
           }

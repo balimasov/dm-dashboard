@@ -1034,62 +1034,6 @@ export const demoCharacters: Character[] = [
         "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8**+5 Temporary HP to creatures of your choice within 30 ft., including yourself."
       },
       {
-        "id": "feature-6",
-        "name": "Initiate a Circle Spell",
-        "source": "Class",
-        "group": "action",
-        "originType": "class",
-        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
-      },
-      {
-        "id": "feature-7",
-        "name": "Circle Spell: Augment",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
-      },
-      {
-        "id": "feature-8",
-        "name": "Circle Spell: Distribute",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
-      },
-      {
-        "id": "feature-9",
-        "name": "Circle Spell: Expand",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-10",
-        "name": "Circle Spell: Prolong",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-11",
-        "name": "Circle Spell: Safeguard",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **3 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
-      },
-      {
-        "id": "feature-12",
-        "name": "Circle Spell: Supplant",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
         "id": "feature-13",
         "name": "Luck Points",
         "source": "Lucky",
@@ -1980,62 +1924,6 @@ export const demoCharacters: Character[] = [
         "recovery": "long-rest"
       },
       {
-        "id": "feature-7",
-        "name": "Initiate a Circle Spell",
-        "source": "Class",
-        "group": "action",
-        "originType": "class",
-        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
-      },
-      {
-        "id": "feature-8",
-        "name": "Circle Spell: Augment",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
-      },
-      {
-        "id": "feature-9",
-        "name": "Circle Spell: Distribute",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
-      },
-      {
-        "id": "feature-10",
-        "name": "Circle Spell: Expand",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-11",
-        "name": "Circle Spell: Prolong",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-12",
-        "name": "Circle Spell: Safeguard",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **3 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
-      },
-      {
-        "id": "feature-13",
-        "name": "Circle Spell: Supplant",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
         "id": "feature-14",
         "name": "Metamagic: Careful Spell",
         "source": "Class",
@@ -2722,7 +2610,7 @@ export const demoCharacters: Character[] = [
         "source": "Dazzling Footwork",
         "group": "action",
         "originType": "class",
-        "description": "You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal +2 Bludgeoning damage."
+        "description": "You can use Dex. instead of Str. for the attack rolls of your Unarmed Strike. When you deal damage with it, you can deal 1d8+2 Bludgeoning damage."
       },
       {
         "id": "feature-3",
@@ -2731,62 +2619,6 @@ export const demoCharacters: Character[] = [
         "group": "bonusAction",
         "originType": "class",
         "description": "When you expend a use of your Bardic Inspiration as part of an action, Bonus Action, or Reaction, you can make an Unarmed Strike as part of the same action."
-      },
-      {
-        "id": "feature-4",
-        "name": "Initiate a Circle Spell",
-        "source": "Class",
-        "group": "action",
-        "originType": "class",
-        "description": "You take a Magic action to initiate casting a Circle spell. When you do so, choose which Circle casting option you’re using for this casting; you must also meet any of the other requirements described in that option’s text. Until the Circle spell’s casting is complete, you must maintain Concentration on the spell."
-      },
-      {
-        "id": "feature-5",
-        "name": "Circle Spell: Augment",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell with a range of at least 5 ft., you can increase the range of the spell by 1,000 ft. per secondary caster contributing to the spell, up to a max of a 1-mile increase."
-      },
-      {
-        "id": "feature-6",
-        "name": "Circle Spell: Distribute",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires Concentration, you can distribute the mental load of the spell among you and the secondary casters. Once the casting is complete, you and all secondary casters can maintain Concentration on this spell. As long as at least one caster who contributed to the spell maintains this Concentration, the spell’s effects remain active."
-      },
-      {
-        "id": "feature-7",
-        "name": "Circle Spell: Expand",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can increase one dimension of the spell’s area of effect for this casting by 10 ft. per secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-8",
-        "name": "Circle Spell: Prolong",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that has a duration of 1 min or longer, you can increase the duration of the spell depending on the number of secondary casters contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot (no action required). If the spell fails, these spell slots aren’t expended."
-      },
-      {
-        "id": "feature-9",
-        "name": "Circle Spell: Safeguard",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that creates an area of effect, you can carve out a safe zone within that area of effect that is unaffected by the spell for its duration. This safe zone consists of a number of 5-ft. Cubes equal to **5 + the number of secondary casters** contributing to the spell (min of 1 Cube). You can arrange the Cubes as you like, but each Cube must be contiguous with at least one other Cube. If the spell’s area of effect can be moved, the safe zone moves with it."
-      },
-      {
-        "id": "feature-10",
-        "name": "Circle Spell: Supplant",
-        "source": "Class",
-        "group": "special",
-        "originType": "class",
-        "description": "When you cast a spell that requires at least one Material component with a specified cost that is consumed by the spell, you can reduce the min cost of one such Material component by 50 GP per each secondary caster contributing to the spell. Each secondary caster contributing to the spell must expend a spell slot of a level greater than or equal to the spell’s level (no action required). If the spell fails, these spell slots aren’t expended."
       },
       {
         "id": "feature-11",

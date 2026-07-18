@@ -55,7 +55,8 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
             hoverOnly
             panel={
               <p>
-                <span className="text-slate-500">Best:</span> {entry.best.characterName} — {entry.best.range} ft
+                <span className="text-slate-500">Best:</span>{" "}
+                <span className="font-semibold text-white">{entry.best.characterName}</span> — {entry.best.range} ft
               </p>
             }
           >

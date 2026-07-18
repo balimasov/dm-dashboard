@@ -224,7 +224,7 @@ function StatusDots({ entry, separated }: { entry: PartyHpCharacterEntry; separa
 function HpRingHint({ entry }: { entry: PartyHpCharacterEntry }) {
   return (
     <p>
-      {entry.characterName}:{" "}
+      <span className="font-semibold text-white">{entry.characterName}</span>:{" "}
       <span className={`font-semibold ${tierTextClass(entry.percent)}`}>
         {entry.hp}/{entry.maxHp}
       </span>
