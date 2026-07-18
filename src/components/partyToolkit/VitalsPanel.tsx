@@ -232,7 +232,12 @@ function CharacterRing({ entry }: { entry: PartyHpCharacterEntry }) {
           <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} size="md" showTitle={false} />
         </Ring>
       </InfoTooltip>
-      <span className={`text-[11px] font-semibold tabular-nums ${tierTextClass(entry.percent)}`}>
+      {/* `text-[13px]` on mobile, back down to the original `text-[11px]` at
+          `sm:` — this is the number a DM squints at hardest on a phone, and
+          the room this panel has to spare there is different from desktop's
+          (see the grid-vs-flex split on the container below), so it gets
+          its own breakpoint instead of a single compromise size for both. */}
+      <span className={`text-[13px] font-semibold tabular-nums sm:text-[11px] ${tierTextClass(entry.percent)}`}>
         {entry.hp}/{entry.maxHp}
         {entry.tempHp > 0 && <span className="text-amber-400"> +{entry.tempHp}</span>}
       </span>
@@ -307,8 +312,24 @@ export function VitalsPanel({ characters }: { characters: Character[] }) {
           compact instrument instead of a left-clumped, unfinished row. */}
       <div className="flex flex-wrap items-start justify-center gap-4 px-3">
         <TotalRing summary={summary} />
-        <div className="my-1 w-px self-stretch bg-slate-800" />
-        <div className="flex flex-wrap items-start gap-3">
+        {/* On mobile the Total ring always wraps onto its own row above the
+            character grid (narrow viewport, `flex-wrap` above) — a vertical
+            divider meant to sit *beside* it then has nothing left to divide,
+            just a stray line floating between two stacked rows. Only shown
+            once there's room for the Total ring and the grid to actually
+            share a row (`sm:`). */}
+        <div className="my-1 hidden w-px self-stretch bg-slate-800 sm:block" />
+        {/* Grid (not `flex flex-wrap`) on mobile: flex-wrap sizes each row's
+            items to their own content, so a character with a wide status-dots
+            row (up to 96px) makes *that* row's columns wider than a row of
+            plain avatars — rings stop lining up vertically between rows. A
+            grid's column tracks are fixed for the whole grid regardless of
+            which row is tallest/widest, so every avatar ring lands in the
+            same column position no matter what any other character in the
+            party happens to have going on. Reverts to the original
+            `flex flex-wrap` at `sm:`, where there's enough width that rows
+            rarely fill evenly anyway and the free-flowing wrap looks better. */}
+        <div className="grid w-full grid-cols-3 items-start justify-items-center gap-x-2 gap-y-4 sm:w-auto sm:flex sm:flex-wrap sm:gap-3">
           {summary.characters.map((entry) => (
             <CharacterRing key={entry.characterId} entry={entry} />
           ))}
