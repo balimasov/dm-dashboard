@@ -104,11 +104,22 @@ export function cleanRulesText(html: string): string {
       // side and *+** on the other stack up into a stray `***Label.***`, which
       // RichText's bold/italic parser can't split cleanly and leaves loose `*`
       // characters in the rendered tooltip.
-      .replace(/<strong><em>([\s\S]*?)<\/em><\/strong>/gi, "**$1**")
-      .replace(/<em><strong>([\s\S]*?)<\/strong><\/em>/gi, "**$1**")
-      .replace(/<(?:strong|b)>/gi, "**")
+      .replace(/<strong[^>]*><em[^>]*>([\s\S]*?)<\/em><\/strong>/gi, "**$1**")
+      .replace(/<em[^>]*><strong[^>]*>([\s\S]*?)<\/strong><\/em>/gi, "**$1**")
+      // `[^>]*` on the opening tags matters: D&D Beyond's rich-text editor for
+      // *custom* item/creature descriptions (confirmed on a real homebrew
+      // item, "Ferol's Staff of Acid") emits opening tags with attributes
+      // (`<b class="ng-star-inserted" data-start-index="375">`), while the
+      // matching closing tag is always bare (`</b>`). Requiring an exact
+      // `<strong>`/`<b>` with nothing else meant the opening tag never
+      // matched and fell through to the generic tag-strip below with no
+      // marker at all, while its closing tag still turned into `**` — every
+      // bold span silently lost its *opening* delimiter, shifting every
+      // following `**` pair's parity and making unrelated text render bold
+      // instead.
+      .replace(/<(?:strong|b)[^>]*>/gi, "**")
       .replace(/<\/(?:strong|b)>/gi, "**")
-      .replace(/<(?:em|i)>/gi, "*")
+      .replace(/<(?:em|i)[^>]*>/gi, "*")
       .replace(/<\/(?:em|i)>/gi, "*")
       .replace(/<[^>]*>/g, "")
       // D&D Beyond's `snippet` field is often plain text rather than HTML, and
