@@ -53,7 +53,7 @@ function CampaignRow({
               which stacks above this overlay. */}
           <Link
             href={`/campaigns/${campaign.id}`}
-            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 after:absolute after:inset-0 hover:underline"
+            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 after:absolute after:inset-0"
           >
             {campaign.name}
           </Link>

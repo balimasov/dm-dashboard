@@ -125,11 +125,15 @@ export function CharacterCard({
             {SKILL_ABBR.insight} {c.combat.passiveInsight}
           </Pill>
         </div>
-        {c.senses.length > 0 && (
-          <div className="mt-4">
-            <SenseEntries senses={c.senses} />
-          </div>
-        )}
+        {/* Always rendered, even with no senses — cards used to skip this
+            block entirely when a character had none, which left neighboring
+            cards in the same row with their Stats/Skills sections starting
+            at different heights depending on who happened to have
+            Darkvision. Reserving the same line every card keeps that content
+            lined up regardless. */}
+        <div className="mt-4 text-sm">
+          {c.senses.length > 0 ? <SenseEntries senses={c.senses} /> : <span className="text-slate-600">No special senses</span>}
+        </div>
       </SectionDivider>
 
       {/* Stats */}

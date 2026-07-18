@@ -95,9 +95,16 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
         </InfoTooltip>
       )}
       <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
-      <span className="text-slate-400">
-        {attack.damage}
-        {attack.damageType ? ` ${attack.damageType}` : ""}
+      {/* Damage roll gets the same weight as the attack bonus above — it's
+          the other number a DM actually reads mid-combat. The damage *type*
+          demotes to a small uppercase tag instead of running on in the same
+          color/weight as the roll, which used to read as one undifferentiated
+          gray blob ("1d4 +2 Piercing") with no visual seam between the two. */}
+      <span className="flex items-baseline gap-1">
+        <span className="font-semibold text-slate-100">{attack.damage}</span>
+        {attack.damageType && (
+          <span className="text-[10px] uppercase tracking-wide text-slate-500">{attack.damageType}</span>
+        )}
       </span>
     </span>
   );

@@ -307,12 +307,16 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
           inside the ring is a quick read, but it doesn't say the party's
           actual pool size, and that used to only be one hover away. Lines up
           on the same `HP_LINE_CLASS` baseline as the character rings beside
-          it. */}
+          it. Temp HP rides on this same line (like `CharacterRing`'s own HP
+          text does) rather than getting a 3rd line of its own below "Total"
+          — that used to push the whole ring a row taller only when someone
+          happened to be carrying temp HP, which read as the column jumping
+          around rather than a stable layout. */}
       <span className={`${HP_LINE_CLASS} ${HP_TEXT_SIZE_CLASS} ${tierTextClass(summary.totalPercent)}`}>
         {summary.totalHp}/{summary.totalMaxHp}
+        {summary.totalTempHp > 0 && <span className="text-amber-400"> +{summary.totalTempHp}</span>}
       </span>
       <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total</span>
-      {summary.totalTempHp > 0 && <span className="text-[10px] font-semibold text-amber-400">+{summary.totalTempHp} THP</span>}
     </div>
   );
 }
