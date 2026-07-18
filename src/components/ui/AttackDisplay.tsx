@@ -24,7 +24,6 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
   // proficiency/mastery works" blurb that says nothing item-specific), so a
   // plain Common weapon would otherwise show this block too.
   const isSpecialWeapon = Boolean(attack.rarity && attack.rarity !== "Common" && attack.rarity !== "Unknown" && attack.description);
-  const hasBadge = !attack.proficient || Boolean(attack.mastery);
 
   return (
     <HintPanel
@@ -42,34 +41,33 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
             </span>
             <span>
               <span className="text-slate-500">Damage</span> <span className="font-semibold text-slate-100">{attack.damage}</span>
-              {attack.damageType && <span className="text-[11px] text-slate-500"> {attack.damageType}</span>}
+              {/* No color override — inherits `HintPanel`'s own `text-slate-300`
+                  description color, same as the item-description prose below,
+                  instead of standing out as its own dimmer/brighter shade. */}
+              {attack.damageType && <span> {attack.damageType}</span>}
             </span>
           </span>
-          {/* Proficiency/mastery get the same small bordered badge
-              `AttackTrailing`'s own mastery badge already uses (violet for
-              mastery, the same treatment in amber for "not proficient") —
-              one consistent quiet accent instead of a full bold colored
-              line each, which used to read as a different loud style per
-              fact. The explanation for each stays plain `text-slate-500`
-              prose right below, same weight as Notes, rather than
-              inheriting the badge's color. */}
-          {hasBadge && (
-            <span className="flex flex-wrap items-center gap-1.5">
-              {!attack.proficient && (
-                <span className="rounded border border-amber-800 bg-amber-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
-                  Not proficient
-                </span>
-              )}
-              {attack.mastery && (
-                <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
-                  {attack.mastery}
-                </span>
-              )}
+          {/* Bold + colored *label* (amber/violet, same colors `AttackTrailing`'s
+              own mastery badge uses) followed by a plain-prose explanation —
+              the label is the one fact that needs to visually jump out, the
+              explanation reads like any other rules text rather than
+              inheriting the label's loud color for a whole line. */}
+          {!attack.proficient && (
+            <span className="block">
+              <span className="font-semibold text-amber-400">Not proficient</span>: Bonus is ability modifier only.
             </span>
           )}
-          {!attack.proficient && <span className="block text-slate-500">Bonus is ability modifier only.</span>}
-          {masteryInfo && <span className="block text-slate-500">{masteryInfo}</span>}
-          {notes && <span className="block text-slate-500">Notes: {notes}</span>}
+          {attack.mastery && (
+            <span className="block">
+              <span className="font-semibold text-violet-300">{attack.mastery}</span>
+              {masteryInfo ? `: ${masteryInfo}` : ""}
+            </span>
+          )}
+          {notes && (
+            <span className="block">
+              <span className="text-slate-500">Notes:</span> {notes}
+            </span>
+          )}
           {isSpecialWeapon && (
             <span className="block space-y-1 border-t border-slate-800 pt-1.5">
               <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
