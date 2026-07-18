@@ -41,6 +41,26 @@ const STATUS_DOT_CLASS = "inline-block h-2.5 w-2.5 shrink-0 rounded-full";
 const STATUS_BADGE_CLASS = "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-0.5 text-[8px] font-bold leading-none";
 
 /**
+ * Fixed-height row shared by every "line right under the ring" — a
+ * character's HP text, its `DeathSavesRow` when down, and the Total ring's
+ * own HP text. Text and dot-meter/emoji content have different natural line
+ * heights (a text baseline sits lower in its box than a row of round dots
+ * does), so two rows with the *same* `gap-1` spacing after the ring can
+ * still land visibly offset from each other even though their tops match —
+ * confirmed by measuring both in the browser. Pinning every one of them to
+ * this exact height and centering their content inside it removes that
+ * discrepancy instead of trying to eyeball-tune individual paddings.
+ */
+const HP_LINE_CLASS = "flex h-5 items-center justify-center";
+
+/**
+ * `text-[15px]` on mobile, down to `text-[13px]` at `sm:` — bumped up from
+ * `13px`/`11px` again per DM feedback that the ring HP numbers were still
+ * too small to read at a glance, on both phone and desktop.
+ */
+const HP_TEXT_SIZE_CLASS = "text-[15px] font-semibold tabular-nums sm:text-[13px]";
+
+/**
  * A donut gauge — track + a `currentColor` arc rotated to start at 12
  * o'clock, filled clockwise by current HP, with temp HP continuing on as a
  * second amber arc right where the HP arc ends (`strokeDashoffset` shifted
@@ -126,7 +146,7 @@ function DeathSavesRow({ deathSaves }: { deathSaves?: { successes: number; failu
   const successes = deathSaves?.successes ?? 0;
   const failures = deathSaves?.failures ?? 0;
   return (
-    <div className="flex items-center gap-1">
+    <div className={`${HP_LINE_CLASS} gap-1`}>
       <span className="text-[9px] text-emerald-400">✅</span>
       <DotMeter current={successes} max={3} colorClass="bg-emerald-500" />
       <span className="text-[9px] text-red-400">❌</span>
@@ -241,12 +261,7 @@ function CharacterRing({ entry }: { entry: PartyHpCharacterEntry }) {
           already does once status dots join in. The exact HP/THP figures
           are still one hover away on the ring itself via `HpRingHint`. */}
       {!entry.isDown && (
-        // `text-[13px]` on mobile, back down to the original `text-[11px]` at
-        // `sm:` — this is the number a DM squints at hardest on a phone, and
-        // the room this panel has to spare there is different from desktop's
-        // (see the grid-vs-flex split on the container below), so it gets
-        // its own breakpoint instead of a single compromise size for both.
-        <span className={`text-[13px] font-semibold tabular-nums sm:text-[11px] ${tierTextClass(entry.percent)}`}>
+        <span className={`${HP_LINE_CLASS} ${HP_TEXT_SIZE_CLASS} ${tierTextClass(entry.percent)}`}>
           {entry.hp}/{entry.maxHp}
           {entry.tempHp > 0 && <span className="text-amber-400"> +{entry.tempHp}</span>}
         </span>
@@ -288,6 +303,14 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
           </span>
         </Ring>
       </InfoTooltip>
+      {/* Same row every character ring shows right below it — the percent
+          inside the ring is a quick read, but it doesn't say the party's
+          actual pool size, and that used to only be one hover away. Lines up
+          on the same `HP_LINE_CLASS` baseline as the character rings beside
+          it. */}
+      <span className={`${HP_LINE_CLASS} ${HP_TEXT_SIZE_CLASS} ${tierTextClass(summary.totalPercent)}`}>
+        {summary.totalHp}/{summary.totalMaxHp}
+      </span>
       <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total</span>
       {summary.totalTempHp > 0 && <span className="text-[10px] font-semibold text-amber-400">+{summary.totalTempHp} THP</span>}
     </div>
