@@ -243,7 +243,7 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
  */
 function ChartBox({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4">
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4">
       {hint ? (
         <InfoTooltip inline panel={hint}>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
@@ -302,21 +302,20 @@ function SpellSlotsHeaderHint({ spellSlots }: { spellSlots: PartySpellSlotSummar
 }
 
 /**
- * Rest Recovery + Spell Slots charts, stacked one above the other — its own
- * standalone card under Party Vitals (see `PartyChartsPanel`), deliberately
- * always vertical rather than switching to side-by-side at some width: this
- * card sits alone in the layout rather than paired with anything else, so
- * there's no matching content on either side to line the two boxes up
- * against, and a single narrow column reads more compact than two boxes
- * competing for the same row. `null` when neither chart has anything to
- * show, so the caller can skip the wrapper entirely instead of rendering
- * empty chrome.
+ * Rest Recovery + Spell Slots charts, side by side in their own mini-boxes —
+ * its own standalone card under Party Vitals (see `PartyChartsPanel`).
+ * `flex-wrap` rather than a hard `sm:`-only switch: on a narrow phone
+ * viewport where two boxes plus the Spell Slots histogram's own columns
+ * genuinely can't fit side by side, this wraps to stacked instead of
+ * squeezing/overflowing. `null` when neither chart has anything to show, so
+ * the caller can skip the wrapper entirely instead of rendering empty
+ * chrome.
  */
 export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: PartyRestRecoveryGauge; spellSlots: PartySpellSlotSummary | null }) {
   const hasRestMeters = Boolean(restRecovery.shortRest || restRecovery.longRest);
   if (!hasRestMeters && !spellSlots) return null;
   return (
-    <div className="@container flex flex-col items-center gap-4">
+    <div className="@container flex flex-wrap items-stretch justify-center gap-4">
       {hasRestMeters && (
         <ChartBox title="Rest Recovery" hint={<RestRecoveryHeaderHint recovery={restRecovery} />}>
           <RestRecoveryMeters recovery={restRecovery} />

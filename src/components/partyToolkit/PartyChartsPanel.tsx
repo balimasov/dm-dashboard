@@ -4,8 +4,8 @@ import { ToolkitCard } from "../ui/ToolkitCard";
 import { SpellChartsRow } from "./shared";
 
 /**
- * Rest Recovery + Spell Slots, stacked in their own compact card right under
- * Party Vitals — pulled out of `SpellSlotsResourcesPanel` ("Actions &
+ * Rest Recovery + Spell Slots, side by side in their own compact card right
+ * under Party Vitals — pulled out of `SpellSlotsResourcesPanel` ("Actions &
  * Resources") and `ResourceCoveragePanel` ("Resources & Coverage"), which
  * both used to show this exact same chart pair above their own tabbed/listed
  * content. Rendering it twice never showed different numbers (same party,
