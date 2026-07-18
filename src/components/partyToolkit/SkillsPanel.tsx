@@ -9,6 +9,7 @@ import {
   PassiveStatSummary,
   SkillCharacterScore,
   SkillOverviewEntry,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for the Coverage by Ability radar, currently hidden (see SkillsPanel below)
   computeAbilitySkillCoverage,
   computePartySkillOverview,
 } from "@/lib/partyToolkit";
@@ -16,7 +17,6 @@ import { InfoTooltip } from "../InfoTooltip";
 import { CharacterChip } from "../ui/CharacterChip";
 import { HintPanel } from "../ui/HintPanel";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CHART_AREA_MIN_HEIGHT_CLASS } from "./shared";
 
 /** Shared row shape for the two "name + colored modifier" hint panels below (skills and passives), and reused verbatim in the heatmap cells' own hover hints so both surfaces read as one color language: green when proficient/expertise, otherwise inherits the row's own white. */
 function scoreRowClass(proficient: boolean): string {
@@ -443,6 +443,7 @@ function polarPoint(cx: number, cy: number, radius: number, angleDeg: number): [
  * N-sided polygon as the data shape (not circles) so the 25/50/75/100%
  * rings visually line up with where the axis lines cross them.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- hidden (not called) as part of a compactness pass; kept for a future refactor rather than rebuilt from scratch
 function AbilitySkillRadar({ coverage }: { coverage: AbilitySkillCoverage[] }) {
   if (coverage.length < 3) return null;
 
@@ -501,6 +502,7 @@ function AbilitySkillRadar({ coverage }: { coverage: AbilitySkillCoverage[] }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- hidden alongside AbilitySkillRadar, see its own comment above
 function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] }) {
   return (
     <HintPanel
@@ -532,24 +534,17 @@ function AbilitySkillRadarHint({ coverage }: { coverage: AbilitySkillCoverage[] 
  */
 export function SkillsPanel({ characters, passives }: { characters: Character[]; passives: PartyPassiveSummary }) {
   const skillEntries = computePartySkillOverview(characters);
-  const abilityCoverage = computeAbilitySkillCoverage(characters);
+
+  // "Coverage by Ability" (the radar chart) is hidden for now as part of a
+  // compactness pass — TODO: revisit in a future refactor, either bringing
+  // it back in a smaller form or reworking it into something else entirely.
+  // `computeAbilitySkillCoverage`/`AbilitySkillRadar`/`AbilitySkillRadarHint`
+  // below are kept, not deleted, so that refactor has something to start
+  // from instead of rebuilding the radar math from scratch.
 
   return (
     <ToolkitCard title="Skills">
-      {abilityCoverage.length >= 3 && (
-        <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
-          <SectionLabel className="text-center">
-            <InfoTooltip inline panel={<AbilitySkillRadarHint coverage={abilityCoverage} />}>
-              Coverage by Ability
-            </InfoTooltip>
-          </SectionLabel>
-          <AbilitySkillRadar coverage={abilityCoverage} />
-        </div>
-      )}
-
-      <div className={abilityCoverage.length >= 3 ? "mt-4" : ""}>
-        <SkillHeatmap characters={characters} entries={skillEntries} passives={passives} />
-      </div>
+      <SkillHeatmap characters={characters} entries={skillEntries} passives={passives} />
     </ToolkitCard>
   );
 }

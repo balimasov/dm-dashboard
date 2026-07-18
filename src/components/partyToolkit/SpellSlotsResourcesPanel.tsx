@@ -12,7 +12,6 @@ import {
   computeHeroicInspirationSummary,
   computePartyAttacks,
   computePartyResourceSummary,
-  computePartyRestRecoveryGauge,
   computePartySpellSlotSummary,
   computePartySpellsByLevel,
 } from "@/lib/partyToolkit";
@@ -23,7 +22,7 @@ import { AttackName, AttackTrailing } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CHART_AREA_MIN_HEIGHT_CLASS, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellChartsRow, SpellSlotLevelPanel, usageColorClass } from "./shared";
+import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
   return (
@@ -129,17 +128,7 @@ function PartyCharacterWeapons({ entry, isFirst }: { entry: PartyCharacterAttack
 type PartyDetailsTab = "weapons" | "features" | "spells";
 
 /**
- * Actions & Resources — the same Rest Recovery/Spell Slots charts
- * `ResourceCoveragePanel` shows (via the shared `SpellChartsRow`), so both
- * panels read as one consistent instrument instead of this one showing an
- * older, different chart style. Started life as "Spell Slots & Resources"
- * (hence `SpellSlotsResourcesPanel`'s own file/component name, kept
- * unchanged since renaming it would ripple into every import for no
- * behavioral gain) — the visible title moved to "Actions & Resources" once
- * Weapons joined Spells as a second kind of "what can this character DO"
- * content sitting alongside the resource/slot tracking.
- *
- * Below the charts, tabbed the same way `CharacterDetailsModal` tabs a
+ * Actions & Resources — tabbed the same way `CharacterDetailsModal` tabs a
  * single character's own Weapons/Features and Traits/Spells — "Features
  * and Traits" keeps this panel's existing Heroic Inspiration + Limited Use
  * content unchanged, "Spells" is every known spell across the party,
@@ -150,12 +139,22 @@ type PartyDetailsTab = "weapons" | "features" | "spells";
  * the party (see `computePartyAttacks`'s own doc comment for why). No tab
  * switcher (and no tab at all) for content nobody has — same "don't show
  * an empty tab" rule the character modal already follows.
+ *
+ * Used to open with its own copy of the Rest Recovery/Spell Slots charts
+ * (`ResourceCoveragePanel` showed the exact same pair above its own listing)
+ * — both moved into their own `PartyChartsPanel` under Party Vitals instead,
+ * since rendering the identical numbers twice just cost vertical space
+ * without showing anything new. Started life as "Spell Slots & Resources"
+ * (hence `SpellSlotsResourcesPanel`'s own file/component name, kept
+ * unchanged since renaming it would ripple into every import for no
+ * behavioral gain) — the visible title moved to "Actions & Resources" once
+ * Weapons joined Spells as a second kind of "what can this character DO"
+ * content sitting alongside the resource/slot tracking.
  */
 export function SpellSlotsResourcesPanel({ characters }: { characters: Character[] }) {
   const spellSlots = computePartySpellSlotSummary(characters);
   const inspiration = computeHeroicInspirationSummary(characters);
   const resources = computePartyResourceSummary(characters);
-  const restRecovery = computePartyRestRecoveryGauge(characters);
   const spellLevelGroups = computePartySpellsByLevel(characters);
   const partyAttacks = computePartyAttacks(characters);
 
@@ -169,10 +168,6 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
 
   return (
     <ToolkitCard title="Actions & Resources">
-      <div className={CHART_AREA_MIN_HEIGHT_CLASS}>
-        <SpellChartsRow restRecovery={restRecovery} spellSlots={spellSlots} />
-      </div>
-
       {tabs.length > 1 && (
         // `mb-1.5` (not the more typical `mb-3`) matches the Skills panel's
         // own `gap-1.5` between its avatar-chip row and "Passives" — the two

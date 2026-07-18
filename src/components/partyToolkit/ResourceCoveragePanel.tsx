@@ -9,8 +9,6 @@ import {
   ResourceAvailability,
   ResourceCoverageCategory,
   ResourceCoverageEntry,
-  computePartyRestRecoveryGauge,
-  computePartySpellSlotSummary,
   computeResourceCoverage,
 } from "@/lib/partyToolkit";
 import { persistOpenCookie } from "../CollapsibleSection";
@@ -19,7 +17,7 @@ import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, SpellChartsRow, usageColorClass } from "./shared";
+import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, usageColorClass } from "./shared";
 
 /** Heroic Inspiration is the one entry with no real character behind it — same special case `CoveragePanel` handled, rendered as plain "x/partySize" text instead of a chip row. */
 function SpecialRow({ entry }: { entry: ResourceCoverageEntry }) {
@@ -302,9 +300,6 @@ export function ResourceCoveragePanel({ characters, initialOpen }: { characters:
   const categories = RESOURCE_COVERAGE_CATEGORY_ORDER.filter((category) => coverage[category].length > 0);
   const columns = distributeColumns(categories, coverage, COLUMNS);
 
-  const spellSlots = computePartySpellSlotSummary(characters);
-  const restRecovery = computePartyRestRecoveryGauge(characters);
-
   return (
     <ToolkitCard
       title={
@@ -321,12 +316,10 @@ export function ResourceCoveragePanel({ characters, initialOpen }: { characters:
         },
       }}
     >
-      <SpellChartsRow restRecovery={restRecovery} spellSlots={spellSlots} />
-
       {categories.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
+        <p className="text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {columns.map(
             (column, i) =>
               column.length > 0 && (

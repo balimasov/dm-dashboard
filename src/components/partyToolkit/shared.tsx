@@ -35,28 +35,6 @@ export function usageColorClass(current: number, max: number): string {
   return "text-white";
 }
 
-/**
- * Shared by the Skills radar and the Actions & Resources gauges — the
- * two cards sit side by side in a `lg:grid-cols-2` row, but the radar (a
- * fixed-size SVG) and the gauge stack render to different natural heights,
- * so "Passives"/the tab bar below them landed at different y-coordinates
- * across the two columns. Both chart wrappers get this same fixed
- * min-height so the section labels that follow always start level with
- * each other; `justify-center` distributes whatever's left over between top
- * and bottom instead of dumping it all below the shorter one's content as a
- * single lopsided gap. `lg:`-only: below that breakpoint the grid stacks to
- * one column, where the two charts are never side by side and forcing the
- * height would just waste vertical space on a phone.
- *
- * 338px is calibrated against `SpellChartsRow`'s own tallest common case at
- * this card's actual width: at a `lg:grid-cols-2` column's width (~660px),
- * `SpellChartsRow`'s `@[1024px]:flex-row` container query doesn't fire, so
- * Rest Recovery and Spell Slots stack vertically — taller than the Skills
- * radar's fixed-size SVG, which the old 304px was tuned to instead
- * (confirmed measured: 337px vs 304px, the gap this constant closes).
- */
-export const CHART_AREA_MIN_HEIGHT_CLASS = "lg:flex lg:min-h-[338px] lg:flex-col lg:justify-center";
-
 export const HEROIC_INSPIRATION_DESCRIPTION =
   "Spend it to gain advantage on one attack roll, saving throw, or ability check.";
 
@@ -228,17 +206,10 @@ function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLeve
  * pushing the whole card off-screen.
  *
  * These are **container** queries (`@[…]:`), not viewport ones (`sm:`/
- * `lg:`) — this histogram sits in two very differently-sized places: the
- * full-width "Resources & Coverage" card (~1400px) and the half-width
- * "Actions & Resources" card, which sits in a 2-column grid next to
- * Skills and measures only ~680px even on a wide desktop viewport. A
- * viewport breakpoint like `sm:`/`lg:` can't tell those two apart — it only
- * knows the browser window is wide, not that *this* box only got half of
- * it — and confirmed exactly that: 9 columns fit fine in the full-width
- * card but overflowed in the half-width one at the very same viewport
- * width. `@container` on `SpellChartsRow`'s own root (below) is what makes
- * `@[512px]` mean "*this chart's own space* is ≥512px," not "the window
- * is." `shrink-0` still matters alongside it — a flex item with any
+ * `lg:`) — what matters is this chart's own box width, not the browser
+ * window's (`@container` on `SpellChartsRow`'s own root, below, is what
+ * makes `@[512px]` mean "*this chart's own space* is ≥512px," not "the
+ * window is"). `shrink-0` still matters alongside it — a flex item with any
  * `overflow-x-auto` descendant loses its normal min-content-width floor (a
  * separate CSS flexbox quirk), which let a sibling squeeze this column row
  * narrower than 9 columns need even when the container query above says
@@ -269,21 +240,10 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
  * `DefensesPanel`/`LanguagesToolsPanel` use as full `ToolkitCard`s, just one
  * nesting level down since two charts can share a single card instead of
  * getting their own.
- *
- * The two boxes rendered side by side (Rest Recovery, Spell Slots) naturally
- * want different heights — the histogram's tall bars make Spell Slots the
- * taller of the two. The `items-stretch` on `SpellChartsRow`'s own row (once
- * it goes side by side) stretches both boxes to that same height; the
- * `flex-1 justify-center` wrapper here is what makes the *shorter* box's
- * content actually use that extra height instead of sitting cramped under
- * the caption with dead space below it. `@[1024px]:w-auto` — a container
- * query, same reasoning as `SpellSlotHistogram`'s own — only shrinks a box
- * to its own content width once `SpellChartsRow`'s container is actually
- * roomy enough for that to look intentional rather than cramped.
  */
 function ChartBox({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4 @[1024px]:w-auto @[1024px]:px-8">
+    <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-4">
       {hint ? (
         <InfoTooltip inline panel={hint}>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</span>
@@ -342,30 +302,21 @@ function SpellSlotsHeaderHint({ spellSlots }: { spellSlots: PartySpellSlotSummar
 }
 
 /**
- * Rest Recovery + Spell Slots charts, side by side — shared by every panel
- * that shows the party's resting/casting readiness (`SpellSlotsResourcesPanel`,
- * `ResourceCoveragePanel`) so both read as the same instrument instead of
- * drifting into two different chart styles over time. `null` when neither
- * chart has anything to show, so the caller can skip the wrapper entirely
- * instead of rendering empty chrome.
- *
- * `@container` here is what makes every `@[…]:` query in this file (here and
- * in `ChartBox`/`SpellSlotHistogram`) measure *this component's own*
- * rendered width — not the browser viewport's. That distinction matters
- * because this exact component renders inside two very differently-sized
- * places: the full-width "Resources & Coverage" card and the half-width
- * "Actions & Resources" card (paired with Skills in a 2-column grid,
- * confirmed ~680px wide even on a 1500px-wide desktop viewport) — a `lg:`
- * viewport breakpoint can't distinguish those, only a container query can.
- * The side-by-side switch itself waits for `@[1024px]` (not the `@[512px]`
- * `SpellSlotHistogram` uses) because *two* boxes need to fit at once here,
- * not one.
+ * Rest Recovery + Spell Slots charts, stacked one above the other — its own
+ * standalone card under Party Vitals (see `PartyChartsPanel`), deliberately
+ * always vertical rather than switching to side-by-side at some width: this
+ * card sits alone in the layout rather than paired with anything else, so
+ * there's no matching content on either side to line the two boxes up
+ * against, and a single narrow column reads more compact than two boxes
+ * competing for the same row. `null` when neither chart has anything to
+ * show, so the caller can skip the wrapper entirely instead of rendering
+ * empty chrome.
  */
 export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: PartyRestRecoveryGauge; spellSlots: PartySpellSlotSummary | null }) {
   const hasRestMeters = Boolean(restRecovery.shortRest || restRecovery.longRest);
   if (!hasRestMeters && !spellSlots) return null;
   return (
-    <div className="@container mt-2 flex flex-col items-center gap-4 @[1024px]:flex-row @[1024px]:items-stretch @[1024px]:justify-center @[1024px]:gap-6">
+    <div className="@container flex flex-col items-center gap-4">
       {hasRestMeters && (
         <ChartBox title="Rest Recovery" hint={<RestRecoveryHeaderHint recovery={restRecovery} />}>
           <RestRecoveryMeters recovery={restRecovery} />

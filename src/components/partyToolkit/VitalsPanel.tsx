@@ -232,15 +232,25 @@ function CharacterRing({ entry }: { entry: PartyHpCharacterEntry }) {
           <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} size="md" showTitle={false} />
         </Ring>
       </InfoTooltip>
-      {/* `text-[13px]` on mobile, back down to the original `text-[11px]` at
-          `sm:` — this is the number a DM squints at hardest on a phone, and
-          the room this panel has to spare there is different from desktop's
-          (see the grid-vs-flex split on the container below), so it gets
-          its own breakpoint instead of a single compromise size for both. */}
-      <span className={`text-[13px] font-semibold tabular-nums sm:text-[11px] ${tierTextClass(entry.percent)}`}>
-        {entry.hp}/{entry.maxHp}
-        {entry.tempHp > 0 && <span className="text-amber-400"> +{entry.tempHp}</span>}
-      </span>
+      {/* Once a character is down, "0/163" tells a DM nothing they don't
+          already know (hp is exactly 0 by definition of `isDown`) — the
+          number that actually matters at that point is how many death
+          saves are left, not the HP figure a down character no longer has.
+          Swapping the HP line out for `DeathSavesRow` below (rather than
+          showing both) keeps the column from growing even taller than it
+          already does once status dots join in. The exact HP/THP figures
+          are still one hover away on the ring itself via `HpRingHint`. */}
+      {!entry.isDown && (
+        // `text-[13px]` on mobile, back down to the original `text-[11px]` at
+        // `sm:` — this is the number a DM squints at hardest on a phone, and
+        // the room this panel has to spare there is different from desktop's
+        // (see the grid-vs-flex split on the container below), so it gets
+        // its own breakpoint instead of a single compromise size for both.
+        <span className={`text-[13px] font-semibold tabular-nums sm:text-[11px] ${tierTextClass(entry.percent)}`}>
+          {entry.hp}/{entry.maxHp}
+          {entry.tempHp > 0 && <span className="text-amber-400"> +{entry.tempHp}</span>}
+        </span>
+      )}
       {entry.isDown && <DeathSavesRow deathSaves={entry.deathSaves} />}
       <StatusDots entry={entry} separated={entry.isDown} />
     </div>
