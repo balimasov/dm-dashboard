@@ -95,16 +95,23 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
         </InfoTooltip>
       )}
       <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
+      {/* Same muted middle-dot `HpBar`'s death-save pair and every "kind ·
+          source" meta line elsewhere already use — the attack bonus and
+          damage roll are both bold/bright now (see the damage-type comment
+          below), which reads as one continuous run of digits without some
+          seam between them. */}
+      <span className="text-slate-600">·</span>
       {/* Damage roll gets the same weight as the attack bonus above — it's
           the other number a DM actually reads mid-combat. The damage *type*
-          demotes to a small uppercase tag instead of running on in the same
+          demotes to a small tag instead of running on in the same
           color/weight as the roll, which used to read as one undifferentiated
-          gray blob ("1d4 +2 Piercing") with no visual seam between the two. */}
+          gray blob ("1d4 +2 Piercing") with no visual seam between the two.
+          Not uppercased — all-caps at this size drew more attention than a
+          secondary label should, competing with the roll instead of quietly
+          sitting under it. */}
       <span className="flex items-baseline gap-1">
         <span className="font-semibold text-slate-100">{attack.damage}</span>
-        {attack.damageType && (
-          <span className="text-[10px] uppercase tracking-wide text-slate-500">{attack.damageType}</span>
-        )}
+        {attack.damageType && <span className="text-[10px] text-slate-500">{attack.damageType}</span>}
       </span>
     </span>
   );
