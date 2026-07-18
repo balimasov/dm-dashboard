@@ -132,6 +132,9 @@ export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resou
   if (overallPercent === null) return null;
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
+  const hint = (
+    <ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />
+  );
   return (
     // `leading-none` here (not just on the number span below) matters: InfoTooltip
     // wraps its children in its own spans that don't reset their inherited
@@ -139,25 +142,33 @@ export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resou
     // visually pushes the number down relative to the bar once flex centers the
     // taller box. Resetting line-height at this level too keeps every nested
     // span's strut as tight as the number's own, so centering lines up cleanly.
-    <InfoTooltip
-      hoverOnly
-      panel={<ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}
-    >
-      {/* Bar and percent both live inside the one `InfoTooltip` (same as
-          `RestRecoveryMeterRow`'s bar+percent pairing in Party Toolkit) —
-          hovering either shows the same breakdown, instead of the hint only
-          firing over the number the way this used to work. */}
-      <div className="flex items-center gap-2 leading-none">
-        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-          <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
-        </div>
+    <div className="flex items-center gap-2 leading-none">
+      {/* `relative` here, not on `InfoTooltip`'s own wrapper — that wrapper
+          is `inline-block` (shrink-to-fit), and this track needs `flex-1` to
+          fill whatever's left of the row's width. Nesting the *whole* bar
+          inside `InfoTooltip` (the way `RestRecoveryMeterRow` gets away with
+          for its own fixed-width bar) collapsed this one to zero width,
+          since `flex-1` only stretches as a *direct* flex child of this row
+          — the same "direct child" rule `DotMeter`'s own doc comment already
+          flags for its dots. Instead, the track stays a direct, untouched
+          flex child, and an absolutely-positioned hit target sits inside it
+          — `inset-0` resolves against *this* div regardless of the
+          `InfoTooltip` spans in between, so hovering anywhere on the bar
+          still opens the same hint the percent below does. */}
+      <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+        <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
+        <InfoTooltip hoverOnly panel={hint}>
+          <span className="absolute inset-0" />
+        </InfoTooltip>
+      </div>
+      <InfoTooltip hoverOnly panel={hint}>
         {/* `relative -top-px`: even with the strut fixed above, digit glyphs still sit ~1px low in
             their own box (descender space this font reserves below the baseline, unused by digits).
             `translate`/`transform` can't nudge this — both are no-ops on a plain (non `inline-block`)
             inline element like this span — but relative positioning applies to inline boxes fine. */}
         <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
-      </div>
-    </InfoTooltip>
+      </InfoTooltip>
+    </div>
   );
 }
 
