@@ -95,12 +95,14 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
         </InfoTooltip>
       )}
       <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
-      {/* Same muted middle-dot `HpBar`'s death-save pair and every "kind ·
-          source" meta line elsewhere already use — the attack bonus and
-          damage roll are both bold/bright now (see the damage-type comment
-          below), which reads as one continuous run of digits without some
-          seam between them. */}
-      <span className="text-slate-600">·</span>
+      {/* Same middle-dot `HpBar`'s death-save pair and every "kind · source"
+          meta line elsewhere already use — the attack bonus and damage roll
+          are both bold/bright now (see the damage-type comment below), which
+          reads as one continuous run of digits without some seam between
+          them. Bumped up from `text-slate-600` at the row's own small text
+          size — too faint to register as a seam there; bigger and lighter
+          reads as a deliberate divider instead of a stray period. */}
+      <span className="text-base font-bold leading-none text-slate-500">·</span>
       {/* Damage roll gets the same weight as the attack bonus above — it's
           the other number a DM actually reads mid-combat. The damage *type*
           demotes to a small tag instead of running on in the same
