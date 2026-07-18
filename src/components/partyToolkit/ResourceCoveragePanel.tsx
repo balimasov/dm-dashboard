@@ -73,7 +73,7 @@ function SlotAvailabilityHint({ availability }: { availability: Extract<Resource
   const ordinal = ordinalLevel(availability.level);
   return (
     <div className="space-y-1">
-      <p className="text-white">{ordinal}-level spell</p>
+      <p>{ordinal}-level spell</p>
       <p className={availability.available ? "text-emerald-400" : "text-red-400"}>
         {availability.remaining} slot{availability.remaining === 1 ? "" : "s"} available at {ordinal} level or higher
       </p>

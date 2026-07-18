@@ -26,7 +26,7 @@ export function LevelBadge({ label, panel }: { label: string; panel: ReactNode }
   return <MetaBadge label={label} panel={panel} colorClassName="border-violet-800 text-violet-400" />;
 }
 
-export const CANTRIP_HINT = <p className="text-white">Cantrip — cast at will, no spell slot required.</p>;
+export const CANTRIP_HINT = <p>Cantrip — cast at will, no spell slot required.</p>;
 
 /** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value across the Party Toolkit panels: spell slots, Heroic Inspiration, and limited-use resources. */
 export function usageColorClass(current: number, max: number): string {

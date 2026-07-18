@@ -348,7 +348,7 @@ export function DashboardClient({
                 <InfoTooltip
                   hoverOnly
                   panel={
-                    <p className="text-white">
+                    <p>
                       Synced <SyncTimestamp iso={lastSyncedAt} />
                     </p>
                   }

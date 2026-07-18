@@ -13,7 +13,7 @@ export function RecoveryBadge({ recovery }: { recovery: RecoveryType }) {
   return (
     <MetaBadge
       label={RECOVERY_SHORT_LABELS[recovery]}
-      panel={<p className="text-white">{RECOVERY_LABELS[recovery]} recovery.</p>}
+      panel={<p>{RECOVERY_LABELS[recovery]} recovery.</p>}
       colorClassName="border-slate-700 text-slate-500"
     />
   );

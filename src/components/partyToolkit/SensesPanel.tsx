@@ -53,7 +53,11 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
           <InfoTooltip
             key={entry.best.characterId}
             hoverOnly
-            panel={<p className="text-white">Best: {entry.best.characterName} — {entry.best.range} ft</p>}
+            panel={
+              <p>
+                <span className="text-slate-500">Best:</span> {entry.best.characterName} — {entry.best.range} ft
+              </p>
+            }
           >
             <span className="flex items-center gap-1">
               <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} showTitle={false} />

@@ -132,7 +132,7 @@ function Ring({ hp, maxHp, tempHp, size, strokeWidth, radius, circumference, col
 
 function AcBadge({ ac }: { ac: number }) {
   return (
-    <InfoTooltip hoverOnly panel={<p className="text-white">Armor Class {ac}</p>}>
+    <InfoTooltip hoverOnly panel={<p>Armor Class {ac}</p>}>
       <span className="absolute -bottom-1 -right-1 flex h-6 min-w-[26px] items-center justify-center gap-0.5 rounded-full border border-slate-700 bg-slate-950 px-1.5 text-[10px] font-bold text-slate-300">
         <ShieldIcon className="h-3 w-3 shrink-0 text-slate-500" />
         {ac}
@@ -163,7 +163,7 @@ function ConditionDot({ condition, index }: { condition: string; index: number }
     <InfoTooltip
       hoverOnly
       panel={
-        <p className="text-white">
+        <p>
           <span className="font-semibold capitalize">{condition}</span>
           {info ? `: ${info}` : ""}
         </p>
@@ -182,7 +182,7 @@ function ConditionDot({ condition, index }: { condition: string; index: number }
 /** The exhaustion level itself, not just a color standing in for "some level or other" — a DM reads the severity straight off the badge instead of having to hover every time to find out whether it's a 1 or a 5. Filled solid (not outlined, unlike `ConditionDot`) so the two read as different shapes, not just different colors. */
 function ExhaustionDot({ level }: { level: number }) {
   return (
-    <InfoTooltip hoverOnly panel={<p className="text-white">Exhaustion level {level}</p>}>
+    <InfoTooltip hoverOnly panel={<p>Exhaustion level {level}</p>}>
       <span className={`${STATUS_BADGE_CLASS} bg-red-600 text-white`}>{level}</span>
     </InfoTooltip>
   );
@@ -209,7 +209,7 @@ function StatusDots({ entry, separated }: { entry: PartyHpCharacterEntry; separa
       }`}
     >
       {entry.concentrating && (
-        <InfoTooltip hoverOnly panel={<p className="text-white">Concentrating</p>}>
+        <InfoTooltip hoverOnly panel={<p>Concentrating</p>}>
           <span className={`${STATUS_DOT_CLASS} bg-violet-400`} />
         </InfoTooltip>
       )}
@@ -223,7 +223,7 @@ function StatusDots({ entry, separated }: { entry: PartyHpCharacterEntry; separa
 
 function HpRingHint({ entry }: { entry: PartyHpCharacterEntry }) {
   return (
-    <p className="text-white">
+    <p>
       {entry.characterName}:{" "}
       <span className={`font-semibold ${tierTextClass(entry.percent)}`}>
         {entry.hp}/{entry.maxHp}
@@ -278,7 +278,7 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
       <InfoTooltip
         hoverOnly
         panel={
-          <p className="text-white">
+          <p>
             Party Total:{" "}
             <span className={`font-semibold ${tierTextClass(summary.totalPercent)}`}>
               {summary.totalHp}/{summary.totalMaxHp}

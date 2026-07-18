@@ -216,7 +216,7 @@ function HeatmapCell({
 /** The heatmap cell tooltip's content, matching `SkillAllScoresPanel`'s own row styling exactly (same `scoreRowClass` + ▲/▼ colors) so hovering a cell and hovering the row label read as the same color language. */
 function skillCellTooltip(score: SkillCharacterScore): ReactNode {
   return (
-    <p className="text-white">
+    <p>
       {score.characterName}:{" "}
       <span className={scoreRowClass(score.proficient)}>
         {formatModifier(score.modifier)}
@@ -299,7 +299,7 @@ function HeatmapPassiveRow({
             level={heatmapLevelFor(score.value, range)}
             proficient={score.proficient}
             tooltip={
-              <p className="text-white">
+              <p>
                 {score.characterName}:{" "}
                 <span className={scoreRowClass(score.proficient)}>
                   {score.value}
