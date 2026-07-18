@@ -15,7 +15,6 @@ import {
   computePartySpellSlotSummary,
   computePartySpellsByLevel,
 } from "@/lib/partyToolkit";
-import { Avatar } from "../Avatar";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { AttackName, AttackTrailing } from "../ui/AttackDisplay";
@@ -111,7 +110,7 @@ function PartyCharacterWeapons({ entry, isFirst }: { entry: PartyCharacterAttack
   return (
     <div className={isFirst ? "" : "mt-4"}>
       <div className="mb-1 flex items-center gap-2">
-        <Avatar src={entry.avatarUrl} label={entry.characterName} size="xs" />
+        <CharacterChip name={entry.characterName} avatarUrl={entry.avatarUrl} showTitle={false} />
         <p title={entry.characterName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
           {entry.characterName}
         </p>

@@ -107,7 +107,7 @@ function RestRecoveryHintPanel({ label, bucket }: { label: string; bucket: Party
   );
 }
 
-/** One recovery type's readiness as a horizontal meter (track = same-ramp light step, fill = danger-tier color) — same visual language as `ResourceTrackerBar` on a character card, just labeled per rest type instead of blended into one "overall" number. Hovering/tapping the bar itself (not just the number) shows the per-resource breakdown, matching the hit-target size of every other hintable row in this panel. The `(N)` after the percent is the pool count the percent is an average *of* — without it, a 50% bar reads the same whether it's one resource or ten, which matters exactly when it's low: a lone empty resource is a smaller problem than five of them. `emphasized` is only ever the Total row, bold enough to stand apart from the two rows it sums up. */
+/** One recovery type's readiness as a horizontal meter (track = same-ramp light step, fill = danger-tier color) — same visual language as `ResourceTrackerBar` on a character card, just labeled per rest type instead of blended into one "overall" number. Hovering/tapping either the bar *or* the percent shows the same per-resource breakdown — both are inside the one `InfoTooltip`, so there's no dead zone between them where the hint silently doesn't fire. The `(N)` after the percent is the pool count the percent is an average *of* — without it, a 50% bar reads the same whether it's one resource or ten, which matters exactly when it's low: a lone empty resource is a smaller problem than five of them. `emphasized` is only ever the Total row, bold enough to stand apart from the two rows it sums up. */
 function RestRecoveryMeterRow({ label, bucket, emphasized = false }: { label: string; bucket: PartyRestRecoveryBucket; emphasized?: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs leading-none">
@@ -117,11 +117,13 @@ function RestRecoveryMeterRow({ label, bucket, emphasized = false }: { label: st
         {label}
       </span>
       <InfoTooltip hoverOnly panel={<RestRecoveryHintPanel label={label} bucket={bucket} />}>
-        <div className="h-3.5 w-36 overflow-hidden rounded-full bg-slate-800 sm:w-48">
-          <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
-        </div>
+        <span className="flex items-center gap-2">
+          <div className="h-3.5 w-36 overflow-hidden rounded-full bg-slate-800 sm:w-48">
+            <div className={`h-full rounded-full ${tierBgClass(bucket.percent)}`} style={{ width: `${bucket.percent}%` }} />
+          </div>
+          <span className={`shrink-0 font-semibold tabular-nums ${tierTextClass(bucket.percent)}`}>{bucket.percent}%</span>
+        </span>
       </InfoTooltip>
-      <span className={`shrink-0 font-semibold tabular-nums ${tierTextClass(bucket.percent)}`}>{bucket.percent}%</span>
       <span className="shrink-0 tabular-nums text-slate-600">({bucket.resourceCount})</span>
     </div>
   );

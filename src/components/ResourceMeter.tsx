@@ -139,21 +139,25 @@ export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resou
     // visually pushes the number down relative to the bar once flex centers the
     // taller box. Resetting line-height at this level too keeps every nested
     // span's strut as tight as the number's own, so centering lines up cleanly.
-    <div className="flex items-center gap-2 leading-none">
-      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
-      </div>
-      <InfoTooltip
-        hoverOnly
-        panel={<ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}
-      >
+    <InfoTooltip
+      hoverOnly
+      panel={<ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />}
+    >
+      {/* Bar and percent both live inside the one `InfoTooltip` (same as
+          `RestRecoveryMeterRow`'s bar+percent pairing in Party Toolkit) —
+          hovering either shows the same breakdown, instead of the hint only
+          firing over the number the way this used to work. */}
+      <div className="flex items-center gap-2 leading-none">
+        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+          <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
+        </div>
         {/* `relative -top-px`: even with the strut fixed above, digit glyphs still sit ~1px low in
             their own box (descender space this font reserves below the baseline, unused by digits).
             `translate`/`transform` can't nudge this — both are no-ops on a plain (non `inline-block`)
             inline element like this span — but relative positioning applies to inline boxes fine. */}
         <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
-      </InfoTooltip>
-    </div>
+      </div>
+    </InfoTooltip>
   );
 }
 
