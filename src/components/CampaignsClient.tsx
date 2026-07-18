@@ -39,13 +39,21 @@ function CampaignRow({
   onRemove?: (id: string) => void;
 }) {
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 sm:flex-row sm:items-center">
+    <li className="relative flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-900 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <CampaignLogo campaign={campaign} />
         <div className="min-w-0 flex-1">
+          {/* `after:absolute after:inset-0` stretches the link's hit area to
+              cover the whole `<li>` (the standard "stretched link" card
+              pattern) — a positioned pseudo-element always paints above
+              non-positioned siblings regardless of DOM order, so it
+              intercepts clicks anywhere on the card without needing the logo
+              or character count to be links themselves. The Export/Edit/Remove
+              buttons opt back out via their own `relative z-10` wrapper below,
+              which stacks above this overlay. */}
           <Link
             href={`/campaigns/${campaign.id}`}
-            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 hover:underline"
+            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 after:absolute after:inset-0 hover:underline"
           >
             {campaign.name}
           </Link>
@@ -55,7 +63,7 @@ function CampaignRow({
         </div>
       </div>
       {(onEdit || onRemove) && (
-        <div className="flex shrink-0 items-center gap-3 self-end sm:self-auto">
+        <div className="relative z-10 flex shrink-0 items-center gap-3 self-end sm:self-auto">
           <a
             href={`/api/campaigns/${campaign.id}/export`}
             title="Download this campaign (and its characters/creatures) as JSON"
