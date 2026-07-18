@@ -73,41 +73,61 @@ export function collectModifiers(data: RawDdbData): RawDdbModifier[] {
  * HP").
  */
 export function cleanRulesText(html: string): string {
-  return html
-    .replace(/&rsquo;/g, "’")
-    .replace(/&lsquo;/g, "‘")
-    .replace(/&rdquo;/g, "”")
-    .replace(/&ldquo;/g, "“")
-    .replace(/&amp;/g, "&")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\[\/?(?:rules|skill|item|spell|condition)\]/gi, "")
-    .replace(/<\/(?:p|div|li)>/gi, " ")
-    .replace(/<br\s*\/?>/gi, " ")
-    // Nested <strong><em>Label.</em></strong> (a common "bold sub-heading"
-    // convention in these rules texts, confirmed on real Sorcerer/Barbarian/
-    // Bard/feat descriptions) has to collapse to a single bold marker before
-    // the two tags are converted independently below — otherwise **+* on one
-    // side and *+** on the other stack up into a stray `***Label.***`, which
-    // RichText's bold/italic parser can't split cleanly and leaves loose `*`
-    // characters in the rendered tooltip.
-    .replace(/<strong><em>([\s\S]*?)<\/em><\/strong>/gi, "**$1**")
-    .replace(/<em><strong>([\s\S]*?)<\/strong><\/em>/gi, "**$1**")
-    .replace(/<(?:strong|b)>/gi, "**")
-    .replace(/<\/(?:strong|b)>/gi, "**")
-    .replace(/<(?:em|i)>/gi, "*")
-    .replace(/<\/(?:em|i)>/gi, "*")
-    .replace(/<[^>]*>/g, "")
-    // D&D Beyond's `snippet` field is often plain text rather than HTML, and
-    // formats sub-points as a real newline + indentation + "•" (confirmed on
-    // a real Bard's Dazzling Footwork) instead of proper list markup — mark
-    // each with a placeholder *before* the general whitespace collapse below
-    // (which would otherwise flatten the newlines into a single run-on
-    // paragraph with bare "•" characters stranded mid-sentence), then restore
-    // them as real line breaks afterward.
-    .replace(/\s*(?:\r?\n\s*)+•\s*/g, "@@BULLET@@")
-    .replace(/\s+/g, " ")
-    .replace(/@@BULLET@@/g, "\n• ")
-    .trim();
+  return (
+    html
+      .replace(/&rsquo;/g, "’")
+      .replace(/&lsquo;/g, "‘")
+      .replace(/&rdquo;/g, "”")
+      .replace(/&ldquo;/g, "“")
+      .replace(/&amp;/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\[\/?(?:rules|skill|item|spell|condition)\]/gi, "")
+      // Paragraph/list-item boundaries become placeholders *before* the
+      // general whitespace collapse below would otherwise erase them along
+      // with every other run of whitespace — D&D Beyond wraps each named
+      // sub-effect of a spell/feature in its own `<p>` (confirmed on
+      // Prestidigitation's real description: one `<p>` per "Sensory
+      // Effect."/"Fire Play."/... block), and the old single-space
+      // collapse merged all of those into one run-on paragraph, which read
+      // far worse than D&D Beyond's own page. `</li>`/`<br>` get a plain
+      // line break (`@@BREAK@@`); `</p>`/`</div>` get a full blank-line
+      // paragraph gap (`@@PARA@@`) instead, since that's the boundary that
+      // was actually losing structure.
+      .replace(/<li[^>]*>/gi, "@@BULLET@@")
+      .replace(/<\/li>/gi, "@@BREAK@@")
+      .replace(/<\/(?:p|div)>/gi, "@@PARA@@")
+      .replace(/<br\s*\/?>/gi, "@@BREAK@@")
+      // Nested <strong><em>Label.</em></strong> (a common "bold sub-heading"
+      // convention in these rules texts, confirmed on real Sorcerer/Barbarian/
+      // Bard/feat descriptions) has to collapse to a single bold marker before
+      // the two tags are converted independently below — otherwise **+* on one
+      // side and *+** on the other stack up into a stray `***Label.***`, which
+      // RichText's bold/italic parser can't split cleanly and leaves loose `*`
+      // characters in the rendered tooltip.
+      .replace(/<strong><em>([\s\S]*?)<\/em><\/strong>/gi, "**$1**")
+      .replace(/<em><strong>([\s\S]*?)<\/strong><\/em>/gi, "**$1**")
+      .replace(/<(?:strong|b)>/gi, "**")
+      .replace(/<\/(?:strong|b)>/gi, "**")
+      .replace(/<(?:em|i)>/gi, "*")
+      .replace(/<\/(?:em|i)>/gi, "*")
+      .replace(/<[^>]*>/g, "")
+      // D&D Beyond's `snippet` field is often plain text rather than HTML, and
+      // formats sub-points as a real newline + indentation + "•" (confirmed on
+      // a real Bard's Dazzling Footwork) instead of proper list markup — mark
+      // each with a placeholder the same way the HTML `<li>` case above does,
+      // then restore both kinds together below.
+      .replace(/\s*(?:\r?\n\s*)+•\s*/g, "@@BULLET@@")
+      .replace(/\s+/g, " ")
+      .replace(/\s*@@BULLET@@\s*/g, "\n• ")
+      .replace(/\s*@@PARA@@\s*/g, "\n\n")
+      .replace(/\s*@@BREAK@@\s*/g, "\n")
+      .trim()
+      // A `<p>` immediately followed by another block (or a trailing `<br>`
+      // right before `</p>`) can stack two placeholders back to back —
+      // collapsed down to a single paragraph gap rather than a visibly
+      // bigger one.
+      .replace(/\n{3,}/g, "\n\n")
+  );
 }
 
 /** Prefers D&D Beyond's `snippet` over its longer `description` (both get the same HTML cleanup). */

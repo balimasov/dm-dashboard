@@ -121,7 +121,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Handaxe allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
+        "description": "Proficiency with a Handaxe allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
         "id": "item-2",
@@ -129,7 +129,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Greataxe allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Cleave.** If you hit a creature with a melee attack roll using this weapon, you can make a melee attack roll with the weapon against a second creature within 5 feet of the first that is also within your reach. On a hit, the second creature takes the weapon’s damage, but don’t add your ability modifier to that damage unless that modifier is negative. You can make this extra attack only once per turn."
+        "description": "Proficiency with a Greataxe allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Cleave.** If you hit a creature with a melee attack roll using this weapon, you can make a melee attack roll with the weapon against a second creature within 5 feet of the first that is also within your reach. On a hit, the second creature takes the weapon’s damage, but don’t add your ability modifier to that damage unless that modifier is negative. You can make this extra attack only once per turn."
       },
       {
         "id": "item-3",
@@ -145,7 +145,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Gear",
         "quantity": 2,
-        "description": "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below. **Dousing a Creature or an Object.** When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil. **Dousing a Space.** You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn. **Fuel.** Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn’t need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours."
+        "description": "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below.\n\n**Dousing a Creature or an Object.** When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil.\n\n**Dousing a Space.** You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn.\n\n**Fuel.** Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn’t need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours."
       },
       {
         "id": "item-5",
@@ -565,7 +565,7 @@ export const demoCharacters: Character[] = [
         "max": 3,
         "recovery": "long-rest",
         "source": "Feat",
-        "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll."
+        "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest.\n\n**Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll.\n\n**Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll."
       }
     ],
     "spellSlots": [
@@ -647,7 +647,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Hand Crossbow allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
+        "description": "Proficiency with a Hand Crossbow allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
         "id": "item-3",
@@ -655,7 +655,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Longsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Sap.** If you hit a creature with this weapon, that creature has Disadvantage on its next attack roll before the start of your next turn."
+        "description": "Proficiency with a Longsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Sap.** If you hit a creature with this weapon, that creature has Disadvantage on its next attack roll before the start of your next turn."
       },
       {
         "id": "item-4",
@@ -663,7 +663,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Greatsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Graze.** If your attack roll with this weapon misses a creature, you can deal damage to that creature equal to the ability modifier you used to make the attack roll. This damage is the same type dealt by the weapon, and the damage can be increased only by increasing the ability modifier."
+        "description": "Proficiency with a Greatsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Graze.** If your attack roll with this weapon misses a creature, you can deal damage to that creature equal to the ability modifier you used to make the attack roll. This damage is the same type dealt by the weapon, and the damage can be increased only by increasing the ability modifier."
       },
       {
         "id": "item-5",
@@ -671,7 +671,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Scimitar allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
+        "description": "Proficiency with a Scimitar allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
       },
       {
         "id": "item-6",
@@ -679,7 +679,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Shortsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
+        "description": "Proficiency with a Shortsword allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
         "id": "item-7",
@@ -719,7 +719,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Rare",
         "category": "Weapon",
         "quantity": 1,
-        "description": "This item appears to be a sword hilt. **Blade of Radiance.** While grasping the hilt, you can take a Bonus Action to cause a blade of pure radiance to spring into existence or make the blade disappear. While the blade exists, this magic weapon functions as a Shortsword with the Finesse property. If you are proficient with Longswords or Shortswords, you are proficient with the *Sun Blade*. You gain a +2 bonus to attack rolls and damage rolls made with this weapon, which deals Radiant damage instead of Slashing damage. When you hit an Undead with it, that target takes an extra 1d6 Radiant damage. **Sunlight.** The sword’s luminous blade emits Bright Light in a 15-foot radius and Dim Light for an additional 15 feet. The light is sunlight. While the blade persists, you can take a Magic action to expand or reduce its radius of Bright Light and Dim Light by 5 feet each, to a maximum of 30 feet each or a minimum of 10 feet each."
+        "description": "This item appears to be a sword hilt.\n\n**Blade of Radiance.** While grasping the hilt, you can take a Bonus Action to cause a blade of pure radiance to spring into existence or make the blade disappear. While the blade exists, this magic weapon functions as a Shortsword with the Finesse property. If you are proficient with Longswords or Shortswords, you are proficient with the *Sun Blade*. You gain a +2 bonus to attack rolls and damage rolls made with this weapon, which deals Radiant damage instead of Slashing damage. When you hit an Undead with it, that target takes an extra 1d6 Radiant damage.\n\n**Sunlight.** The sword’s luminous blade emits Bright Light in a 15-foot radius and Dim Light for an additional 15 feet. The light is sunlight. While the blade persists, you can take a Magic action to expand or reduce its radius of Bright Light and Dim Light by 5 feet each, to a maximum of 30 feet each or a minimum of 10 feet each."
       },
       {
         "id": "item-12",
@@ -867,7 +867,7 @@ export const demoCharacters: Character[] = [
         "name": "Command",
         "level": 1,
         "school": "Enchantment",
-        "description": "You speak a one-word command to a creature you can see within range. The target must succeed on a Wisdom saving throw or follow the command on its next turn. Choose the command from these options: **Approach.** The target moves toward you by the shortest and most direct route, ending its turn if it moves within 5 feet of you. **Drop.** The target drops whatever it is holding and then ends its turn. **Flee.** The target spends its turn moving away from you by the fastest available means. **Grovel.** The target has the Prone condition and then ends its turn. **Halt.** On its turn, the target doesn’t move and takes no action or Bonus Action. **Using a Higher-Level Spell Slot.** You can affect one additional creature for each spell slot level above 1.",
+        "description": "You speak a one-word command to a creature you can see within range. The target must succeed on a Wisdom saving throw or follow the command on its next turn. Choose the command from these options: **Approach.** The target moves toward you by the shortest and most direct route, ending its turn if it moves within 5 feet of you.\n\n**Drop.** The target drops whatever it is holding and then ends its turn.\n\n**Flee.** The target spends its turn moving away from you by the fastest available means.\n\n**Grovel.** The target has the Prone condition and then ends its turn.\n\n**Halt.** On its turn, the target doesn’t move and takes no action or Bonus Action. **Using a Higher-Level Spell Slot.** You can affect one additional creature for each spell slot level above 1.",
         "source": "Class",
         "components": "V"
       },
@@ -876,7 +876,7 @@ export const demoCharacters: Character[] = [
         "name": "Find Steed",
         "level": 2,
         "school": "Conjuration",
-        "description": "You summon an otherworldly being that appears as a loyal steed in an unoccupied space of your choice within range. This creature uses the **Otherworldly Steed** stat block. If you already have a steed from this spell, the steed is replaced by the new one. The steed resembles a Large, rideable animal of your choice, such as a horse, a camel, a dire wolf, or an elk. Whenever you cast the spell, choose the steed’s creature type&mdash;Celestial, Fey, or Fiend&mdash;which determines certain traits in the stat block. **Combat.** The steed is an ally to you and your allies. In combat, it shares your Initiative count, and it functions as a controlled mount while you ride it (as defined in the rules on mounted combat). If you have the Incapacitated condition, the steed takes its turn immediately after yours and acts independently, focusing on protecting you. **Disappearance of the Steed.** The steed disappears if it drops to 0 Hit Points or if you die. When it disappears, it leaves behind anything it was wearing or carrying. If you cast this spell again, you decide whether you summon the steed that disappeared or a different one. **Using a Higher-Level Spell Slot.** Use the spell slot’s level for the spell’s level in the stat block. Otherworldly Steed Large Celestial, Fey, or Fiend (Your Choice), Neutral **AC** 10 + 1 per spell level **HP** 5 + 10 per spell level (the steed has a number of Hit Dice [d10s] equal to the spell’s level) **Speed** 60 ft., Fly 60 ft. (requires level 4+ spell) Mod Save STR 18 +4 +4 DEX 12 +1 +1 CON 14 +2 +2 Mod Save INT 6 &minus;2 &minus;2 WIS 12 +1 +1 CHA 8 &minus;1 &minus;1 **Senses** Passive Perception 11 **Languages** Telepathy 1 mile (works only with you) **CR** None (XP 0; PB equals your Proficiency Bonus) Traits **Life Bond.** When you regain Hit Points from a level 1+ spell, the steed regains the same number of Hit Points if you’re within 5 feet of it. Actions **Otherworldly Slam.** *Melee Attack Roll:* Bonus equals your spell attack modifier, reach 5 ft. *Hit:* 1d8 plus the spell’s level of Radiant (Celestial), Psychic (Fey), or Necrotic (Fiend) damage. Bonus Actions **Fell Glare (Fiend Only; Recharges after a Long Rest).** *Wisdom Saving Throw:* DC equals your spell save DC, one creature within 60 feet the steed can see. *Failure:* The target has the Frightened condition until the end of your next turn. **Fey Step (Fey Only; Recharges after a Long Rest).** The steed teleports, along with its rider, to an unoccupied space of your choice up to 60 feet away from itself. **Healing Touch (Celestial Only; Recharges after a Long Rest).** One creature within 5 feet of the steed regains a number of Hit Points equal to 2d8 plus the spell’s level.",
+        "description": "You summon an otherworldly being that appears as a loyal steed in an unoccupied space of your choice within range. This creature uses the **Otherworldly Steed** stat block. If you already have a steed from this spell, the steed is replaced by the new one. The steed resembles a Large, rideable animal of your choice, such as a horse, a camel, a dire wolf, or an elk. Whenever you cast the spell, choose the steed’s creature type&mdash;Celestial, Fey, or Fiend&mdash;which determines certain traits in the stat block.\n\n**Combat.** The steed is an ally to you and your allies. In combat, it shares your Initiative count, and it functions as a controlled mount while you ride it (as defined in the rules on mounted combat). If you have the Incapacitated condition, the steed takes its turn immediately after yours and acts independently, focusing on protecting you.\n\n**Disappearance of the Steed.** The steed disappears if it drops to 0 Hit Points or if you die. When it disappears, it leaves behind anything it was wearing or carrying. If you cast this spell again, you decide whether you summon the steed that disappeared or a different one. **Using a Higher-Level Spell Slot.** Use the spell slot’s level for the spell’s level in the stat block. Otherworldly Steed Large Celestial, Fey, or Fiend (Your Choice), Neutral **AC** 10 + 1 per spell level **HP** 5 + 10 per spell level (the steed has a number of Hit Dice [d10s] equal to the spell’s level) **Speed** 60 ft., Fly 60 ft. (requires level 4+ spell) Mod Save STR 18 +4 +4 DEX 12 +1 +1 CON 14 +2 +2 Mod Save INT 6 &minus;2 &minus;2 WIS 12 +1 +1 CHA 8 &minus;1 &minus;1 **Senses** Passive Perception 11 **Languages** Telepathy 1 mile (works only with you) **CR** None (XP 0; PB equals your Proficiency Bonus) Traits **Life Bond.** When you regain Hit Points from a level 1+ spell, the steed regains the same number of Hit Points if you’re within 5 feet of it. Actions **Otherworldly Slam.** *Melee Attack Roll:* Bonus equals your spell attack modifier, reach 5 ft. *Hit:* 1d8 plus the spell’s level of Radiant (Celestial), Psychic (Fey), or Necrotic (Fiend) damage. Bonus Actions **Fell Glare (Fiend Only; Recharges after a Long Rest).** *Wisdom Saving Throw:* DC equals your spell save DC, one creature within 60 feet the steed can see. *Failure:* The target has the Frightened condition until the end of your next turn. **Fey Step (Fey Only; Recharges after a Long Rest).** The steed teleports, along with its rider, to an unoccupied space of your choice up to 60 feet away from itself. **Healing Touch (Celestial Only; Recharges after a Long Rest).** One creature within 5 feet of the steed regains a number of Hit Points equal to 2d8 plus the spell’s level.",
         "source": "Class",
         "components": "V, S",
         "current": 0,
@@ -1095,7 +1095,7 @@ export const demoCharacters: Character[] = [
         "source": "Lucky",
         "group": "special",
         "originType": "background",
-        "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
+        "description": "You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest.\n\n**Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll.\n\n**Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
         "current": 3,
         "max": 3,
         "recovery": "long-rest"
@@ -1245,7 +1245,7 @@ export const demoCharacters: Character[] = [
         "source": "Paladin",
         "group": "other",
         "originType": "class",
-        "description": "You have learned to cast spells through prayer and meditation. **Spell Slots.** The Paladin Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+**. You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Paladin spells. The number of spells on your list increases as you gain Paladin levels, as shown in the Prepared Spells column of the Paladin Features table. Whenever that number increases, choose additional Paladin spells until the number of spells on your list matches the number in the Paladin Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 5 Paladin, your list of prepared spells can include six Paladin spells of level 1 or 2 in any combination. If another Paladin feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Paladin spells for you. **Changing Your Prepared Spells.** Whenever you finish a Long Rest, you can replace one spell on your list with another Paladin spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Paladin spells. **Spellcasting Focus.** You can use a Holy Symbol as a Spellcasting Focus for your Paladin spells."
+        "description": "You have learned to cast spells through prayer and meditation.\n\n**Spell Slots.** The Paladin Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+**. You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Paladin spells. The number of spells on your list increases as you gain Paladin levels, as shown in the Prepared Spells column of the Paladin Features table. Whenever that number increases, choose additional Paladin spells until the number of spells on your list matches the number in the Paladin Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 5 Paladin, your list of prepared spells can include six Paladin spells of level 1 or 2 in any combination. If another Paladin feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Paladin spells for you.\n\n**Changing Your Prepared Spells.** Whenever you finish a Long Rest, you can replace one spell on your list with another Paladin spell for which you have spell slots.\n\n**Spellcasting Ability.** Charisma is your spellcasting ability for your Paladin spells.\n\n**Spellcasting Focus.** You can use a Holy Symbol as a Spellcasting Focus for your Paladin spells."
       },
       {
         "id": "feature-32",
@@ -1317,7 +1317,7 @@ export const demoCharacters: Character[] = [
         "source": "Feat",
         "group": "other",
         "originType": "feat",
-        "description": "**Luck Points.** You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest. **Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll. **Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
+        "description": "**Luck Points.** You have 3 Luck Points that you can spend on the benefits below. You regain expended Luck Points after a Long Rest.\n\n**Advantage.** When you roll a d20 for a D20 Test, you can spend 1 Luck Point to give yourself Advantage on the roll.\n\n**Disadvantage.** When a creature rolls a d20 for an attack roll against you, you can spend 1 Luck Point to impose Disadvantage on that roll.",
         "current": 3,
         "max": 3,
         "recovery": "long-rest"
@@ -1393,7 +1393,7 @@ export const demoCharacters: Character[] = [
         "proficient": true,
         "weaponType": "Shortsword",
         "rarity": "Rare",
-        "description": "This item appears to be a sword hilt. **Blade of Radiance.** While grasping the hilt, you can take a Bonus Action to cause a blade of pure radiance to spring into existence or make the blade disappear. While the blade exists, this magic weapon functions as a Shortsword with the Finesse property. If you are proficient with Longswords or Shortswords, you are proficient with the *Sun Blade*. You gain a +2 bonus to attack rolls and damage rolls made with this weapon, which deals Radiant damage instead of Slashing damage. When you hit an Undead with it, that target takes an extra 1d6 Radiant damage. **Sunlight.** The sword’s luminous blade emits Bright Light in a 15-foot radius and Dim Light for an additional 15 feet. The light is sunlight. While the blade persists, you can take a Magic action to expand or reduce its radius of Bright Light and Dim Light by 5 feet each, to a maximum of 30 feet each or a minimum of 10 feet each."
+        "description": "This item appears to be a sword hilt.\n\n**Blade of Radiance.** While grasping the hilt, you can take a Bonus Action to cause a blade of pure radiance to spring into existence or make the blade disappear. While the blade exists, this magic weapon functions as a Shortsword with the Finesse property. If you are proficient with Longswords or Shortswords, you are proficient with the *Sun Blade*. You gain a +2 bonus to attack rolls and damage rolls made with this weapon, which deals Radiant damage instead of Slashing damage. When you hit an Undead with it, that target takes an extra 1d6 Radiant damage.\n\n**Sunlight.** The sword’s luminous blade emits Bright Light in a 15-foot radius and Dim Light for an additional 15 feet. The light is sunlight. While the blade persists, you can take a Magic action to expand or reduce its radius of Bright Light and Dim Light by 5 feet each, to a maximum of 30 feet each or a minimum of 10 feet each."
       },
       {
         "id": "attack-unarmed",
@@ -1587,7 +1587,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
+        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
       },
       {
         "id": "item-2",
@@ -1595,7 +1595,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
+        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
       },
       {
         "id": "item-3",
@@ -1603,7 +1603,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Quarterstaff allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Topple.** If you hit a creature with this weapon, you can force the creature to make a Constitution saving throw (DC 8 plus the ability modifier used to make the attack roll and your Proficiency Bonus). On a failed save, the creature has the Prone condition."
+        "description": "Proficiency with a Quarterstaff allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Topple.** If you hit a creature with this weapon, you can force the creature to make a Constitution saving throw (DC 8 plus the ability modifier used to make the attack roll and your Proficiency Bonus). On a failed save, the creature has the Prone condition."
       },
       {
         "id": "item-4",
@@ -1643,7 +1643,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Gear",
         "quantity": 10,
-        "description": "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below. **Dousing a Creature or an Object.** When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil. **Dousing a Space.** You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn. **Fuel.** Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn’t need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours."
+        "description": "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below.\n\n**Dousing a Creature or an Object.** When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil.\n\n**Dousing a Space.** You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn.\n\n**Fuel.** Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn’t need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours."
       },
       {
         "id": "item-9",
@@ -1707,7 +1707,7 @@ export const demoCharacters: Character[] = [
         "name": "Fire Bolt",
         "level": 0,
         "school": "Evocation",
-        "description": "You hurl a mote of fire at a creature or an object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Fire damage. A flammable object hit by this spell starts burning if it isn’t being worn or carried. **Cantrip Upgrade.** The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10).",
+        "description": "You hurl a mote of fire at a creature or an object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Fire damage. A flammable object hit by this spell starts burning if it isn’t being worn or carried.\n\n**Cantrip Upgrade.** The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10).",
         "source": "Class",
         "components": "V, S"
       },
@@ -1716,7 +1716,7 @@ export const demoCharacters: Character[] = [
         "name": "Prestidigitation",
         "level": 0,
         "school": "Transmutation",
-        "description": "You create a magical effect within range. Choose the effect from the options below. If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time. **Sensory Effect.** You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor. **Fire Play.** You instantaneously light or snuff out a candle, a torch, or a small campfire. **Clean or Soil.** You instantaneously clean or soil an object no larger than 1 cubic foot. **Minor Sensation.** You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour. **Magic Mark.** You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour. **Minor Creation.** You create a nonmagical trinket or an illusory image that can fit in your hand. It lasts until the end of your next turn. A trinket can deal no damage and has no monetary worth.",
+        "description": "You create a magical effect within range. Choose the effect from the options below. If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time.\n\n**Sensory Effect.** You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor.\n\n**Fire Play.** You instantaneously light or snuff out a candle, a torch, or a small campfire.\n\n**Clean or Soil.** You instantaneously clean or soil an object no larger than 1 cubic foot.\n\n**Minor Sensation.** You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour.\n\n**Magic Mark.** You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour.\n\n**Minor Creation.** You create a nonmagical trinket or an illusory image that can fit in your hand. It lasts until the end of your next turn. A trinket can deal no damage and has no monetary worth.",
         "source": "Class",
         "components": "V, S"
       },
@@ -1743,7 +1743,7 @@ export const demoCharacters: Character[] = [
         "name": "Minor Illusion",
         "level": 0,
         "school": "Illusion",
-        "description": "You create a sound or an image of an object within range that lasts for the duration. See the descriptions below for the effects of each. The illusion ends if you cast this spell again. If a creature takes a Study action to examine the sound or image, the creature can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the illusion becomes faint to the creature. **Sound.** If you create a sound, its volume can range from a whisper to a scream. It can be your voice, someone else’s voice, a lion’s roar, a beating of drums, or any other sound you choose. The sound continues unabated throughout the duration, or you can make discrete sounds at different times before the spell ends. **Image.** If you create an image of an object&mdash;such as a chair, muddy footprints, or a small chest&mdash;it must be no larger than a 5-foot Cube. The image can’t create sound, light, smell, or any other sensory effect. Physical interaction with the image reveals it to be an illusion, since things can pass through it.",
+        "description": "You create a sound or an image of an object within range that lasts for the duration. See the descriptions below for the effects of each. The illusion ends if you cast this spell again. If a creature takes a Study action to examine the sound or image, the creature can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the illusion becomes faint to the creature.\n\n**Sound.** If you create a sound, its volume can range from a whisper to a scream. It can be your voice, someone else’s voice, a lion’s roar, a beating of drums, or any other sound you choose. The sound continues unabated throughout the duration, or you can make discrete sounds at different times before the spell ends.\n\n**Image.** If you create an image of an object&mdash;such as a chair, muddy footprints, or a small chest&mdash;it must be no larger than a 5-foot Cube. The image can’t create sound, light, smell, or any other sensory effect. Physical interaction with the image reveals it to be an illusion, since things can pass through it.",
         "source": "Class",
         "components": "S, M",
         "materialComponent": "a bit of fleece"
@@ -2129,7 +2129,7 @@ export const demoCharacters: Character[] = [
         "source": "Spellfire Sorcery",
         "group": "other",
         "originType": "class",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice. **Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP. **Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d4** Fire or Radiant damage (your choice)."
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you can unleash one of the following magical effects of your choice.\n\n**Bolstering Flames.** You or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP.\n\n**Radiant Fire.** One creature you can see within 30 ft. of yourself takes **1d4** Fire or Radiant damage (your choice)."
       },
       {
         "id": "feature-26",
@@ -2153,7 +2153,7 @@ export const demoCharacters: Character[] = [
         "source": "Sorcerer",
         "group": "other",
         "originType": "class",
-        "description": "Drawing from your innate magic, you can cast spells. **Cantrips.** You know four Sorcerer cantrips of your choice. Whenever you gain a Sorcerer level, you can replace one of your cantrips from this feature with another Sorcerer cantrip of your choice. When you reach Sorcerer levels 4 and 10, you learn another Sorcerer cantrip of your choice, as shown in the Cantrips column of the Sorcerer Features table. **Spell Slots.** The Sorcerer Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+.** You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Sorcerer spells. The number of spells on your list increases as you gain Sorcerer levels, as shown in the Prepared Spells column of the Sorcerer Features table. Whenever that number increases, choose additional Sorcerer spells until the number of spells on your list matches the number in the Sorcerer Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 3 Sorcerer, your list of prepared spells can include six Sorcerer spells of level 1 or 2 in any combination. If another Sorcerer feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Sorcerer spells for you. **Changing Your Prepared Spells.** Whenever you gain a Sorcerer level, you can replace one spell on your list with another Sorcerer spell for which you have spell slots. **Spellcasting Ability.** Charisma is your spellcasting ability for your Sorcerer spells. **Spellcasting Focus.** You can use an Arcane Focus as a Spellcasting Focus for your Sorcerer spells."
+        "description": "Drawing from your innate magic, you can cast spells.\n\n**Cantrips.** You know four Sorcerer cantrips of your choice. Whenever you gain a Sorcerer level, you can replace one of your cantrips from this feature with another Sorcerer cantrip of your choice. When you reach Sorcerer levels 4 and 10, you learn another Sorcerer cantrip of your choice, as shown in the Cantrips column of the Sorcerer Features table.\n\n**Spell Slots.** The Sorcerer Features table shows how many spell slots you have to cast your level 1+ spells. You regain all expended slots when you finish a Long Rest. **Prepared Spells of Level 1+.** You prepare the list of level 1+ spells that are available for you to cast with this feature. To start, choose two level 1 Sorcerer spells. The number of spells on your list increases as you gain Sorcerer levels, as shown in the Prepared Spells column of the Sorcerer Features table. Whenever that number increases, choose additional Sorcerer spells until the number of spells on your list matches the number in the Sorcerer Features table. The chosen spells must be of a level for which you have spell slots. For example, if you’re a level 3 Sorcerer, your list of prepared spells can include six Sorcerer spells of level 1 or 2 in any combination. If another Sorcerer feature gives you spells that you always have prepared, those spells don’t count against the number of spells you can prepare with this feature, but those spells otherwise count as Sorcerer spells for you.\n\n**Changing Your Prepared Spells.** Whenever you gain a Sorcerer level, you can replace one spell on your list with another Sorcerer spell for which you have spell slots.\n\n**Spellcasting Ability.** Charisma is your spellcasting ability for your Sorcerer spells.\n\n**Spellcasting Focus.** You can use an Arcane Focus as a Spellcasting Focus for your Sorcerer spells."
       },
       {
         "id": "feature-29",
@@ -2161,7 +2161,7 @@ export const demoCharacters: Character[] = [
         "source": "Sorcerer",
         "group": "other",
         "originType": "class",
-        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required). **Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5",
+        "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). You have 5 SP and regain all expended points when you finish a Long Rest. In addition to fueling effects such as Metamagic, you can use your SP to fuel the options below: **Converting Spell Slots to Sorcery Points.** You can expend a spell slot to gain a number of SP equal to the slot’s level (no action required).\n\n**Creating Spell Slots.** As a Bonus Action, you can transform unexpended SP into one spell slot, creating a spell slot no higher than level 5. Any spell slot you create with this feature vanishes when you finish a Long Rest. The conversion is as follows:\n• **Sorcerer Level 2** | 2 SP -> Spell Slot Level 1\n• **Sorcerer Level 3** | 3 SP -> Spell Slot Level 2\n• **Sorcerer Level 5** | 5 SP -> Spell Slot Level 3\n• **Sorcerer Level 7** | 6 SP -> Spell Slot Level 4\n• **Sorcerer Level 9** | 7 SP -> Spell Slot Level 5",
         "current": 4,
         "max": 5,
         "recovery": "long-rest"
@@ -2212,7 +2212,7 @@ export const demoCharacters: Character[] = [
         "source": "Feat",
         "group": "other",
         "originType": "feat",
-        "description": "You gain proficiency in any combination of three skills or tools of your choice. **Repeatable.** You can take this feat more than once."
+        "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\n**Repeatable.** You can take this feat more than once."
       },
       {
         "id": "feature-36",
@@ -2220,7 +2220,7 @@ export const demoCharacters: Character[] = [
         "source": "Feat",
         "group": "other",
         "originType": "feat",
-        "description": "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1. **Concentration.** You have Advantage on Con. saving throws to maintain Concentration. **Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature. **Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands."
+        "description": "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1.\n\n**Concentration.** You have Advantage on Con. saving throws to maintain Concentration.\n\n**Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature.\n\n**Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands."
       },
       {
         "id": "feature-37",
@@ -2517,7 +2517,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Hand Crossbow allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
+        "description": "Proficiency with a Hand Crossbow allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Vex.** If you hit a creature with this weapon and deal damage to the creature, you have Advantage on your next attack roll against that creature before the end of your next turn."
       },
       {
         "id": "item-4",
@@ -2525,7 +2525,7 @@ export const demoCharacters: Character[] = [
         "rarity": "Common",
         "category": "Weapon",
         "quantity": 1,
-        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it. **Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
+        "description": "Proficiency with a Dagger allows you to add your proficiency bonus to the attack roll for any attack you make with it. This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.\n\n**Nick.** When you make the extra attack of the Light property, you can make it as part of the Attack action instead of as a Bonus Action. You can make this extra attack only once per turn."
       }
     ],
     "currency": {
@@ -2578,7 +2578,7 @@ export const demoCharacters: Character[] = [
         "name": "Vicious Mockery",
         "level": 0,
         "school": "Enchantment",
-        "description": "You unleash a string of insults laced with subtle enchantments at one creature you can see or hear within range. The target must succeed on a Wisdom saving throw or take 1d6 Psychic damage and have Disadvantage on the next attack roll it makes before the end of its next turn. **Cantrip Upgrade.** The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
+        "description": "You unleash a string of insults laced with subtle enchantments at one creature you can see or hear within range. The target must succeed on a Wisdom saving throw or take 1d6 Psychic damage and have Disadvantage on the next attack roll it makes before the end of its next turn.\n\n**Cantrip Upgrade.** The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).",
         "source": "Class",
         "components": "V"
       },
@@ -2644,7 +2644,7 @@ export const demoCharacters: Character[] = [
         "name": "Plant Growth",
         "level": 3,
         "school": "Transmutation",
-        "description": "This spell channels vitality into plants. The casting time you use determines whether the spell has the Overgrowth or the Enrichment effect below. **Overgrowth.** Choose a point within range. All normal plants in a 100-foot-radius Sphere centered on that point become thick and overgrown. A creature moving through that area must spend 4 feet of movement for every 1 foot it moves. You can exclude one or more areas of any size within the spell’s area from being affected. **Enrichment.** All plants in a half-mile radius centered on a point within range become enriched for 365 days. The plants yield twice the normal amount of food when harvested. They can benefit from only one *Plant Growth* per year.",
+        "description": "This spell channels vitality into plants. The casting time you use determines whether the spell has the Overgrowth or the Enrichment effect below.\n\n**Overgrowth.** Choose a point within range. All normal plants in a 100-foot-radius Sphere centered on that point become thick and overgrown. A creature moving through that area must spend 4 feet of movement for every 1 foot it moves. You can exclude one or more areas of any size within the spell’s area from being affected.\n\n**Enrichment.** All plants in a half-mile radius centered on a point within range become enriched for 365 days. The plants yield twice the normal amount of food when harvested. They can benefit from only one *Plant Growth* per year.",
         "source": "Class",
         "components": "V, S"
       },
@@ -2662,7 +2662,7 @@ export const demoCharacters: Character[] = [
         "name": "Hellish Rebuke",
         "level": 1,
         "school": "Evocation",
-        "description": "You point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a Dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one. **At Higher Levels.** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.",
+        "description": "You point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a Dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one.\n\n**At Higher Levels.** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.",
         "source": "Race",
         "components": "V, S",
         "current": 1,
@@ -2901,7 +2901,7 @@ export const demoCharacters: Character[] = [
         "source": "Feat",
         "group": "other",
         "originType": "feat",
-        "description": "**Ability Score Increase.** Increase your Str. or Dex. by 1. **Punch and Grab.** On your turn, when you hit a creature with an Unarmed Strike you can use both the Damage and the Grapple option. You can use this benefit only once per turn. **Attack Advantage.** You have Advantage on attack rolls against a creature Grappled by you. **Fast Wrestler.** You don't have to spend extra movement to move a creature Grappled by you if the creature is your size or smaller."
+        "description": "**Ability Score Increase.** Increase your Str. or Dex. by 1.\n\n**Punch and Grab.** On your turn, when you hit a creature with an Unarmed Strike you can use both the Damage and the Grapple option. You can use this benefit only once per turn.\n\n**Attack Advantage.** You have Advantage on attack rolls against a creature Grappled by you.\n\n**Fast Wrestler.** You don't have to spend extra movement to move a creature Grappled by you if the creature is your size or smaller."
       },
       {
         "id": "feature-25",
@@ -2909,7 +2909,7 @@ export const demoCharacters: Character[] = [
         "source": "Feat",
         "group": "other",
         "originType": "feat",
-        "description": "**Ability Score Increase.** Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20. **Vampire Magic.** Choose one level 1 spell from the Enchantment or Illusion school of magic. You always have that spell and the Spider Climb spell prepared. You can cast each of these spells without expending a spell slot, but when you cast Spider Climb this way, you must target yourself, and you must finish a Long Rest before you can cast each spell in this way again. You can also cast either spell using spell slots you have of the appropriate level. Your spellcasting ability for the spells is the ability increased by this feat."
+        "description": "**Ability Score Increase.** Increase your Intelligence, Wisdom, or Charisma score by 1, to a maximum of 20.\n\n**Vampire Magic.** Choose one level 1 spell from the Enchantment or Illusion school of magic. You always have that spell and the Spider Climb spell prepared. You can cast each of these spells without expending a spell slot, but when you cast Spider Climb this way, you must target yourself, and you must finish a Long Rest before you can cast each spell in this way again. You can also cast either spell using spell slots you have of the appropriate level. Your spellcasting ability for the spells is the ability increased by this feat."
       },
       {
         "id": "feature-26",
