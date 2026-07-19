@@ -54,6 +54,7 @@ export function InfoTooltip({
   hoverOnly = false,
   disableTap = false,
   inline = false,
+  className,
 }: {
   children: React.ReactNode;
   panel: React.ReactNode;
@@ -69,6 +70,14 @@ export function InfoTooltip({
    * machinery at all.
    */
   inline?: boolean;
+  /**
+   * Extra classes merged onto the trigger's own outer span, *in addition to*
+   * its default `inline-block` sizing — for the one case where the hoverable/
+   * tappable zone needs to be bigger than the text itself (e.g. `w-full` so
+   * an icon-plus-name row hovers as one strip instead of just the name
+   * word). Omit it and the trigger hugs its content exactly as before.
+   */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -170,7 +179,7 @@ export function InfoTooltip({
       // reserves extra space below it for descenders in the surrounding line
       // box, which was inflating every row that used this component (most
       // visibly the Inventory item list, where it added ~5px per row).
-      className={`inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"}`}
+      className={`inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"} ${className ?? ""}`}
       onClick={
         disableTap
           ? undefined

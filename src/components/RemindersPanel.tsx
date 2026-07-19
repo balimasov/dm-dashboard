@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, Creature, CreatureTrait } from "@/lib/types";
+import { Character, Creature, CreatureTrait, RARITY_COLOR } from "@/lib/types";
 import { CONTENT_KIND_ICON, ContentKind } from "@/lib/contentKindIcons";
 import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
@@ -9,7 +9,7 @@ import { CollapsibleSection } from "./CollapsibleSection";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { AttackName } from "./ui/AttackDisplay";
+import { AttackHintPanel } from "./ui/AttackDisplay";
 import { FlaggableRow } from "./ui/FlaggableRow";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -21,10 +21,12 @@ const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = 
 };
 
 interface ReminderEntry {
-  /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `content`). */
+  /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `label`). */
   name: string;
-  /** The fully-rendered row content — a plain hinted name for a feature/spell, or the shared, rarity-colored `AttackName` for a weapon attack. */
-  content: React.ReactNode;
+  /** The plain rendered name — no tooltip wrapper of its own, since the row wraps the *whole* line (icon + name) in one shared `InfoTooltip` (see the render loop below), not just the name text. */
+  label: React.ReactNode;
+  /** The hint panel shown for `label` — a plain hinted name for a feature/spell, or `AttackHintPanel` for a weapon attack. */
+  panel: React.ReactNode;
   /** Which `CONTENT_KIND_ICON` glyph this row gets — same one shown on the matching tab, so a DM can tell a weapon reminder from a feature/spell one at a glance in a group that mixes all three. A creature trait uses "features", the closest match (same "ability with a description" shape as a character's own Features and Traits tab). */
   kind: ContentKind;
 }
@@ -44,41 +46,32 @@ function characterReminders(character: Character): ReminderGroup | null {
       .filter((a) => flagged.includes(a.name))
       .map((a) => ({
         name: a.name,
-        content: <AttackName attack={a} />,
+        label: <span className={RARITY_COLOR[a.rarity ?? "Common"]}>{a.name}</span>,
+        panel: <AttackHintPanel attack={a} />,
         kind: "weapons" as const,
       })),
     ...character.features
       .filter((f) => flagged.includes(f.name))
       .map((f) => ({
         name: f.name,
-        content: (
-          <InfoTooltip
-            panel={<AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />}
-          >
-            {f.name}
-          </InfoTooltip>
-        ),
+        label: f.name,
+        panel: <AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />,
         kind: "features" as const,
       })),
     ...character.knownSpells
       .filter((s) => flagged.includes(s.name))
       .map((s) => ({
         name: s.name,
-        content: (
-          <InfoTooltip
-            panel={
-              <AbilityHintPanel
-                name={s.name}
-                subtitle={s.school}
-                metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
-                note={s.materialComponent && `Material: ${s.materialComponent}`}
-                description={s.description}
-                emptyDescription="No description."
-              />
-            }
-          >
-            {s.name}
-          </InfoTooltip>
+        label: s.name,
+        panel: (
+          <AbilityHintPanel
+            name={s.name}
+            subtitle={s.school}
+            metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
+            note={s.materialComponent && `Material: ${s.materialComponent}`}
+            description={s.description}
+            emptyDescription="No description."
+          />
         ),
         kind: "spells" as const,
       })),
@@ -95,19 +88,14 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
     .filter((t) => flagged.includes(t.name))
     .map((t) => ({
       name: t.name,
-      content: (
-        <InfoTooltip
-          panel={
-            <AbilityHintPanel
-              name={t.name}
-              metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
-              description={t.description}
-              emptyDescription="No description."
-            />
-          }
-        >
-          {t.name}
-        </InfoTooltip>
+      label: t.name,
+      panel: (
+        <AbilityHintPanel
+          name={t.name}
+          metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
+          description={t.description}
+          emptyDescription="No description."
+        />
       ),
       kind: "features" as const,
     }));
@@ -228,26 +216,41 @@ export function RemindersPanel({
         <div className="flex flex-wrap gap-3 px-3 pb-2">
           {groups.map((group) => (
             <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
-              <button
-                type="button"
-                onClick={() => openOwnerModal(group.ownerId)}
-                title={`Open ${group.ownerName}`}
-                className="mb-2 flex w-full items-center gap-2 text-left hover:opacity-80"
-              >
+              <div className="mb-2 flex min-w-0 items-center gap-2">
                 <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
-                <p title={group.ownerName} className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">
+                {/* Deliberately not `flex-1` — the click zone should hug the
+                    name text itself, not stretch across whatever blank space
+                    is left in the row for a short name (opposite of the
+                    ability rows below, which widen the *opposite* direction
+                    for exactly the reason explained there). */}
+                <button
+                  type="button"
+                  onClick={() => openOwnerModal(group.ownerId)}
+                  title={`Open ${group.ownerName}`}
+                  className="min-w-0 max-w-full truncate text-left text-sm font-semibold text-slate-100 hover:opacity-80"
+                >
                   {group.ownerName}
-                </p>
-              </button>
+                </button>
+              </div>
               <div className="space-y-0.5">
                 {group.entries.map((entry) => (
                   <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span aria-hidden="true" className="shrink-0 text-xs leading-none">
-                        {CONTENT_KIND_ICON[entry.kind]}
+                    {/* `className="w-full"` widens the hoverable/tappable
+                        zone to the whole row (icon + name + trailing blank
+                        space up to the flame button) instead of just the
+                        name text — precisely aiming at one word to see an
+                        ability's rules text is worse UX than the rest of the
+                        row being a dead zone. `hoverOnly` skips the dotted-
+                        underline `InfoTooltip` normally puts under a bare
+                        name, since here it would run under the icon too. */}
+                    <InfoTooltip hoverOnly panel={entry.panel} className="w-full">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span aria-hidden="true" className="shrink-0 text-xs leading-none">
+                          {CONTENT_KIND_ICON[entry.kind]}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
                       </span>
-                      <span className="min-w-0 flex-1">{entry.content}</span>
-                    </span>
+                    </InfoTooltip>
                   </FlaggableRow>
                 ))}
               </div>

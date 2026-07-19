@@ -116,7 +116,7 @@ export function SensesPanel({ characters }: { characters: Character[] }) {
           <SenseRow key={entry.name} entry={entry} />
         ))}
       </div>
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-3">
         {utility.map((entry) => (
           <UtilitySpellRow key={entry.name} entry={entry} />
         ))}
