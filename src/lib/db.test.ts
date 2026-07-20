@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 /**
  * `db.ts` reads `DATA_DIR` at module-evaluation time (its top-level
@@ -18,10 +18,12 @@ beforeAll(async () => {
   db = await import("./db");
 });
 
-/** Every session/entry id is `<prefix>-${Date.now()}` — two created in the same millisecond collide (`UNIQUE` constraint), so a test that creates more than one back-to-back needs a tick between them. */
+/** Every session/entry id is `<prefix>-${Date.now()}` — two created in the same millisecond collide (`UNIQUE` constraint). A `beforeEach` tick guarantees every test starts in a fresh millisecond relative to whatever the previous test did (this actually happened on faster CI hardware — tests here run fast enough that consecutive `it` blocks landed in the same millisecond); a test that also creates more than one session/entry back-to-back needs its own extra tick between them. */
 function tick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 2));
 }
+
+beforeEach(tick);
 
 describe("resolveOrCreateSessionForDate", () => {
   it("creates a session when none exists yet", () => {
