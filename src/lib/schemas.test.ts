@@ -159,6 +159,18 @@ describe("journalEntryCreateSchema", () => {
     const result = journalEntryCreateSchema.safeParse({ text: "<p>Hi</p>" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a client-supplied timeZone alongside no sessionId", () => {
+    const result = journalEntryCreateSchema.safeParse({
+      campaignId: "campaign-1",
+      timeZone: "America/New_York",
+      text: "<p>Hi</p>",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ campaignId: "campaign-1", timeZone: "America/New_York", text: "<p>Hi</p>" });
+    }
+  });
 });
 
 describe("journalEntryUpdateSchema", () => {

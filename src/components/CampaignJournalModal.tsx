@@ -69,50 +69,59 @@ export function CampaignJournalModal({ campaignId, onClose }: { campaignId: stri
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5"
+        // Fixed height (not `max-h-*`) on purpose — with only a max-height,
+        // the box hugged whatever little content "Loading sessions..."/
+        // "Loading entries..." took up, then visibly grew the moment the
+        // real lists arrived a beat later. A stable height from the first
+        // paint means loading only ever changes what scrolls *inside* the
+        // box, never the box itself.
+        className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-3 flex shrink-0 items-center justify-between sm:mb-4">
           <h2 className="text-lg font-bold text-slate-50">Campaign Journal</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-slate-500 hover:text-slate-200">
             ✕
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 gap-4">
-          <div className="scrollbar-themed w-64 shrink-0 overflow-y-auto border-r border-slate-800 pr-3">
-            {sessions === null && sessionsError === null && <p className="text-sm text-slate-500">Loading sessions...</p>}
+        {/* Column on mobile (sessions as a short horizontal strip up top,
+            entries — the actual point of opening this — get the rest of the
+            height) — row on `sm:` and up (fixed-width sidebar, same as
+            before). A rigid 256px sidebar on a ~360px phone screen left
+            almost nothing for the entries pane, which is what this modal is
+            actually for. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:gap-4">
+          <div className="scrollbar-themed flex max-h-28 shrink-0 gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-800 pb-2 sm:max-h-none sm:w-64 sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3">
+            {sessions === null && sessionsError === null && <p className="shrink-0 text-sm text-slate-500">Loading sessions...</p>}
             {sessionsError && (
-              <div className="text-sm text-red-400">
+              <div className="shrink-0 text-sm text-red-400">
                 <p className="mb-2">{sessionsError}</p>
                 <button type="button" onClick={() => void loadSessions()} className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800">
                   Retry
                 </button>
               </div>
             )}
-            {sessions?.length === 0 && <p className="text-sm text-slate-500">No sessions yet — write a note to start one.</p>}
-            {sessions && sessions.length > 0 && (
-              <ul className="space-y-1">
-                {sessions.map((session) => (
-                  <li key={session.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectSession(session.id)}
-                      className={`w-full rounded-lg px-2 py-1.5 text-left text-sm ${
-                        selectedSessionId === session.id ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      }`}
-                    >
-                      {session.title}
-                      <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {sessions?.length === 0 && (
+              <p className="shrink-0 text-sm text-slate-500">No sessions yet — write a note to start one.</p>
             )}
+            {sessions?.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => selectSession(session.id)}
+                className={`shrink-0 whitespace-nowrap rounded-lg px-2 py-1.5 text-left text-sm sm:w-full sm:whitespace-normal ${
+                  selectedSessionId === session.id ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                }`}
+              >
+                {session.title}
+                <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
+              </button>
+            ))}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col">
-            <TabBar tabs={[{ key: "dm", icon: "🔒", text: "DM" }]} current={tab} onChange={() => {}} className="mb-3" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <TabBar tabs={[{ key: "dm", icon: "🔒", text: "DM" }]} current={tab} onChange={() => {}} className="mb-3 shrink-0" />
 
             {selectedSessionId && <Composer onSubmit={(html) => createEntry(html, selectedSessionId)} />}
 

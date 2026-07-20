@@ -28,8 +28,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const cookieStore = await cookies();
-  const timeZone = cookieStore.get(TZ_COOKIE_NAME)?.value ?? "UTC";
+  // Prefer the timezone the client just computed live over the cookie —
+  // see `journalEntryCreateSchema`'s own doc comment on why the cookie
+  // alone isn't reliable enough for this. Cookie stays as a fallback for
+  // a caller that doesn't send one, "UTC" as the last resort.
+  let timeZone = result.data.timeZone;
+  if (!timeZone) {
+    const cookieStore = await cookies();
+    timeZone = cookieStore.get(TZ_COOKIE_NAME)?.value ?? "UTC";
+  }
   const dateKeyForAutoSession = dateKeyForTimeZone(timeZone);
 
   const entry = createJournalEntry({

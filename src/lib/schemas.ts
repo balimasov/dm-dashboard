@@ -313,10 +313,25 @@ export const characterCreateSchema = z.object({
   campaignId: z.string().min(1),
 });
 
-/** POST `/api/journal/entries`. `sessionId` optional — omitted, the route auto-resolves "today's" session (Quick Note's path); given, it attaches to that exact session instead (the full Journal modal's path). */
+/**
+ * POST `/api/journal/entries`. `sessionId` optional — omitted, the route
+ * auto-resolves "today's" session (Quick Note's path); given, it attaches
+ * to that exact session instead (the full Journal modal's path).
+ *
+ * `timeZone` — the caller's own live IANA zone (`Intl.DateTimeFormat().
+ * resolvedOptions().timeZone`), sent by `journalApi.ts` on every request.
+ * Only consulted when `sessionId` is absent. Takes priority over the
+ * `TZ_COOKIE_NAME` cookie in the route handler: the cookie is written by a
+ * client effect on mount and can lag behind on a device's very first
+ * request of a session (or simply differ device-to-device), which silently
+ * bucketed the same real day into two different auto-sessions depending on
+ * which device happened to write first. A value computed fresh in the
+ * browser at the moment of the request has no such race.
+ */
 export const journalEntryCreateSchema = z.object({
   campaignId: z.string().min(1),
   sessionId: z.string().optional(),
+  timeZone: z.string().optional(),
   text: z.string().min(1, "A note can't be empty."),
 });
 

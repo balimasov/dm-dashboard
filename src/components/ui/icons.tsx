@@ -88,12 +88,14 @@ export function NoteIcon({ className }: { className?: string }) {
   );
 }
 
-export function JournalIcon({ className }: { className?: string }) {
+export function PencilIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v18H7.5A2.5 2.5 0 0 0 5 22.5V4.5Z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 4.5V20" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 8h7M9 12h7" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

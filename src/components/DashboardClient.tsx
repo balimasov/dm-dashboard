@@ -21,7 +21,7 @@ import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon, JournalIcon } from "@/components/ui/icons";
+import { ClockIcon, DownloadIcon, GearIcon, NoteIcon } from "@/components/ui/icons";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -381,7 +381,7 @@ export function DashboardClient({
               title="Campaign Journal"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              <JournalIcon className="h-4 w-4" />
+              <NoteIcon className="h-4 w-4" />
             </button>
           )}
           {/* A player has nothing in this menu — Export dumps the whole

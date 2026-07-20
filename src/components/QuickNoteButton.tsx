@@ -5,7 +5,7 @@ import { createJournalEntryApi } from "@/lib/journalApi";
 import { plainTextToParagraphHtml } from "@/lib/journal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Toast } from "./Toast";
-import { NoteIcon } from "./ui/icons";
+import { PencilIcon } from "./ui/icons";
 
 /**
  * Always-visible fast-entry point for a DM-private journal note — doesn't
@@ -69,10 +69,16 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
         title="Quick Note"
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
       >
-        <NoteIcon className="h-4 w-4" />
+        <PencilIcon className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-30 w-72 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg shadow-black/40">
+        // `fixed` + `inset-x-3` on mobile — anchoring this as an `absolute
+        // right-0` dropdown (still used from `sm:` up) let its fixed width
+        // run past the left edge of a narrow viewport whenever the trigger
+        // button sat close enough to the right edge, clipping the panel.
+        // Pinning both side edges to the viewport with a margin sidesteps
+        // that regardless of where the button ends up in the header row.
+        <div className="fixed inset-x-3 top-24 z-30 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg shadow-black/40 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80">
           <textarea
             ref={textareaRef}
             value={text}
@@ -84,7 +90,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
               }
             }}
             placeholder="Quick note..."
-            rows={3}
+            rows={6}
             className="w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
           />
           {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
