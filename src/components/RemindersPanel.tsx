@@ -11,6 +11,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { AttackHintPanel } from "./ui/AttackDisplay";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { ItemHintPanel } from "./ui/ItemHintPanel";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Trait",
@@ -75,6 +76,14 @@ function characterReminders(character: Character): ReminderGroup | null {
         ),
         kind: "spells" as const,
       })),
+    ...character.inventory
+      .filter((item) => item.category === "Consumable" && flagged.includes(item.name))
+      .map((item) => ({
+        name: item.name,
+        label: <span className={RARITY_COLOR[item.rarity]}>{item.name}</span>,
+        panel: <ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />,
+        kind: "consumables" as const,
+      })),
   ];
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -105,11 +114,12 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
 }
 
 /**
- * A quick-glance strip of every ability/trait either the DM or a player has
- * flagged with the reminder flame (`FlaggableRow`, used on a character's
- * Features/Spells and a creature's Traits) — collected from every card into
- * one place, since the whole point of flagging something is not having to
- * remember which specific card it's hiding on mid-session.
+ * A quick-glance strip of every ability/trait/item either the DM or a player
+ * has flagged with the reminder flame (`FlaggableRow`, used on a character's
+ * Weapons/Features/Spells/Consumables and a creature's Traits) — collected
+ * from every card into one place, since the whole point of flagging
+ * something is not having to remember which specific card it's hiding on
+ * mid-session.
  *
  * Renders nothing at all when nobody has flagged anything yet (same
  * convention as `QuickLinksButton`), so it stays invisible for a DM who

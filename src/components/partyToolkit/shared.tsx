@@ -153,12 +153,12 @@ function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) 
   );
 }
 
-/** Widest column height in px — every column's height is proportional to its own `max` between this and `HISTOGRAM_MIN_HEIGHT_PX`, so a party's 1st-level pool (often 20+ slots) doesn't dwarf a 9th-level pool (often 1) into invisibility, while relative pool size still reads at a glance. */
-const HISTOGRAM_MAX_HEIGHT_PX = 64;
+/** Widest column height in px — every column's height is proportional to its own `max` between this and `HISTOGRAM_MIN_HEIGHT_PX`, so a party's 1st-level pool (often 20+ slots) doesn't dwarf a 9th-level pool (often 1) into invisibility, while relative pool size still reads at a glance. Exported so `ConsumablesPanel`'s own histogram columns size themselves the same way instead of drifting from a second copy of the same numbers. */
+export const HISTOGRAM_MAX_HEIGHT_PX = 64;
 /** Every column gets at least this much height regardless of `max` — the floor that keeps a 1-slot 9th-level column a real, hoverable bar instead of a sliver. */
-const HISTOGRAM_MIN_HEIGHT_PX = 18;
+export const HISTOGRAM_MIN_HEIGHT_PX = 18;
 /** Mark-spec column thickness (`≤24px`, see the dataviz skill's bar/column spec) — same width for the outer track and the inner fill so the fill never peeks past the track's rounded corners. Kept toward the narrow end of that range (not the full 24px) so all 9 possible spell levels plus their gaps still fit a phone-width `ChartBox` without scrolling. */
-const HISTOGRAM_COLUMN_WIDTH_PX = 20;
+export const HISTOGRAM_COLUMN_WIDTH_PX = 20;
 
 /** One spell slot level as a vertical meter column — full column height (the dim track) is that level's own `max`, scaled against the party's largest level so every level stays visible; the colored fill from the baseline is `current`. Same hover hint as the old text row (`SpellSlotLevelPanel`), just triggered by the column instead of a line of text. */
 function SpellSlotColumn({ level, maxAcrossLevels }: { level: PartySpellSlotLevel; maxAcrossLevels: number }) {

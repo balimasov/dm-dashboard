@@ -1,24 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Attack, Character, RECOVERY_LABELS } from "@/lib/types";
+import { Attack, Character, RARITY_COLOR, RECOVERY_LABELS } from "@/lib/types";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { ordinalLevel } from "@/lib/format";
 import {
   HeroicInspirationSummary,
   PartyCharacterAttacks,
+  PartyConsumableEntry,
   PartyResourceEntry,
   PartySpellEntry,
   computeHeroicInspirationSummary,
   computePartyAttacks,
+  computePartyConsumables,
   computePartyResourceSummary,
   computePartySpellSlotSummary,
   computePartySpellsByLevel,
+  groupConsumablesByType,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { AttackName, AttackTrailing } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
+import { ConsumableQuantity } from "../ui/ConsumableQuantity";
+import { ItemHintPanel } from "../ui/ItemHintPanel";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
@@ -124,20 +129,62 @@ function PartyCharacterWeapons({ entry, isFirst }: { entry: PartyCharacterAttack
   );
 }
 
-type PartyDetailsTab = "weapons" | "features" | "spells";
+/** One consumable row inside the Consumables tab's type groups — name (rarity-colored, with the same title/weight/cost/description hint every item hint in the app uses) on the left, remaining count and who's carrying it on the right. */
+function PartyConsumableRow({ entry }: { entry: PartyConsumableEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1 text-sm">
+      <div className="min-w-0 flex-1">
+        <InfoTooltip
+          panel={
+            <ItemHintPanel name={entry.name} rarity={entry.rarity} weight={entry.weight} cost={entry.cost} description={entry.description} />
+          }
+        >
+          <span className={`min-w-0 truncate ${RARITY_COLOR[entry.rarity]}`}>{entry.name}</span>
+        </InfoTooltip>
+      </div>
+      <span className="flex shrink-0 items-center gap-2">
+        <ConsumableQuantity quantity={entry.totalQuantity} />
+        <CharacterChipRow
+          holders={entry.holders}
+          chipTitle={(h) => (h.quantity > 1 ? `${h.characterName} x${h.quantity}` : h.characterName)}
+        />
+      </span>
+    </div>
+  );
+}
+
+/** One D&D Beyond type's group of consumables — same shape `PartyCharacterWeapons` uses for a character's own attack group, just headed by the type label instead of a character chip. */
+function PartyConsumableTypeGroup({ label, entries, isFirst }: { label: string; entries: PartyConsumableEntry[]; isFirst: boolean }) {
+  return (
+    <div className={isFirst ? "" : "mt-4"}>
+      <SectionLabel>{label}</SectionLabel>
+      <div className="divide-y divide-slate-800/60">
+        {entries.map((entry) => (
+          <PartyConsumableRow key={entry.name} entry={entry} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type PartyDetailsTab = "weapons" | "features" | "spells" | "consumables";
 
 /**
  * Actions & Resources — tabbed the same way `CharacterDetailsModal` tabs a
- * single character's own Weapons/Features and Traits/Spells — "Features
- * and Traits" keeps this panel's existing Heroic Inspiration + Limited Use
- * content unchanged, "Spells" is every known spell across the party,
- * grouped by level like a character's own Spells tab and deduped by name
- * (a spell several characters share shows as one row with several avatar
- * chips instead of once per character). "Weapons" is different from
- * "Spells" on purpose: it groups by *character* instead of deduping across
- * the party (see `computePartyAttacks`'s own doc comment for why). No tab
- * switcher (and no tab at all) for content nobody has — same "don't show
- * an empty tab" rule the character modal already follows.
+ * single character's own Weapons/Features and Traits/Spells/Consumables —
+ * "Features and Traits" keeps this panel's existing Heroic Inspiration +
+ * Limited Use content unchanged, "Spells" is every known spell across the
+ * party, grouped by level like a character's own Spells tab and deduped by
+ * name (a spell several characters share shows as one row with several
+ * avatar chips instead of once per character). "Consumables" is the same
+ * deduped-by-name, grouped-by-D&D-Beyond-type list `ConsumablesPanel` used
+ * to show directly (that panel's own content is now just the compact
+ * per-type histogram — this tab is where the itemized breakdown moved to).
+ * "Weapons" is different from "Spells"/"Consumables" on purpose: it groups
+ * by *character* instead of deduping across the party (see
+ * `computePartyAttacks`'s own doc comment for why). No tab switcher (and no
+ * tab at all) for content nobody has — same "don't show an empty tab" rule
+ * the character modal already follows.
  *
  * Used to open with its own copy of the Rest Recovery/Spell Slots charts
  * (`ResourceCoveragePanel` showed the exact same pair above its own listing)
@@ -156,11 +203,14 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
   const resources = computePartyResourceSummary(characters);
   const spellLevelGroups = computePartySpellsByLevel(characters);
   const partyAttacks = computePartyAttacks(characters);
+  const partyConsumables = computePartyConsumables(characters);
+  const consumableGroups = groupConsumablesByType(partyConsumables);
 
   const tabs: Array<{ key: PartyDetailsTab; label: string }> = [
     ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
     { key: "features", label: `${CONTENT_KIND_ICON.features} Features and Traits` },
     ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
+    ...(partyConsumables.length > 0 ? [{ key: "consumables" as const, label: `${CONTENT_KIND_ICON.consumables} Consumables` }] : []),
   ];
   const [activeTab, setActiveTab] = useState<PartyDetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
@@ -234,6 +284,11 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
             </div>
           );
         })}
+
+      {currentTab === "consumables" &&
+        consumableGroups.map((group, index) => (
+          <PartyConsumableTypeGroup key={group.label} label={group.label} entries={group.entries} isFirst={index === 0} />
+        ))}
     </ToolkitCard>
   );
 }

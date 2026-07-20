@@ -5,7 +5,9 @@ import {
   Attack,
   Character,
   Feature,
+  InventoryItem,
   KnownSpell,
+  RARITY_COLOR,
   RECOVERY_LABELS,
   RecoveryType,
   SKILL_ABBR,
@@ -17,14 +19,17 @@ import {
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
+import { groupConsumablesByType } from "@/lib/partyToolkit";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
+import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
@@ -151,7 +156,20 @@ function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged:
   );
 }
 
-type DetailsTab = "weapons" | "features" | "spells";
+/** One consumable item, flaggable like any Feature/Spell/Weapon — same rarity-colored name + title/weight/cost/description hint every item hint in the app uses, with the remaining count as the trailing content instead of a `ChargeBadge` (a consumable doesn't recover, it just runs out). */
+function ConsumableRow({ item, flagged, onToggleFlag }: { item: InventoryItem; flagged: boolean; onToggleFlag: () => void }) {
+  return (
+    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} trailing={<ConsumableQuantity quantity={item.quantity} />}>
+      <InfoTooltip
+        panel={<ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />}
+      >
+        <span className={RARITY_COLOR[item.rarity]}>{item.name}</span>
+      </InfoTooltip>
+    </FlaggableRow>
+  );
+}
+
+type DetailsTab = "weapons" | "features" | "spells" | "consumables";
 
 export function CharacterDetailsModal({
   character,
@@ -196,11 +214,18 @@ export function CharacterDetailsModal({
   const hasAttacks = sortedAttacks.length > 0;
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
+  const consumables = c.inventory
+    .filter((item) => item.category === "Consumable")
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const consumableGroups = groupConsumablesByType(consumables);
+  const hasConsumables = consumables.length > 0;
 
   const tabs: Array<{ key: DetailsTab; label: string }> = [
     ...(hasAttacks ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
     ...(hasFeatures ? [{ key: "features" as const, label: `${CONTENT_KIND_ICON.features} Features and Traits` }] : []),
     ...(hasSpells ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
+    ...(hasConsumables ? [{ key: "consumables" as const, label: `${CONTENT_KIND_ICON.consumables} Consumables` }] : []),
   ];
   const [activeTab, setActiveTab] = useState<DetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
@@ -410,11 +435,16 @@ export function CharacterDetailsModal({
           </SectionDivider>
         )}
 
-        {/* Features and Traits / Spells — tabbed instead of side-by-side columns so
-            each reads as a single, comfortably narrow list. Only characters with
-            more than one populated tab get a tab switcher; a martial character
-            with no spells just sees Features and Traits directly, no empty Spells
-            tab to click into. More tabs (e.g. Inventory) can slot in here later. */}
+        {/* Weapons / Features and Traits / Spells / Consumables — tabbed instead of
+            side-by-side columns so each reads as a single, comfortably narrow
+            list. Only characters with more than one populated tab get a tab
+            switcher; a martial character with no spells or consumables just
+            sees Features and Traits directly, no empty tab to click into.
+            Consumables (the character's own `InventoryItem`s of category
+            "Consumable") is flaggable with the same reminder flame as every
+            other tab here, so a DM can mark "remind them to drink that potion"
+            just like a spell or feature — it then surfaces in `RemindersPanel`
+            the same way. */}
         {tabs.length > 0 && (
           <SectionDivider>
             {tabs.length > 1 && (
@@ -558,6 +588,24 @@ export function CharacterDetailsModal({
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {currentTab === "consumables" && (
+              <div className="space-y-3">
+                {consumableGroups.map(({ label, entries }) => (
+                  <div key={label} className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{label}</p>
+                    {entries.map((item) => (
+                      <ConsumableRow
+                        key={item.id}
+                        item={item}
+                        flagged={flaggedAbilities.includes(item.name)}
+                        onToggleFlag={() => toggleFlag(item.name)}
+                      />
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
           </SectionDivider>

@@ -8,6 +8,7 @@ import {
   computeLanguageCoverage,
   computePartyAttacks,
   computePartyConsumables,
+  computePartyConsumablesSummary,
   computePartyHpSummary,
   computePartyPassiveSummary,
   computePartyResourceSummary,
@@ -22,6 +23,7 @@ import {
   computeSkillOverviewEntry,
   computeToolCoverage,
   computeUtilitySpellAvailability,
+  groupConsumablesByType,
 } from "./partyToolkit";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -1397,5 +1399,54 @@ describe("computePartyConsumables", () => {
       inventory: [{ id: "i1", name: "Longsword", rarity: "Common", category: "Weapon", quantity: 1 }],
     });
     expect(computePartyConsumables([character])).toEqual([]);
+  });
+});
+
+describe("groupConsumablesByType", () => {
+  test("groups by type alphabetically, with untyped entries in a trailing Other group", () => {
+    const entries = [
+      { name: "Spell Scroll (1st Level)", type: "Scroll" },
+      { name: "Mystery Bauble", type: undefined },
+      { name: "Potion of Healing", type: "Potion" },
+    ];
+    const groups = groupConsumablesByType(entries);
+    expect(groups.map((g) => g.label)).toEqual(["Potion", "Scroll", "Other"]);
+    expect(groups.find((g) => g.label === "Other")?.entries.map((e) => e.name)).toEqual(["Mystery Bauble"]);
+  });
+
+  test("forces Other last even when it would otherwise sort earlier alphabetically", () => {
+    const entries = [
+      { name: "Wand of Magic Missiles", type: "Wand" },
+      { name: "Unlabeled Vial", type: undefined },
+    ];
+    const groups = groupConsumablesByType(entries);
+    expect(groups.map((g) => g.label)).toEqual(["Wand", "Other"]);
+  });
+});
+
+describe("computePartyConsumablesSummary", () => {
+  test("sums total quantity per D&D Beyond type, plus a running party-wide total", () => {
+    const character = makeCharacter({
+      name: "Durgin",
+      inventory: [
+        { id: "i1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 2, type: "Potion" },
+        { id: "i2", name: "Potion of Fire Breath", rarity: "Uncommon", category: "Consumable", quantity: 1, type: "Potion" },
+        { id: "i3", name: "Spell Scroll (1st Level)", rarity: "Common", category: "Consumable", quantity: 3, type: "Scroll" },
+      ],
+    });
+    const summary = computePartyConsumablesSummary([character]);
+    expect(summary?.totalQuantity).toBe(6);
+    expect(summary?.types.map((t) => ({ type: t.type, totalQuantity: t.totalQuantity }))).toEqual([
+      { type: "Potion", totalQuantity: 3 },
+      { type: "Scroll", totalQuantity: 3 },
+    ]);
+  });
+
+  test("returns null when nobody carries any consumables", () => {
+    const character = makeCharacter({
+      name: "Lilith",
+      inventory: [{ id: "i1", name: "Longsword", rarity: "Common", category: "Weapon", quantity: 1 }],
+    });
+    expect(computePartyConsumablesSummary([character])).toBeNull();
   });
 });

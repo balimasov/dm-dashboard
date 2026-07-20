@@ -1468,3 +1468,71 @@ export function computePartyConsumables(characters: Character[]): PartyConsumabl
   }
   return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
+
+export const OTHER_CONSUMABLE_TYPE_LABEL = "Other";
+
+/**
+ * Groups a list of consumable-ish entries by their D&D Beyond `type` (e.g.
+ * "Potion", "Scroll") — the one grouping signal that isn't this app
+ * inventing a taxonomy of its own. Generic over both `PartyConsumableEntry`
+ * (party-wide, deduped) and a single character's own `InventoryItem`s, since
+ * a character's own Consumables tab and the party-wide Actions & Resources
+ * Consumables tab need to group and order items identically, or a DM
+ * switching between them would see the same items in a different order for
+ * no reason. Order preserved within each group (callers already hand this an
+ * alphabetical list); groups themselves are alphabetical by label with
+ * `OTHER_CONSUMABLE_TYPE_LABEL` forced last regardless — it's a catch-all,
+ * not a real category, so sorting it into the middle of the alphabet would
+ * read as a real type that happens to start with "O".
+ */
+export function groupConsumablesByType<T extends { type?: string; name: string }>(
+  entries: T[]
+): Array<{ label: string; entries: T[] }> {
+  const byLabel = new Map<string, T[]>();
+  for (const entry of entries) {
+    const label = entry.type || OTHER_CONSUMABLE_TYPE_LABEL;
+    if (!byLabel.has(label)) byLabel.set(label, []);
+    byLabel.get(label)!.push(entry);
+  }
+  return Array.from(byLabel.entries())
+    .map(([label, groupEntries]) => ({ label, entries: groupEntries }))
+    .sort((a, b) => {
+      if (a.label === OTHER_CONSUMABLE_TYPE_LABEL) return 1;
+      if (b.label === OTHER_CONSUMABLE_TYPE_LABEL) return -1;
+      return a.label.localeCompare(b.label);
+    });
+}
+
+export interface PartyConsumableTypeSummary {
+  type: string;
+  totalQuantity: number;
+  entries: PartyConsumableEntry[];
+}
+
+export interface PartyConsumablesSummary {
+  types: PartyConsumableTypeSummary[];
+  totalQuantity: number;
+}
+
+/**
+ * The compact, glance-level shape of party consumables — one number per
+ * D&D Beyond type (how many potions, how many scrolls left) plus a running
+ * total, the same "how topped up is the party" question Spell Slots/Rest
+ * Recovery answer for their own pools. The itemized breakdown (every named
+ * item, who's carrying it) lives in Actions & Resources' own Consumables tab
+ * instead — this is deliberately just enough to say "getting low on
+ * potions" at a glance, not a shopping list. `null` when the party carries
+ * no consumables at all, so the caller can show a placeholder instead of an
+ * empty chart.
+ */
+export function computePartyConsumablesSummary(characters: Character[]): PartyConsumablesSummary | null {
+  const entries = computePartyConsumables(characters);
+  if (entries.length === 0) return null;
+  const types = groupConsumablesByType(entries).map((group) => ({
+    type: group.label,
+    totalQuantity: group.entries.reduce((sum, e) => sum + e.totalQuantity, 0),
+    entries: group.entries,
+  }));
+  const totalQuantity = types.reduce((sum, t) => sum + t.totalQuantity, 0);
+  return { types, totalQuantity };
+}
