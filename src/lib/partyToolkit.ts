@@ -1403,3 +1403,52 @@ export function computePartyAttacks(characters: Character[]): PartyCharacterAtta
       attacks: c.attacks.slice().sort((a, b) => a.name.localeCompare(b.name)),
     }));
 }
+
+/** One character's stack of a given consumable — the row's hover/holder breakdown, same shape every other party-wide grouping in this file uses. */
+export interface PartyConsumableHolder {
+  characterId: string;
+  characterName: string;
+  avatarUrl?: string;
+  quantity: number;
+}
+
+export interface PartyConsumableEntry {
+  name: string;
+  description?: string;
+  totalQuantity: number;
+  holders: PartyConsumableHolder[];
+}
+
+/**
+ * Every `Consumable`-category item across the party, deduped by name (same
+ * lowercased-trim key `InventoryOverview`'s own grouping uses) with each
+ * holder's stack summed into one running total — a potion three different
+ * characters are carrying reads as one row with a party-wide count, not
+ * three separate ones. Sorted with the scarcest item first: unlike a spell
+ * slot or a Resource, a consumable has no `max` to recover to, so "lowest
+ * count" is the only signal worth leading with (it's the one row a DM
+ * actually needs to notice before it hits zero) — alphabetical only breaks
+ * ties within the same count.
+ */
+export function computePartyConsumables(characters: Character[]): PartyConsumableEntry[] {
+  const byName = new Map<string, PartyConsumableEntry>();
+  for (const c of characters) {
+    for (const item of c.inventory) {
+      if (item.category !== "Consumable") continue;
+      const key = item.name.trim().toLowerCase();
+      let entry = byName.get(key);
+      if (!entry) {
+        entry = { name: item.name, description: item.description, totalQuantity: 0, holders: [] };
+        byName.set(key, entry);
+      }
+      entry.totalQuantity += item.quantity;
+      const holder = entry.holders.find((h) => h.characterId === c.id);
+      if (holder) {
+        holder.quantity += item.quantity;
+      } else {
+        entry.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
+      }
+    }
+  }
+  return Array.from(byName.values()).sort((a, b) => a.totalQuantity - b.totalQuantity || a.name.localeCompare(b.name));
+}

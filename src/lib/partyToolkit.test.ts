@@ -7,6 +7,7 @@ import {
   computeHeroicInspirationSummary,
   computeLanguageCoverage,
   computePartyAttacks,
+  computePartyConsumables,
   computePartyHpSummary,
   computePartyPassiveSummary,
   computePartyResourceSummary,
@@ -1311,5 +1312,53 @@ describe("computePartyAttacks", () => {
     const [entry] = computePartyAttacks([character]);
     entry.attacks.push({ id: "fake", name: "Fake", attackType: "melee", attackBonus: 0, damage: "0", properties: [], proficient: true });
     expect(character.attacks).toHaveLength(1);
+  });
+});
+
+describe("computePartyConsumables", () => {
+  test("sums the same item's quantity across characters into one holder-tagged total, ignores non-Consumable categories, and sorts scarcest first", () => {
+    const ragnar = makeCharacter({
+      name: "Ragnar",
+      inventory: [
+        { id: "i1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 2 },
+        { id: "i2", name: "Rations", rarity: "Common", category: "Consumable", quantity: 5 },
+        { id: "i3", name: "Greataxe", rarity: "Common", category: "Weapon", quantity: 1 },
+      ],
+    });
+    const esmeralda = makeCharacter({
+      name: "Esmeralda",
+      inventory: [{ id: "i4", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 1 }],
+    });
+
+    const result = computePartyConsumables([ragnar, esmeralda]);
+
+    expect(result.map((e) => e.name)).toEqual(["Potion of Healing", "Rations"]);
+    const potion = result[0];
+    expect(potion.totalQuantity).toBe(3);
+    expect(potion.holders).toEqual([
+      { characterId: "Ragnar", characterName: "Ragnar", avatarUrl: undefined, quantity: 2 },
+      { characterId: "Esmeralda", characterName: "Esmeralda", avatarUrl: undefined, quantity: 1 },
+    ]);
+  });
+
+  test("dedupes by trimmed/lowercased name, same as InventoryOverview's own grouping", () => {
+    const character = makeCharacter({
+      name: "Yorun",
+      inventory: [
+        { id: "i1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 1 },
+        { id: "i2", name: " potion of healing ", rarity: "Common", category: "Consumable", quantity: 2 },
+      ],
+    });
+    const result = computePartyConsumables([character]);
+    expect(result).toHaveLength(1);
+    expect(result[0].totalQuantity).toBe(3);
+  });
+
+  test("returns an empty list when nobody has any Consumable items", () => {
+    const character = makeCharacter({
+      name: "Lilith",
+      inventory: [{ id: "i1", name: "Longsword", rarity: "Common", category: "Weapon", quantity: 1 }],
+    });
+    expect(computePartyConsumables([character])).toEqual([]);
   });
 });

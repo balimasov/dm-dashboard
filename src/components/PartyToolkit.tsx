@@ -2,6 +2,7 @@
 
 import { Character } from "@/lib/types";
 import { computePartyPassiveSummary } from "@/lib/partyToolkit";
+import { ConsumablesPanel } from "./partyToolkit/ConsumablesPanel";
 import { DefensesPanel } from "./partyToolkit/DefensesPanel";
 import { LanguagesToolsPanel } from "./partyToolkit/LanguagesToolsPanel";
 import { PartyChartsPanel } from "./partyToolkit/PartyChartsPanel";
@@ -40,6 +41,7 @@ export function PartyToolkit({
     <div className="space-y-4">
       <VitalsPanel characters={characters} />
       <PartyChartsPanel characters={characters} />
+      <ConsumablesPanel characters={characters} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SkillsPanel characters={characters} passives={passives} />
         <SpellSlotsResourcesPanel characters={characters} />
