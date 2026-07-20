@@ -312,3 +312,20 @@ export const characterCreateSchema = z.object({
   url: z.string().trim().min(1),
   campaignId: z.string().min(1),
 });
+
+/** POST `/api/journal/entries`. `sessionId` optional — omitted, the route auto-resolves "today's" session (Quick Note's path); given, it attaches to that exact session instead (the full Journal modal's path). */
+export const journalEntryCreateSchema = z.object({
+  campaignId: z.string().min(1),
+  sessionId: z.string().optional(),
+  text: z.string().min(1, "A note can't be empty."),
+});
+
+/**
+ * PATCH `/api/journal/entries/[id]`. Deliberately NOT a `.partial()` of a
+ * full `JournalEntry` shape the way the other update schemas above are —
+ * `sessionId`/`campaignId`/`authorRole`/`createdAt` must never be
+ * client-editable, so only `text` is accepted here.
+ */
+export const journalEntryUpdateSchema = z.object({
+  text: z.string().min(1, "A note can't be empty."),
+});

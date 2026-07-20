@@ -9,9 +9,13 @@ import {
   Creature,
   ItemCategory,
   ItemRarity,
+  JournalEntry,
+  JournalSession,
+  JournalSessionSummary,
 } from "./types";
 import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { demoCharacters } from "./mockData";
+import { formatSessionTitle } from "./journal";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at
 // whatever path it was actually mounted at — without it, the sqlite file
@@ -47,6 +51,22 @@ function openDb(): Database.Database {
       id TEXT PRIMARY KEY,
       campaign_id TEXT NOT NULL,
       position INTEGER NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS journal_sessions (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      date_key TEXT NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      session_id TEXT NOT NULL,
       data TEXT NOT NULL
     )
   `);
@@ -198,12 +218,14 @@ export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign
   return updated;
 }
 
-/** Cascades: a campaign's characters and creatures have nowhere else to belong, so removing it takes its whole roster with it. */
+/** Cascades: a campaign's characters, creatures, and journal both have nowhere else to belong, so removing it takes its whole roster (and journal) with it. */
 export function deleteCampaign(id: string): void {
   const db = getDb();
   const transaction = db.transaction(() => {
     db.prepare("DELETE FROM characters WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM creatures WHERE campaign_id = ?").run(id);
+    db.prepare("DELETE FROM journal_entries WHERE campaign_id = ?").run(id);
+    db.prepare("DELETE FROM journal_sessions WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM campaigns WHERE id = ?").run(id);
   });
   transaction();
@@ -372,4 +394,133 @@ export function reorderCreatures(orderedIds: string[]): void {
     ids.forEach((id, index) => update.run(index, id));
   });
   transaction(orderedIds);
+}
+
+function rowToJournalSession(row: { data: string }): JournalSession {
+  return JSON.parse(row.data) as JournalSession;
+}
+
+function rowToJournalEntry(row: { data: string }): JournalEntry {
+  return JSON.parse(row.data) as JournalEntry;
+}
+
+/** Newest-first, with a per-session entry count via LEFT JOIN — same shape `listCampaigns` already uses for `characterCount`. */
+export function listJournalSessions(campaignId: string): JournalSessionSummary[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT s.data AS data, COUNT(e.id) AS entryCount
+       FROM journal_sessions s
+       LEFT JOIN journal_entries e ON e.session_id = s.id
+       WHERE s.campaign_id = ?
+       GROUP BY s.id`
+    )
+    .all(campaignId) as Array<{ data: string; entryCount: number }>;
+  return rows
+    .map((row) => ({ ...(JSON.parse(row.data) as JournalSession), entryCount: row.entryCount }))
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+}
+
+export function getJournalSession(id: string): JournalSession | null {
+  const row = getDb().prepare("SELECT data FROM journal_sessions WHERE id = ?").get(id) as { data: string } | undefined;
+  return row ? rowToJournalSession(row) : null;
+}
+
+/**
+ * Iteration 1's entire session-resolution logic: finds the existing session
+ * row for `campaignId`/`dateKey`, or creates one. Naive lookup — any row
+ * matching `dateKey` wins, since only one can exist per day yet. A later
+ * iteration's "manually start a new session within the same day" feature
+ * must change the *selection* rule here (e.g. latest `startedAt` among rows
+ * without an `endedAt`), not the schema — `dateKey` is deliberately not a
+ * uniqueness constraint for exactly this reason.
+ */
+export function resolveOrCreateSessionForDate(campaignId: string, dateKey: string): JournalSession {
+  const db = getDb();
+  const existing = db
+    .prepare("SELECT data FROM journal_sessions WHERE campaign_id = ? AND date_key = ?")
+    .get(campaignId, dateKey) as { data: string } | undefined;
+  if (existing) return rowToJournalSession(existing);
+
+  const session: JournalSession = {
+    id: `journal-session-${Date.now()}`,
+    campaignId,
+    dateKey,
+    title: formatSessionTitle(dateKey),
+    startedAt: new Date().toISOString(),
+  };
+  db.prepare("INSERT INTO journal_sessions (id, campaign_id, date_key, data) VALUES (?, ?, ?, ?)").run(
+    session.id,
+    session.campaignId,
+    session.dateKey,
+    JSON.stringify(session)
+  );
+  return session;
+}
+
+/** Chronological (oldest first, like a log) — sorted in JS since `createdAt` lives in the JSON blob, not a real column, same "load then sort" approach used elsewhere in this file for anything not covered by a real column. */
+export function listJournalEntries(sessionId: string): JournalEntry[] {
+  const rows = getDb().prepare("SELECT data FROM journal_entries WHERE session_id = ?").all(sessionId) as Array<{
+    data: string;
+  }>;
+  return rows.map(rowToJournalEntry).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function getJournalEntry(id: string): JournalEntry | null {
+  const row = getDb().prepare("SELECT data FROM journal_entries WHERE id = ?").get(id) as { data: string } | undefined;
+  return row ? rowToJournalEntry(row) : null;
+}
+
+/**
+ * `sessionId` omitted → auto-resolves "today's" session via
+ * `resolveOrCreateSessionForDate` (Quick Note's path). `sessionId` given →
+ * attaches to that exact session instead (the full Journal modal's "add to
+ * the session I'm currently viewing" path). Both paths go through this one
+ * function so there's a single place that stamps
+ * `createdAt`/`updatedAt`/`authorRole`/`audience` — iteration 1 always
+ * "dm"/"dm" since both entry points are DM-only.
+ */
+export function createJournalEntry(input: {
+  campaignId: string;
+  sessionId?: string;
+  dateKeyForAutoSession: string;
+  text: string;
+}): JournalEntry {
+  const db = getDb();
+  const session = input.sessionId
+    ? getJournalSession(input.sessionId)
+    : resolveOrCreateSessionForDate(input.campaignId, input.dateKeyForAutoSession);
+  if (!session) throw new Error(`Journal session not found: ${input.sessionId}`);
+
+  const now = new Date().toISOString();
+  const entry: JournalEntry = {
+    id: `journal-entry-${Date.now()}`,
+    campaignId: input.campaignId,
+    sessionId: session.id,
+    text: input.text,
+    audience: "dm",
+    authorRole: "dm",
+    createdAt: now,
+    updatedAt: now,
+    updatedByRole: "dm",
+  };
+  db.prepare("INSERT INTO journal_entries (id, campaign_id, session_id, data) VALUES (?, ?, ?, ?)").run(
+    entry.id,
+    entry.campaignId,
+    entry.sessionId,
+    JSON.stringify(entry)
+  );
+  return entry;
+}
+
+/** Only `text` is ever accepted here (see `journalEntryUpdateSchema`) — `updatedAt`/`updatedByRole` are stamped by this function itself, never trusted from the caller. */
+export function updateJournalEntryText(id: string, text: string): JournalEntry | null {
+  const existing = getJournalEntry(id);
+  if (!existing) return null;
+  const updated: JournalEntry = { ...existing, text, updatedAt: new Date().toISOString(), updatedByRole: "dm" };
+  getDb().prepare("UPDATE journal_entries SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
+  return updated;
+}
+
+export function removeJournalEntry(id: string): void {
+  getDb().prepare("DELETE FROM journal_entries WHERE id = ?").run(id);
 }

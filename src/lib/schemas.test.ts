@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { demoCharacters } from "./mockData";
-import { campaignUpdateSchema, characterUpdateSchema, creatureUpdateSchema } from "./schemas";
+import { campaignUpdateSchema, characterUpdateSchema, creatureUpdateSchema, journalEntryCreateSchema, journalEntryUpdateSchema } from "./schemas";
 import { Campaign, Creature } from "./types";
 
 /** `id` is intentionally not part of the PATCH schema — routes always force `id: existing.id` themselves, so a body carrying one is expected to have it stripped. */
@@ -133,5 +133,59 @@ describe("campaignUpdateSchema", () => {
   it("rejects a body that isn't an object", () => {
     const result = campaignUpdateSchema.safeParse("not an object");
     expect(result.success).toBe(false);
+  });
+});
+
+describe("journalEntryCreateSchema", () => {
+  it("accepts a minimal valid body with no sessionId", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "<p>Hello</p>" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ campaignId: "campaign-1", text: "<p>Hello</p>" });
+    }
+  });
+
+  it("accepts a body with an explicit sessionId", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", sessionId: "session-1", text: "<p>Hi</p>" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty text", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing campaignId", () => {
+    const result = journalEntryCreateSchema.safeParse({ text: "<p>Hi</p>" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("journalEntryUpdateSchema", () => {
+  it("accepts a valid text-only body", () => {
+    const result = journalEntryUpdateSchema.safeParse({ text: "<p>Updated</p>" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ text: "<p>Updated</p>" });
+    }
+  });
+
+  it("rejects an empty text", () => {
+    const result = journalEntryUpdateSchema.safeParse({ text: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("strips fields that must never be client-editable", () => {
+    const result = journalEntryUpdateSchema.safeParse({
+      text: "<p>Hi</p>",
+      sessionId: "session-2",
+      campaignId: "campaign-2",
+      authorRole: "player",
+      createdAt: "2020-01-01T00:00:00.000Z",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ text: "<p>Hi</p>" });
+    }
   });
 });

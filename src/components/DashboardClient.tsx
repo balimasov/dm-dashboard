@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
+import { CampaignJournalModal } from "@/components/CampaignJournalModal";
+import { QuickNoteButton } from "@/components/QuickNoteButton";
 import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
@@ -19,7 +21,7 @@ import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon } from "@/components/ui/icons";
+import { ClockIcon, DownloadIcon, GearIcon, JournalIcon } from "@/components/ui/icons";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -246,6 +248,7 @@ export function DashboardClient({
   const [campaignState, setCampaignState] = useState(campaign);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("campaign");
+  const [journalOpen, setJournalOpen] = useState(false);
 
   // A player has no Settings modal to open at all — guarded here too (not
   // just by hiding every button that calls this), so nothing short of
@@ -364,6 +367,22 @@ export function DashboardClient({
             <div className="shrink-0">
               <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
             </div>
+          )}
+          {/* Quick Note/Journal are DM-only in this iteration — a private
+              journal has nothing for a player to see yet (no Party tab
+              exists), so both are skipped entirely for that role rather than
+              shown disabled or empty. */}
+          {isDm && <QuickNoteButton campaignId={campaign.id} />}
+          {isDm && (
+            <button
+              type="button"
+              onClick={() => setJournalOpen(true)}
+              aria-label="Campaign Journal"
+              title="Campaign Journal"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              <JournalIcon className="h-4 w-4" />
+            </button>
           )}
           {/* A player has nothing in this menu — Export dumps the whole
               campaign (including the enemies/NPCs/notes this role otherwise
@@ -535,6 +554,8 @@ export function DashboardClient({
           />
         </CampaignDataProvider>
       )}
+
+      {journalOpen && <CampaignJournalModal campaignId={campaign.id} onClose={() => setJournalOpen(false)} />}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import type { UserRole } from "./auth";
+
 export type RecoveryType =
   | "short-rest"
   | "long-rest"
@@ -665,5 +667,59 @@ export interface Creature {
   flaggedTraits?: string[];
   /** Same convention as `Character.hidden` — hides this creature from its dashboard category row (and from `RemindersPanel`) without removing it from the campaign. */
   hidden?: boolean;
+}
+
+/** Which "tab" of the journal an entry belongs to. Iteration 1 only ever writes "dm" — Quick Note and the Campaign Journal modal are both DM-only; a later iteration adds the Party tab, whose entries carry "party" here. Kept on the entry (not a second table) so one `journal_entries` table already supports both audiences without a schema change. */
+export type JournalEntryAudience = "dm" | "party";
+
+/**
+ * A logical bucket of journal entries. Iteration 1 auto-creates exactly one
+ * per calendar day per campaign (see `resolveOrCreateSessionForDate` in
+ * `db.ts`) — there is no manual create/rename/archive UI yet; a later
+ * iteration adds those as pure mutations on this same shape (`title`
+ * becomes editable, `endedAt`/`archived` start getting set).
+ */
+export interface JournalSession {
+  id: string;
+  campaignId: string;
+  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone this session was first opened on. NOT guaranteed unique per campaign — a manually-started same-day session (future iteration) shares this value with the auto session that preceded it that day; `startedAt` is the real sort key. */
+  dateKey: string;
+  /** Display title. Iteration 1 always sets this to a formatted form of `dateKey` (see `formatSessionTitle` in `src/lib/journal.ts`) since there's no rename UI yet. */
+  title: string;
+  /** When this session row was created — the sort key for "newest first" (two same-day sessions would share `dateKey` but never `startedAt`). */
+  startedAt: string;
+  /** Reserved for a later iteration's "close this session" action. Always absent in iteration 1. */
+  endedAt?: string;
+  /** Reserved for a later iteration's archive action (hides from the default session list without deleting it). Always absent/false in iteration 1. */
+  archived?: boolean;
+}
+
+/** `JournalSession` plus its entry count, for the journal modal's session list — same "summary adds one derived field" shape `Campaign`/`CampaignSummary` already uses for `characterCount`. */
+export interface JournalSessionSummary extends JournalSession {
+  entryCount: number;
+}
+
+/**
+ * One journal note. `text` is an HTML string — same convention as
+ * `Campaign.notes`, and deliberately the same shape `NotesEditor` (Tiptap)
+ * already reads/writes, so an entry created via the plain-textarea Quick
+ * Note and one created/edited via the full Journal modal's rich editor are
+ * indistinguishable in storage — either can be opened and continued in the
+ * other (see `plainTextToParagraphHtml` in `src/lib/journal.ts`).
+ */
+export interface JournalEntry {
+  id: string;
+  campaignId: string;
+  sessionId: string;
+  text: string;
+  /** Always "dm" in iteration 1 — see `JournalEntryAudience`'s own doc comment. */
+  audience: JournalEntryAudience;
+  /** Always "dm" in iteration 1 — there's no per-player identity (see `UserRole`'s own doc comment in `auth.ts`), so this is the closest iteration 1 gets to "who wrote it". Set once at creation, never changed by an edit. */
+  authorRole: UserRole;
+  createdAt: string;
+  /** Bumped on every edit — set server-side in `updateJournalEntryText`, never trusted from the client. */
+  updatedAt: string;
+  /** Reserved for a later iteration's conflict-detection check ("this entry changed since you started editing it") — written on every edit (in iteration 1 it will always equal `authorRole`'s value) but not read/compared by anything yet. */
+  updatedByRole?: UserRole;
 }
 
