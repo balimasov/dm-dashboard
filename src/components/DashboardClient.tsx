@@ -406,16 +406,21 @@ export function DashboardClient({
         </CollapsibleSection>
       )}
 
-      {isDm && (
-        <RemindersPanel
-          characters={characters}
-          creatures={creatures}
-          onUpdateCharacter={updateCharacter}
-          onUpdateCreature={updateCreature}
-          storageKey="dm-dashboard-reminders-open"
-          initialOpen={initialOpen.reminders}
-        />
-      )}
+      {/* Visible to both roles. `creatures` needs no role filtering here —
+          `page.tsx` already narrows it to Companions-only before it ever
+          reaches this component for a player (the same props a player's
+          browser receives at all), so a player's reminders can only ever
+          surface their characters and their own Companions, never an
+          Enemy/NPC's traits they've never been shown. */}
+      <RemindersPanel
+        characters={characters}
+        creatures={creatures}
+        onUpdateCharacter={updateCharacter}
+        onUpdateCreature={updateCreature}
+        storageKey="dm-dashboard-reminders-open"
+        initialOpen={initialOpen.reminders}
+      />
+
 
       <CollapsibleSection
         title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
