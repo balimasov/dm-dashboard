@@ -230,6 +230,22 @@ describe("journalEntryUpdateSchema", () => {
       expect(result.data).toEqual({ text: "<p>Hi</p>" });
     }
   });
+
+  it("accepts an optional expectedUpdatedAt for conflict detection", () => {
+    const result = journalEntryUpdateSchema.safeParse({ text: "<p>Hi</p>", expectedUpdatedAt: "2026-01-01T00:00:00.000Z" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.expectedUpdatedAt).toBe("2026-01-01T00:00:00.000Z");
+    }
+  });
+
+  it("still accepts a body with no expectedUpdatedAt at all", () => {
+    const result = journalEntryUpdateSchema.safeParse({ text: "<p>Hi</p>" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.expectedUpdatedAt).toBeUndefined();
+    }
+  });
 });
 
 describe("journalSessionCreateSchema", () => {

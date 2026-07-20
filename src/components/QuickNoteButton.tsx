@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createJournalEntryApi } from "@/lib/journalApi";
 import { plainTextToParagraphHtml } from "@/lib/journal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
 import { PencilIcon } from "./ui/icons";
 
@@ -29,6 +30,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEscapeToClose(() => setOpen(false), open);
+  useGlobalHotkey("n", () => setOpen(true));
 
   useEffect(() => {
     if (!open) return;

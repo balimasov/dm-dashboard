@@ -94,6 +94,69 @@ describe("updateJournalSession", () => {
   });
 });
 
+describe("updateJournalEntryText — conflict detection", () => {
+  it("saves unconditionally when no expectedUpdatedAt is given", () => {
+    const campaignId = "campaign-conflict-1";
+    const session = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const entry = db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>hi</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+
+    const result = db.updateJournalEntryText(entry.id, "<p>edited</p>", "dm");
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") expect(result.entry.text).toBe("<p>edited</p>");
+  });
+
+  it("saves when expectedUpdatedAt matches the entry's current updatedAt", () => {
+    const campaignId = "campaign-conflict-2";
+    const session = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const entry = db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>hi</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+
+    const result = db.updateJournalEntryText(entry.id, "<p>edited</p>", "dm", entry.updatedAt);
+    expect(result.status).toBe("ok");
+  });
+
+  it("reports a conflict when expectedUpdatedAt is stale, without applying the write", async () => {
+    const campaignId = "campaign-conflict-3";
+    const session = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const entry = db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>original</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+    const staleExpectedUpdatedAt = entry.updatedAt;
+    await tick();
+    // Someone else saves first, moving updatedAt on.
+    db.updateJournalEntryText(entry.id, "<p>someone else's edit</p>", "player");
+
+    const result = db.updateJournalEntryText(entry.id, "<p>my stale edit</p>", "dm", staleExpectedUpdatedAt);
+    expect(result.status).toBe("conflict");
+    if (result.status === "conflict") expect(result.entry.text).toBe("<p>someone else's edit</p>");
+    // The stale write must not have landed.
+    expect(db.getJournalEntry(entry.id)?.text).toBe("<p>someone else's edit</p>");
+  });
+
+  it("returns not_found for a missing entry regardless of expectedUpdatedAt", () => {
+    const result = db.updateJournalEntryText("no-such-entry", "<p>x</p>", "dm");
+    expect(result.status).toBe("not_found");
+  });
+});
+
 describe("removeJournalSession", () => {
   it("cascades to delete the session's own entries along with it", () => {
     const campaignId = "campaign-remove-1";
@@ -191,7 +254,8 @@ describe("updateJournalEntryText", () => {
       audience: "dm",
       authorRole: "dm",
     });
-    const updated = db.updateJournalEntryText(entry.id, "<p>edited</p>", "player");
-    expect(updated?.updatedByRole).toBe("player");
+    const result = db.updateJournalEntryText(entry.id, "<p>edited</p>", "player");
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") expect(result.entry.updatedByRole).toBe("player");
   });
 });

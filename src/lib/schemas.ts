@@ -347,9 +347,17 @@ export const journalEntryCreateSchema = z.object({
  * full `JournalEntry` shape the way the other update schemas above are —
  * `sessionId`/`campaignId`/`authorRole`/`audience`/`createdAt` must never
  * be client-editable, so only `text` is accepted here.
+ *
+ * `expectedUpdatedAt` — optional compare-and-swap token: the `updatedAt` the
+ * client last saw when it started editing. Omitted, the write always
+ * proceeds (unconditional overwrite, same behavior as before this field
+ * existed); given, `updateJournalEntryText` in `db.ts` rejects the write
+ * with a `"conflict"` result if the entry's stored `updatedAt` has since
+ * moved on.
  */
 export const journalEntryUpdateSchema = z.object({
   text: z.string().min(1, "A note can't be empty."),
+  expectedUpdatedAt: z.string().optional(),
 });
 
 /** POST `/api/journal/sessions` — DM-only manual "start a new session." */

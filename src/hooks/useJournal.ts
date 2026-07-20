@@ -119,8 +119,9 @@ export function useJournal(campaignId: string) {
     [selectedSessionId, sessions, selectSession]
   );
 
-  const updateEntry = useCallback(async (id: string, text: string) => {
-    const updated = await patchJournalEntryApi(id, text);
+  /** `expectedUpdatedAt` passes straight through to `patchJournalEntryApi` — a `JournalConflictError` propagates to the caller unhandled, same as any other rejected promise here; `JournalEntryRow` is the one that catches it. */
+  const updateEntry = useCallback(async (id: string, text: string, expectedUpdatedAt?: string) => {
+    const updated = await patchJournalEntryApi(id, text, expectedUpdatedAt);
     setEntries((prev) => prev?.map((e) => (e.id === id ? updated : e)) ?? prev);
   }, []);
 

@@ -1,6 +1,23 @@
 import { JournalEntry, JournalEntryAudience, JournalSession, JournalSessionSummary } from "./types";
 import { apiFetch, parseJsonOrThrow } from "./apiClient";
 
+/**
+ * `parseJsonOrThrow` (`apiClient.ts`) collapses every non-ok response into a
+ * plain `Error`, discarding the status code — fine for every other route,
+ * but a 409 here carries the entry as it now stands server-side, and the
+ * caller (`JournalEntryRow`) needs that to offer "Reload" without a second
+ * request. Kept local to this file rather than widening `apiClient.ts`'s
+ * shared helper for a shape only Journal conflicts produce.
+ */
+export class JournalConflictError extends Error {
+  current: JournalEntry;
+  constructor(current: JournalEntry) {
+    super("This entry was changed by someone else.");
+    this.name = "JournalConflictError";
+    this.current = current;
+  }
+}
+
 export async function listJournalSessionsApi(campaignId: string): Promise<JournalSessionSummary[]> {
   const res = await apiFetch(`/api/journal/sessions?campaignId=${encodeURIComponent(campaignId)}`);
   return parseJsonOrThrow<JournalSessionSummary[]>(res, "Failed to load journal sessions.");
@@ -34,12 +51,23 @@ export async function createJournalEntryApi(input: {
   return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal entry.");
 }
 
-export async function patchJournalEntryApi(id: string, text: string): Promise<JournalEntry> {
+/**
+ * `expectedUpdatedAt` omitted → unconditional save (Quick Note's editor
+ * never passes one). Given (the full `JournalEntryRow` editor's path) → the
+ * server rejects with 409 if the entry moved on since the caller last saw
+ * it; that's handled here, before `parseJsonOrThrow`, since a 409 body
+ * shape (`{ error, entry }`) differs from every other error response.
+ */
+export async function patchJournalEntryApi(id: string, text: string, expectedUpdatedAt?: string): Promise<JournalEntry> {
   const res = await apiFetch(`/api/journal/entries/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, expectedUpdatedAt }),
   });
+  if (res.status === 409) {
+    const data = (await res.json().catch(() => null)) as { entry?: JournalEntry } | null;
+    if (data?.entry) throw new JournalConflictError(data.entry);
+  }
   return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal entry.");
 }
 

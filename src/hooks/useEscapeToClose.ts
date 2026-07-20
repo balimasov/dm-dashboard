@@ -11,6 +11,11 @@ import { useEffect, useRef } from "react";
  */
 let stack: symbol[] = [];
 
+/** Read-only view of the same stack — lets `useGlobalHotkey` suppress every hotkey while any modal/overlay using `useEscapeToClose` is open, without a second "is anything open" tracker to keep in sync with this one. */
+export function hasOpenLayer(): boolean {
+  return stack.length > 0;
+}
+
 /** Closes a modal/overlay on Escape — shared so every modal in the app behaves identically instead of each one (re)wiring its own listener. When several are stacked (e.g. a crop picker opened from inside a settings modal), only the topmost one closes per keypress. */
 export function useEscapeToClose(onClose: () => void, active = true) {
   const idRef = useRef<symbol | undefined>(undefined);

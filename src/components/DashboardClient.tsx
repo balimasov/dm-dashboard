@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
+import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
 import { QuickNoteButton } from "@/components/QuickNoteButton";
@@ -322,6 +323,9 @@ export function DashboardClient({
     );
     setSyncingAll(false);
   }
+
+  useGlobalHotkey("j", () => setJournalOpen(true));
+  useGlobalHotkey("s", () => void handleSyncAll(), linkedCharacters.length > 0);
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-8">

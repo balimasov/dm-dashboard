@@ -575,13 +575,40 @@ export function createJournalEntry(input: {
   return entry;
 }
 
-/** Only `text` is ever accepted here (see `journalEntryUpdateSchema`) — `updatedAt` is stamped by this function itself, `updatedByRole` comes from the caller's own verified session role (never trusted from the request body), never trusted from the caller in any other sense. */
-export function updateJournalEntryText(id: string, text: string, updatedByRole: UserRole): JournalEntry | null {
+export type UpdateJournalEntryResult =
+  | { status: "not_found" }
+  | { status: "conflict"; entry: JournalEntry }
+  | { status: "ok"; entry: JournalEntry };
+
+/**
+ * Only `text`/`expectedUpdatedAt` are ever accepted from a client (see
+ * `journalEntryUpdateSchema`) — `updatedAt` is stamped by this function
+ * itself, `updatedByRole` comes from the caller's own verified session role,
+ * never trusted from the request body in any other sense.
+ *
+ * `expectedUpdatedAt` omitted → unconditional overwrite, same behavior as
+ * before conflict detection existed. Given → compare-and-swap: if the
+ * entry's current `updatedAt` no longer matches, someone else saved in
+ * between and this write is rejected with `"conflict"` (carrying the fresh
+ * entry, so the caller doesn't need a second round-trip to see what
+ * changed) instead of silently clobbering it. better-sqlite3 is
+ * synchronous, so the read-then-write below is already atomic within this
+ * single call — no transaction needed.
+ */
+export function updateJournalEntryText(
+  id: string,
+  text: string,
+  updatedByRole: UserRole,
+  expectedUpdatedAt?: string
+): UpdateJournalEntryResult {
   const existing = getJournalEntry(id);
-  if (!existing) return null;
+  if (!existing) return { status: "not_found" };
+  if (expectedUpdatedAt !== undefined && existing.updatedAt !== expectedUpdatedAt) {
+    return { status: "conflict", entry: existing };
+  }
   const updated: JournalEntry = { ...existing, text, updatedAt: new Date().toISOString(), updatedByRole };
   getDb().prepare("UPDATE journal_entries SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
-  return updated;
+  return { status: "ok", entry: updated };
 }
 
 export function removeJournalEntry(id: string): void {
