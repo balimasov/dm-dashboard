@@ -1405,8 +1405,8 @@ export function computePartyAttacks(characters: Character[]): PartyCharacterAtta
     }));
 }
 
-/** One character's stack of a given consumable — the row's hover/holder breakdown, same shape every other party-wide grouping in this file uses. */
-export interface PartyConsumableHolder {
+/** One character's stack of a given item — the row's hover/holder breakdown, same shape every party-wide item grouping in this file (and `InventoryOverview`'s own category groups) uses. */
+export interface PartyItemHolder {
   characterId: string;
   characterName: string;
   avatarUrl?: string;
@@ -1422,21 +1422,26 @@ export interface PartyConsumableEntry {
   cost?: number;
   description?: string;
   totalQuantity: number;
-  holders: PartyConsumableHolder[];
+  holders: PartyItemHolder[];
 }
 
 /**
  * Merges duplicate stacks of the same item — same trimmed/lowercased name,
- * the same key `computePartyConsumables` below and `InventoryOverview`'s own
- * grouping both already use — into one entry with the summed quantity. A
- * single character's raw inventory can legitimately carry the same named
- * item as two separate rows (e.g. two D&D Beyond stacks picked up on
- * different occasions, never manually combined); showing those as two
- * separate rows both double-counts the item and lets flagging one flag both
- * at once, since the reminder flame's key is the item's *name*, not its row
- * id. Whichever copy is seen first wins for the fields that don't vary by
- * stack (rarity/type/weight/cost/description) — same convention
- * `computePartyConsumables` uses for a holder's first-seen copy.
+ * the same key `groupPartyItemsByName` below uses — into one entry with the
+ * summed quantity. A single character's raw inventory can legitimately carry
+ * the same named item as two separate rows (e.g. two D&D Beyond stacks
+ * picked up on different occasions, never manually combined); showing those
+ * as two separate rows both double-counts the item and lets flagging one
+ * flag both at once, since the reminder flame's key is the item's *name*,
+ * not its row id. Whichever copy is seen first wins for the fields that
+ * don't vary by stack (rarity/type/weight/cost/description) — same
+ * convention `groupPartyItemsByName` uses for a holder's first-seen copy.
+ *
+ * This is the single-character version — no holder breakdown, just one flat
+ * deduped list — for call sites that only ever look at one character's own
+ * items (a character's Consumables tab, `RemindersPanel`'s per-character
+ * groups). The party-wide equivalent, tracking who holds how much of each
+ * item across every character, is `groupPartyItemsByName`.
  */
 export function dedupeInventoryItems<T extends { name: string; quantity: number }>(items: T[]): T[] {
   const byKey = new Map<string, T>();
@@ -1452,48 +1457,72 @@ export function dedupeInventoryItems<T extends { name: string; quantity: number 
   return Array.from(byKey.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** One name-group's result from `groupPartyItemsByName` — the first-seen item (for its static, non-quantity fields) plus the summed/per-holder quantity breakdown. */
+export interface PartyItemGroup<T> {
+  name: string;
+  totalQuantity: number;
+  holders: PartyItemHolder[];
+  item: T;
+}
+
 /**
- * Every `Consumable`-category item across the party, deduped by name (same
- * lowercased-trim key `InventoryOverview`'s own grouping uses) with each
- * holder's stack summed into one running total — a potion three different
- * characters are carrying reads as one row with a party-wide count, not
- * three separate ones. `rarity`/`type`/`weight`/`cost`/`description` are
- * static per-item facts that don't vary by holder, so (same convention
- * `computePartySpellsByLevel` already uses for a spell's own description)
- * whichever holder's copy is seen first wins. Alphabetical by name — the
- * caller groups by `type` for display, and within a group this order is
- * already alphabetical for free.
+ * The party-wide "who has how much of this" grouping — same trimmed/
+ * lowercased-name key as `dedupeInventoryItems`, but across every
+ * character's items at once, tracking a per-holder quantity breakdown
+ * alongside the summed total. `computePartyConsumables` below and
+ * `InventoryOverview`'s own per-category grouping both need exactly this
+ * (a potion three different characters are carrying should read as one row
+ * with a party-wide count and a holder breakdown, not three separate rows)
+ * — this is the one implementation both call instead of each maintaining
+ * its own copy of the same accumulation logic. `itemsOf` picks which of a
+ * character's items to fold in (e.g. only `Consumable`-category items, or
+ * only one other category at a time), so callers control the grouping
+ * without this function needing to know about categories at all.
  */
-export function computePartyConsumables(characters: Character[]): PartyConsumableEntry[] {
-  const byName = new Map<string, PartyConsumableEntry>();
+export function groupPartyItemsByName<T extends { name: string; quantity: number }>(
+  characters: Character[],
+  itemsOf: (character: Character) => T[]
+): PartyItemGroup<T>[] {
+  const byKey = new Map<string, PartyItemGroup<T>>();
   for (const c of characters) {
-    for (const item of c.inventory) {
-      if (item.category !== "Consumable") continue;
+    for (const item of itemsOf(c)) {
       const key = item.name.trim().toLowerCase();
-      let entry = byName.get(key);
-      if (!entry) {
-        entry = {
-          name: item.name,
-          rarity: item.rarity,
-          type: item.type,
-          weight: item.weight,
-          cost: item.cost,
-          description: item.description,
-          totalQuantity: 0,
-          holders: [],
-        };
-        byName.set(key, entry);
+      let group = byKey.get(key);
+      if (!group) {
+        group = { name: item.name, totalQuantity: 0, holders: [], item };
+        byKey.set(key, group);
       }
-      entry.totalQuantity += item.quantity;
-      const holder = entry.holders.find((h) => h.characterId === c.id);
+      group.totalQuantity += item.quantity;
+      const holder = group.holders.find((h) => h.characterId === c.id);
       if (holder) {
         holder.quantity += item.quantity;
       } else {
-        entry.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
+        group.holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
       }
     }
   }
-  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+  return Array.from(byKey.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Every `Consumable`-category item across the party, in the shape the
+ * Consumables tab/histogram render — a thin wrapper over
+ * `groupPartyItemsByName` that pulls the static per-item fields
+ * (rarity/type/weight/cost/description) out of the first-seen item. Alpha-
+ * betical by name — the caller groups by `type` for display, and within a
+ * group this order is already alphabetical for free.
+ */
+export function computePartyConsumables(characters: Character[]): PartyConsumableEntry[] {
+  return groupPartyItemsByName(characters, (c) => c.inventory.filter((item) => item.category === "Consumable")).map((group) => ({
+    name: group.name,
+    rarity: group.item.rarity,
+    type: group.item.type,
+    weight: group.item.weight,
+    cost: group.item.cost,
+    description: group.item.description,
+    totalQuantity: group.totalQuantity,
+    holders: group.holders,
+  }));
 }
 
 export const OTHER_CONSUMABLE_TYPE_LABEL = "Other";

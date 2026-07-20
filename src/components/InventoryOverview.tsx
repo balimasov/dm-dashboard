@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity, RARITY_COLOR } from "@/lib/types";
 import { currencyToGp } from "@/lib/characterMath";
+import { groupPartyItemsByName, PartyItemHolder } from "@/lib/partyToolkit";
 import { InfoTooltip } from "./InfoTooltip";
 import { splitIntoColumns } from "./partyToolkit/shared";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
@@ -39,7 +40,7 @@ interface ItemGroup {
   weight?: number;
   cost?: number;
   description?: string;
-  holders: Array<{ characterId: string; characterName: string; avatarUrl?: string; quantity: number }>;
+  holders: PartyItemHolder[];
 }
 
 interface CategoryGroup {
@@ -51,29 +52,19 @@ type InventoryRow =
   | { kind: "header"; category: ItemCategory; continued?: boolean }
   | { kind: "item"; category: ItemCategory; item: ItemGroup };
 
+/** One category at a time through the shared party-wide name-grouping (`groupPartyItemsByName`, `@/lib/partyToolkit` — also used by `computePartyConsumables`), so this and the Consumables view can't drift apart on how "same item, multiple holders" gets merged. */
 function buildCategoryGroups(characters: Character[]): CategoryGroup[] {
-  const byCategory = new Map<ItemCategory, Map<string, ItemGroup>>();
-  for (const c of characters) {
-    for (const item of c.inventory) {
-      if (!byCategory.has(item.category)) byCategory.set(item.category, new Map());
-      const items = byCategory.get(item.category)!;
-      const key = item.name.trim().toLowerCase();
-      if (!items.has(key)) {
-        items.set(key, { name: item.name, rarity: item.rarity, weight: item.weight, cost: item.cost, description: item.description, holders: [] });
-      }
-      const holders = items.get(key)!.holders;
-      const existing = holders.find((h) => h.characterId === c.id);
-      if (existing) {
-        existing.quantity += item.quantity;
-      } else {
-        holders.push({ characterId: c.id, characterName: c.name, avatarUrl: c.avatarUrl, quantity: item.quantity });
-      }
-    }
-  }
-  return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => ({
+  return CATEGORY_ORDER.map((category) => ({
     category,
-    items: Array.from(byCategory.get(category)!.values()).sort((a, b) => a.name.localeCompare(b.name)),
-  }));
+    items: groupPartyItemsByName(characters, (c) => c.inventory.filter((item) => item.category === category)).map((group) => ({
+      name: group.name,
+      rarity: group.item.rarity,
+      weight: group.item.weight,
+      cost: group.item.cost,
+      description: group.item.description,
+      holders: group.holders,
+    })),
+  })).filter((group) => group.items.length > 0);
 }
 
 function flattenToRows(groups: CategoryGroup[]): InventoryRow[] {
