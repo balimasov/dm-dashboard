@@ -343,6 +343,12 @@ export interface InventoryItem {
   rarity: ItemRarity;
   category: ItemCategory;
   quantity: number;
+  /** D&D Beyond's own item subtype (e.g. "Potion", "Scroll", "Rapier") — finer-grained than `category`, absent for anything manually added (no D&D Beyond definition to read it from). */
+  type?: string;
+  /** Pounds, from D&D Beyond's own item definition — absent for a manually-added item. */
+  weight?: number;
+  /** GP, from D&D Beyond's own item definition — absent when D&D Beyond itself has no price on file for it (common for consumables) or the item was added manually. */
+  cost?: number;
   /** Short rules blurb shown as a hover tooltip (from D&D Beyond, or typed manually). */
   description?: string;
 }

@@ -17,7 +17,7 @@ import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
-import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, usageColorClass } from "./shared";
+import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, distributeIntoColumns, usageColorClass } from "./shared";
 
 /** Heroic Inspiration is the one entry with no real character behind it — same special case `CoveragePanel` handled, rendered as plain "x/partySize" text instead of a chip row. */
 function SpecialRow({ entry }: { entry: ResourceCoverageEntry }) {
@@ -229,65 +229,13 @@ function ResourceCoverageCategoryBlock({ category, entries }: { category: Resour
 
 const COLUMNS = 4;
 
-/**
- * Order-preserving column fill that targets each column's fair share of the
- * total weight, not just "whatever's left after the earlier columns filled
- * up." A previous version minimized the *tallest* column via binary search
- * (the classic "split into k contiguous parts minimizing the max part"
- * problem) — a different objective than "balanced," and it showed: with a
- * few heavy categories (`Resources`, `Control`, `Protection`) each anchored
- * near that shared cap, the light, alphabetically-clustered categories
- * (`Social`/`Summoning`/`Survival`) all landed in whatever column was left
- * once the cap was reached, however little that left it (confirmed: a
- * column with 7 lines sitting next to three columns with 30+). Minimizing
- * the max never has to fix that, since it's already satisfied once no
- * column *exceeds* the cap — an unbalanced-but-legal split scores the same
- * as a balanced one.
- *
- * This version instead places each boundary at whichever category's
- * cumulative weight lands closest to *that column's own* fair-share target
- * (`total * (columnIndex + 1) / numColumns`) — column 1 aims for the first
- * quarter of the total, column 2 the first half, and so on, so leftover
- * weight spreads across every column instead of piling onto the last one.
- * Still walks categories in `RESOURCE_COVERAGE_CATEGORY_ORDER` and keeps
- * each column a contiguous run of that order — the grid still reads
- * top-to-bottom within a column, then across to the next one.
- */
+/** Thin wrapper around the shared `distributeIntoColumns` — each category's weight is its own rendered line count plus one (for its own header), same as before. */
 function distributeColumns(
   categories: ResourceCoverageCategory[],
   coverage: Record<ResourceCoverageCategory, ResourceCoverageEntry[]>,
   numColumns: number
 ): ResourceCoverageCategory[][] {
-  if (categories.length === 0) return Array.from({ length: numColumns }, () => []);
-
-  const weights = categories.map((c) => categoryLineCount(coverage[c]) + 1);
-  const total = weights.reduce((sum, w) => sum + w, 0);
-
-  const columns: ResourceCoverageCategory[][] = [];
-  let current: ResourceCoverageCategory[] = [];
-  let cumulative = 0;
-  let columnsUsed = 0;
-
-  categories.forEach((category, i) => {
-    const isLastColumn = numColumns - columnsUsed <= 1;
-    if (!isLastColumn && current.length > 0) {
-      const target = (total * (columnsUsed + 1)) / numColumns;
-      const withoutThis = cumulative;
-      const withThis = cumulative + weights[i];
-      // Close the column now, before adding this category, if that lands
-      // closer to its fair-share target than including it would.
-      if (Math.abs(withoutThis - target) <= Math.abs(withThis - target)) {
-        columns.push(current);
-        current = [];
-        columnsUsed += 1;
-      }
-    }
-    current.push(category);
-    cumulative += weights[i];
-  });
-  columns.push(current);
-  while (columns.length < numColumns) columns.push([]);
-  return columns;
+  return distributeIntoColumns(categories, (c) => categoryLineCount(coverage[c]) + 1, numColumns);
 }
 
 const STORAGE_KEY = "dm-dashboard-resource-coverage-open";

@@ -4,8 +4,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity, RARITY_COLOR } from "@/lib/types";
 import { currencyToGp } from "@/lib/characterMath";
 import { InfoTooltip } from "./InfoTooltip";
-import { RichText } from "./RichText";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
+import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { ToolkitCard } from "./ui/ToolkitCard";
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
@@ -35,6 +35,8 @@ const COIN_CODE_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
 interface ItemGroup {
   name: string;
   rarity: ItemRarity;
+  weight?: number;
+  cost?: number;
   description?: string;
   holders: Array<{ characterId: string; characterName: string; avatarUrl?: string; quantity: number }>;
 }
@@ -56,7 +58,7 @@ function buildCategoryGroups(characters: Character[]): CategoryGroup[] {
       const items = byCategory.get(item.category)!;
       const key = item.name.trim().toLowerCase();
       if (!items.has(key)) {
-        items.set(key, { name: item.name, rarity: item.rarity, description: item.description, holders: [] });
+        items.set(key, { name: item.name, rarity: item.rarity, weight: item.weight, cost: item.cost, description: item.description, holders: [] });
       }
       const holders = items.get(key)!.holders;
       const existing = holders.find((h) => h.characterId === c.id);
@@ -127,14 +129,10 @@ function splitRowsIntoColumns(rows: InventoryRow[], numColumns: number): Invento
 
 function ItemName({ item }: { item: ItemGroup }) {
   const nameEl = <span className={RARITY_COLOR[item.rarity]}>{item.name}</span>;
-  if (!item.description) return nameEl;
+  if (!item.description && item.weight === undefined && item.cost === undefined) return nameEl;
   return (
     <InfoTooltip
-      panel={
-        <p>
-          <RichText text={item.description} />
-        </p>
-      }
+      panel={<ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />}
     >
       {nameEl}
     </InfoTooltip>

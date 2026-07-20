@@ -1316,7 +1316,7 @@ describe("computePartyAttacks", () => {
 });
 
 describe("computePartyConsumables", () => {
-  test("sums the same item's quantity across characters into one holder-tagged total, ignores non-Consumable categories, and sorts scarcest first", () => {
+  test("sums the same item's quantity across characters into one holder-tagged total and ignores non-Consumable categories", () => {
     const ragnar = makeCharacter({
       name: "Ragnar",
       inventory: [
@@ -1339,6 +1339,43 @@ describe("computePartyConsumables", () => {
       { characterId: "Ragnar", characterName: "Ragnar", avatarUrl: undefined, quantity: 2 },
       { characterId: "Esmeralda", characterName: "Esmeralda", avatarUrl: undefined, quantity: 1 },
     ]);
+  });
+
+  test("sorts alphabetically by name regardless of quantity", () => {
+    const character = makeCharacter({
+      name: "Yorun",
+      inventory: [
+        { id: "i1", name: "Zebra Tonic", rarity: "Common", category: "Consumable", quantity: 100 },
+        { id: "i2", name: "Aardvark Serum", rarity: "Common", category: "Consumable", quantity: 1 },
+      ],
+    });
+    const result = computePartyConsumables([character]);
+    expect(result.map((e) => e.name)).toEqual(["Aardvark Serum", "Zebra Tonic"]);
+  });
+
+  test("carries rarity/type/weight/cost/description from the first-seen copy of an item", () => {
+    const character = makeCharacter({
+      name: "Durgin",
+      inventory: [
+        {
+          id: "i1",
+          name: "Potion of Healing (Greater)",
+          rarity: "Uncommon",
+          category: "Consumable",
+          quantity: 1,
+          type: "Potion",
+          weight: 0.5,
+          cost: 150,
+          description: "Regain 4d4+4 hit points.",
+        },
+      ],
+    });
+    const [entry] = computePartyConsumables([character]);
+    expect(entry.rarity).toBe("Uncommon");
+    expect(entry.type).toBe("Potion");
+    expect(entry.weight).toBe(0.5);
+    expect(entry.cost).toBe(150);
+    expect(entry.description).toBe("Regain 4d4+4 hit points.");
   });
 
   test("dedupes by trimmed/lowercased name, same as InventoryOverview's own grouping", () => {

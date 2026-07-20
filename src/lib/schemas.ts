@@ -168,6 +168,9 @@ const inventoryItemSchema = z.object({
   rarity: itemRaritySchema,
   category: itemCategorySchema,
   quantity: z.number(),
+  type: z.string().optional(),
+  weight: z.number().optional(),
+  cost: z.number().optional(),
   description: z.string().optional(),
 });
 

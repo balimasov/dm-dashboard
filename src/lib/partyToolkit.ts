@@ -3,6 +3,7 @@ import {
   Attack,
   Character,
   Feature,
+  ItemRarity,
   KnownSpell,
   RecoveryType,
   SKILL_ABILITY,
@@ -1414,6 +1415,11 @@ export interface PartyConsumableHolder {
 
 export interface PartyConsumableEntry {
   name: string;
+  rarity: ItemRarity;
+  /** D&D Beyond's own item subtype (e.g. "Potion", "Scroll") — the one signal this can group by, since it comes straight from D&D Beyond rather than a guess this app is making up. `undefined` for anything D&D Beyond didn't tag it with (most often a manually-added item with no synced definition behind it). */
+  type?: string;
+  weight?: number;
+  cost?: number;
   description?: string;
   totalQuantity: number;
   holders: PartyConsumableHolder[];
@@ -1424,11 +1430,12 @@ export interface PartyConsumableEntry {
  * lowercased-trim key `InventoryOverview`'s own grouping uses) with each
  * holder's stack summed into one running total — a potion three different
  * characters are carrying reads as one row with a party-wide count, not
- * three separate ones. Sorted with the scarcest item first: unlike a spell
- * slot or a Resource, a consumable has no `max` to recover to, so "lowest
- * count" is the only signal worth leading with (it's the one row a DM
- * actually needs to notice before it hits zero) — alphabetical only breaks
- * ties within the same count.
+ * three separate ones. `rarity`/`type`/`weight`/`cost`/`description` are
+ * static per-item facts that don't vary by holder, so (same convention
+ * `computePartySpellsByLevel` already uses for a spell's own description)
+ * whichever holder's copy is seen first wins. Alphabetical by name — the
+ * caller groups by `type` for display, and within a group this order is
+ * already alphabetical for free.
  */
 export function computePartyConsumables(characters: Character[]): PartyConsumableEntry[] {
   const byName = new Map<string, PartyConsumableEntry>();
@@ -1438,7 +1445,16 @@ export function computePartyConsumables(characters: Character[]): PartyConsumabl
       const key = item.name.trim().toLowerCase();
       let entry = byName.get(key);
       if (!entry) {
-        entry = { name: item.name, description: item.description, totalQuantity: 0, holders: [] };
+        entry = {
+          name: item.name,
+          rarity: item.rarity,
+          type: item.type,
+          weight: item.weight,
+          cost: item.cost,
+          description: item.description,
+          totalQuantity: 0,
+          holders: [],
+        };
         byName.set(key, entry);
       }
       entry.totalQuantity += item.quantity;
@@ -1450,5 +1466,5 @@ export function computePartyConsumables(characters: Character[]): PartyConsumabl
       }
     }
   }
-  return Array.from(byName.values()).sort((a, b) => a.totalQuantity - b.totalQuantity || a.name.localeCompare(b.name));
+  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
 }

@@ -34,12 +34,18 @@ export function computeInventory(data: RawDdbData): InventoryItem[] {
   return (data.inventory ?? []).map((item, idx) => {
     const rarity: ItemRarity = rarityFromDdb(item.definition?.rarity);
     const description = shortDescription(item.definition?.snippet, item.definition?.description);
+    const type = item.definition?.type;
+    const weight = item.definition?.weight;
+    const cost = item.definition?.cost;
     return {
       id: `item-${idx}`,
       name: item.definition?.name || "Item",
       rarity,
       category: computeItemCategory(item.definition?.filterType, rarity),
       quantity: item.quantity ?? 1,
+      ...(typeof type === "string" && type ? { type } : {}),
+      ...(typeof weight === "number" ? { weight } : {}),
+      ...(typeof cost === "number" ? { cost } : {}),
       ...(description ? { description } : {}),
     };
   });

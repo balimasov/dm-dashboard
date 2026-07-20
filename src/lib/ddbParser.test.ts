@@ -282,6 +282,22 @@ describe("languages and tool proficiencies — no isGranted filter, same reasoni
   });
 });
 
+describe("inventory item type/weight/cost", () => {
+  test("Durgin (Cleric) — Potion of Healing carries D&D Beyond's own subtype and weight, no invented cost when D&D Beyond has none on file", () => {
+    const c = load("durgin-cleric");
+    const potion = c.inventory.find((i) => i.name === "Potion of Healing");
+    expect(potion?.type).toBe("Potion");
+    expect(potion?.weight).toBe(0.5);
+    expect(potion?.cost).toBeUndefined();
+  });
+
+  test("a priced item (Breastplate, real cost on file) carries its cost through", () => {
+    const c = load("esmeralda-bard");
+    const breastplate = c.inventory.find((i) => i.name === "Breastplate");
+    expect(breastplate?.cost).toBe(400);
+  });
+});
+
 describe("regression baseline — every fixture parses without throwing and has sane shape", () => {
   const fixtures = fs.readdirSync(FIXTURES_DIR).map((f) => f.replace(/\.json$/, ""));
 

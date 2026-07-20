@@ -333,3 +333,51 @@ export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: Par
     </div>
   );
 }
+
+/**
+ * Order-preserving column fill that targets each column's fair share of the
+ * total weight, not just "whatever's left after the earlier columns filled
+ * up" — originally built for `ResourceCoveragePanel`'s category grid, now
+ * shared with any other panel that needs the same "distribute whole groups
+ * across N columns, balanced by size, without splitting a group's own rows
+ * across a column boundary" shape (e.g. `ConsumablesPanel`'s type groups).
+ * Each boundary is placed at whichever item's cumulative weight lands
+ * closest to *that column's own* fair-share target (`total * (columnIndex +
+ * 1) / numColumns`) — column 1 aims for the first quarter of the total,
+ * column 2 the first half, and so on, so leftover weight spreads across
+ * every column instead of piling onto the last one. Order-preserving: a
+ * column is always a contiguous run of the input order, so the grid still
+ * reads top-to-bottom within a column, then across to the next one.
+ */
+export function distributeIntoColumns<T>(items: T[], weightOf: (item: T) => number, numColumns: number): T[][] {
+  if (items.length === 0) return Array.from({ length: numColumns }, () => []);
+
+  const weights = items.map(weightOf);
+  const total = weights.reduce((sum, w) => sum + w, 0);
+
+  const columns: T[][] = [];
+  let current: T[] = [];
+  let cumulative = 0;
+  let columnsUsed = 0;
+
+  items.forEach((item, i) => {
+    const isLastColumn = numColumns - columnsUsed <= 1;
+    if (!isLastColumn && current.length > 0) {
+      const target = (total * (columnsUsed + 1)) / numColumns;
+      const withoutThis = cumulative;
+      const withThis = cumulative + weights[i];
+      // Close the column now, before adding this item, if that lands
+      // closer to its fair-share target than including it would.
+      if (Math.abs(withoutThis - target) <= Math.abs(withThis - target)) {
+        columns.push(current);
+        current = [];
+        columnsUsed += 1;
+      }
+    }
+    current.push(item);
+    cumulative += weights[i];
+  });
+  columns.push(current);
+  while (columns.length < numColumns) columns.push([]);
+  return columns;
+}
