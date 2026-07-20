@@ -67,3 +67,9 @@ export async function updateSessionApi(id: string, updates: { title?: string; ar
   });
   return parseJsonOrThrow<JournalSession>(res, "Failed to update the session.");
 }
+
+/** DM-only cascade delete — server enforces the role check regardless of who calls this. */
+export async function deleteSessionApi(id: string): Promise<void> {
+  const res = await apiFetch(`/api/journal/sessions/${id}`, { method: "DELETE" });
+  await parseJsonOrThrow<{ ok: true }>(res, "Failed to delete the session.");
+}

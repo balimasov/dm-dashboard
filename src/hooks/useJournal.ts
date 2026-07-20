@@ -5,6 +5,7 @@ import { JournalEntry, JournalEntryAudience, JournalSessionSummary } from "@/lib
 import {
   createJournalEntryApi,
   deleteJournalEntryApi,
+  deleteSessionApi,
   listJournalEntriesApi,
   listJournalSessionsApi,
   patchJournalEntryApi,
@@ -94,6 +95,30 @@ export function useJournal(campaignId: string) {
     setSessions((prev) => prev?.map((s) => (s.id === id ? { ...s, archived: updated.archived } : s)) ?? prev);
   }, []);
 
+  /**
+   * DM-only in practice (the server rejects a non-DM caller). If the
+   * deleted session was the one being viewed, falls back to the next
+   * visible non-archived session (same rule `loadSessions` uses to pick a
+   * default), or clears the pane entirely if none remain — otherwise
+   * `selectedSessionId` would dangle and the entries pane would silently
+   * keep showing a session that no longer exists.
+   */
+  const deleteSession = useCallback(
+    async (id: string) => {
+      await deleteSessionApi(id);
+      setSessions((prev) => prev?.filter((s) => s.id !== id) ?? prev);
+      if (id !== selectedSessionId) return;
+      const remaining = (sessions ?? []).filter((s) => s.id !== id && !s.archived);
+      if (remaining.length > 0) {
+        selectSession(remaining[0].id);
+      } else {
+        setSelectedSessionId(null);
+        setEntries(null);
+      }
+    },
+    [selectedSessionId, sessions, selectSession]
+  );
+
   const updateEntry = useCallback(async (id: string, text: string) => {
     const updated = await patchJournalEntryApi(id, text);
     setEntries((prev) => prev?.map((e) => (e.id === id ? updated : e)) ?? prev);
@@ -125,5 +150,6 @@ export function useJournal(campaignId: string) {
     startNewSession,
     renameSession,
     toggleSessionArchived,
+    deleteSession,
   };
 }

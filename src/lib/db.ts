@@ -507,6 +507,16 @@ export function updateJournalSession(
   return updated;
 }
 
+/** DM-only cascade delete (enforced by the route, not here) — mirrors `deleteCampaign`'s cascade: a session's entries have nowhere else to belong once the session itself is gone. */
+export function removeJournalSession(id: string): void {
+  const db = getDb();
+  const transaction = db.transaction(() => {
+    db.prepare("DELETE FROM journal_entries WHERE session_id = ?").run(id);
+    db.prepare("DELETE FROM journal_sessions WHERE id = ?").run(id);
+  });
+  transaction();
+}
+
 /** Chronological (oldest first, like a log) — sorted in JS since `createdAt` lives in the JSON blob, not a real column, same "load then sort" approach used elsewhere in this file for anything not covered by a real column. */
 export function listJournalEntries(sessionId: string): JournalEntry[] {
   const rows = getDb().prepare("SELECT data FROM journal_entries WHERE session_id = ?").all(sessionId) as Array<{

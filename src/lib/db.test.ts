@@ -94,6 +94,37 @@ describe("updateJournalSession", () => {
   });
 });
 
+describe("removeJournalSession", () => {
+  it("cascades to delete the session's own entries along with it", () => {
+    const campaignId = "campaign-remove-1";
+    const session = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const entry = db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>hi</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+
+    db.removeJournalSession(session.id);
+
+    expect(db.getJournalSession(session.id)).toBeNull();
+    expect(db.getJournalEntry(entry.id)).toBeNull();
+  });
+
+  it("leaves other sessions and their entries untouched", async () => {
+    const campaignId = "campaign-remove-2";
+    const keep = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    await tick();
+    const doomed = db.createJournalSession(campaignId, "2026-01-02");
+
+    db.removeJournalSession(doomed.id);
+
+    expect(db.getJournalSession(keep.id)).not.toBeNull();
+  });
+});
+
 describe("listJournalSessions", () => {
   it("only counts party entries and hides archived sessions for a non-dm role", async () => {
     const campaignId = "campaign-list-1";

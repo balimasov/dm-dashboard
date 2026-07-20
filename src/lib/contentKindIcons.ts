@@ -11,7 +11,7 @@
 export const CONTENT_KIND_ICON = {
   weapons: "⚔️",
   features: "💠",
-  spells: "🔮",
+  spells: "✨",
   consumables: "🧪",
 } as const;
 
