@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { JournalEntry, JournalSessionSummary } from "@/lib/types";
+import { JournalEntry, JournalEntryAudience, JournalSessionSummary } from "@/lib/types";
 import {
   createJournalEntryApi,
   deleteJournalEntryApi,
   listJournalEntriesApi,
   listJournalSessionsApi,
   patchJournalEntryApi,
+  startNewSessionApi,
+  updateSessionApi,
 } from "@/lib/journalApi";
 
 /**
@@ -59,13 +61,33 @@ export function useJournal(campaignId: string) {
   );
 
   const createEntry = useCallback(
-    async (text: string, sessionId: string) => {
-      const entry = await createJournalEntryApi({ campaignId, sessionId, text });
+    async (text: string, sessionId: string, audience: JournalEntryAudience) => {
+      const entry = await createJournalEntryApi({ campaignId, sessionId, text, audience });
       setEntries((prev) => (prev ? [...prev, entry] : [entry]));
       setSessions((prev) => prev?.map((s) => (s.id === sessionId ? { ...s, entryCount: s.entryCount + 1 } : s)) ?? prev);
     },
     [campaignId]
   );
+
+  /** DM-only in practice (the server rejects a non-DM caller) — inserts the new session at the top and switches to it, same as picking a session from the list. */
+  const startNewSession = useCallback(async () => {
+    const session = await startNewSessionApi(campaignId, Intl.DateTimeFormat().resolvedOptions().timeZone);
+    setSessions((prev) => [{ ...session, entryCount: 0 }, ...(prev ?? [])]);
+    setSelectedSessionId(session.id);
+    void loadEntries(session.id);
+  }, [campaignId, loadEntries]);
+
+  /** DM-only in practice (the server rejects a non-DM caller). */
+  const renameSession = useCallback(async (id: string, title: string) => {
+    const updated = await updateSessionApi(id, { title });
+    setSessions((prev) => prev?.map((s) => (s.id === id ? { ...s, title: updated.title } : s)) ?? prev);
+  }, []);
+
+  /** DM-only in practice (the server rejects a non-DM caller). */
+  const toggleSessionArchived = useCallback(async (id: string, archived: boolean) => {
+    const updated = await updateSessionApi(id, { archived });
+    setSessions((prev) => prev?.map((s) => (s.id === id ? { ...s, archived: updated.archived } : s)) ?? prev);
+  }, []);
 
   const updateEntry = useCallback(async (id: string, text: string) => {
     const updated = await patchJournalEntryApi(id, text);
@@ -95,5 +117,8 @@ export function useJournal(campaignId: string) {
     createEntry,
     updateEntry,
     removeEntry,
+    startNewSession,
+    renameSession,
+    toggleSessionArchived,
   };
 }

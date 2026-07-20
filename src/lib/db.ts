@@ -10,9 +10,11 @@ import {
   ItemCategory,
   ItemRarity,
   JournalEntry,
+  JournalEntryAudience,
   JournalSession,
   JournalSessionSummary,
 } from "./types";
+import type { UserRole } from "./auth";
 import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { demoCharacters } from "./mockData";
 import { formatSessionTitle } from "./journal";
@@ -404,19 +406,42 @@ function rowToJournalEntry(row: { data: string }): JournalEntry {
   return JSON.parse(row.data) as JournalEntry;
 }
 
-/** Newest-first, with a per-session entry count via LEFT JOIN — same shape `listCampaigns` already uses for `characterCount`. */
-export function listJournalSessions(campaignId: string): JournalSessionSummary[] {
+/**
+ * Newest-first, with a per-session entry count. `audience` lives inside
+ * `journal_entries.data` (JSON), not a real column, so it can't be filtered
+ * in the SQL `COUNT` itself — one JOIN pulls every (session, entry) pair
+ * and the counting happens in JS, same "load then reduce" approach already
+ * used elsewhere in this file (`resolveOrCreateSessionForDate`,
+ * `listJournalEntries`). `role` controls both what counts get included (a
+ * player's count only ever reflects `"party"` entries — a `"dm"` entry
+ * count would leak that DM-private notes exist) and which sessions are
+ * returned at all (an archived session is dropped entirely for a
+ * non-`"dm"` caller, not just marked — same "invisible, not just
+ * restricted" rule the archived-session guard on the entries routes uses).
+ */
+export function listJournalSessions(campaignId: string, role: UserRole): JournalSessionSummary[] {
   const rows = getDb()
     .prepare(
-      `SELECT s.data AS data, COUNT(e.id) AS entryCount
+      `SELECT s.data AS sessionData, e.data AS entryData
        FROM journal_sessions s
        LEFT JOIN journal_entries e ON e.session_id = s.id
-       WHERE s.campaign_id = ?
-       GROUP BY s.id`
+       WHERE s.campaign_id = ?`
     )
-    .all(campaignId) as Array<{ data: string; entryCount: number }>;
-  return rows
-    .map((row) => ({ ...(JSON.parse(row.data) as JournalSession), entryCount: row.entryCount }))
+    .all(campaignId) as Array<{ sessionData: string; entryData: string | null }>;
+
+  const bySession = new Map<string, { session: JournalSession; entryCount: number }>();
+  for (const row of rows) {
+    const session = JSON.parse(row.sessionData) as JournalSession;
+    if (!bySession.has(session.id)) bySession.set(session.id, { session, entryCount: 0 });
+    if (row.entryData) {
+      const entry = JSON.parse(row.entryData) as JournalEntry;
+      if (role === "dm" || entry.audience === "party") bySession.get(session.id)!.entryCount += 1;
+    }
+  }
+
+  return [...bySession.values()]
+    .filter(({ session }) => role === "dm" || !session.archived)
+    .map(({ session, entryCount }) => ({ ...session, entryCount }))
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }
 
@@ -425,30 +450,7 @@ export function getJournalSession(id: string): JournalSession | null {
   return row ? rowToJournalSession(row) : null;
 }
 
-/**
- * Iteration 1's entire session-resolution logic: reuses the single
- * most-recently-created session for this campaign, regardless of
- * `dateKey`, creating a new one only when none exists yet. Deliberately
- * NOT keyed by `dateKey` anymore — matching on a client-reported calendar
- * day meant two devices belonging to the same DM (each resolving its own
- * IANA timezone, or one with a simply misconfigured system clock) could
- * disagree about what "today" is for the exact same campaign, silently
- * splitting notes across two sessions that were supposed to be one.
- * `dateKey` still seeds the auto-generated `title` the first time a
- * session is created, but is never used as a lookup key. A later
- * iteration's manual "start a new session" control is what should actually
- * start a new one — auto-resolution's only job is to never split a
- * session nobody asked to split.
- */
-export function resolveOrCreateSessionForDate(campaignId: string, dateKey: string): JournalSession {
-  const db = getDb();
-  const rows = db.prepare("SELECT data FROM journal_sessions WHERE campaign_id = ?").all(campaignId) as Array<{
-    data: string;
-  }>;
-  if (rows.length > 0) {
-    return rows.map(rowToJournalSession).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
-  }
-
+function insertJournalSession(campaignId: string, dateKey: string): JournalSession {
   const session: JournalSession = {
     id: `journal-session-${Date.now()}`,
     campaignId,
@@ -456,13 +458,53 @@ export function resolveOrCreateSessionForDate(campaignId: string, dateKey: strin
     title: formatSessionTitle(dateKey),
     startedAt: new Date().toISOString(),
   };
-  db.prepare("INSERT INTO journal_sessions (id, campaign_id, date_key, data) VALUES (?, ?, ?, ?)").run(
-    session.id,
-    session.campaignId,
-    session.dateKey,
-    JSON.stringify(session)
-  );
+  getDb()
+    .prepare("INSERT INTO journal_sessions (id, campaign_id, date_key, data) VALUES (?, ?, ?, ?)")
+    .run(session.id, session.campaignId, session.dateKey, JSON.stringify(session));
   return session;
+}
+
+/**
+ * Auto-resolution's entire logic: reuses the single most-recently-created
+ * NON-archived session for this campaign, regardless of `dateKey`, creating
+ * a new one only when none exist (or every one of them is archived).
+ * Deliberately NOT keyed by `dateKey` — matching on a client-reported
+ * calendar day meant two devices belonging to the same DM (each resolving
+ * its own IANA timezone, or one with a simply misconfigured system clock)
+ * could disagree about what "today" is for the exact same campaign,
+ * silently splitting notes across two sessions that were supposed to be
+ * one. `dateKey` still seeds the auto-generated `title` the first time a
+ * session is created, but is never used as a lookup key. This is the
+ * *implicit* way a new session starts (nothing existed, or the DM archived
+ * everything that did); `createJournalSession` below is the *explicit* one
+ * (a DM manually starting a new one even though an active session exists).
+ */
+export function resolveOrCreateSessionForDate(campaignId: string, dateKey: string): JournalSession {
+  const rows = getDb().prepare("SELECT data FROM journal_sessions WHERE campaign_id = ?").all(campaignId) as Array<{
+    data: string;
+  }>;
+  const active = rows.map(rowToJournalSession).filter((s) => !s.archived);
+  if (active.length > 0) {
+    return active.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  }
+  return insertJournalSession(campaignId, dateKey);
+}
+
+/** DM-only manual "start a new session" (enforced by the route, not here) — always inserts a fresh row, unlike `resolveOrCreateSessionForDate`, which never reuses anything even if an active session already exists. This is what lets a DM split a session within the same day on purpose. */
+export function createJournalSession(campaignId: string, dateKey: string): JournalSession {
+  return insertJournalSession(campaignId, dateKey);
+}
+
+/** DM-only rename/archive/unarchive (enforced by the route, not here) — same spread-update convention as `updateCampaign`/`updateCreature`. */
+export function updateJournalSession(
+  id: string,
+  updates: Partial<Pick<JournalSession, "title" | "archived">>
+): JournalSession | null {
+  const existing = getJournalSession(id);
+  if (!existing) return null;
+  const updated: JournalSession = { ...existing, ...updates };
+  getDb().prepare("UPDATE journal_sessions SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
+  return updated;
 }
 
 /** Chronological (oldest first, like a log) — sorted in JS since `createdAt` lives in the JSON blob, not a real column, same "load then sort" approach used elsewhere in this file for anything not covered by a real column. */
@@ -483,15 +525,18 @@ export function getJournalEntry(id: string): JournalEntry | null {
  * `resolveOrCreateSessionForDate` (Quick Note's path). `sessionId` given →
  * attaches to that exact session instead (the full Journal modal's "add to
  * the session I'm currently viewing" path). Both paths go through this one
- * function so there's a single place that stamps
- * `createdAt`/`updatedAt`/`authorRole`/`audience` — iteration 1 always
- * "dm"/"dm" since both entry points are DM-only.
+ * function so there's a single place that stamps `createdAt`/`updatedAt` —
+ * `audience`/`authorRole` are the caller's responsibility (the API route
+ * derives them from the request's own session role, never trusting a
+ * client-sent value for a player — see `entries/route.ts`).
  */
 export function createJournalEntry(input: {
   campaignId: string;
   sessionId?: string;
   dateKeyForAutoSession: string;
   text: string;
+  audience: JournalEntryAudience;
+  authorRole: UserRole;
 }): JournalEntry {
   const db = getDb();
   const session = input.sessionId
@@ -505,11 +550,11 @@ export function createJournalEntry(input: {
     campaignId: input.campaignId,
     sessionId: session.id,
     text: input.text,
-    audience: "dm",
-    authorRole: "dm",
+    audience: input.audience,
+    authorRole: input.authorRole,
     createdAt: now,
     updatedAt: now,
-    updatedByRole: "dm",
+    updatedByRole: input.authorRole,
   };
   db.prepare("INSERT INTO journal_entries (id, campaign_id, session_id, data) VALUES (?, ?, ?, ?)").run(
     entry.id,
@@ -520,11 +565,11 @@ export function createJournalEntry(input: {
   return entry;
 }
 
-/** Only `text` is ever accepted here (see `journalEntryUpdateSchema`) — `updatedAt`/`updatedByRole` are stamped by this function itself, never trusted from the caller. */
-export function updateJournalEntryText(id: string, text: string): JournalEntry | null {
+/** Only `text` is ever accepted here (see `journalEntryUpdateSchema`) — `updatedAt` is stamped by this function itself, `updatedByRole` comes from the caller's own verified session role (never trusted from the request body), never trusted from the caller in any other sense. */
+export function updateJournalEntryText(id: string, text: string, updatedByRole: UserRole): JournalEntry | null {
   const existing = getJournalEntry(id);
   if (!existing) return null;
-  const updated: JournalEntry = { ...existing, text, updatedAt: new Date().toISOString(), updatedByRole: "dm" };
+  const updated: JournalEntry = { ...existing, text, updatedAt: new Date().toISOString(), updatedByRole };
   getDb().prepare("UPDATE journal_entries SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
   return updated;
 }

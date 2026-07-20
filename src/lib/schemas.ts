@@ -315,8 +315,14 @@ export const characterCreateSchema = z.object({
 
 /**
  * POST `/api/journal/entries`. `sessionId` optional — omitted, the route
- * auto-resolves "today's" session (Quick Note's path); given, it attaches
- * to that exact session instead (the full Journal modal's path).
+ * auto-resolves the campaign's current session (Quick Note's path); given,
+ * it attaches to that exact session instead (the full Journal modal's
+ * path).
+ *
+ * `audience` — which tab this entry belongs to. Only meaningful for a DM
+ * caller (a player's request always gets forced to `"party"` server-side,
+ * regardless of what's sent here — see `entries/route.ts`); a DM caller
+ * omitting it (Quick Note's exact request shape) defaults to `"dm"`.
  *
  * `timeZone` — the caller's own live IANA zone (`Intl.DateTimeFormat().
  * resolvedOptions().timeZone`), sent by `journalApi.ts` on every request.
@@ -333,14 +339,27 @@ export const journalEntryCreateSchema = z.object({
   sessionId: z.string().optional(),
   timeZone: z.string().optional(),
   text: z.string().min(1, "A note can't be empty."),
+  audience: z.enum(["dm", "party"]).optional(),
 });
 
 /**
  * PATCH `/api/journal/entries/[id]`. Deliberately NOT a `.partial()` of a
  * full `JournalEntry` shape the way the other update schemas above are —
- * `sessionId`/`campaignId`/`authorRole`/`createdAt` must never be
- * client-editable, so only `text` is accepted here.
+ * `sessionId`/`campaignId`/`authorRole`/`audience`/`createdAt` must never
+ * be client-editable, so only `text` is accepted here.
  */
 export const journalEntryUpdateSchema = z.object({
   text: z.string().min(1, "A note can't be empty."),
+});
+
+/** POST `/api/journal/sessions` — DM-only manual "start a new session." */
+export const journalSessionCreateSchema = z.object({
+  campaignId: z.string().min(1),
+  timeZone: z.string().optional(),
+});
+
+/** PATCH `/api/journal/sessions/[id]` — DM-only rename/archive/unarchive; both fields optional so either can be sent alone. */
+export const journalSessionUpdateSchema = z.object({
+  title: z.string().trim().min(1).optional(),
+  archived: z.boolean().optional(),
 });

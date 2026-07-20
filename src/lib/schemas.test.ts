@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { demoCharacters } from "./mockData";
-import { campaignUpdateSchema, characterUpdateSchema, creatureUpdateSchema, journalEntryCreateSchema, journalEntryUpdateSchema } from "./schemas";
+import {
+  campaignUpdateSchema,
+  characterUpdateSchema,
+  creatureUpdateSchema,
+  journalEntryCreateSchema,
+  journalEntryUpdateSchema,
+  journalSessionCreateSchema,
+  journalSessionUpdateSchema,
+} from "./schemas";
 import { Campaign, Creature } from "./types";
 
 /** `id` is intentionally not part of the PATCH schema — routes always force `id: existing.id` themselves, so a body carrying one is expected to have it stripped. */
@@ -171,6 +179,27 @@ describe("journalEntryCreateSchema", () => {
       expect(result.data).toEqual({ campaignId: "campaign-1", timeZone: "America/New_York", text: "<p>Hi</p>" });
     }
   });
+
+  it("accepts an explicit audience", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "<p>Hi</p>", audience: "party" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.audience).toBe("party");
+    }
+  });
+
+  it("still accepts a body with no audience at all — Quick Note's exact request shape", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "<p>Hi</p>" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.audience).toBeUndefined();
+    }
+  });
+
+  it("rejects an invalid audience", () => {
+    const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "<p>Hi</p>", audience: "everyone" });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("journalEntryUpdateSchema", () => {
@@ -193,11 +222,51 @@ describe("journalEntryUpdateSchema", () => {
       sessionId: "session-2",
       campaignId: "campaign-2",
       authorRole: "player",
+      audience: "party",
       createdAt: "2020-01-01T00:00:00.000Z",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual({ text: "<p>Hi</p>" });
     }
+  });
+});
+
+describe("journalSessionCreateSchema", () => {
+  it("accepts a minimal valid body", () => {
+    const result = journalSessionCreateSchema.safeParse({ campaignId: "campaign-1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts an explicit timeZone", () => {
+    const result = journalSessionCreateSchema.safeParse({ campaignId: "campaign-1", timeZone: "America/New_York" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a missing campaignId", () => {
+    const result = journalSessionCreateSchema.safeParse({ timeZone: "UTC" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("journalSessionUpdateSchema", () => {
+  it("accepts a title-only update", () => {
+    const result = journalSessionUpdateSchema.safeParse({ title: "Session Zero" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts an archived-only update", () => {
+    const result = journalSessionUpdateSchema.safeParse({ archived: true });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts an empty body — both fields are optional", () => {
+    const result = journalSessionUpdateSchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty title", () => {
+    const result = journalSessionUpdateSchema.safeParse({ title: "" });
+    expect(result.success).toBe(false);
   });
 });

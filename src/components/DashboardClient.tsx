@@ -368,22 +368,20 @@ export function DashboardClient({
               <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
             </div>
           )}
-          {/* Quick Note/Journal are DM-only in this iteration — a private
-              journal has nothing for a player to see yet (no Party tab
-              exists), so both are skipped entirely for that role rather than
-              shown disabled or empty. */}
-          {isDm && <QuickNoteButton campaignId={campaign.id} />}
-          {isDm && (
-            <button
-              type="button"
-              onClick={() => setJournalOpen(true)}
-              aria-label="Campaign Journal"
-              title="Campaign Journal"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
-            >
-              <NoteIcon className="h-4 w-4" />
-            </button>
-          )}
+          {/* Quick Note/Journal are shared by both roles now — a DM's Quick
+              Note still lands in their own private journal, a player's
+              lands in the shared Party journal, and the full Journal modal
+              shows each role only the tab(s) it's allowed to see. */}
+          <QuickNoteButton campaignId={campaign.id} />
+          <button
+            type="button"
+            onClick={() => setJournalOpen(true)}
+            aria-label="Campaign Journal"
+            title="Campaign Journal"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
+          >
+            <NoteIcon className="h-4 w-4" />
+          </button>
           {/* A player has nothing in this menu — Export dumps the whole
               campaign (including the enemies/NPCs/notes this role otherwise
               never sees), and Settings has no reduced view of its own — so
@@ -555,7 +553,7 @@ export function DashboardClient({
         </CampaignDataProvider>
       )}
 
-      {journalOpen && <CampaignJournalModal campaignId={campaign.id} onClose={() => setJournalOpen(false)} />}
+      {journalOpen && <CampaignJournalModal campaignId={campaign.id} role={role} onClose={() => setJournalOpen(false)} />}
     </div>
   );
 }

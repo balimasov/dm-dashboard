@@ -669,30 +669,29 @@ export interface Creature {
   hidden?: boolean;
 }
 
-/** Which "tab" of the journal an entry belongs to. Iteration 1 only ever writes "dm" — Quick Note and the Campaign Journal modal are both DM-only; a later iteration adds the Party tab, whose entries carry "party" here. Kept on the entry (not a second table) so one `journal_entries` table already supports both audiences without a schema change. */
+/** Which "tab" of the journal an entry belongs to — "dm" is the DM's private journal (never visible to a player), "party" is the shared journal both roles can read and write. Kept on the entry (not a second table) so one `journal_entries` table supports both audiences without a schema change. */
 export type JournalEntryAudience = "dm" | "party";
 
 /**
- * A logical bucket of journal entries. Iteration 1 auto-reuses the single
- * most recent session for a campaign (see `resolveOrCreateSessionForDate`
- * in `db.ts`), only creating a new one the very first time a campaign gets
- * a note — there is no manual create/rename/archive UI yet; a later
- * iteration adds those as pure mutations on this same shape (`title`
- * becomes editable, `endedAt`/`archived` start getting set, and a manual
- * "start a new session" action becomes the only way a second row appears).
+ * A logical bucket of journal entries. Auto-resolution (see
+ * `resolveOrCreateSessionForDate` in `db.ts`) reuses the single most recent
+ * non-archived session for a campaign, only creating a new one when none
+ * exists (or all are archived) — a DM can also start a new one manually at
+ * any time (`createJournalSession`), rename it, or archive/unarchive it
+ * (`updateJournalSession`), all DM-only actions.
  */
 export interface JournalSession {
   id: string;
   campaignId: string;
-  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone at the moment this session was created — used only to seed `title` on creation. NOT a lookup/uniqueness key: auto-resolution ignores it entirely and always reuses the most recent session for the campaign, so this can lag behind the real "today" for a long-running session. */
+  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone at the moment this session was created — used only to seed `title` on creation. NOT a lookup/uniqueness key: auto-resolution ignores it entirely and always reuses the most recent non-archived session for the campaign, so this can lag behind the real "today" for a long-running session. */
   dateKey: string;
-  /** Display title. Iteration 1 always sets this to a formatted form of `dateKey` (see `formatSessionTitle` in `src/lib/journal.ts`) since there's no rename UI yet. */
+  /** Display title. Seeded from `dateKey` on creation (see `formatSessionTitle` in `src/lib/journal.ts`); DM-editable afterward via `updateJournalSession`. */
   title: string;
   /** When this session row was created — the sort key for "newest first" (two same-day sessions would share `dateKey` but never `startedAt`). */
   startedAt: string;
-  /** Reserved for a later iteration's "close this session" action. Always absent in iteration 1. */
+  /** Still unused — reserved for a later iteration (pairs naturally with conflict detection: "this session ended, are you sure?"). Nothing reads it yet. */
   endedAt?: string;
-  /** Reserved for a later iteration's archive action (hides from the default session list without deleting it). Always absent/false in iteration 1. */
+  /** DM-only toggle (`updateJournalSession`) — hides the session from the default list without deleting it (same convention as `Character.hidden`/`Creature.hidden`), and makes it and its entries invisible to a player entirely (not just restricted). */
   archived?: boolean;
 }
 
@@ -714,9 +713,9 @@ export interface JournalEntry {
   campaignId: string;
   sessionId: string;
   text: string;
-  /** Always "dm" in iteration 1 — see `JournalEntryAudience`'s own doc comment. */
+  /** Which tab this entry belongs to — "dm" for the DM's private journal, "party" for the shared journal both roles can read/write. Set once at creation from the author's own role/chosen tab, never client-editable afterward (see `journalEntryUpdateSchema`). */
   audience: JournalEntryAudience;
-  /** Always "dm" in iteration 1 — there's no per-player identity (see `UserRole`'s own doc comment in `auth.ts`), so this is the closest iteration 1 gets to "who wrote it". Set once at creation, never changed by an edit. */
+  /** Who wrote it. There's no per-player identity (see `UserRole`'s own doc comment in `auth.ts`), so a party entry just says "Player", not which one. Set once at creation, never changed by an edit. */
   authorRole: UserRole;
   createdAt: string;
   /** Bumped on every edit — set server-side in `updateJournalEntryText`, never trusted from the client. */

@@ -15,10 +15,13 @@ import { SyncTimestamp } from "./SyncTimestamp";
  */
 export function JournalEntryRow({
   entry,
+  canManage,
   onUpdate,
   onRemove,
 }: {
   entry: JournalEntry;
+  /** Whether the current viewer is allowed to Edit/Delete this specific entry — the caller computes it (`role === "dm" || entry.authorRole === "player"`), since there's no per-player identity to check ownership more precisely than "some player wrote it". */
+  canManage: boolean;
   onUpdate: (id: string, text: string) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
 }) {
@@ -52,7 +55,7 @@ export function JournalEntryRow({
       )}
       <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span>
-          DM · <SyncTimestamp iso={entry.createdAt} />
+          {entry.authorRole === "dm" ? "DM" : "Player"} · <SyncTimestamp iso={entry.createdAt} />
           {entry.updatedAt !== entry.createdAt && (
             <>
               {" "}
@@ -60,7 +63,7 @@ export function JournalEntryRow({
             </>
           )}
         </span>
-        {!editing && (
+        {canManage && !editing && (
           <span className="flex gap-2">
             <button type="button" onClick={() => setEditing(true)} className="hover:text-slate-300">
               Edit

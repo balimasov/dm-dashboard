@@ -1,4 +1,4 @@
-import { JournalEntry, JournalSessionSummary } from "./types";
+import { JournalEntry, JournalEntryAudience, JournalSession, JournalSessionSummary } from "./types";
 import { apiFetch, parseJsonOrThrow } from "./apiClient";
 
 export async function listJournalSessionsApi(campaignId: string): Promise<JournalSessionSummary[]> {
@@ -20,7 +20,12 @@ export async function listJournalEntriesApi(sessionId: string): Promise<JournalE
  * created for a campaign (see `journalEntryCreateSchema`'s doc comment in
  * `schemas.ts`), never to decide which existing session to reuse.
  */
-export async function createJournalEntryApi(input: { campaignId: string; sessionId?: string; text: string }): Promise<JournalEntry> {
+export async function createJournalEntryApi(input: {
+  campaignId: string;
+  sessionId?: string;
+  text: string;
+  audience?: JournalEntryAudience;
+}): Promise<JournalEntry> {
   const res = await apiFetch("/api/journal/entries", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,4 +46,24 @@ export async function patchJournalEntryApi(id: string, text: string): Promise<Jo
 export async function deleteJournalEntryApi(id: string): Promise<void> {
   const res = await apiFetch(`/api/journal/entries/${id}`, { method: "DELETE" });
   await parseJsonOrThrow<{ ok: true }>(res, "Failed to delete journal entry.");
+}
+
+/** DM-only manual "start a new session" — server enforces the role check regardless of who calls this. */
+export async function startNewSessionApi(campaignId: string, timeZone: string): Promise<JournalSession> {
+  const res = await apiFetch("/api/journal/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ campaignId, timeZone }),
+  });
+  return parseJsonOrThrow<JournalSession>(res, "Failed to start a new session.");
+}
+
+/** DM-only rename/archive/unarchive — server enforces the role check regardless of who calls this. */
+export async function updateSessionApi(id: string, updates: { title?: string; archived?: boolean }): Promise<JournalSession> {
+  const res = await apiFetch(`/api/journal/sessions/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  return parseJsonOrThrow<JournalSession>(res, "Failed to update the session.");
 }
