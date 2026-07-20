@@ -673,16 +673,18 @@ export interface Creature {
 export type JournalEntryAudience = "dm" | "party";
 
 /**
- * A logical bucket of journal entries. Iteration 1 auto-creates exactly one
- * per calendar day per campaign (see `resolveOrCreateSessionForDate` in
- * `db.ts`) — there is no manual create/rename/archive UI yet; a later
+ * A logical bucket of journal entries. Iteration 1 auto-reuses the single
+ * most recent session for a campaign (see `resolveOrCreateSessionForDate`
+ * in `db.ts`), only creating a new one the very first time a campaign gets
+ * a note — there is no manual create/rename/archive UI yet; a later
  * iteration adds those as pure mutations on this same shape (`title`
- * becomes editable, `endedAt`/`archived` start getting set).
+ * becomes editable, `endedAt`/`archived` start getting set, and a manual
+ * "start a new session" action becomes the only way a second row appears).
  */
 export interface JournalSession {
   id: string;
   campaignId: string;
-  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone this session was first opened on. NOT guaranteed unique per campaign — a manually-started same-day session (future iteration) shares this value with the auto session that preceded it that day; `startedAt` is the real sort key. */
+  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone at the moment this session was created — used only to seed `title` on creation. NOT a lookup/uniqueness key: auto-resolution ignores it entirely and always reuses the most recent session for the campaign, so this can lag behind the real "today" for a long-running session. */
   dateKey: string;
   /** Display title. Iteration 1 always sets this to a formatted form of `dateKey` (see `formatSessionTitle` in `src/lib/journal.ts`) since there's no rename UI yet. */
   title: string;

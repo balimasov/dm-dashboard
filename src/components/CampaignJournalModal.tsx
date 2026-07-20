@@ -13,6 +13,13 @@ type JournalTab = "dm";
 function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  // `NotesEditor` deliberately never re-syncs its Tiptap document to a
+  // changed `value` prop after mount (see its own doc comment) — so
+  // `setDraft("")` below updates this component's state but never reaches
+  // the already-mounted editor instance. Bumping this key forces a clean
+  // remount after every successful submit, which is the only way to make
+  // the visible editor content actually clear in sync with the draft.
+  const [resetKey, setResetKey] = useState(0);
   const isEmpty = draft.replace(/<[^>]+>/g, "").trim().length === 0;
 
   async function handleAdd() {
@@ -21,6 +28,7 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
     try {
       await onSubmit(draft);
       setDraft("");
+      setResetKey((k) => k + 1);
     } finally {
       setSaving(false);
     }
@@ -28,7 +36,7 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
 
   return (
     <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-      <NotesEditor value={draft} onChange={setDraft} placeholder="Write a journal entry..." />
+      <NotesEditor key={resetKey} value={draft} onChange={setDraft} placeholder="Write a journal entry..." />
       <div className="mt-2 flex justify-end">
         <button
           type="button"

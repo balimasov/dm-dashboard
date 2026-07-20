@@ -426,20 +426,28 @@ export function getJournalSession(id: string): JournalSession | null {
 }
 
 /**
- * Iteration 1's entire session-resolution logic: finds the existing session
- * row for `campaignId`/`dateKey`, or creates one. Naive lookup — any row
- * matching `dateKey` wins, since only one can exist per day yet. A later
- * iteration's "manually start a new session within the same day" feature
- * must change the *selection* rule here (e.g. latest `startedAt` among rows
- * without an `endedAt`), not the schema — `dateKey` is deliberately not a
- * uniqueness constraint for exactly this reason.
+ * Iteration 1's entire session-resolution logic: reuses the single
+ * most-recently-created session for this campaign, regardless of
+ * `dateKey`, creating a new one only when none exists yet. Deliberately
+ * NOT keyed by `dateKey` anymore — matching on a client-reported calendar
+ * day meant two devices belonging to the same DM (each resolving its own
+ * IANA timezone, or one with a simply misconfigured system clock) could
+ * disagree about what "today" is for the exact same campaign, silently
+ * splitting notes across two sessions that were supposed to be one.
+ * `dateKey` still seeds the auto-generated `title` the first time a
+ * session is created, but is never used as a lookup key. A later
+ * iteration's manual "start a new session" control is what should actually
+ * start a new one — auto-resolution's only job is to never split a
+ * session nobody asked to split.
  */
 export function resolveOrCreateSessionForDate(campaignId: string, dateKey: string): JournalSession {
   const db = getDb();
-  const existing = db
-    .prepare("SELECT data FROM journal_sessions WHERE campaign_id = ? AND date_key = ?")
-    .get(campaignId, dateKey) as { data: string } | undefined;
-  if (existing) return rowToJournalSession(existing);
+  const rows = db.prepare("SELECT data FROM journal_sessions WHERE campaign_id = ?").all(campaignId) as Array<{
+    data: string;
+  }>;
+  if (rows.length > 0) {
+    return rows.map(rowToJournalSession).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  }
 
   const session: JournalSession = {
     id: `journal-session-${Date.now()}`,
@@ -471,7 +479,7 @@ export function getJournalEntry(id: string): JournalEntry | null {
 }
 
 /**
- * `sessionId` omitted → auto-resolves "today's" session via
+ * `sessionId` omitted → auto-resolves the campaign's current session via
  * `resolveOrCreateSessionForDate` (Quick Note's path). `sessionId` given →
  * attaches to that exact session instead (the full Journal modal's "add to
  * the session I'm currently viewing" path). Both paths go through this one

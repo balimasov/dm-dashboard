@@ -12,13 +12,13 @@ export async function listJournalEntriesApi(sessionId: string): Promise<JournalE
 }
 
 /**
- * `sessionId` omitted → the server auto-resolves "today's" session (Quick
- * Note's path). Always sends this browser's own live-computed IANA zone —
- * see `journalEntryCreateSchema`'s doc comment in `schemas.ts` for why that
- * beats relying on the (separately synced, occasionally stale) timezone
- * cookie alone: two devices hitting this within the same real day should
- * always land in the same session, not split across two depending on
- * which one's cookie happened to be current.
+ * `sessionId` omitted → the server auto-resolves the campaign's current
+ * session (Quick Note's path) — in practice, whichever session was most
+ * recently created for it, regardless of which device or timezone is
+ * asking. Still sends this browser's own live-computed IANA zone; the
+ * server only uses it to title a session the very first time one is
+ * created for a campaign (see `journalEntryCreateSchema`'s doc comment in
+ * `schemas.ts`), never to decide which existing session to reuse.
  */
 export async function createJournalEntryApi(input: { campaignId: string; sessionId?: string; text: string }): Promise<JournalEntry> {
   const res = await apiFetch("/api/journal/entries", {

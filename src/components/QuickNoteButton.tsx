@@ -40,7 +40,18 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
   }, [open]);
 
   useEffect(() => {
-    if (open) textareaRef.current?.focus();
+    if (!open) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    // A reopened popup can carry over a draft left over from before it was
+    // last closed without submitting (this component stays mounted, so
+    // `text` state survives the close) — plain `.focus()` alone leaves the
+    // caret wherever the browser's default selection lands, which for a
+    // textarea that already has a value is its start, not its end. Placing
+    // the selection explicitly at the end matches what anyone resuming a
+    // draft actually expects: keep typing where they left off.
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
   }, [open]);
 
   async function submit() {

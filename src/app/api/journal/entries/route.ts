@@ -28,10 +28,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  // Prefer the timezone the client just computed live over the cookie —
-  // see `journalEntryCreateSchema`'s own doc comment on why the cookie
-  // alone isn't reliable enough for this. Cookie stays as a fallback for
-  // a caller that doesn't send one, "UTC" as the last resort.
+  // Only used to title a brand-new session the first time one is created
+  // for this campaign — auto-resolution itself reuses whatever session
+  // already exists regardless of timezone (see `resolveOrCreateSessionForDate`
+  // in `db.ts`). Prefer the timezone the client just computed live over the
+  // cookie; cookie stays as a fallback for a caller that doesn't send one,
+  // "UTC" as the last resort.
   let timeZone = result.data.timeZone;
   if (!timeZone) {
     const cookieStore = await cookies();
