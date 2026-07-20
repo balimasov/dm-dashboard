@@ -42,9 +42,14 @@ export function useJournal(campaignId: string) {
     try {
       const list = await listJournalSessionsApi(campaignId);
       setSessions(list);
-      if (list.length > 0) {
-        setSelectedSessionId((prev) => prev ?? list[0].id);
-        if (!selectedSessionId) void loadEntries(list[0].id);
+      // Newest-first, but the newest one isn't necessarily open — a DM sees
+      // archived sessions in this list too (a player never does, so this is
+      // a no-op filter for them), and auto-selecting an archived session
+      // left the modal looking like it opened nothing at all.
+      const defaultSession = list.find((s) => !s.archived);
+      if (defaultSession) {
+        setSelectedSessionId((prev) => prev ?? defaultSession.id);
+        if (!selectedSessionId) void loadEntries(defaultSession.id);
       }
     } catch (err) {
       setSessionsError(err instanceof Error ? err.message : "Failed to load journal sessions.");

@@ -55,12 +55,13 @@ export function JournalEntryRow({
       )}
       <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span>
-          {entry.authorRole === "dm" ? "DM" : "Player"} · <SyncTimestamp iso={entry.createdAt} />
-          {entry.updatedAt !== entry.createdAt && (
+          {entry.authorRole === "dm" ? "DM" : "Player"} ·{" "}
+          {entry.updatedAt !== entry.createdAt ? (
             <>
-              {" "}
-              · edited <SyncTimestamp iso={entry.updatedAt} />
+              <SyncTimestamp iso={entry.updatedAt} /> <span className="italic">(edited)</span>
             </>
+          ) : (
+            <SyncTimestamp iso={entry.createdAt} />
           )}
         </span>
         {canManage && !editing && (

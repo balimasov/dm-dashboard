@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
@@ -33,11 +34,14 @@ export function NotesEditor({
   onChange,
   onBlur,
   placeholder,
+  autoFocus,
 }: {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
   placeholder?: string;
+  /** Opt-in only — most `NotesEditor` instances (campaign notes, editing an existing entry) shouldn't steal focus just for mounting. Meant for a composer that's the obvious next thing to type into, like the Campaign Journal's entry composer. */
+  autoFocus?: boolean;
 }) {
   const editor = useEditor(
     {
@@ -74,6 +78,14 @@ export function NotesEditor({
     // `<textarea>` this replaced.
     [placeholder]
   );
+
+  // `editor` is `null` for the first render (see the comment below on
+  // `immediatelyRender: false`), so focusing has to wait for the effect
+  // that runs once it's ready rather than happening inline during render.
+  useEffect(() => {
+    if (autoFocus) editor?.commands.focus("end");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only meant to run once when this editor instance first becomes ready, not on every `editor`/`autoFocus` identity change
+  }, [editor]);
 
   // `immediatelyRender: false` (required so Next.js doesn't hydration-mismatch
   // on Tiptap's own SSR output) means `editor` is null for one render on

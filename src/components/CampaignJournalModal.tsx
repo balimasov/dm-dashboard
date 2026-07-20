@@ -38,7 +38,7 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
 
   return (
     <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-      <NotesEditor key={resetKey} value={draft} onChange={setDraft} placeholder="Write a journal entry..." />
+      <NotesEditor key={resetKey} value={draft} onChange={setDraft} placeholder="Write a journal entry..." autoFocus />
       <div className="mt-2 flex justify-end">
         <button
           type="button"
