@@ -9,6 +9,7 @@ import {
   computePartyAttacks,
   computePartyConsumables,
   computePartyConsumablesSummary,
+  dedupeInventoryItems,
   computePartyHpSummary,
   computePartyPassiveSummary,
   computePartyResourceSummary,
@@ -1399,6 +1400,29 @@ describe("computePartyConsumables", () => {
       inventory: [{ id: "i1", name: "Longsword", rarity: "Common", category: "Weapon", quantity: 1 }],
     });
     expect(computePartyConsumables([character])).toEqual([]);
+  });
+});
+
+describe("dedupeInventoryItems", () => {
+  test("merges same-name (trimmed/lowercased) stacks into one entry with the summed quantity", () => {
+    const items = [
+      { name: "Aqua Delerium", quantity: 1 },
+      { name: " aqua delerium ", quantity: 2 },
+      { name: "Lindwyrm Venom", quantity: 1 },
+    ];
+    const result = dedupeInventoryItems(items);
+    expect(result).toEqual([
+      { name: "Aqua Delerium", quantity: 3 },
+      { name: "Lindwyrm Venom", quantity: 1 },
+    ]);
+  });
+
+  test("leaves a list with no duplicates unchanged (besides alphabetical sort)", () => {
+    const items = [
+      { name: "Zebra Tonic", quantity: 5 },
+      { name: "Aardvark Serum", quantity: 1 },
+    ];
+    expect(dedupeInventoryItems(items).map((i) => i.name)).toEqual(["Aardvark Serum", "Zebra Tonic"]);
   });
 });
 

@@ -25,6 +25,7 @@ import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { ConsumableQuantity } from "../ui/ConsumableQuantity";
 import { ItemHintPanel } from "../ui/ItemHintPanel";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
+import { TabBar } from "../ui/TabBar";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
 
@@ -177,10 +178,12 @@ type PartyDetailsTab = "weapons" | "features" | "spells" | "consumables";
  * party, grouped by level like a character's own Spells tab and deduped by
  * name (a spell several characters share shows as one row with several
  * avatar chips instead of once per character). "Consumables" is the same
- * deduped-by-name, grouped-by-D&D-Beyond-type list `ConsumablesPanel` used
- * to show directly (that panel's own content is now just the compact
- * per-type histogram — this tab is where the itemized breakdown moved to).
- * "Weapons" is different from "Spells"/"Consumables" on purpose: it groups
+ * deduped-by-name, grouped-by-D&D-Beyond-type list the old standalone
+ * `ConsumablesPanel` card used to show directly, before that card was
+ * removed in favor of just the compact per-type histogram now living in
+ * `PartyChartsPanel` ("Rest & Spell Slots") — this tab is where the
+ * itemized breakdown moved to. "Weapons" is different from
+ * "Spells"/"Consumables" on purpose: it groups
  * by *character* instead of deduping across the party (see
  * `computePartyAttacks`'s own doc comment for why). No tab switcher (and no
  * tab at all) for content nobody has — same "don't show an empty tab" rule
@@ -206,39 +209,24 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
   const partyConsumables = computePartyConsumables(characters);
   const consumableGroups = groupConsumablesByType(partyConsumables);
 
-  const tabs: Array<{ key: PartyDetailsTab; label: string }> = [
-    ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
-    { key: "features", label: `${CONTENT_KIND_ICON.features} Features and Traits` },
-    ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
-    ...(partyConsumables.length > 0 ? [{ key: "consumables" as const, label: `${CONTENT_KIND_ICON.consumables} Consumables` }] : []),
+  const tabs: Array<{ key: PartyDetailsTab; icon: string; text: string }> = [
+    ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
+    { key: "features", icon: CONTENT_KIND_ICON.features, text: "Features and Traits" },
+    ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
+    ...(partyConsumables.length > 0 ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
   ];
   const [activeTab, setActiveTab] = useState<PartyDetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
 
   return (
     <ToolkitCard title="Actions & Resources">
-      {tabs.length > 1 && (
-        // `mb-1.5` (not the more typical `mb-3`) matches the Skills panel's
-        // own `gap-1.5` between its avatar-chip row and "Passives" — the two
-        // panels sit side by side in a `lg:grid-cols-2` row, and this tab
-        // bar is this panel's equivalent "chrome before the first section
-        // label" to that avatar row, so the same gap keeps "Heroic
-        // Inspiration" level with "Passives" instead of landing 6px lower.
-        <div className="mb-1.5 mt-4 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 rounded-md px-2 py-1 font-medium transition-colors ${
-                currentTab === tab.key ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* `mb-1.5` (not the more typical `mb-3`) matches the Skills panel's
+          own `gap-1.5` between its avatar-chip row and "Passives" — the two
+          panels sit side by side in a `lg:grid-cols-2` row, and this tab
+          bar is this panel's equivalent "chrome before the first section
+          label" to that avatar row, so the same gap keeps "Heroic
+          Inspiration" level with "Passives" instead of landing 6px lower. */}
+      <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-1.5 mt-4" />
 
       {currentTab === "weapons" &&
         partyAttacks.map((entry, index) => <PartyCharacterWeapons key={entry.characterId} entry={entry} isFirst={index === 0} />)}

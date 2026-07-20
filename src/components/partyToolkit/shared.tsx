@@ -5,6 +5,8 @@ import {
   PartyRestRecoveryBucket,
   CoverageHolder,
   NamedCoverageEntry,
+  PartyConsumableTypeSummary,
+  PartyConsumablesSummary,
   PartyRestRecoveryGauge,
   PartySpellSlotHolder,
   PartySpellSlotLevel,
@@ -153,7 +155,7 @@ function RestRecoveryMeters({ recovery }: { recovery: PartyRestRecoveryGauge }) 
   );
 }
 
-/** Widest column height in px — every column's height is proportional to its own `max` between this and `HISTOGRAM_MIN_HEIGHT_PX`, so a party's 1st-level pool (often 20+ slots) doesn't dwarf a 9th-level pool (often 1) into invisibility, while relative pool size still reads at a glance. Exported so `ConsumablesPanel`'s own histogram columns size themselves the same way instead of drifting from a second copy of the same numbers. */
+/** Widest column height in px — every column's height is proportional to its own `max` between this and `HISTOGRAM_MIN_HEIGHT_PX`, so a party's 1st-level pool (often 20+ slots) doesn't dwarf a 9th-level pool (often 1) into invisibility, while relative pool size still reads at a glance. Shared with `ConsumableTypeColumn` below, so both histograms in `SpellChartsRow` size their columns the same way. */
 export const HISTOGRAM_MAX_HEIGHT_PX = 64;
 /** Every column gets at least this much height regardless of `max` — the floor that keeps a 1-slot 9th-level column a real, hoverable bar instead of a sliver. */
 export const HISTOGRAM_MIN_HEIGHT_PX = 18;
@@ -236,6 +238,76 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
   );
 }
 
+/** Which named items make up one consumable type's bar — same idea as `SpellSlotLevelPanel`'s per-character breakdown, just per-item instead. */
+function ConsumableTypeColumnPanel({ typeSummary }: { typeSummary: PartyConsumableTypeSummary }) {
+  return (
+    <HintPanel
+      title={typeSummary.type}
+      rows={typeSummary.entries}
+      rowKey={(e) => e.name}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(e) => (
+        <>
+          <span className="min-w-0 truncate">{e.name}</span>
+          <span className="shrink-0 whitespace-nowrap font-medium text-slate-100">{e.totalQuantity}</span>
+        </>
+      )}
+    />
+  );
+}
+
+/**
+ * One consumable type as a vertical meter column — same track/sizing
+ * `SpellSlotColumn` uses (height scaled against the party's largest column
+ * between `HISTOGRAM_MIN_HEIGHT_PX`/`HISTOGRAM_MAX_HEIGHT_PX`), except the
+ * fill is always the track's *full* height in one flat identity color
+ * (blue) instead of a current/max percentage in a danger tier: a consumable
+ * type has no intrinsic ceiling the way a spell slot level does (fixed by
+ * class level), so there's nothing for the fill to be a *percentage* of —
+ * it's just a running total that only ever goes down.
+ */
+function ConsumableTypeColumn({ typeSummary, maxAcrossTypes }: { typeSummary: PartyConsumableTypeSummary; maxAcrossTypes: number }) {
+  const barHeight =
+    maxAcrossTypes > 0
+      ? HISTOGRAM_MIN_HEIGHT_PX + (typeSummary.totalQuantity / maxAcrossTypes) * (HISTOGRAM_MAX_HEIGHT_PX - HISTOGRAM_MIN_HEIGHT_PX)
+      : HISTOGRAM_MIN_HEIGHT_PX;
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[10px] font-semibold tabular-nums text-slate-100">{typeSummary.totalQuantity}</span>
+      <InfoTooltip hoverOnly panel={<ConsumableTypeColumnPanel typeSummary={typeSummary} />}>
+        <div
+          className="relative overflow-hidden rounded-md bg-slate-800"
+          style={{ width: `${HISTOGRAM_COLUMN_WIDTH_PX}px`, height: `${barHeight}px` }}
+        >
+          <div className="absolute bottom-0 left-0 w-full rounded-md bg-blue-400" style={{ height: `${barHeight}px` }} />
+        </div>
+      </InfoTooltip>
+      <span className="max-w-[56px] truncate text-[10px] font-semibold text-slate-400" title={typeSummary.type}>
+        {typeSummary.type}
+      </span>
+    </div>
+  );
+}
+
+/** Same layout `SpellSlotHistogram` uses — columns on the left, a Total box on the right (below, on narrow screens) — just with `ConsumableTypeColumn`'s columns and a plain running total instead of a current/max fraction. */
+function ConsumablesHistogram({ summary }: { summary: PartyConsumablesSummary }) {
+  const maxAcrossTypes = Math.max(...summary.types.map((t) => t.totalQuantity));
+  return (
+    <div className="flex w-full max-w-full flex-col items-center gap-3 @[512px]:w-auto @[512px]:flex-row @[512px]:items-end @[512px]:gap-5">
+      <div className="flex max-w-full shrink-0 items-end gap-2 overflow-x-auto pb-1 @[512px]:gap-3 @[512px]:overflow-visible @[512px]:pb-0">
+        {summary.types.map((t) => (
+          <ConsumableTypeColumn key={t.type} typeSummary={t} maxAcrossTypes={maxAcrossTypes} />
+        ))}
+      </div>
+      <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 @[512px]:border-l @[512px]:border-t-0 @[512px]:pl-5 @[512px]:pt-0">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+        <span className="text-sm font-semibold tabular-nums text-slate-100">{summary.totalQuantity}</span>
+      </div>
+    </div>
+  );
+}
+
 /**
  * A bordered mini-panel for one chart, its label pinned to the top of the box
  * (same idea as `SectionLabel`) — same visual language `SensesPanel`/
@@ -303,19 +375,46 @@ function SpellSlotsHeaderHint({ spellSlots }: { spellSlots: PartySpellSlotSummar
   );
 }
 
+/** Same shape as `SpellSlotsHeaderHint` — one row per D&D Beyond type, same total the histogram's own columns show. */
+function ConsumablesHeaderHint({ consumables }: { consumables: PartyConsumablesSummary }) {
+  return (
+    <HintPanel
+      title="Consumables"
+      description="How many of each D&D Beyond type are left across the party — taller columns on the chart are types the party has more of."
+      rows={consumables.types}
+      rowKey={(t) => t.type}
+      rowClassName="flex items-center justify-between gap-4"
+      renderRow={(t) => (
+        <>
+          <span>{t.type}</span>
+          <span className="shrink-0 font-semibold tabular-nums text-slate-100">{t.totalQuantity}</span>
+        </>
+      )}
+    />
+  );
+}
+
 /**
- * Rest Recovery + Spell Slots charts, side by side in their own mini-boxes —
- * its own standalone card under Party Vitals (see `PartyChartsPanel`).
- * `flex-wrap` rather than a hard `sm:`-only switch: on a narrow phone
- * viewport where two boxes plus the Spell Slots histogram's own columns
+ * Rest Recovery + Spell Slots + Consumables charts, side by side in their
+ * own mini-boxes — its own standalone card under Party Vitals (see
+ * `PartyChartsPanel`). `flex-wrap` rather than a hard `sm:`-only switch: on a
+ * narrow phone viewport where three boxes plus their own histogram columns
  * genuinely can't fit side by side, this wraps to stacked instead of
- * squeezing/overflowing. `null` when neither chart has anything to show, so
- * the caller can skip the wrapper entirely instead of rendering empty
- * chrome.
+ * squeezing/overflowing. `null` when none of the three have anything to
+ * show, so the caller can skip the wrapper entirely instead of rendering
+ * empty chrome.
  */
-export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: PartyRestRecoveryGauge; spellSlots: PartySpellSlotSummary | null }) {
+export function SpellChartsRow({
+  restRecovery,
+  spellSlots,
+  consumables,
+}: {
+  restRecovery: PartyRestRecoveryGauge;
+  spellSlots: PartySpellSlotSummary | null;
+  consumables: PartyConsumablesSummary | null;
+}) {
   const hasRestMeters = Boolean(restRecovery.shortRest || restRecovery.longRest);
-  if (!hasRestMeters && !spellSlots) return null;
+  if (!hasRestMeters && !spellSlots && !consumables) return null;
   return (
     <div className="@container flex flex-wrap items-stretch justify-center gap-4">
       {hasRestMeters && (
@@ -329,6 +428,13 @@ export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: Par
         </ChartBox>
       ) : (
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
+      )}
+      {consumables ? (
+        <ChartBox title="Consumables" hint={<ConsumablesHeaderHint consumables={consumables} />}>
+          <ConsumablesHistogram summary={consumables} />
+        </ChartBox>
+      ) : (
+        <p className="text-sm text-slate-600">No consumables tracked on any character.</p>
       )}
     </div>
   );
@@ -392,8 +498,8 @@ export function distributeIntoColumns<T>(items: T[], weightOf: (item: T) => numb
  * columns come out balanced even with far fewer groups than columns (the
  * exact case `distributeIntoColumns` above can't handle, since it never
  * splits a group's own rows apart). Originally `InventoryOverview.tsx`'s own
- * private `splitRowsIntoColumns`, generalized so `ConsumablesPanel` — which
- * hit that same "2 groups, 4 columns" gap — can share it instead of
+ * private `splitRowsIntoColumns`, generalized here so any other panel that
+ * hits that same "few groups, many columns" gap can reuse it instead of
  * duplicating the same row-continuation logic.
  *
  * `isHeader` identifies header rows so a split is never placed right after

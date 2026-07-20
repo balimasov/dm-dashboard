@@ -1426,6 +1426,33 @@ export interface PartyConsumableEntry {
 }
 
 /**
+ * Merges duplicate stacks of the same item — same trimmed/lowercased name,
+ * the same key `computePartyConsumables` below and `InventoryOverview`'s own
+ * grouping both already use — into one entry with the summed quantity. A
+ * single character's raw inventory can legitimately carry the same named
+ * item as two separate rows (e.g. two D&D Beyond stacks picked up on
+ * different occasions, never manually combined); showing those as two
+ * separate rows both double-counts the item and lets flagging one flag both
+ * at once, since the reminder flame's key is the item's *name*, not its row
+ * id. Whichever copy is seen first wins for the fields that don't vary by
+ * stack (rarity/type/weight/cost/description) — same convention
+ * `computePartyConsumables` uses for a holder's first-seen copy.
+ */
+export function dedupeInventoryItems<T extends { name: string; quantity: number }>(items: T[]): T[] {
+  const byKey = new Map<string, T>();
+  for (const item of items) {
+    const key = item.name.trim().toLowerCase();
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      byKey.set(key, { ...item });
+    }
+  }
+  return Array.from(byKey.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
  * Every `Consumable`-category item across the party, deduped by name (same
  * lowercased-trim key `InventoryOverview`'s own grouping uses) with each
  * holder's stack summed into one running total — a potion three different

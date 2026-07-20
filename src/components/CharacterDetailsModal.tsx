@@ -19,7 +19,7 @@ import {
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
-import { groupConsumablesByType } from "@/lib/partyToolkit";
+import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
@@ -46,6 +46,7 @@ import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceM
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { TabBar } from "./ui/TabBar";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -214,18 +215,15 @@ export function CharacterDetailsModal({
   const hasAttacks = sortedAttacks.length > 0;
   const hasSpells = spellLevels.length > 0;
   const hasFeatures = c.features.length > 0;
-  const consumables = c.inventory
-    .filter((item) => item.category === "Consumable")
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const consumables = dedupeInventoryItems(c.inventory.filter((item) => item.category === "Consumable"));
   const consumableGroups = groupConsumablesByType(consumables);
   const hasConsumables = consumables.length > 0;
 
-  const tabs: Array<{ key: DetailsTab; label: string }> = [
-    ...(hasAttacks ? [{ key: "weapons" as const, label: `${CONTENT_KIND_ICON.weapons} Weapons` }] : []),
-    ...(hasFeatures ? [{ key: "features" as const, label: `${CONTENT_KIND_ICON.features} Features and Traits` }] : []),
-    ...(hasSpells ? [{ key: "spells" as const, label: `${CONTENT_KIND_ICON.spells} Spells` }] : []),
-    ...(hasConsumables ? [{ key: "consumables" as const, label: `${CONTENT_KIND_ICON.consumables} Consumables` }] : []),
+  const tabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
+    ...(hasAttacks ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
+    ...(hasFeatures ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features and Traits" }] : []),
+    ...(hasSpells ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
+    ...(hasConsumables ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
   ];
   const [activeTab, setActiveTab] = useState<DetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
@@ -447,22 +445,7 @@ export function CharacterDetailsModal({
             the same way. */}
         {tabs.length > 0 && (
           <SectionDivider>
-            {tabs.length > 1 && (
-              <div className="mb-3 flex gap-1 rounded-lg bg-slate-800/60 p-1 text-sm">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 rounded-md px-2 py-1 font-medium transition-colors ${
-                      currentTab === tab.key ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
             {currentTab === "weapons" && (
               <div className="space-y-1">
