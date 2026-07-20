@@ -337,17 +337,21 @@ export function SpellChartsRow({ restRecovery, spellSlots }: { restRecovery: Par
 /**
  * Order-preserving column fill that targets each column's fair share of the
  * total weight, not just "whatever's left after the earlier columns filled
- * up" — originally built for `ResourceCoveragePanel`'s category grid, now
- * shared with any other panel that needs the same "distribute whole groups
- * across N columns, balanced by size, without splitting a group's own rows
- * across a column boundary" shape (e.g. `ConsumablesPanel`'s type groups).
- * Each boundary is placed at whichever item's cumulative weight lands
- * closest to *that column's own* fair-share target (`total * (columnIndex +
- * 1) / numColumns`) — column 1 aims for the first quarter of the total,
- * column 2 the first half, and so on, so leftover weight spreads across
- * every column instead of piling onto the last one. Order-preserving: a
- * column is always a contiguous run of the input order, so the grid still
- * reads top-to-bottom within a column, then across to the next one.
+ * up" — built for `ResourceCoveragePanel`'s category grid, and shared with
+ * any other panel that needs the same "distribute whole groups across N
+ * columns, balanced by size, without splitting a group's own rows across a
+ * column boundary" shape. Only fits well when there are at least as many
+ * groups as columns — with fewer groups than columns (or one group much
+ * larger than the rest), whole-group placement can't spread far enough and
+ * leaves columns empty; `splitIntoColumns` below solves that case by
+ * splitting at row granularity instead. Each boundary here is placed at
+ * whichever item's cumulative weight lands closest to *that column's own*
+ * fair-share target (`total * (columnIndex + 1) / numColumns`) — column 1
+ * aims for the first quarter of the total, column 2 the first half, and so
+ * on, so leftover weight spreads across every column instead of piling onto
+ * the last one. Order-preserving: a column is always a contiguous run of the
+ * input order, so the grid still reads top-to-bottom within a column, then
+ * across to the next one.
  */
 export function distributeIntoColumns<T>(items: T[], weightOf: (item: T) => number, numColumns: number): T[][] {
   if (items.length === 0) return Array.from({ length: numColumns }, () => []);
@@ -379,5 +383,56 @@ export function distributeIntoColumns<T>(items: T[], weightOf: (item: T) => numb
   });
   columns.push(current);
   while (columns.length < numColumns) columns.push([]);
+  return columns;
+}
+
+/**
+ * Splits an ordered, header-tagged row list into `numColumns` contiguous
+ * slices — a group's rows are free to break across a column boundary, so
+ * columns come out balanced even with far fewer groups than columns (the
+ * exact case `distributeIntoColumns` above can't handle, since it never
+ * splits a group's own rows apart). Originally `InventoryOverview.tsx`'s own
+ * private `splitRowsIntoColumns`, generalized so `ConsumablesPanel` — which
+ * hit that same "2 groups, 4 columns" gap — can share it instead of
+ * duplicating the same row-continuation logic.
+ *
+ * `isHeader` identifies header rows so a split is never placed right after
+ * one with nothing following it in the same column (a header with no rows
+ * under it reads as broken). `continuationHeader` builds the synthetic
+ * "resumed" header inserted at the top of whichever column a group's rows
+ * carry over into, from the first row of that carried-over remainder — so
+ * it's never ambiguous which group a row belongs to after a column break.
+ */
+export function splitIntoColumns<R>(
+  rows: R[],
+  numColumns: number,
+  isHeader: (row: R) => boolean,
+  continuationHeader: (firstRestRow: R) => R
+): R[][] {
+  if (rows.length === 0) return Array.from({ length: numColumns }, () => []);
+
+  const columns: R[][] = [];
+  let remaining = rows;
+  for (let col = 0; col < numColumns - 1; col++) {
+    const columnsLeft = numColumns - col;
+    if (remaining.length === 0) {
+      columns.push([]);
+      continue;
+    }
+    let splitIndex = Math.ceil(remaining.length / columnsLeft);
+    while (splitIndex > 0 && isHeader(remaining[splitIndex - 1])) splitIndex--;
+    if (splitIndex === 0) {
+      columns.push([]);
+      continue;
+    }
+    const colRows = remaining.slice(0, splitIndex);
+    let rest = remaining.slice(splitIndex);
+    if (rest.length > 0 && !isHeader(rest[0])) {
+      rest = [continuationHeader(rest[0]), ...rest];
+    }
+    columns.push(colRows);
+    remaining = rest;
+  }
+  columns.push(remaining);
   return columns;
 }

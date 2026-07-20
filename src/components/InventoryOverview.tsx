@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { CATEGORY_LABELS, CATEGORY_ORDER, Character, ItemCategory, ItemRarity, RARITY_COLOR } from "@/lib/types";
 import { currencyToGp } from "@/lib/characterMath";
 import { InfoTooltip } from "./InfoTooltip";
+import { splitIntoColumns } from "./partyToolkit/shared";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { ToolkitCard } from "./ui/ToolkitCard";
@@ -80,51 +81,6 @@ function flattenToRows(groups: CategoryGroup[]): InventoryRow[] {
     { kind: "header" as const, category: g.category },
     ...g.items.map((item): InventoryRow => ({ kind: "item", category: g.category, item })),
   ]);
-}
-
-/**
- * Splits an ordered row list into `numColumns` contiguous slices — a
- * category's items are free to break across a column boundary (so columns
- * come out balanced instead of following whole-category chunks, which left
- * large gaps whenever the categories didn't happen to divide evenly). A
- * synthetic "continued" header is inserted at the top of each column a
- * category's items resume in, so it's never unclear which category a row
- * belongs to. The only rule enforced: never leave a category header as the
- * last row of a column with none of its items following it — that header is
- * pushed to the next column instead.
- *
- * Rendered as real DOM columns (CSS Grid), not a `columns-*` multi-column
- * layout: a multi-column formatting context is a known source of
- * containing-block bugs for `position: absolute` descendants, which is
- * exactly what previously made item hover tooltips jump.
- */
-function splitRowsIntoColumns(rows: InventoryRow[], numColumns: number): InventoryRow[][] {
-  if (rows.length === 0) return Array.from({ length: numColumns }, () => []);
-
-  const columns: InventoryRow[][] = [];
-  let remaining = rows;
-  for (let col = 0; col < numColumns - 1; col++) {
-    const columnsLeft = numColumns - col;
-    if (remaining.length === 0) {
-      columns.push([]);
-      continue;
-    }
-    let splitIndex = Math.ceil(remaining.length / columnsLeft);
-    while (splitIndex > 0 && remaining[splitIndex - 1].kind === "header") splitIndex--;
-    if (splitIndex === 0) {
-      columns.push([]);
-      continue;
-    }
-    const colRows = remaining.slice(0, splitIndex);
-    let rest = remaining.slice(splitIndex);
-    if (rest[0]?.kind === "item") {
-      rest = [{ kind: "header", category: rest[0].category, continued: true }, ...rest];
-    }
-    columns.push(colRows);
-    remaining = rest;
-  }
-  columns.push(remaining);
-  return columns;
 }
 
 function ItemName({ item }: { item: ItemGroup }) {
@@ -297,14 +253,26 @@ function CurrencyStrip({ characters }: { characters: Character[] }) {
 
 const ITEM_LIST_COLUMNS = 4;
 
-/** The full party item list, grouped by category — see `CoinsPanel` for currency, kept as a separate panel above this one. */
+/**
+ * The full party item list, grouped by category — see `CoinsPanel` for
+ * currency, kept as a separate panel above this one. Columns are real DOM
+ * columns (CSS Grid via `splitIntoColumns`), not a `columns-*` multi-column
+ * layout: a multi-column formatting context is a known source of
+ * containing-block bugs for `position: absolute` descendants, which is
+ * exactly what previously made item hover tooltips jump.
+ */
 export function InventoryOverview({ characters }: { characters: Character[] }) {
   const groups = buildCategoryGroups(characters);
   if (groups.length === 0) {
     return <p className="text-sm text-slate-500">No items tracked on any character.</p>;
   }
 
-  const columns = splitRowsIntoColumns(flattenToRows(groups), ITEM_LIST_COLUMNS);
+  const columns = splitIntoColumns(
+    flattenToRows(groups),
+    ITEM_LIST_COLUMNS,
+    (row) => row.kind === "header",
+    (firstRestRow) => ({ kind: "header" as const, category: firstRestRow.category, continued: true })
+  );
   const nonEmptyColumns = columns.filter((c) => c.length > 0);
 
   return (
