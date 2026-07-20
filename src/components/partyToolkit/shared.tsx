@@ -429,12 +429,10 @@ export function SpellChartsRow({
       ) : (
         <p className="text-sm text-slate-600">No spell slots in the party.</p>
       )}
-      {consumables ? (
+      {consumables && (
         <ChartBox title="Consumables" hint={<ConsumablesHeaderHint consumables={consumables} />}>
           <ConsumablesHistogram summary={consumables} />
         </ChartBox>
-      ) : (
-        <p className="text-sm text-slate-600">No consumables tracked on any character.</p>
       )}
     </div>
   );

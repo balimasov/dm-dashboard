@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Character, Creature, CreatureTrait, RARITY_COLOR } from "@/lib/types";
 import { CONTENT_KIND_ICON, ContentKind } from "@/lib/contentKindIcons";
+import { dedupeInventoryItems } from "@/lib/partyToolkit";
 import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -10,7 +11,6 @@ import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { AttackHintPanel } from "./ui/AttackDisplay";
-import { FlaggableRow } from "./ui/FlaggableRow";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -76,8 +76,8 @@ function characterReminders(character: Character): ReminderGroup | null {
         ),
         kind: "spells" as const,
       })),
-    ...character.inventory
-      .filter((item) => item.category === "Consumable" && flagged.includes(item.name))
+    ...dedupeInventoryItems(character.inventory.filter((item) => item.category === "Consumable"))
+      .filter((item) => flagged.includes(item.name))
       .map((item) => ({
         name: item.name,
         label: <span className={RARITY_COLOR[item.rarity]}>{item.name}</span>,
@@ -111,6 +111,44 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
   return { ownerId: creature.id, ownerName: creature.name, avatarUrl: creature.avatarUrl, entries };
+}
+
+/**
+ * One reminder row — every entry here is inherently "flagged" (that's the
+ * only way it got into this panel), so the row is always the amber
+ * flagged look `FlaggableRow` gives an active flame, without needing that
+ * component's own flame toggle: a full flame-icon button at the *start* of
+ * every row here sat right where a tap aiming for the row's own hover-hint
+ * would naturally land, so it doubled as an easy-to-fumble "remove" button.
+ * The small "✕" here trades that for something deliberately less
+ * grabby — off to the side, muted until hovered, small enough not to read
+ * as its own row of content the way the flame's `h-6 w-6` circle did.
+ */
+function ReminderRow({ entry, onRemove }: { entry: ReminderEntry; onRemove: () => void }) {
+  return (
+    <div className="-mx-1.5 flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-sm text-amber-300">
+      <InfoTooltip hoverOnly panel={entry.panel} className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span aria-hidden="true" className="shrink-0 text-xs leading-none">
+            {CONTENT_KIND_ICON[entry.kind]}
+          </span>
+          <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+        </span>
+      </InfoTooltip>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        aria-label="Remove reminder"
+        title="Remove reminder"
+        className="shrink-0 rounded px-1 text-xs leading-none text-amber-300/30 hover:bg-slate-800 hover:text-red-400"
+      >
+        ✕
+      </button>
+    </div>
+  );
 }
 
 /**
@@ -244,24 +282,7 @@ export function RemindersPanel({
               </div>
               <div className="space-y-0.5">
                 {group.entries.map((entry) => (
-                  <FlaggableRow key={entry.name} flagged onToggleFlag={() => toggleOff(group, entry.name)}>
-                    {/* `className="w-full"` widens the hoverable/tappable
-                        zone to the whole row (icon + name + trailing blank
-                        space up to the flame button) instead of just the
-                        name text — precisely aiming at one word to see an
-                        ability's rules text is worse UX than the rest of the
-                        row being a dead zone. `hoverOnly` skips the dotted-
-                        underline `InfoTooltip` normally puts under a bare
-                        name, since here it would run under the icon too. */}
-                    <InfoTooltip hoverOnly panel={entry.panel} className="w-full">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span aria-hidden="true" className="shrink-0 text-xs leading-none">
-                          {CONTENT_KIND_ICON[entry.kind]}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                      </span>
-                    </InfoTooltip>
-                  </FlaggableRow>
+                  <ReminderRow key={entry.name} entry={entry} onRemove={() => toggleOff(group, entry.name)} />
                 ))}
               </div>
             </div>

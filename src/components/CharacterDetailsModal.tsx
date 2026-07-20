@@ -221,7 +221,7 @@ export function CharacterDetailsModal({
 
   const tabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
     ...(hasAttacks ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
-    ...(hasFeatures ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features and Traits" }] : []),
+    ...(hasFeatures ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features" }] : []),
     ...(hasSpells ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
     ...(hasConsumables ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
   ];
@@ -433,11 +433,11 @@ export function CharacterDetailsModal({
           </SectionDivider>
         )}
 
-        {/* Weapons / Features and Traits / Spells / Consumables — tabbed instead of
+        {/* Weapons / Features / Spells / Consumables — tabbed instead of
             side-by-side columns so each reads as a single, comfortably narrow
             list. Only characters with more than one populated tab get a tab
             switcher; a martial character with no spells or consumables just
-            sees Features and Traits directly, no empty tab to click into.
+            sees Features directly, no empty tab to click into.
             Consumables (the character's own `InventoryItem`s of category
             "Consumable") is flaggable with the same reminder flame as every
             other tab here, so a DM can mark "remind them to drink that potion"

@@ -172,9 +172,9 @@ type PartyDetailsTab = "weapons" | "features" | "spells" | "consumables";
 
 /**
  * Actions & Resources — tabbed the same way `CharacterDetailsModal` tabs a
- * single character's own Weapons/Features and Traits/Spells/Consumables —
- * "Features and Traits" keeps this panel's existing Heroic Inspiration +
- * Limited Use content unchanged, "Spells" is every known spell across the
+ * single character's own Weapons/Features/Spells/Consumables — "Features"
+ * keeps this panel's existing Heroic Inspiration + Limited Use content
+ * unchanged, "Spells" is every known spell across the
  * party, grouped by level like a character's own Spells tab and deduped by
  * name (a spell several characters share shows as one row with several
  * avatar chips instead of once per character). "Consumables" is the same
@@ -211,7 +211,7 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
 
   const tabs: Array<{ key: PartyDetailsTab; icon: string; text: string }> = [
     ...(partyAttacks.length > 0 ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
-    { key: "features", icon: CONTENT_KIND_ICON.features, text: "Features and Traits" },
+    { key: "features", icon: CONTENT_KIND_ICON.features, text: "Features" },
     ...(spellLevelGroups.length > 0 ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
     ...(partyConsumables.length > 0 ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
   ];
