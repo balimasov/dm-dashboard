@@ -454,7 +454,7 @@ export function CampaignJournalModal({
                 {visibleSessions?.map((session) => (
                   <div
                     key={session.id}
-                    className={`group relative flex shrink-0 items-center gap-1 rounded-lg sm:w-full ${
+                    className={`group relative flex shrink-0 items-start gap-1 rounded-lg sm:w-full ${
                       selectedSessionId === session.id ? "bg-slate-700" : ""
                     }`}
                   >
@@ -472,11 +472,18 @@ export function CampaignJournalModal({
                       <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
                     </button>
                     {role === "dm" && (
-                      // `focus-within` isn't decorative: without it,
+                      // `items-start` on the row above (not `items-center`)
+                      // plus this `pt-1` — pinned to the top-right corner
+                      // is the one position that stays consistent whether
+                      // the title fits on one line or wraps to three;
+                      // center-aligned, this button drifted down into the
+                      // middle of a wrapped multi-line title, reading as
+                      // "part of the text" instead of a separate control.
+                      // `focus-within` isn't decorative either: without it,
                       // `opacity-0` alone would still leave the trigger
                       // focusable (just invisible) for a keyboard user
                       // tabbing through.
-                      <div className="shrink-0 pr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                      <div className="shrink-0 pt-1 pr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
                         <SessionManageMenu
                           session={session}
                           renameSession={renameSession}
@@ -528,7 +535,23 @@ export function CampaignJournalModal({
                 <Composer onSubmit={(html) => createEntry(html, selectedSessionId, visibleTab as JournalEntryAudience)} />
               )}
 
-              <div className="scrollbar-themed flex-1 overflow-y-auto pt-1">
+              {/* `overflow-x-hidden` isn't decorative — per spec, a lone
+                  `overflow-y: auto` silently forces the browser's *computed*
+                  `overflow-x` to `auto` too (confirmed via
+                  `getComputedStyle`), which reserves a scroll gutter flush
+                  against this container's own right edge. Every entry's
+                  `NotesEditor` box stretches to 100% of that content width,
+                  so its rounded right border ends up sitting immediately
+                  against the scrollbar track with zero breathing room —
+                  the same "sliced corner" look already fixed once inside
+                  `NotesEditor` itself, just one layer further out. The
+                  sidebar session list two elements up already carries this
+                  same `overflow-x-hidden` for the identical reason; this
+                  container was the one place in the modal missing it.
+                  `pr-2` on top reserves room for the scrollbar track so
+                  entries never render flush against it even when it's
+                  actually visible. */}
+              <div className="scrollbar-themed flex-1 overflow-x-hidden overflow-y-auto pt-1 pr-2">
                 {contentLoading ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
