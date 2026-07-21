@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { UserRole } from "@/lib/auth";
-import { JournalEntryAudience } from "@/lib/types";
+import { htmlToMarkdown } from "@/lib/journal";
+import { JournalEntry, JournalEntryAudience, JournalSessionSummary } from "@/lib/types";
 import { useJournal } from "@/hooks/useJournal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
+import { DownloadIcon } from "./ui/icons";
 
 type JournalTab = "dm" | "party";
 type JournalMode = "view" | "edit";
@@ -119,6 +121,37 @@ function SegmentedControl<T extends string>({
       ))}
     </div>
   );
+}
+
+function slugify(name: string): string {
+  return (
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "session"
+  );
+}
+
+/**
+ * Downloads every currently-visible entry — the selected session's,
+ * filtered to whichever audience tab is showing — as one Markdown file,
+ * exactly what View mode has on screen at the moment the button is
+ * clicked. Each entry's own HTML converts through `htmlToMarkdown`
+ * (headings/bold/italic/links/lists preserved), separated by a `---` rule
+ * so multiple entries in one session don't visually run together once
+ * they're no longer each in their own bordered box.
+ */
+function downloadSessionMarkdown(session: JournalSessionSummary, entries: JournalEntry[]) {
+  const body = entries.map((entry) => htmlToMarkdown(entry.text)).join("\n\n---\n\n");
+  const markdown = `# ${session.title}\n\n${body}\n`;
+  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slugify(session.title)}.md`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 /**
@@ -320,8 +353,19 @@ export function CampaignJournalModal({
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {selectedSession && (
-              <div className="mb-2 flex shrink-0 items-center gap-2">
+              <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
                 <h3 className="truncate text-sm font-semibold text-slate-100">{selectedSession.title}</h3>
+                {mode === "view" && visibleEntries && visibleEntries.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => downloadSessionMarkdown(selectedSession, visibleEntries)}
+                    aria-label="Export as Markdown"
+                    title="Export as Markdown"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  >
+                    <DownloadIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             )}
 
