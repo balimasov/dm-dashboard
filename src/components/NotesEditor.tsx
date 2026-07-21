@@ -62,7 +62,7 @@ export function NotesEditor({
       editorProps: {
         attributes: {
           class:
-            "notes-editor-content min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600",
+            "notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600",
         },
       },
     },
@@ -110,7 +110,7 @@ export function NotesEditor({
           </span>
         </div>
         <div
-          className="notes-editor-content min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+          className="notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
           dangerouslySetInnerHTML={{
             __html: value || `<p class="is-editor-empty" data-placeholder="${placeholder ?? ""}"></p>`,
           }}

@@ -46,6 +46,15 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
     }
   }
 
+  // Same clear-the-visible-editor trick `handleAdd` uses after a successful
+  // submit — `setDraft("")` alone wouldn't reach the already-mounted editor
+  // (see `NotesEditor`'s own doc comment), so bump `resetKey` to force a
+  // clean remount.
+  function handleCancel() {
+    setDraft("");
+    setResetKey((k) => k + 1);
+  }
+
   // No outer card here — `NotesEditor` already draws its own bordered
   // textbox, and wrapping that in a second bordered panel (as this used to)
   // just stacked two rectangles for no reason. Plain spacing is enough to
@@ -59,7 +68,15 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
         placeholder="Write a journal note..."
         autoFocus={autoFocusEditor}
       />
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isEmpty || saving}
+          className="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200 disabled:cursor-not-allowed disabled:text-slate-700"
+        >
+          Cancel
+        </button>
         <button
           type="button"
           onClick={() => void handleAdd()}
@@ -481,11 +498,11 @@ export function CampaignJournalModal({
                   header. Always mounted (title/export button included) rather
                   than conditionally rendered on `selectedSession`/`mode`, so
                   nothing here changes *shape* when switching sessions, tabs,
-                  or mode — only the export button's own enabled state does,
-                  via `disabled:opacity-0` (space reserved, not collapsed),
-                  which is what actually fixes it visibly jumping before. A
-                  short opacity transition (rather than an instant snap)
-                  softens that hide/show into a fade instead of a flash. */}
+                  or mode. The export button itself stays visible (just dimmed
+                  and unclickable) rather than fading to `opacity-0` — an
+                  invisible-but-present button still read as "popping in and
+                  out" on every mode switch; a plain disabled state is the
+                  one users already expect not to blink. */}
               <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h3 className="truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
@@ -495,7 +512,7 @@ export function CampaignJournalModal({
                     disabled={!canExport}
                     aria-label="Export as Markdown"
                     title="Export as Markdown"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition-opacity duration-150 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-0"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
                   >
                     <DownloadIcon className="h-3.5 w-3.5" />
                   </button>
