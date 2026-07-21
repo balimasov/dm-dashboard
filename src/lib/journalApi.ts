@@ -12,7 +12,7 @@ import { apiFetch, parseJsonOrThrow } from "./apiClient";
 export class JournalConflictError extends Error {
   current: JournalEntry;
   constructor(current: JournalEntry) {
-    super("This entry was changed by someone else.");
+    super("This note was changed by someone else.");
     this.name = "JournalConflictError";
     this.current = current;
   }
@@ -25,7 +25,7 @@ export async function listJournalSessionsApi(campaignId: string): Promise<Journa
 
 export async function listJournalEntriesApi(sessionId: string): Promise<JournalEntry[]> {
   const res = await apiFetch(`/api/journal/entries?sessionId=${encodeURIComponent(sessionId)}`);
-  return parseJsonOrThrow<JournalEntry[]>(res, "Failed to load journal entries.");
+  return parseJsonOrThrow<JournalEntry[]>(res, "Failed to load journal notes.");
 }
 
 /**
@@ -47,7 +47,7 @@ export async function createJournalEntryApi(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal entry.");
+  return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal note.");
 }
 
 /**
@@ -67,12 +67,12 @@ export async function patchJournalEntryApi(id: string, text: string, expectedUpd
     const data = (await res.json().catch(() => null)) as { entry?: JournalEntry } | null;
     if (data?.entry) throw new JournalConflictError(data.entry);
   }
-  return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal entry.");
+  return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal note.");
 }
 
 export async function deleteJournalEntryApi(id: string): Promise<void> {
   const res = await apiFetch(`/api/journal/entries/${id}`, { method: "DELETE" });
-  await parseJsonOrThrow<{ ok: true }>(res, "Failed to delete journal entry.");
+  await parseJsonOrThrow<{ ok: true }>(res, "Failed to delete journal note.");
 }
 
 /** DM-only manual "start a new session" — server enforces the role check regardless of who calls this. */

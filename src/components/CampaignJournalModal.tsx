@@ -46,13 +46,17 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
     }
   }
 
+  // No outer card here — `NotesEditor` already draws its own bordered
+  // textbox, and wrapping that in a second bordered panel (as this used to)
+  // just stacked two rectangles for no reason. Plain spacing is enough to
+  // read as one composer unit.
   return (
-    <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <div className="mb-4">
       <NotesEditor
         key={resetKey}
         value={draft}
         onChange={setDraft}
-        placeholder="Write a journal entry..."
+        placeholder="Write a journal note..."
         autoFocus={autoFocusEditor}
       />
       <div className="mt-2 flex justify-end">
@@ -62,7 +66,7 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
           disabled={isEmpty || saving}
           className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-600"
         >
-          Add entry
+          Add note
         </button>
       </div>
     </div>
@@ -191,7 +195,7 @@ function SessionManageMenu({
         type="button"
         className={`${MORE_MENU_ITEM_CLASS} text-red-400 hover:text-red-300`}
         onClick={() => {
-          const noun = session.entryCount === 1 ? "entry" : "entries";
+          const noun = session.entryCount === 1 ? "note" : "notes";
           if (window.confirm(`Delete "${session.title}"? This also deletes all ${session.entryCount} ${noun} in it. This can't be undone.`)) {
             deleteSession(session.id);
           }
@@ -524,11 +528,15 @@ export function CampaignJournalModal({
                     </button>
                   </div>
                 ) : !selectedSessionId ? (
-                  <p className="text-sm text-slate-500">Select a session to see its entries.</p>
+                  <p className="text-sm text-slate-500">Select a session to see its notes.</p>
                 ) : visibleEntries?.length === 0 ? (
-                  <p className="text-sm text-slate-500">No entries in this session yet.</p>
+                  <p className="text-sm text-slate-500">No notes in this session yet.</p>
                 ) : mode === "edit" ? (
-                  <div className="space-y-2">
+                  // `divide-y` instead of each row owning its own bordered
+                  // card — a thin rule between entries reads just as clearly
+                  // as a boundary without stacking a rectangle around every
+                  // single one, which is what made this list feel heavy.
+                  <div className="divide-y divide-slate-800/60">
                     {visibleEntries?.map((entry) => (
                       <JournalEntryRow
                         key={entry.id}

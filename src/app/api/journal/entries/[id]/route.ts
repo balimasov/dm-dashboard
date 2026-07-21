@@ -27,7 +27,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/journal/entrie
 
   const existing = getJournalEntry(id);
   if (!existing) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json({ error: "Journal note not found." }, { status: 404 });
   }
   if (!canMutateEntry(role, existing)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,10 +35,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/journal/entrie
 
   const result2 = updateJournalEntryText(id, result.data.text, role, result.data.expectedUpdatedAt);
   if (result2.status === "not_found") {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json({ error: "Journal note not found." }, { status: 404 });
   }
   if (result2.status === "conflict") {
-    return NextResponse.json({ error: "This entry was changed by someone else.", entry: result2.entry }, { status: 409 });
+    return NextResponse.json({ error: "This note was changed by someone else.", entry: result2.entry }, { status: 409 });
   }
   return NextResponse.json(result2.entry);
 }
@@ -49,7 +49,7 @@ export async function DELETE(_req: Request, ctx: RouteContext<"/api/journal/entr
   const { id } = await ctx.params;
   const existing = getJournalEntry(id);
   if (!existing) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json({ error: "Journal note not found." }, { status: 404 });
   }
   if (!canMutateEntry(role, existing)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

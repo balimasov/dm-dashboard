@@ -34,7 +34,7 @@ export function useJournal(campaignId: string) {
     try {
       setEntries(await listJournalEntriesApi(sessionId));
     } catch (err) {
-      setEntriesError(err instanceof Error ? err.message : "Failed to load journal entries.");
+      setEntriesError(err instanceof Error ? err.message : "Failed to load journal notes.");
     }
   }, []);
 
