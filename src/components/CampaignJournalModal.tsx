@@ -10,6 +10,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
+import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { DownloadIcon } from "./ui/icons";
 
 type JournalTab = "dm" | "party";
@@ -155,6 +156,54 @@ function downloadSessionMarkdown(session: JournalSessionSummary, entries: Journa
 }
 
 /**
+ * Rename/Archive/Delete for one session — shared between the desktop
+ * sidebar's per-row "..." and the mobile picker's single "..." (which
+ * always targets whichever session is currently selected, since there's
+ * no per-row affordance to hang it off on mobile).
+ */
+function SessionManageMenu({
+  session,
+  renameSession,
+  toggleSessionArchived,
+  deleteSession,
+}: {
+  session: JournalSessionSummary;
+  renameSession: (id: string, title: string) => void;
+  toggleSessionArchived: (id: string, archived: boolean) => void;
+  deleteSession: (id: string) => void;
+}) {
+  return (
+    <MoreMenu label={`Manage "${session.title}"`} portal>
+      <button
+        type="button"
+        className={MORE_MENU_ITEM_CLASS}
+        onClick={() => {
+          const next = window.prompt("Rename session", session.title)?.trim();
+          if (next && next !== session.title) renameSession(session.id, next);
+        }}
+      >
+        Rename
+      </button>
+      <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={() => toggleSessionArchived(session.id, !session.archived)}>
+        {session.archived ? "Unarchive" : "Archive"}
+      </button>
+      <button
+        type="button"
+        className={`${MORE_MENU_ITEM_CLASS} text-red-400 hover:text-red-300`}
+        onClick={() => {
+          const noun = session.entryCount === 1 ? "entry" : "entries";
+          if (window.confirm(`Delete "${session.title}"? This also deletes all ${session.entryCount} ${noun} in it. This can't be undone.`)) {
+            deleteSession(session.id);
+          }
+        }}
+      >
+        Delete
+      </button>
+    </MoreMenu>
+  );
+}
+
+/**
  * Large two-pane modal — same shell conventions as `CampaignFormModal`
  * (`useScrollLock`, `useEscapeToClose`, backdrop click-outside-closes,
  * `max-h-[90vh]`) but wider (`max-w-4xl`) for the session list + entry pane
@@ -222,16 +271,47 @@ export function CampaignJournalModal({
   const visibleSessions = sessions?.filter((s) => showArchived || !s.archived);
   const visibleEntries = entries?.filter((e) => e.audience === visibleTab);
 
-  // Covers both "just opened the modal" (sessions themselves still in
-  // flight) and "just switched sessions" (the newly-selected one's entries
-  // still in flight) with one flag, so the content pane goes from "loading"
-  // straight to "fully ready" in one step — instead of the previous
-  // sequence of differently-sized interim states (a session list arriving,
-  // then "Select a session", then "Loading entries...", then the real
-  // content) popping in one after another and reading as the whole pane
-  // jumping around.
-  const contentLoading = (sessions === null && !sessionsError) || (selectedSessionId !== null && entries === null && !entriesError);
+  const sessionsLoading = sessions === null && !sessionsError;
+  const selectedEntriesLoading = selectedSessionId !== null && entries === null && !entriesError;
+  // True while either the session list or the auto-selected session's
+  // entries are still in flight — the two-pane layout itself doesn't
+  // render at all until both are settled (see `stillLoadingInitial`
+  // below), and this narrower flag then covers only "just switched
+  // sessions" for the rest of the modal's lifetime, gating a small spinner
+  // in the entries pane alone.
+  const contentLoading = sessionsLoading || selectedEntriesLoading;
   const canExport = !contentLoading && mode === "view" && !!selectedSession && !!visibleEntries && visibleEntries.length > 0;
+
+  // Latches true the first time both the session list *and* the initially
+  // selected session's entries have loaded (or failed), and never flips
+  // back — so only the very first open blocks on one full-modal spinner.
+  // Sessions and their content used to appear in separate steps (session
+  // list first, entries a beat later), which is what actually caused the
+  // "sessions block blinks and content shifts" complaint: nothing was
+  // structurally jumping, the sidebar and header panel just kept mounting
+  // in before their content was ready. Waiting for both up front means the
+  // whole layout paints once, fully formed.
+  // Set directly in the render body (React's documented "adjust state while
+  // rendering" pattern), not an effect — an effect would commit the loading
+  // UI for one extra frame before flipping, which is exactly the kind of
+  // pop-in this whole change exists to remove.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  if (!initialLoadDone && !sessionsLoading && !selectedEntriesLoading) {
+    setInitialLoadDone(true);
+  }
+  const stillLoadingInitial = !initialLoadDone && (sessionsLoading || selectedEntriesLoading);
+
+  const mobileSessionOptions: SelectMenuOption<string>[] =
+    sessions?.map((s) => ({
+      value: s.id,
+      label: (
+        <span className={s.archived ? "text-slate-500" : undefined}>
+          {s.title}
+          {s.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
+          <span className="ml-1 text-xs text-slate-500">({s.entryCount})</span>
+        </span>
+      ),
+    })) ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
@@ -252,202 +332,232 @@ export function CampaignJournalModal({
           </button>
         </div>
 
-        {/* Column on mobile (sessions as a short horizontal strip up top,
-            entries — the actual point of opening this — get the rest of the
-            height) — row on `sm:` and up (fixed-width sidebar, same as
-            before). A rigid 256px sidebar on a ~360px phone screen left
-            almost nothing for the entries pane, which is what this modal is
-            actually for. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:gap-4">
-          <div className="flex shrink-0 flex-col gap-2 sm:w-64">
-            {role === "dm" && (
-              <div className="flex shrink-0 items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => void startNewSession()}
-                  className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-                >
-                  + New session
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowArchived((v) => !v)}
-                  className="text-xs text-slate-500 hover:text-slate-300"
-                >
-                  {showArchived ? "Hide archived" : "Show archived"}
-                </button>
-              </div>
-            )}
-            <div className="scrollbar-themed flex max-h-28 gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-800 pb-2 sm:max-h-none sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3">
-              {sessions === null && sessionsError === null && <p className="shrink-0 text-sm text-slate-500">Loading sessions...</p>}
-              {sessionsError && (
-                <div className="shrink-0 text-sm text-red-400">
-                  <p className="mb-2">{sessionsError}</p>
-                  <button type="button" onClick={() => void loadSessions()} className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800">
-                    Retry
+        {/* Nothing below the close button renders until the session list
+            *and* the initially-selected session's entries have both
+            loaded — see `stillLoadingInitial`'s doc comment above. This is
+            what actually stops the sidebar and header from painting in
+            before their content, which is what read as the whole modal
+            "jumping" on open. */}
+        {stillLoadingInitial ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+          </div>
+        ) : (
+          // Column on mobile (a single-row session picker up top, entries —
+          // the actual point of opening this — get the rest of the height)
+          // — row on `sm:` and up (fixed-width vertical sidebar). A rigid
+          // 256px sidebar, or the previous horizontal scrolling strip of
+          // session pills, both cost real screen space on a ~360px phone;
+          // a closed dropdown costs one button row.
+          <div className="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="flex shrink-0 flex-col gap-2 sm:w-64">
+              {role === "dm" && (
+                <div className="hidden shrink-0 items-center justify-between gap-2 sm:flex">
+                  <button
+                    type="button"
+                    onClick={() => void startNewSession()}
+                    className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                  >
+                    + New session
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowArchived((v) => !v)}
+                    className="text-xs text-slate-500 hover:text-slate-300"
+                  >
+                    {showArchived ? "Hide archived" : "Show archived"}
                   </button>
                 </div>
               )}
-              {visibleSessions?.length === 0 && (
-                <p className="shrink-0 text-sm text-slate-500">No sessions yet — write a note to start one.</p>
-              )}
-              {visibleSessions?.map((session) => (
-                <div
-                  key={session.id}
-                  className={`group relative flex shrink-0 items-center gap-1 rounded-lg sm:w-full ${
-                    selectedSessionId === session.id ? "bg-slate-700" : ""
-                  }`}
-                >
+
+              {/* Mobile-only: one compact row (dropdown + new-session +
+                  manage) instead of the sidebar below. Always lists every
+                  session, archived included (tagged/dimmed) — the
+                  show/hide-archived toggle above exists to declutter an
+                  always-visible list, which a closed dropdown never is. */}
+              <div className="flex shrink-0 items-center gap-2 sm:hidden">
+                {sessionsError ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-red-400">
+                    <p className="min-w-0 flex-1 truncate">{sessionsError}</p>
+                    <button
+                      type="button"
+                      onClick={() => void loadSessions()}
+                      className="shrink-0 rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : sessions && sessions.length === 0 ? (
+                  <p className="min-w-0 flex-1 truncate text-sm text-slate-500">No sessions yet — write a note to start one.</p>
+                ) : (
+                  <SelectMenu
+                    value={selectedSessionId ?? ""}
+                    options={mobileSessionOptions}
+                    onChange={(id) => selectSession(id)}
+                    className="min-w-0 flex-1"
+                  />
+                )}
+                {role === "dm" && (
                   <button
                     type="button"
-                    onClick={() => selectSession(session.id)}
-                    className={`min-w-0 flex-1 shrink-0 whitespace-nowrap rounded-lg px-2 py-1.5 text-left text-sm sm:whitespace-normal ${
-                      session.archived ? "opacity-60" : ""
-                    } ${
-                      selectedSessionId === session.id ? "text-slate-100" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                    onClick={() => void startNewSession()}
+                    aria-label="New session"
+                    title="New session"
+                    className="shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+                  >
+                    +
+                  </button>
+                )}
+                {role === "dm" && selectedSession && (
+                  <SessionManageMenu
+                    session={selectedSession}
+                    renameSession={renameSession}
+                    toggleSessionArchived={toggleSessionArchived}
+                    deleteSession={deleteSession}
+                  />
+                )}
+              </div>
+
+              <div className="scrollbar-themed hidden gap-1 overflow-x-hidden overflow-y-auto border-slate-800 pr-3 sm:flex sm:flex-col sm:border-r">
+                {sessionsError && (
+                  <div className="shrink-0 text-sm text-red-400">
+                    <p className="mb-2">{sessionsError}</p>
+                    <button type="button" onClick={() => void loadSessions()} className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800">
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {visibleSessions?.length === 0 && (
+                  <p className="shrink-0 text-sm text-slate-500">No sessions yet — write a note to start one.</p>
+                )}
+                {visibleSessions?.map((session) => (
+                  <div
+                    key={session.id}
+                    className={`group relative flex shrink-0 items-center gap-1 rounded-lg sm:w-full ${
+                      selectedSessionId === session.id ? "bg-slate-700" : ""
                     }`}
                   >
-                    {session.title}
-                    {session.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
-                    <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
-                  </button>
-                  {role === "dm" && (
-                    // Always visible on mobile (`opacity-100` below `sm:`,
-                    // where hover doesn't exist) — reveals on hover/focus
-                    // at `sm:` and up, matching this file's existing
-                    // `sm:`-keyed mobile/desktop split everywhere else.
-                    // `focus-within` isn't decorative: without it, `opacity-0`
-                    // alone would still leave the trigger focusable (just
-                    // invisible) for a keyboard user tabbing through.
-                    <div className="shrink-0 pr-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-                      <MoreMenu label={`Manage "${session.title}"`} portal>
-                        <button
-                          type="button"
-                          className={MORE_MENU_ITEM_CLASS}
-                          onClick={() => {
-                            const next = window.prompt("Rename session", session.title)?.trim();
-                            if (next && next !== session.title) void renameSession(session.id, next);
-                          }}
-                        >
-                          Rename
-                        </button>
-                        <button
-                          type="button"
-                          className={MORE_MENU_ITEM_CLASS}
-                          onClick={() => void toggleSessionArchived(session.id, !session.archived)}
-                        >
-                          {session.archived ? "Unarchive" : "Archive"}
-                        </button>
-                        <button
-                          type="button"
-                          className={`${MORE_MENU_ITEM_CLASS} text-red-400 hover:text-red-300`}
-                          onClick={() => {
-                            const noun = session.entryCount === 1 ? "entry" : "entries";
-                            if (
-                              window.confirm(
-                                `Delete "${session.title}"? This also deletes all ${session.entryCount} ${noun} in it. This can't be undone.`
-                              )
-                            ) {
-                              void deleteSession(session.id);
-                            }
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </MoreMenu>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* One panel for both the session title and the audience/mode
-                toolbar — previously these sat loose above the entries list
-                (just the title text, then a separate unboxed row of pills),
-                which read as floating controls rather than a deliberate
-                header. Always mounted (title/export button included) rather
-                than conditionally rendered on `selectedSession`/`mode`, so
-                nothing here changes *shape* when switching sessions, tabs,
-                or mode — only the export button's own enabled state does,
-                via `disabled:opacity-0` (space reserved, not collapsed),
-                which is what actually fixes it visibly jumping before. */}
-            <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
-                <button
-                  type="button"
-                  onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
-                  disabled={!canExport}
-                  aria-label="Export as Markdown"
-                  title="Export as Markdown"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-0"
-                >
-                  <DownloadIcon className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
-                {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
-                <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
+                    <button
+                      type="button"
+                      onClick={() => selectSession(session.id)}
+                      className={`min-w-0 flex-1 shrink-0 whitespace-normal rounded-lg px-2 py-1.5 text-left text-sm ${
+                        session.archived ? "opacity-60" : ""
+                      } ${
+                        selectedSessionId === session.id ? "text-slate-100" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      }`}
+                    >
+                      {session.title}
+                      {session.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
+                      <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
+                    </button>
+                    {role === "dm" && (
+                      // `focus-within` isn't decorative: without it,
+                      // `opacity-0` alone would still leave the trigger
+                      // focusable (just invisible) for a keyboard user
+                      // tabbing through.
+                      <div className="shrink-0 pr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <SessionManageMenu
+                          session={session}
+                          renameSession={renameSession}
+                          toggleSessionArchived={toggleSessionArchived}
+                          deleteSession={deleteSession}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {!contentLoading && mode === "edit" && selectedSessionId && (
-              <Composer onSubmit={(html) => createEntry(html, selectedSessionId, visibleTab as JournalEntryAudience)} />
-            )}
-
-            <div className="scrollbar-themed flex-1 overflow-y-auto">
-              {contentLoading ? (
-                <div className="flex h-full items-center justify-center">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
-                </div>
-              ) : entriesError ? (
-                <div className="text-sm text-red-400">
-                  <p className="mb-2">{entriesError}</p>
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {/* One panel for both the session title and the audience/mode
+                  toolbar — previously these sat loose above the entries list
+                  (just the title text, then a separate unboxed row of pills),
+                  which read as floating controls rather than a deliberate
+                  header. Always mounted (title/export button included) rather
+                  than conditionally rendered on `selectedSession`/`mode`, so
+                  nothing here changes *shape* when switching sessions, tabs,
+                  or mode — only the export button's own enabled state does,
+                  via `disabled:opacity-0` (space reserved, not collapsed),
+                  which is what actually fixes it visibly jumping before. A
+                  short opacity transition (rather than an instant snap)
+                  softens that hide/show into a fade instead of a flash. */}
+              <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
                   <button
                     type="button"
-                    onClick={() => selectSession(selectedSessionId!)}
-                    className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
+                    onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
+                    disabled={!canExport}
+                    aria-label="Export as Markdown"
+                    title="Export as Markdown"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition-opacity duration-150 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-0"
                   >
-                    Retry
+                    <DownloadIcon className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              ) : !selectedSessionId ? (
-                <p className="text-sm text-slate-500">Select a session to see its entries.</p>
-              ) : visibleEntries?.length === 0 ? (
-                <p className="text-sm text-slate-500">No entries in this session yet.</p>
-              ) : mode === "edit" ? (
-                <div className="space-y-2">
-                  {visibleEntries?.map((entry) => (
-                    <JournalEntryRow
-                      key={entry.id}
-                      entry={entry}
-                      canManage={role === "dm" || entry.authorRole === "player"}
-                      onUpdate={updateEntry}
-                      onRemove={removeEntry}
-                    />
-                  ))}
+                <div className="flex items-center gap-3">
+                  <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
+                  {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
+                  <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {visibleEntries?.map((entry, index) => (
-                    <div key={entry.id}>
-                      {/* Light separator between notes in the reading view —
-                          the only visual cue that one entry ended and the
-                          next began, now that View mode has no per-entry
-                          border/box at all. Skipped before the first entry;
-                          nothing to separate it from. */}
-                      {index > 0 && <hr className="mb-6 border-slate-800/60" />}
-                      <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: entry.text }} />
-                    </div>
-                  ))}
-                </div>
+              </div>
+
+              {!contentLoading && mode === "edit" && selectedSessionId && (
+                <Composer onSubmit={(html) => createEntry(html, selectedSessionId, visibleTab as JournalEntryAudience)} />
               )}
+
+              <div className="scrollbar-themed flex-1 overflow-y-auto pt-1">
+                {contentLoading ? (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+                  </div>
+                ) : entriesError ? (
+                  <div className="text-sm text-red-400">
+                    <p className="mb-2">{entriesError}</p>
+                    <button
+                      type="button"
+                      onClick={() => selectSession(selectedSessionId!)}
+                      className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : !selectedSessionId ? (
+                  <p className="text-sm text-slate-500">Select a session to see its entries.</p>
+                ) : visibleEntries?.length === 0 ? (
+                  <p className="text-sm text-slate-500">No entries in this session yet.</p>
+                ) : mode === "edit" ? (
+                  <div className="space-y-2">
+                    {visibleEntries?.map((entry) => (
+                      <JournalEntryRow
+                        key={entry.id}
+                        entry={entry}
+                        canManage={role === "dm" || entry.authorRole === "player"}
+                        onUpdate={updateEntry}
+                        onRemove={removeEntry}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {visibleEntries?.map((entry, index) => (
+                      <div key={entry.id}>
+                        {/* Light separator between notes in the reading view —
+                            the only visual cue that one entry ended and the
+                            next began, now that View mode has no per-entry
+                            border/box at all. Skipped before the first entry;
+                            nothing to separate it from. */}
+                        {index > 0 && <hr className="mb-3 border-slate-800/60" />}
+                        <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: entry.text }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
