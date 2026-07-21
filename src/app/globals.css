@@ -254,16 +254,31 @@ body {
   color: #38bdf8;
   text-decoration: underline;
 }
+/* Kept at the default `outside` position deliberately — `inside` was tried
+   first, but Tiptap wraps every list item's text in its own `<p>` (a block
+   element), and an inside marker sits as an inline box *before* that block,
+   which forces it onto its own line above the text instead of "1. Item
+   text" reading as one line. `outside` avoids that (the marker lives in
+   the reserved `padding-left` gutter, not in the item's own inline flow).
+   `padding-left` on `ol` specifically is wider than `ul`'s — every
+   scrollable ancestor these lists sit inside (the editor's own textbox,
+   View mode's entries panel) sets `overflow-y: auto`, and per spec that
+   silently forces the ancestor's computed `overflow-x` to `auto` too, so
+   a marker that doesn't fit inside its reserved gutter gets clipped
+   instead of overflowing visibly into view. Confirmed: at the old
+   `1.25em`, two-digit markers ("10.", "11.") rendered with their leading
+   digit cut off — `1.75em` comfortably fits two digits plus the period. */
 .notes-editor-content ul,
 .notes-editor-content ol {
   margin: 0.25em 0;
   padding-left: 1.25em;
 }
 .notes-editor-content ul {
-  list-style: disc;
+  list-style-type: disc;
 }
 .notes-editor-content ol {
-  list-style: decimal;
+  padding-left: 1.75em;
+  list-style-type: decimal;
 }
 .notes-editor-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

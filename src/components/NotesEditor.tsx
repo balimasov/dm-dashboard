@@ -61,8 +61,17 @@ export function NotesEditor({
       onBlur: () => onBlur?.(),
       editorProps: {
         attributes: {
+          // Border/rounding/focus-ring live on the wrapping `EditorContent`
+          // below, not here — this is the element that actually scrolls
+          // (`overflow-y-auto`), and its native scrollbar track is a plain
+          // rectangle that doesn't know about `rounded-lg`, so pairing
+          // border+radius+scroll on the same box let the scrollbar visibly
+          // slice through the rounded corner once content was tall enough
+          // to scroll. Splitting them into a clipping outer box and a
+          // scrolling inner box keeps the scrollbar contained within the
+          // rounded shape instead.
           class:
-            "notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600",
+            "notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto px-3 py-2 text-sm text-slate-100 focus:outline-none",
         },
       },
     },
@@ -109,12 +118,14 @@ export function NotesEditor({
             Link
           </span>
         </div>
-        <div
-          className="notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100"
-          dangerouslySetInnerHTML={{
-            __html: value || `<p class="is-editor-empty" data-placeholder="${placeholder ?? ""}"></p>`,
-          }}
-        />
+        <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+          <div
+            className="notes-editor-content scrollbar-themed min-h-24 max-h-72 w-full overflow-y-auto px-3 py-2 text-sm text-slate-100"
+            dangerouslySetInnerHTML={{
+              __html: value || `<p class="is-editor-empty" data-placeholder="${placeholder ?? ""}"></p>`,
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -152,7 +163,10 @@ export function NotesEditor({
           Link
         </button>
       </div>
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900 focus-within:ring-2 focus-within:ring-sky-600"
+      />
     </div>
   );
 }
