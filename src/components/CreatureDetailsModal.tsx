@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { NotesSection } from "./ui/NotesSection";
+import { PencilIcon, TrashIcon } from "./ui/icons";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
@@ -27,11 +29,13 @@ export function CreatureDetailsModal({
   owner,
   onClose,
   onUpdate,
+  onRemove,
 }: {
   creature: Creature;
   owner?: Character;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  onRemove?: (id: string) => void;
 }) {
   useEscapeToClose(onClose);
   useScrollLock();
@@ -66,6 +70,28 @@ export function CreatureDetailsModal({
           <div className="min-w-0 flex-1">
             <CreatureHeader creature={creature} owner={owner} />
           </div>
+          <Link
+            href={`/creatures/${creature.id}/edit`}
+            aria-label="Edit"
+            title="Edit"
+            className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Link>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={() => {
+                const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
+                if (confirmed) onRemove(creature.id);
+              }}
+              aria-label="Remove"
+              title="Remove"
+              className="shrink-0 rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Attack,
   Character,
@@ -28,7 +29,7 @@ import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { InitiativeIcon, PencilIcon, ProficiencyIcon, ShieldIcon, SpeedIcon, TrashIcon } from "./ui/icons";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
@@ -176,10 +177,12 @@ export function CharacterDetailsModal({
   character,
   onClose,
   onUpdate,
+  onRemove,
 }: {
   character: Character;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Character>) => void;
+  onRemove?: (id: string) => void;
 }) {
   const c = character;
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
@@ -260,6 +263,28 @@ export function CharacterDetailsModal({
           <div className="min-w-0 flex-1">
             <CharacterHeader character={c} />
           </div>
+          <Link
+            href={`/characters/${c.id}/edit`}
+            aria-label="Edit"
+            title="Edit"
+            className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Link>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={() => {
+                const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
+                if (confirmed) onRemove(c.id);
+              }}
+              aria-label="Remove"
+              title="Remove"
+              className="shrink-0 rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

@@ -20,6 +20,14 @@ function PencilIcon({ className }: { className?: string }) {
   );
 }
 
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -91,6 +99,17 @@ export function AvatarPicker({
     <div>
       <div className="relative inline-flex h-16 w-16 shrink-0">
         <Avatar src={imageUrl} label={label} size="md" />
+        {imageUrl && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label="Remove photo"
+            title="Remove photo"
+            className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-red-500/80 shadow hover:bg-red-950 hover:text-red-400"
+          >
+            <XIcon className="h-3 w-3" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}

@@ -86,6 +86,7 @@ export function CreatureCard({
           owner={owner}
           onClose={() => setDetailsOpen(false)}
           onUpdate={onUpdate}
+          onRemove={onRemove}
         />
       )}
     </div>

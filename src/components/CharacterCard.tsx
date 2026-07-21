@@ -273,7 +273,7 @@ export function CharacterCard({
       </SectionDivider>
 
       {detailsOpen && (
-        <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} />
+        <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} onRemove={onRemove} />
       )}
     </div>
   );
