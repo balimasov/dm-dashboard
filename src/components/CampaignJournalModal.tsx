@@ -11,7 +11,7 @@ import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
-import { DownloadIcon } from "./ui/icons";
+import { ArchiveIcon, DownloadIcon, PencilIcon, TrashIcon } from "./ui/icons";
 
 type JournalTab = "dm" | "party";
 type JournalMode = "view" | "edit";
@@ -204,7 +204,7 @@ function SessionManageMenu({
   variant?: "boxed" | "plain";
 }) {
   return (
-    <MoreMenu label={`Manage "${session.title}"`} portal variant={variant}>
+    <MoreMenu label="Manage" portal variant={variant}>
       <button
         type="button"
         className={MORE_MENU_ITEM_CLASS}
@@ -213,9 +213,11 @@ function SessionManageMenu({
           if (next && next !== session.title) renameSession(session.id, next);
         }}
       >
+        <PencilIcon className="h-4 w-4 shrink-0" />
         Rename
       </button>
       <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={() => toggleSessionArchived(session.id, !session.archived)}>
+        <ArchiveIcon className="h-4 w-4 shrink-0" />
         {session.archived ? "Unarchive" : "Archive"}
       </button>
       <button
@@ -228,6 +230,7 @@ function SessionManageMenu({
           }
         }}
       >
+        <TrashIcon className="h-4 w-4 shrink-0" />
         Delete
       </button>
     </MoreMenu>
@@ -465,7 +468,7 @@ export function CampaignJournalModal({
                   <div
                     key={session.id}
                     className={`group relative flex shrink-0 items-start gap-1 rounded-lg sm:w-full ${
-                      selectedSessionId === session.id ? "bg-slate-700" : ""
+                      selectedSessionId === session.id ? "bg-slate-700" : "hover:bg-slate-800"
                     }`}
                   >
                     <button
@@ -473,15 +476,20 @@ export function CampaignJournalModal({
                       onClick={() => selectSession(session.id)}
                       className={`min-w-0 flex-1 shrink-0 whitespace-normal rounded-lg px-2 py-1.5 text-left text-sm ${
                         session.archived ? "opacity-60" : ""
-                      } ${
-                        selectedSessionId === session.id ? "text-slate-100" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      }`}
+                      } ${selectedSessionId === session.id ? "text-slate-100" : "text-slate-400 hover:text-slate-200"}`}
                     >
                       {session.title}
                       {session.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
                       <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
                     </button>
                     {role === "dm" && (
+                      // The row itself (not this button) carries the
+                      // hover/selected background now, so the kebab reads as
+                      // sitting *on* that highlighted stripe rather than as
+                      // a separate control floating past its right edge —
+                      // confirmed clipped-looking before this change, since
+                      // only the title button's own box picked up the hover
+                      // background, leaving the kebab's own strip bare.
                       // `items-start` on the row above (not `items-center`)
                       // plus this `pt-1` — pinned to the top-right corner
                       // is the one position that stays consistent whether
@@ -522,23 +530,28 @@ export function CampaignJournalModal({
                   out" on every mode switch; a plain disabled state is the
                   one users already expect not to blink. */}
               <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 className="truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
-                  <button
-                    type="button"
-                    onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
-                    disabled={!canExport}
-                    aria-label="Export as Markdown"
-                    title="Export as Markdown"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
-                  >
-                    <DownloadIcon className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
-                  {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
+                <h3 className="mb-2 truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
+                {/* View/Edit anchored left, DM/Party + Export grouped on the
+                    right — was two separate rows (title+export on one, the
+                    audience/mode toggles + a divider on the other); the
+                    divider only existed to separate DM/Party from View/Edit
+                    when they sat directly adjacent, and doesn't do anything
+                    once they're pulled to opposite ends of the same row. */}
+                <div className="flex items-center justify-between gap-3">
                   <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
+                  <div className="flex items-center gap-2">
+                    <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
+                    <button
+                      type="button"
+                      onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
+                      disabled={!canExport}
+                      aria-label="Export as Markdown"
+                      title="Export as Markdown"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
+                    >
+                      <DownloadIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 

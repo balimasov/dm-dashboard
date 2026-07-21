@@ -36,13 +36,11 @@ export function MoreMenu({
    */
   portal?: boolean;
   /**
-   * `"boxed"` (default) is the original look — a bordered square button,
-   * used for the header's Export/Settings menus where it's the only
-   * control in that spot and needs to read as a distinct button. `"plain"`
-   * drops the border/background entirely, leaving just the "⋮" glyph — for
-   * a trigger that sits *inside* an already-visually-distinct row (a
-   * selected/hoverable list item), where a second bordered box on top of
-   * the row's own background read as a redundant nested control rather
+   * `"boxed"` (default) — the standalone mobile-header control, sitting
+   * next to other bordered buttons ("+", the session dropdown) as a peer.
+   * `"plain"` — the per-row desktop sidebar trigger, which sits *inside*
+   * an already-visually-distinct row (its own hover/selected background);
+   * a second bordered box there read as a redundant nested control rather
    * than part of the row.
    */
   variant?: "boxed" | "plain";
