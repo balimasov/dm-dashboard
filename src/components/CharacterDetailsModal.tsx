@@ -263,28 +263,6 @@ export function CharacterDetailsModal({
           <div className="min-w-0 flex-1">
             <CharacterHeader character={c} />
           </div>
-          <Link
-            href={`/characters/${c.id}/edit`}
-            aria-label="Edit"
-            title="Edit"
-            className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Link>
-          {onRemove && (
-            <button
-              type="button"
-              onClick={() => {
-                const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
-                if (confirmed) onRemove(c.id);
-              }}
-              aria-label="Remove"
-              title="Remove"
-              className="shrink-0 rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          )}
           <button
             type="button"
             onClick={onClose}
@@ -295,15 +273,46 @@ export function CharacterDetailsModal({
           </button>
         </div>
 
-        {/* Sync — same shared block used by the main card and the edit page, so this modal doesn't hide whether the data on screen is fresh. */}
-        <DdbSyncStatus
-          dndBeyondUrl={c.dndBeyondUrl}
-          synced={c.synced}
-          lastSyncedAt={c.lastSyncedAt}
-          syncing={syncing}
-          error={syncError}
-          onSync={onUpdate ? sync : undefined}
-        />
+        {/* Sync (left) + Edit/Delete (right) share one row, level with each
+            other — keeps the two icons off the header row above, where they
+            used to crowd the Heroic Inspiration star/owner badge at its
+            right edge. */}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <DdbSyncStatus
+              dndBeyondUrl={c.dndBeyondUrl}
+              synced={c.synced}
+              lastSyncedAt={c.lastSyncedAt}
+              syncing={syncing}
+              error={syncError}
+              onSync={onUpdate ? sync : undefined}
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href={`/characters/${c.id}/edit`}
+              aria-label="Edit"
+              title="Edit"
+              className="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            >
+              <PencilIcon className="h-4 w-4" />
+            </Link>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={() => {
+                  const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
+                  if (confirmed) onRemove(c.id);
+                }}
+                aria-label="Remove"
+                title="Remove"
+                className="rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Combat state — same block as the main card (no divider above it, matching the card's own spacing between this and the sync block), so this modal is a superset of it rather than a different view. */}
         <div>

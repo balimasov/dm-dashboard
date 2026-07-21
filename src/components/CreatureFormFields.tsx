@@ -141,106 +141,174 @@ export function CreatureFormFields({
   }
 
   return (
-    <div className="space-y-3">
-      <div>
-        <label className="mb-1 block text-xs text-slate-400">Portrait</label>
-        <AvatarPicker
-          imageUrl={value.avatarUrl || undefined}
-          label={value.name.trim() || value.templateName.trim() || "?"}
-          onChange={(dataUrl) => onChange({ avatarUrl: dataUrl })}
-        />
-      </div>
+    <div className="space-y-6">
+      {/* Category & Ownership — up top since these change the most often
+          mid-campaign (a companion changing hands, an NPC turning hostile),
+          unlike the stat block below which is mostly set once and forgotten. */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Category &amp; Ownership</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <Field label="Category" hint="Which dashboard section it lives in.">
+            <select
+              className={inputCls}
+              value={value.category}
+              onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
+            >
+              {CREATURE_CATEGORY_ORDER.map((c) => (
+                <option key={c} value={c}>
+                  {CREATURE_CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Owner" hint="Which character summons/commands it — optional.">
+            <select
+              className={inputCls}
+              value={value.ownerCharacterId}
+              onChange={(e) => onChange({ ownerCharacterId: e.target.value })}
+            >
+              <option value="">— None —</option>
+              {characters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
+            <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
+          </Field>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
-          <input
-            className={inputCls}
-            value={value.templateName}
-            onChange={(e) => onChange({ templateName: e.target.value })}
+      {/* Basic Info */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Basic Info</h2>
+        <div>
+          <label className="mb-1 block text-xs text-slate-400">Portrait</label>
+          <AvatarPicker
+            imageUrl={value.avatarUrl || undefined}
+            label={value.name.trim() || value.templateName.trim() || "?"}
+            onChange={(dataUrl) => onChange({ avatarUrl: dataUrl })}
           />
-        </Field>
-        <Field label="Nickname" hint="Optional — defaults to the creature name.">
-          <input className={inputCls} value={value.name} onChange={(e) => onChange({ name: e.target.value })} />
-        </Field>
-        <Field label="Type">
-          <input
-            className={inputCls}
-            placeholder="Celestial"
-            value={value.creatureType}
-            onChange={(e) => onChange({ creatureType: e.target.value })}
-          />
-        </Field>
-        <Field label="Size">
-          <input
-            className={inputCls}
-            placeholder="Large"
-            value={value.size}
-            onChange={(e) => onChange({ size: e.target.value })}
-          />
-        </Field>
-      </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
+            <input
+              className={inputCls}
+              value={value.templateName}
+              onChange={(e) => onChange({ templateName: e.target.value })}
+            />
+          </Field>
+          <Field label="Nickname" hint="Optional — defaults to the creature name.">
+            <input className={inputCls} value={value.name} onChange={(e) => onChange({ name: e.target.value })} />
+          </Field>
+          <Field label="Type">
+            <input
+              className={inputCls}
+              placeholder="Celestial"
+              value={value.creatureType}
+              onChange={(e) => onChange({ creatureType: e.target.value })}
+            />
+          </Field>
+          <Field label="Size">
+            <input
+              className={inputCls}
+              placeholder="Large"
+              value={value.size}
+              onChange={(e) => onChange({ size: e.target.value })}
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <Field label="Alignment">
+            <input
+              className={inputCls}
+              placeholder="Neutral"
+              value={value.alignment}
+              onChange={(e) => onChange({ alignment: e.target.value })}
+            />
+          </Field>
+          <Field label="Challenge Rating">
+            <input
+              className={inputCls}
+              placeholder="1/4"
+              value={value.challengeRating}
+              onChange={(e) => onChange({ challengeRating: e.target.value })}
+            />
+          </Field>
+          <Field label="Experience Points">
+            <input
+              className={inputCls}
+              placeholder="18000"
+              value={value.experiencePoints}
+              onChange={(e) => onChange({ experiencePoints: e.target.value })}
+            />
+          </Field>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Field label="Alignment">
-          <input
-            className={inputCls}
-            placeholder="Neutral"
-            value={value.alignment}
-            onChange={(e) => onChange({ alignment: e.target.value })}
-          />
-        </Field>
-        <Field label="AC">
-          <NumberInput className={inputCls} value={value.ac} onChange={(n) => onChange({ ac: n })} />
-        </Field>
-        <Field label="HP">
-          <NumberInput className={inputCls} value={value.hp} onChange={(n) => onChange({ hp: n })} />
-        </Field>
-        <Field label="Max HP">
-          <NumberInput className={inputCls} value={value.maxHp} onChange={(n) => onChange({ maxHp: n })} />
-        </Field>
-        <Field label="Speed (ft)">
-          <NumberInput className={inputCls} value={value.speed} onChange={(n) => onChange({ speed: n })} />
-        </Field>
-      </div>
+      {/* Combat */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Combat</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Field label="AC">
+            <NumberInput className={inputCls} value={value.ac} onChange={(n) => onChange({ ac: n })} />
+          </Field>
+          <Field label="Armor Detail" hint='e.g. "natural armor"'>
+            <input
+              className={inputCls}
+              value={value.armorDesc}
+              onChange={(e) => onChange({ armorDesc: e.target.value })}
+            />
+          </Field>
+          <Field label="HP">
+            <NumberInput className={inputCls} value={value.hp} onChange={(n) => onChange({ hp: n })} />
+          </Field>
+          <Field label="Max HP">
+            <NumberInput className={inputCls} value={value.maxHp} onChange={(n) => onChange({ maxHp: n })} />
+          </Field>
+          <Field label="Hit Dice" hint='e.g. "19d12 + 133"'>
+            <input className={inputCls} value={value.hitDice} onChange={(e) => onChange({ hitDice: e.target.value })} />
+          </Field>
+          <Field label="Speed (ft)">
+            <NumberInput className={inputCls} value={value.speed} onChange={(n) => onChange({ speed: n })} />
+          </Field>
+          <Field label="Speed Detail" hint='e.g. "40 ft., fly 80 ft."'>
+            <input
+              className={inputCls}
+              value={value.speedDetail}
+              onChange={(e) => onChange({ speedDetail: e.target.value })}
+            />
+          </Field>
+          <Field label="Initiative Bonus">
+            <input
+              className={inputCls}
+              value={value.initiativeBonus}
+              onChange={(e) => onChange({ initiativeBonus: e.target.value })}
+            />
+          </Field>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Field label="Armor Detail" hint='e.g. "natural armor"'>
-          <input
-            className={inputCls}
-            value={value.armorDesc}
-            onChange={(e) => onChange({ armorDesc: e.target.value })}
-          />
-        </Field>
-        <Field label="Hit Dice" hint='e.g. "19d12 + 133"'>
-          <input className={inputCls} value={value.hitDice} onChange={(e) => onChange({ hitDice: e.target.value })} />
-        </Field>
-        <Field label="Speed Detail" hint='e.g. "40 ft., fly 80 ft."'>
-          <input
-            className={inputCls}
-            value={value.speedDetail}
-            onChange={(e) => onChange({ speedDetail: e.target.value })}
-          />
-        </Field>
-        <Field label="Initiative Bonus">
-          <input
-            className={inputCls}
-            value={value.initiativeBonus}
-            onChange={(e) => onChange({ initiativeBonus: e.target.value })}
-          />
-        </Field>
-      </div>
-
-      <div>
-        <div className="mb-1 grid grid-cols-3 gap-2 sm:grid-cols-6">
+      {/* Stats */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Stats</h2>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
             <Field key={key} label={key.toUpperCase()}>
               <NumberInput className={inputCls} value={value.stats[key]} onChange={(n) => setStat(key, n)} />
             </Field>
           ))}
         </div>
+      </section>
+
+      {/* Saving throws */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Saving Throws</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
-            <Field key={key} label={`${key.toUpperCase()} Save`} hint="Blank = plain modifier.">
+            <Field key={key} label={key.toUpperCase()} hint="Blank = plain modifier.">
               <input
                 type="number"
                 className={inputCls}
@@ -251,150 +319,119 @@ export function CreatureFormFields({
             </Field>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Field label="Senses" hint='e.g. "Darkvision 60 ft., passive Perception 11"'>
-          <input className={inputCls} value={value.senses} onChange={(e) => onChange({ senses: e.target.value })} />
-        </Field>
-        <Field label="Languages">
-          <input
-            className={inputCls}
-            value={value.languages}
-            onChange={(e) => onChange({ languages: e.target.value })}
-          />
-        </Field>
+      {/* Senses & Languages */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Senses &amp; Languages</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Field label="Senses" hint='e.g. "Darkvision 60 ft., passive Perception 11"'>
+            <input className={inputCls} value={value.senses} onChange={(e) => onChange({ senses: e.target.value })} />
+          </Field>
+          <Field label="Languages">
+            <input
+              className={inputCls}
+              value={value.languages}
+              onChange={(e) => onChange({ languages: e.target.value })}
+            />
+          </Field>
+        </div>
+      </section>
+
+      {/* Skills */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Skills</h2>
         <Field label="Skills" hint='e.g. "Perception +13, Stealth +6"'>
-          <input className={inputCls} value={value.skills} onChange={(e) => onChange({ skills: e.target.value })} />
+          <input className={`${inputCls} w-full`} value={value.skills} onChange={(e) => onChange({ skills: e.target.value })} />
         </Field>
-        <Field label="Challenge Rating">
-          <input
-            className={inputCls}
-            placeholder="1/4"
-            value={value.challengeRating}
-            onChange={(e) => onChange({ challengeRating: e.target.value })}
-          />
-        </Field>
-        <Field label="Experience Points">
-          <input
-            className={inputCls}
-            placeholder="18000"
-            value={value.experiencePoints}
-            onChange={(e) => onChange({ experiencePoints: e.target.value })}
-          />
-        </Field>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Field label="Damage Vulnerabilities">
-          <input
-            className={inputCls}
-            value={value.damageVulnerabilities}
-            onChange={(e) => onChange({ damageVulnerabilities: e.target.value })}
-          />
-        </Field>
-        <Field label="Damage Resistances">
-          <input
-            className={inputCls}
-            value={value.damageResistances}
-            onChange={(e) => onChange({ damageResistances: e.target.value })}
-          />
-        </Field>
-        <Field label="Damage Immunities">
-          <input
-            className={inputCls}
-            value={value.damageImmunities}
-            onChange={(e) => onChange({ damageImmunities: e.target.value })}
-          />
-        </Field>
-        <Field label="Condition Immunities">
-          <input
-            className={inputCls}
-            value={value.conditionImmunities}
-            onChange={(e) => onChange({ conditionImmunities: e.target.value })}
-          />
-        </Field>
-      </div>
+      {/* Damage types */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Damage Types</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Field label="Damage Vulnerabilities">
+            <input
+              className={inputCls}
+              value={value.damageVulnerabilities}
+              onChange={(e) => onChange({ damageVulnerabilities: e.target.value })}
+            />
+          </Field>
+          <Field label="Damage Resistances">
+            <input
+              className={inputCls}
+              value={value.damageResistances}
+              onChange={(e) => onChange({ damageResistances: e.target.value })}
+            />
+          </Field>
+          <Field label="Damage Immunities">
+            <input
+              className={inputCls}
+              value={value.damageImmunities}
+              onChange={(e) => onChange({ damageImmunities: e.target.value })}
+            />
+          </Field>
+          <Field label="Condition Immunities">
+            <input
+              className={inputCls}
+              value={value.conditionImmunities}
+              onChange={(e) => onChange({ conditionImmunities: e.target.value })}
+            />
+          </Field>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Field label="Category" hint="Which dashboard section it lives in.">
-          <select
-            className={inputCls}
-            value={value.category}
-            onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
-          >
-            {CREATURE_CATEGORY_ORDER.map((c) => (
-              <option key={c} value={c}>
-                {CREATURE_CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Owner" hint="Which character summons/commands it — optional.">
-          <select
-            className={inputCls}
-            value={value.ownerCharacterId}
-            onChange={(e) => onChange({ ownerCharacterId: e.target.value })}
-          >
-            <option value="">— None —</option>
-            {characters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
-          <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
-        </Field>
-      </div>
-
-      <div className="space-y-2">
+      {/* Traits & Actions */}
+      <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-500">Traits &amp; Actions</span>
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Traits &amp; Actions</h2>
           <button type="button" onClick={addTrait} className={addBtnCls}>
             + Trait
           </button>
         </div>
-        {value.traits.map((t, index) => (
-          <div key={index} className="flex flex-wrap items-start gap-2">
-            <select
-              className={`${inputCls} shrink-0`}
-              value={t.group ?? "trait"}
-              onChange={(e) => updateTrait(index, { group: e.target.value as CreatureTrait["group"] })}
-            >
-              {TRAIT_GROUPS.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-            <input
-              className={`${inputCls} min-w-[120px] flex-1`}
-              placeholder="Name (e.g. Charge)"
-              value={t.name}
-              onChange={(e) => updateTrait(index, { name: e.target.value })}
-            />
-            <input
-              className={`${inputCls} min-w-[200px] flex-[2]`}
-              placeholder="Short description"
-              value={t.description ?? ""}
-              onChange={(e) => updateTrait(index, { description: e.target.value })}
-            />
-            <button
-              type="button"
-              onClick={() => removeTrait(index)}
-              className="mt-1.5 text-sm text-red-500/80 hover:text-red-400"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
+        <div className="space-y-2">
+          {value.traits.map((t, index) => (
+            <div key={index} className="flex flex-wrap items-start gap-2">
+              <select
+                className={`${inputCls} shrink-0`}
+                value={t.group ?? "trait"}
+                onChange={(e) => updateTrait(index, { group: e.target.value as CreatureTrait["group"] })}
+              >
+                {TRAIT_GROUPS.map((g) => (
+                  <option key={g.value} value={g.value}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                className={`${inputCls} min-w-[120px] flex-1`}
+                placeholder="Name (e.g. Charge)"
+                value={t.name}
+                onChange={(e) => updateTrait(index, { name: e.target.value })}
+              />
+              <input
+                className={`${inputCls} min-w-[200px] flex-[2]`}
+                placeholder="Short description"
+                value={t.description ?? ""}
+                onChange={(e) => updateTrait(index, { description: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={() => removeTrait(index)}
+                className="mt-1.5 text-sm text-red-500/80 hover:text-red-400"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <Field label="Notes">
+      {/* Notes */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Notes</h2>
         <NotesEditor value={ensureNotesHtml(value.notes)} onChange={(notes) => onChange({ notes })} placeholder="Add notes..." />
-      </Field>
+      </section>
     </div>
   );
 }

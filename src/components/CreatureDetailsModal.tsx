@@ -70,11 +70,26 @@ export function CreatureDetailsModal({
           <div className="min-w-0 flex-1">
             <CreatureHeader creature={creature} owner={owner} />
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Edit/Delete — same row-below-the-header placement as
+            `CharacterDetailsModal`'s (there next to the sync line), kept off
+            the header row above so it doesn't crowd the owner-avatar badge
+            at that row's right edge. */}
+        <div className="flex items-center justify-end gap-1">
           <Link
             href={`/creatures/${creature.id}/edit`}
             aria-label="Edit"
             title="Edit"
-            className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
           >
             <PencilIcon className="h-4 w-4" />
           </Link>
@@ -87,19 +102,11 @@ export function CreatureDetailsModal({
               }}
               aria-label="Remove"
               title="Remove"
-              className="shrink-0 rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
+              className="rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
             >
               <TrashIcon className="h-4 w-4" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-          >
-            ✕
-          </button>
         </div>
 
         <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
