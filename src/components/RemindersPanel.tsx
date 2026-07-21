@@ -115,18 +115,24 @@ function creatureReminders(creature: Creature): ReminderGroup | null {
 
 /**
  * One reminder row — every entry here is inherently "flagged" (that's the
- * only way it got into this panel), so the row is always the amber
- * flagged look `FlaggableRow` gives an active flame, without needing that
- * component's own flame toggle: a full flame-icon button at the *start* of
- * every row here sat right where a tap aiming for the row's own hover-hint
- * would naturally land, so it doubled as an easy-to-fumble "remove" button.
- * The small "✕" here trades that for something deliberately less
- * grabby — off to the side, muted until hovered, small enough not to read
- * as its own row of content the way the flame's `h-6 w-6` circle did.
+ * only way it got into this panel), but unlike `FlaggableRow`'s own amber
+ * flagged look on the origin card (Weapons/Features/Spells/Consumables,
+ * Creature Traits — deliberately left alone), this panel doesn't repeat
+ * that highlight: with every row here already flagged, painting all of
+ * them amber added nothing but a wash of yellow, drowning out each entry's
+ * own natural color (e.g. `RARITY_COLOR` on a weapon/consumable name).
+ * Plain default text lets that per-entry color read normally, same as it
+ * does on the row's origin card when not flagged. No flame toggle here
+ * either: a full flame-icon button at the *start* of every row sat right
+ * where a tap aiming for the row's own hover-hint would naturally land, so
+ * it doubled as an easy-to-fumble "remove" button. The small "✕" trades
+ * that for something deliberately less grabby — off to the side, muted
+ * until hovered, small enough not to read as its own row of content the
+ * way the flame's `h-6 w-6` circle did.
  */
 function ReminderRow({ entry, onRemove }: { entry: ReminderEntry; onRemove: () => void }) {
   return (
-    <div className="-mx-1.5 flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-sm text-amber-300">
+    <div className="-mx-1.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-sm text-slate-300">
       <InfoTooltip hoverOnly panel={entry.panel} className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
           <span aria-hidden="true" className="shrink-0 text-xs leading-none">
@@ -143,7 +149,7 @@ function ReminderRow({ entry, onRemove }: { entry: ReminderEntry; onRemove: () =
         }}
         aria-label="Remove reminder"
         title="Remove reminder"
-        className="shrink-0 rounded px-1 text-xs leading-none text-amber-300/30 hover:bg-slate-800 hover:text-red-400"
+        className="shrink-0 rounded px-1 text-xs leading-none text-slate-600 hover:bg-slate-800 hover:text-red-400"
       >
         ✕
       </button>

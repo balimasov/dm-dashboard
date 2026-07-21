@@ -465,27 +465,28 @@ function insertJournalSession(campaignId: string, dateKey: string): JournalSessi
 }
 
 /**
- * Auto-resolution's entire logic: reuses the single most-recently-created
- * NON-archived session for this campaign, regardless of `dateKey`, creating
- * a new one only when none exist (or every one of them is archived).
- * Deliberately NOT keyed by `dateKey` — matching on a client-reported
- * calendar day meant two devices belonging to the same DM (each resolving
- * its own IANA timezone, or one with a simply misconfigured system clock)
- * could disagree about what "today" is for the exact same campaign,
- * silently splitting notes across two sessions that were supposed to be
- * one. `dateKey` still seeds the auto-generated `title` the first time a
- * session is created, but is never used as a lookup key. This is the
- * *implicit* way a new session starts (nothing existed, or the DM archived
- * everything that did); `createJournalSession` below is the *explicit* one
- * (a DM manually starting a new one even though an active session exists).
+ * Auto-resolution's entire logic: one session per calendar day. Reuses the
+ * most-recently-created NON-archived session whose `dateKey` matches the
+ * one given, creating a new one when none matches — including when today's
+ * own session exists but is archived (an archived session is closed; it
+ * never receives new auto-resolved entries regardless of how many entries
+ * it already has). This function itself is timezone-agnostic — it just
+ * compares `dateKey` strings — the cross-device guarantee lives entirely in
+ * the caller always passing the *same* canonical value (see
+ * `entries/route.ts`, which fixes it to a single UTC day rather than
+ * trusting each request's own reported IANA zone) rather than in any logic
+ * here. This is the *implicit* way a new session starts (nothing existed
+ * for today, or today's own session was archived); `createJournalSession`
+ * below is the *explicit* one (a DM manually starting a new one even though
+ * an active session for today already exists).
  */
 export function resolveOrCreateSessionForDate(campaignId: string, dateKey: string): JournalSession {
   const rows = getDb().prepare("SELECT data FROM journal_sessions WHERE campaign_id = ?").all(campaignId) as Array<{
     data: string;
   }>;
-  const active = rows.map(rowToJournalSession).filter((s) => !s.archived);
-  if (active.length > 0) {
-    return active.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  const activeToday = rows.map(rowToJournalSession).filter((s) => !s.archived && s.dateKey === dateKey);
+  if (activeToday.length > 0) {
+    return activeToday.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
   }
   return insertJournalSession(campaignId, dateKey);
 }
@@ -520,6 +521,22 @@ export function removeJournalSession(id: string): void {
 /** Chronological (oldest first, like a log) — sorted in JS since `createdAt` lives in the JSON blob, not a real column, same "load then sort" approach used elsewhere in this file for anything not covered by a real column. */
 export function listJournalEntries(sessionId: string): JournalEntry[] {
   const rows = getDb().prepare("SELECT data FROM journal_entries WHERE session_id = ?").all(sessionId) as Array<{
+    data: string;
+  }>;
+  return rows.map(rowToJournalEntry).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+/** Every session for a campaign, unfiltered — unlike `listJournalSessions`, includes archived sessions and isn't role-scoped. Used only by the full-campaign export: a DM backup needs everything, not the UI's "hide archived / audience-filtered" view. */
+export function listAllJournalSessions(campaignId: string): JournalSession[] {
+  const rows = getDb().prepare("SELECT data FROM journal_sessions WHERE campaign_id = ?").all(campaignId) as Array<{
+    data: string;
+  }>;
+  return rows.map(rowToJournalSession).sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+}
+
+/** Every entry across every session of a campaign, unfiltered by audience — same "DM backup needs everything" rationale as `listAllJournalSessions`. */
+export function listAllJournalEntries(campaignId: string): JournalEntry[] {
+  const rows = getDb().prepare("SELECT data FROM journal_entries WHERE campaign_id = ?").all(campaignId) as Array<{
     data: string;
   }>;
   return rows.map(rowToJournalEntry).sort((a, b) => a.createdAt.localeCompare(b.createdAt));

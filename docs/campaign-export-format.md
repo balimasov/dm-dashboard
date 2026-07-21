@@ -19,12 +19,14 @@ without needing the app's source.
 
 ```
 {
-  "exportFormatVersion": 1,
+  "exportFormatVersion": 2,
   "exportedAt": "2026-07-09T21:14:03.512Z",
   "appVersion": "0.71.0",
   "campaign": { ... },
   "characters": [ { ... }, ... ],
-  "creatures": [ { ... }, ... ]
+  "creatures": [ { ... }, ... ],
+  "journalSessions": [ { ... }, ... ],
+  "journalEntries": [ { ... }, ... ]
 }
 ```
 
@@ -34,21 +36,22 @@ without needing the app's source.
 | `exportedAt` | string | ISO 8601 timestamp of when the export was generated. |
 | `appVersion` | string | The app's own `package.json` version at export time — informational, not meant to gate parsing. |
 | `campaign` | object | The campaign itself. Shape: `Campaign` in `src/lib/types.ts`. |
-| `characters` | array | Every character in the campaign, in the same order shown on the dashboard. Shape: `Character[]` in `src/lib/types.ts`. |
+| `characters` | array | Every character in the campaign, in the same order shown on the dashboard. Shape: `Character[]` in `src/lib/types.ts`. Note: a character's inventory/currency are already fields on `Character` itself (`inventory`, `currency`), not a separate top-level export section. |
 | `creatures` | array | Every creature (companion, mount, summon, familiar...) in the campaign. Shape: `Creature[]` in `src/lib/types.ts`. |
+| `journalSessions` | array | Every Campaign Journal session, **including archived ones** (unlike the in-app journal list, which hides them from players and can hide them from the DM too). Shape: `JournalSession[]` in `src/lib/types.ts`. |
+| `journalEntries` | array | Every journal entry across every session, **including DM-only entries** (unlike the in-app journal, which never shows those to a player). Shape: `JournalEntry[]` in `src/lib/types.ts` — each entry's `sessionId` links it back to one row of `journalSessions`. |
 
 ## Source of truth for field-by-field shape
 
-`campaign`, each entry of `characters`, and each entry of `creatures` are
-**not** a separate export-only format — they're the exact same
-`Campaign`/`Character`/`Creature` objects the app uses internally,
-serialized as-is. That means:
+`campaign`, each entry of `characters`, `creatures`, `journalSessions`, and
+`journalEntries` are **not** a separate export-only format — they're the
+exact same objects the app uses internally, serialized as-is. That means:
 
 - The full, authoritative, always-current field list for each is the
-  `Campaign`, `Character`, and `Creature` TypeScript interfaces in
-  [`src/lib/types.ts`](../src/lib/types.ts) (along with the smaller types
-  they reference — `CombatState`, `AbilityScores`, `Resource`,
-  `SpellSlotLevel`, `SpellcastingStats`, `KnownSpell`, `Feature`,
+  `Campaign`, `Character`, `Creature`, `JournalSession`, and `JournalEntry`
+  TypeScript interfaces in [`src/lib/types.ts`](../src/lib/types.ts) (along
+  with the smaller types they reference — `CombatState`, `AbilityScores`,
+  `Resource`, `SpellSlotLevel`, `SpellcastingStats`, `KnownSpell`, `Feature`,
   `SkillProficiency`, `Sense`, `InventoryItem`, `Currency`, `QuickNote`,
   `CreatureTrait`). Every field there has a doc comment explaining what it
   means and why it exists.
@@ -92,16 +95,21 @@ serialized as-is. That means:
 
 `exportFormatVersion` only changes when the **envelope** itself changes
 shape — e.g. if `characters` were ever renamed, moved, or restructured into
-something other than a flat array. It does **not** change when a field is
-added to `Campaign`/`Character`/`Creature`, since those pass through
-unmodified from the app's own data model and are expected to grow over
-time. A consumer that reads the envelope fields listed above and treats
-unrecognized fields on `campaign`/`characters[]`/`creatures[]` as
-ignorable extras will keep working across those additions without needing
-updates.
+something other than a flat array, or a new top-level section were added.
+It does **not** change when a field is added to
+`Campaign`/`Character`/`Creature`/`JournalSession`/`JournalEntry`, since
+those pass through unmodified from the app's own data model and are
+expected to grow over time. A consumer that reads the envelope fields
+listed above and treats unrecognized fields on any of them as ignorable
+extras will keep working across those additions without needing updates.
 
-If `exportFormatVersion` ever increments, this document will be updated
-alongside it.
+**v1 → v2**: added the `journalSessions`/`journalEntries` top-level arrays.
+A v1 export (`exportFormatVersion: 1`) simply predates the Campaign Journal
+feature's inclusion in exports — it has no journal data at all, not an
+empty array.
+
+If `exportFormatVersion` ever increments again, this document will be
+updated alongside it.
 
 ## Example
 
@@ -204,6 +212,29 @@ long free-text fields shortened with `…`):
       "ownerCharacterId": "char-def456",
       "source": "Purchased in Waterdeep",
       "flaggedTraits": []
+    }
+  ],
+  "journalSessions": [
+    {
+      "id": "journal-session-jkl012",
+      "campaignId": "campaign-abc123",
+      "dateKey": "2026-07-09",
+      "title": "July 9, 2026",
+      "startedAt": "2026-07-09T18:00:00.000Z",
+      "archived": false
+    }
+  ],
+  "journalEntries": [
+    {
+      "id": "journal-entry-mno345",
+      "campaignId": "campaign-abc123",
+      "sessionId": "journal-session-jkl012",
+      "text": "<p>The party reached Nightstone at dusk…</p>",
+      "audience": "party",
+      "authorRole": "dm",
+      "createdAt": "2026-07-09T18:05:00.000Z",
+      "updatedAt": "2026-07-09T18:05:00.000Z",
+      "updatedByRole": "dm"
     }
   ]
 }

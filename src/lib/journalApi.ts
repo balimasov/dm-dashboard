@@ -30,12 +30,11 @@ export async function listJournalEntriesApi(sessionId: string): Promise<JournalE
 
 /**
  * `sessionId` omitted → the server auto-resolves the campaign's current
- * session (Quick Note's path) — in practice, whichever session was most
- * recently created for it, regardless of which device or timezone is
- * asking. Still sends this browser's own live-computed IANA zone; the
- * server only uses it to title a session the very first time one is
- * created for a campaign (see `journalEntryCreateSchema`'s doc comment in
- * `schemas.ts`), never to decide which existing session to reuse.
+ * session (Quick Note's path) — the session dated "today" on a single
+ * canonical UTC calendar day (see `journalEntryCreateSchema`'s doc comment
+ * in `schemas.ts`), the same regardless of which device or timezone is
+ * asking. No timezone sent here — unlike `startNewSessionApi` below, this
+ * one doesn't need the caller's own local day at all.
  */
 export async function createJournalEntryApi(input: {
   campaignId: string;
@@ -46,7 +45,7 @@ export async function createJournalEntryApi(input: {
   const res = await apiFetch("/api/journal/entries", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...input, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+    body: JSON.stringify(input),
   });
   return parseJsonOrThrow<JournalEntry>(res, "Failed to save journal entry.");
 }

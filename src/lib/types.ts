@@ -674,16 +674,28 @@ export type JournalEntryAudience = "dm" | "party";
 
 /**
  * A logical bucket of journal entries. Auto-resolution (see
- * `resolveOrCreateSessionForDate` in `db.ts`) reuses the single most recent
- * non-archived session for a campaign, only creating a new one when none
- * exists (or all are archived) — a DM can also start a new one manually at
- * any time (`createJournalSession`), rename it, or archive/unarchive it
+ * `resolveOrCreateSessionForDate` in `db.ts`) is one session per calendar
+ * day: it reuses the non-archived session whose `dateKey` matches "today",
+ * only creating a new one when none matches (including when today's own
+ * session exists but is archived) — a DM can also start a new one manually
+ * at any time (`createJournalSession`), rename it, or archive/unarchive it
  * (`updateJournalSession`), all DM-only actions.
  */
 export interface JournalSession {
   id: string;
   campaignId: string;
-  /** ISO calendar date (YYYY-MM-DD) in the DM's local timezone at the moment this session was created — used only to seed `title` on creation. NOT a lookup/uniqueness key: auto-resolution ignores it entirely and always reuses the most recent non-archived session for the campaign, so this can lag behind the real "today" for a long-running session. */
+  /**
+   * ISO calendar date (YYYY-MM-DD) — both the auto-resolution lookup key
+   * (see `resolveOrCreateSessionForDate` in `db.ts`) and the seed for
+   * `title` on creation. Computed differently depending on how the session
+   * was created: auto-resolution (`entries/route.ts`) always uses a single
+   * canonical UTC "today", not the caller's own local timezone, so devices
+   * in different real time zones (or with a misconfigured system clock)
+   * still land in the same session; a DM's manual "+ New session"
+   * (`sessions/route.ts`) uses the caller's own local day instead, since
+   * that path always creates a fresh row regardless of matching and the
+   * date is purely cosmetic (the title) there.
+   */
   dateKey: string;
   /** Display title. Seeded from `dateKey` on creation (see `formatSessionTitle` in `src/lib/journal.ts`); DM-editable afterward via `updateJournalSession`. */
   title: string;
@@ -720,7 +732,7 @@ export interface JournalEntry {
   createdAt: string;
   /** Bumped on every edit — set server-side in `updateJournalEntryText`, never trusted from the client. */
   updatedAt: string;
-  /** Reserved for a later iteration's conflict-detection check ("this entry changed since you started editing it") — written on every edit (in iteration 1 it will always equal `authorRole`'s value) but not read/compared by anything yet. */
+  /** Who made the most recent edit — written on every save (`updateJournalEntryText` in `db.ts`), display-only (`JournalEntryRow` shows it next to the timestamp). Conflict detection itself compares `updatedAt`, not this field — see `updateJournalEntryText`'s own doc comment. */
   updatedByRole?: UserRole;
 }
 

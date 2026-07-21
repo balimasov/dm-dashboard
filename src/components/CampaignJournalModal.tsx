@@ -8,7 +8,6 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
-import { TabBar, TabDef } from "./ui/TabBar";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 
 type JournalTab = "dm" | "party";
@@ -67,20 +66,55 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
   );
 }
 
-/** Same visual language as `TabBar`, kept as its own tiny component rather than reusing `TabBar` itself — this switches *how* entries render (flowing prose vs. editable boxes), not *which* entries are visible, and conflating the two into one control would be confusing. */
-function ModePill({ mode, onChange }: { mode: JournalMode; onChange: (mode: JournalMode) => void }) {
+interface SegmentOption<T extends string> {
+  key: T;
+  label: string;
+  icon?: string;
+}
+
+/**
+ * Single-line pill group — the shared visual language for *both* toolbar
+ * controls in this modal's header row (audience and render mode). They're
+ * different kinds of choices, but rendering them as two differently-shaped
+ * widgets used to read as bolted-together rather than one toolbar: audience
+ * borrowed `TabBar`'s stacked icon-over-label block (built for wider
+ * multi-tab strips elsewhere, like `CharacterDetailsModal`'s own tabs),
+ * sitting next to mode's slim inline pill. Deliberately NOT reusing the
+ * shared `TabBar` component here — changing its layout would ripple into
+ * those other call sites; this is a narrower, single-line variant scoped to
+ * this modal's two-option toolbar. Renders nothing for a single option,
+ * same "no chrome with nothing to choose between" rule `TabBar` follows.
+ */
+function SegmentedControl<T extends string>({
+  options,
+  current,
+  onChange,
+  uppercase = false,
+}: {
+  options: SegmentOption<T>[];
+  current: T;
+  onChange: (key: T) => void;
+  /** Mode uses this for a visually quieter, "display setting" feel that reads as secondary to the audience switcher next to it — not a difference in interaction, just typography. */
+  uppercase?: boolean;
+}) {
+  if (options.length <= 1) return null;
   return (
     <div className="flex shrink-0 gap-1 rounded-lg bg-slate-800/60 p-1 text-xs">
-      {(["view", "edit"] as const).map((m) => (
+      {options.map((opt) => (
         <button
-          key={m}
+          key={opt.key}
           type="button"
-          onClick={() => onChange(m)}
-          className={`rounded-md px-2.5 py-1 font-semibold uppercase tracking-wide ${
-            mode === m ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-slate-200"
+          onClick={() => onChange(opt.key)}
+          className={`flex items-center gap-1 rounded-md px-2.5 py-1 font-semibold ${uppercase ? "uppercase tracking-wide" : ""} ${
+            current === opt.key ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          {m}
+          {opt.icon && (
+            <span aria-hidden="true" className="text-sm leading-none">
+              {opt.icon}
+            </span>
+          )}
+          {opt.label}
         </button>
       ))}
     </div>
@@ -139,13 +173,17 @@ export function CampaignJournalModal({
   }, []);
 
   const visibleTab: JournalTab = role === "dm" ? tab : "party";
-  const tabs: TabDef<JournalTab>[] =
+  const audienceOptions: SegmentOption<JournalTab>[] =
     role === "dm"
       ? [
-          { key: "dm", icon: "🧙", text: "DM" },
-          { key: "party", icon: "🧑‍🤝‍🧑", text: "Party" },
+          { key: "dm", icon: "🧙", label: "DM" },
+          { key: "party", icon: "🧑‍🤝‍🧑", label: "Party" },
         ]
-      : [{ key: "party", icon: "🧑‍🤝‍🧑", text: "Party" }];
+      : [{ key: "party", icon: "🧑‍🤝‍🧑", label: "Party" }];
+  const modeOptions: SegmentOption<JournalMode>[] = [
+    { key: "view", label: "view" },
+    { key: "edit", label: "edit" },
+  ];
 
   const selectedSession = sessions?.find((s) => s.id === selectedSessionId);
   const visibleSessions = sessions?.filter((s) => showArchived || !s.archived);
@@ -287,9 +325,10 @@ export function CampaignJournalModal({
               </div>
             )}
 
-            <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-              <TabBar tabs={tabs} current={visibleTab} onChange={setTab} />
-              <ModePill mode={mode} onChange={setMode} />
+            <div className="mb-3 flex shrink-0 items-center gap-3">
+              <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
+              {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
+              <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
             </div>
 
             {mode === "edit" && selectedSessionId && (

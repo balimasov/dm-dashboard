@@ -168,18 +168,6 @@ describe("journalEntryCreateSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts a client-supplied timeZone alongside no sessionId", () => {
-    const result = journalEntryCreateSchema.safeParse({
-      campaignId: "campaign-1",
-      timeZone: "America/New_York",
-      text: "<p>Hi</p>",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual({ campaignId: "campaign-1", timeZone: "America/New_York", text: "<p>Hi</p>" });
-    }
-  });
-
   it("accepts an explicit audience", () => {
     const result = journalEntryCreateSchema.safeParse({ campaignId: "campaign-1", text: "<p>Hi</p>", audience: "party" });
     expect(result.success).toBe(true);

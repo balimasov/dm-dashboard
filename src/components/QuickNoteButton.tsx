@@ -79,7 +79,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick Note"
-        title="Quick Note"
+        title="Quick Note (n)"
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
       >
         <PencilIcon className="h-4 w-4" />

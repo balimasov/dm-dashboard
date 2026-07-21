@@ -32,32 +32,52 @@ describe("resolveOrCreateSessionForDate", () => {
     expect(session.archived).toBeFalsy();
   });
 
-  it("reuses the same session across repeated calls for the same campaign", () => {
+  it("reuses the same session across repeated calls for the same day", () => {
     const first = db.resolveOrCreateSessionForDate("campaign-resolve-2", "2026-01-01");
     const second = db.resolveOrCreateSessionForDate("campaign-resolve-2", "2026-01-01");
     expect(second.id).toBe(first.id);
   });
 
-  it("ignores an archived session even if it's the most recently created one", async () => {
+  it("starts a new session for a different calendar day instead of reusing today's — one session per day", async () => {
     const campaignId = "campaign-resolve-3";
-    const active = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const day1 = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
     await tick();
-    const archivedLater = db.createJournalSession(campaignId, "2026-01-02");
-    db.updateJournalSession(archivedLater.id, { archived: true });
-
-    const resolved = db.resolveOrCreateSessionForDate(campaignId, "2026-01-03");
-    expect(resolved.id).toBe(active.id);
+    const day2 = db.resolveOrCreateSessionForDate(campaignId, "2026-01-02");
+    expect(day2.id).not.toBe(day1.id);
+    expect(day2.dateKey).toBe("2026-01-02");
   });
 
-  it("creates a new session when every existing one is archived", async () => {
+  it("ignores an archived session for today even if it's the only one — creates a fresh one instead of writing into it", async () => {
     const campaignId = "campaign-resolve-4";
-    const original = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
-    db.updateJournalSession(original.id, { archived: true });
+    const today = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    db.updateJournalSession(today.id, { archived: true });
     await tick();
 
-    const resolved = db.resolveOrCreateSessionForDate(campaignId, "2026-01-02");
-    expect(resolved.id).not.toBe(original.id);
+    const resolved = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    expect(resolved.id).not.toBe(today.id);
     expect(resolved.archived).toBeFalsy();
+  });
+
+  it("writes into today's non-archived session even with an unrelated archived session from another day present", async () => {
+    const campaignId = "campaign-resolve-5";
+    const yesterday = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    db.updateJournalSession(yesterday.id, { archived: true });
+    await tick();
+    const today = db.resolveOrCreateSessionForDate(campaignId, "2026-01-02");
+
+    const resolvedAgain = db.resolveOrCreateSessionForDate(campaignId, "2026-01-02");
+    expect(resolvedAgain.id).toBe(today.id);
+  });
+
+  it("two calls with the same dateKey land in the same session regardless of what timezone computed it — the actual cross-device guarantee lives in always passing one canonical dateKey, not in this function", () => {
+    // Simulates two devices in different real timezones whose *caller*
+    // (entries/route.ts) both resolve "today" to the same canonical UTC
+    // day before calling this — from this function's own point of view
+    // that's just "the same dateKey twice".
+    const campaignId = "campaign-resolve-6";
+    const fromDeviceA = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    const fromDeviceB = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    expect(fromDeviceB.id).toBe(fromDeviceA.id);
   });
 });
 
@@ -221,6 +241,58 @@ describe("listJournalSessions", () => {
     db.updateJournalSession(session.id, { archived: true });
     expect(db.listJournalSessions(campaignId, "dm")).toHaveLength(1);
     expect(db.listJournalSessions(campaignId, "player")).toHaveLength(0);
+  });
+});
+
+describe("listAllJournalSessions / listAllJournalEntries", () => {
+  it("include archived sessions and every audience — unlike the role-scoped listers, for a full-campaign export", async () => {
+    const campaignId = "campaign-export-1";
+    const session = db.resolveOrCreateSessionForDate(campaignId, "2026-01-01");
+    db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>dm-only note</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+    await tick();
+    db.createJournalEntry({
+      campaignId,
+      sessionId: session.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>party note</p>",
+      audience: "party",
+      authorRole: "player",
+    });
+    db.updateJournalSession(session.id, { archived: true });
+
+    const sessions = db.listAllJournalSessions(campaignId);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].archived).toBe(true);
+
+    const entries = db.listAllJournalEntries(campaignId);
+    expect(entries).toHaveLength(2);
+    expect(entries.map((e) => e.audience).sort()).toEqual(["dm", "party"]);
+  });
+
+  it("scope strictly to the given campaign", () => {
+    const campaignA = "campaign-export-2a";
+    const campaignB = "campaign-export-2b";
+    const sessionA = db.resolveOrCreateSessionForDate(campaignA, "2026-01-01");
+    db.createJournalEntry({
+      campaignId: campaignA,
+      sessionId: sessionA.id,
+      dateKeyForAutoSession: "2026-01-01",
+      text: "<p>only in A</p>",
+      audience: "dm",
+      authorRole: "dm",
+    });
+    db.resolveOrCreateSessionForDate(campaignB, "2026-01-01");
+
+    expect(db.listAllJournalSessions(campaignB)).toHaveLength(1);
+    expect(db.listAllJournalEntries(campaignB)).toHaveLength(0);
+    expect(db.listAllJournalEntries(campaignA)).toHaveLength(1);
   });
 });
 

@@ -324,20 +324,18 @@ export const characterCreateSchema = z.object({
  * regardless of what's sent here — see `entries/route.ts`); a DM caller
  * omitting it (Quick Note's exact request shape) defaults to `"dm"`.
  *
- * `timeZone` — the caller's own live IANA zone (`Intl.DateTimeFormat().
- * resolvedOptions().timeZone`), sent by `journalApi.ts` on every request.
- * Only consulted when `sessionId` is absent, and only to compute a
- * human-readable `dateKey`/title the very first time a campaign's session
- * is created — auto-resolution itself no longer matches on `dateKey` (see
- * `resolveOrCreateSessionForDate` in `db.ts`), because two devices
- * disagreeing about "today" (different configured timezones, or one just
- * having a wrong system clock) used to split the same real session across
- * two rows even with a live-computed value here.
+ * No `timeZone` field here (unlike `journalSessionCreateSchema` below) —
+ * auto-resolution matches "today" by a single canonical UTC calendar day
+ * (see `resolveOrCreateSessionForDate` in `db.ts` and its caller in
+ * `entries/route.ts`), not the caller's own live IANA zone. Trusting each
+ * device's self-reported zone here is exactly what let two devices at the
+ * same table (different configured timezones, or one just having a wrong
+ * system clock) disagree about "today" and silently split one real session
+ * across two rows.
  */
 export const journalEntryCreateSchema = z.object({
   campaignId: z.string().min(1),
   sessionId: z.string().optional(),
-  timeZone: z.string().optional(),
   text: z.string().min(1, "A note can't be empty."),
   audience: z.enum(["dm", "party"]).optional(),
 });

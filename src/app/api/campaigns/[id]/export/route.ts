@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
-import { getCampaign, listCharacters, listCreatures } from "@/lib/db";
+import { getCampaign, listAllJournalEntries, listAllJournalSessions, listCharacters, listCreatures } from "@/lib/db";
 import packageJson from "../../../../../../package.json";
 
 /**
@@ -9,8 +9,13 @@ import packageJson from "../../../../../../package.json";
  * `@/lib/types`, since those are serialized as-is straight from the DB and
  * this export is meant to stay maintenance-free as the data model grows.
  * Full format docs: `docs/campaign-export-format.md`.
+ *
+ * v2: added `journalSessions`/`journalEntries` — the export previously
+ * omitted the Campaign Journal feature entirely (it lives in its own DB
+ * tables, unlike inventory/currency, which are just fields on `Character`
+ * and were already covered for free).
  */
-const EXPORT_FORMAT_VERSION = 1;
+const EXPORT_FORMAT_VERSION = 2;
 
 function filenameSlug(name: string): string {
   return (
@@ -40,6 +45,12 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/campaigns/[id]/
     campaign,
     characters: listCharacters(id),
     creatures: listCreatures(id),
+    // Unfiltered (`listAllJournal*`, not the role-scoped/archived-hiding
+    // `listJournalSessions`/`listJournalEntries` the UI uses) — a DM backup
+    // needs the whole journal, archived sessions and DM-private entries
+    // included.
+    journalSessions: listAllJournalSessions(id),
+    journalEntries: listAllJournalEntries(id),
   };
 
   const filename = `${filenameSlug(campaign.name)}-${new Date().toISOString().slice(0, 10)}.json`;

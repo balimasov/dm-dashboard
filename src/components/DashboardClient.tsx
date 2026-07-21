@@ -381,7 +381,7 @@ export function DashboardClient({
             type="button"
             onClick={() => setJournalOpen(true)}
             aria-label="Campaign Journal"
-            title="Campaign Journal"
+            title="Campaign Journal (j)"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
           >
             <NoteIcon className="h-4 w-4" />
