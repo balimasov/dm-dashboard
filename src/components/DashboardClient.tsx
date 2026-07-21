@@ -17,12 +17,13 @@ import { NotesEditor } from "@/components/NotesEditor";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersPanel } from "@/components/RemindersPanel";
+import { RosterManagerModal, type RosterTab } from "@/components/RosterManagerModal";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon, NoteIcon } from "@/components/ui/icons";
+import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -35,8 +36,6 @@ import {
   CreatureCategory,
 } from "@/lib/types";
 import { UserRole } from "@/lib/auth";
-
-type SettingsTab = "campaign" | "roster";
 
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
@@ -106,17 +105,32 @@ function SectionTitle({
   );
 }
 
-/** Shared empty-state for the Party/Creatures blocks — same look, same "Open Settings" action (jumping straight to the roster tab), so adding either always starts from the one place both actually live. `onOpenSettings` is omitted entirely for a player, who has no Settings to jump to (the button just wouldn't do anything for them). */
-function EmptyRosterState({ message, onOpenSettings }: { message: string; onOpenSettings?: () => void }) {
+/** Shared empty-state for the Party/Creatures blocks — same look, same "Add" action opening `RosterManagerModal` on the matching tab, so adding either always starts from the one place both actually live. `onAdd` is omitted entirely for a player, who has no roster manager to open (the button just wouldn't do anything for them). */
+function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => void }) {
   return (
     <div className="mx-3 flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-800 p-16 text-center text-slate-500">
       <p>{message}</p>
-      {onOpenSettings && (
-        <Button type="button" onClick={onOpenSettings}>
-          Open Settings
+      {onAdd && (
+        <Button type="button" onClick={onAdd}>
+          Add
         </Button>
       )}
     </div>
+  );
+}
+
+/** Small "+" quick-add trigger for a section's own header — passed into `CollapsibleSection`'s `actions` slot (a sibling of the collapse-toggle button, not nested inside it, so it never conflicts with the section's own expand/collapse click). Opens `RosterManagerModal` straight on that section's own tab, instead of a DM navigating through the kebab menu each time. */
+function SectionAddButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-sky-400"
+    >
+      <PlusIcon className="h-4 w-4" />
+    </button>
   );
 }
 
@@ -176,7 +190,7 @@ function CreatureCategorySection({
   initialOpen,
   onUpdate,
   onRemove,
-  onOpenSettings,
+  onAdd,
 }: {
   category: CreatureCategory;
   creatures: Creature[];
@@ -185,7 +199,7 @@ function CreatureCategorySection({
   initialOpen: boolean;
   onUpdate: (id: string, updates: Partial<Creature>) => void;
   onRemove: (id: string) => void;
-  onOpenSettings?: () => void;
+  onAdd?: () => void;
 }) {
   const inCategory = creatures.filter((c) => c.category === category);
   const filtered = inCategory.filter((c) => !c.hidden);
@@ -195,16 +209,17 @@ function CreatureCategorySection({
       title={<SectionTitle emoji={CREATURE_CATEGORY_EMOJI[category]} label={CREATURE_CATEGORY_LABELS[category]} count={filtered.length} />}
       storageKey={storageKey}
       initialOpen={initialOpen}
+      actions={onAdd && <SectionAddButton onClick={onAdd} label={`Add ${CREATURE_CATEGORY_LABELS[category]}`} />}
     >
       <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
       {filtered.length === 0 ? (
         <EmptyRosterState
           message={
             inCategory.length > 0
-              ? "All of these are hidden — unhide them in Settings."
+              ? "All of these are hidden — unhide them in the roster manager."
               : CREATURE_SECTION_EMPTY_MESSAGE[category]
           }
-          onOpenSettings={onOpenSettings}
+          onAdd={onAdd}
         />
       ) : (
         // Same `pt-8`/`px-3` reservation as the Party row above, for the
@@ -248,16 +263,23 @@ export function DashboardClient({
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>("campaign");
+  const [rosterTab, setRosterTab] = useState<RosterTab | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
 
   // A player has no Settings modal to open at all — guarded here too (not
   // just by hiding every button that calls this), so nothing short of
   // editing this component's own source can pop it open for that role.
-  function openSettings(tab: SettingsTab = "campaign") {
+  function openSettings() {
     if (!isDm) return;
-    setSettingsTab(tab);
     setSettingsOpen(true);
+  }
+
+  // Same DM-only guard as `openSettings` — `RosterManagerModal` is where
+  // characters/creatures actually get added/removed, not something a player
+  // has any use for.
+  function openRoster(tab: RosterTab) {
+    if (!isDm) return;
+    setRosterTab(tab);
   }
 
   async function patchCampaign(id: string, updates: Partial<Campaign>) {
@@ -329,7 +351,7 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-8">
-      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings("campaign")} />
+      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
 
       {/* `top-[58px]` = the global header's own rendered height (see
           `layout.tsx`'s `sticky top-0` header) — sits flush below it instead
@@ -401,7 +423,11 @@ export function DashboardClient({
                 <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
                 Export
               </a>
-              <button type="button" onClick={() => openSettings("campaign")} className={MORE_MENU_ITEM_CLASS}>
+              <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
+                <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Персонажі та істоти
+              </button>
+              <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
                 <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
                 Settings
               </button>
@@ -461,6 +487,7 @@ export function DashboardClient({
         title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
         storageKey="dm-dashboard-characters-open"
         initialOpen={initialOpen.characters}
+        actions={isDm && <SectionAddButton onClick={() => openRoster("characters")} label="Add character" />}
       >
         <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
 
@@ -468,8 +495,8 @@ export function DashboardClient({
 
         {visibleCharacters.length === 0 ? (
           <EmptyRosterState
-            message={characters.length > 0 ? "All characters are hidden — unhide them in Settings." : "No characters yet."}
-            onOpenSettings={isDm ? () => openSettings("roster") : undefined}
+            message={characters.length > 0 ? "All characters are hidden — unhide them in the roster manager." : "No characters yet."}
+            onAdd={isDm ? () => openRoster("characters") : undefined}
           />
         ) : (
           // Status badges straddle each card's *top* border and can bleed
@@ -501,7 +528,7 @@ export function DashboardClient({
         initialOpen={initialOpen.companions}
         onUpdate={updateCreature}
         onRemove={removeCreature}
-        onOpenSettings={isDm ? () => openSettings("roster") : undefined}
+        onAdd={isDm ? () => openRoster("companion") : undefined}
       />
 
       {/* Enemies and NPCs are DM-only — a player at the table isn't meant
@@ -518,7 +545,7 @@ export function DashboardClient({
             initialOpen={initialOpen.enemies}
             onUpdate={updateCreature}
             onRemove={removeCreature}
-            onOpenSettings={() => openSettings("roster")}
+            onAdd={() => openRoster("enemy")}
           />
 
           <CreatureCategorySection
@@ -529,7 +556,7 @@ export function DashboardClient({
             initialOpen={initialOpen.npcs}
             onUpdate={updateCreature}
             onRemove={removeCreature}
-            onOpenSettings={() => openSettings("roster")}
+            onAdd={() => openRoster("npc")}
           />
         </>
       )}
@@ -550,9 +577,21 @@ export function DashboardClient({
         <CampaignDataProvider value={{ charactersState, creaturesState }}>
           <CampaignFormModal
             campaign={{ ...campaignState, characterCount: characters.length }}
-            initialTab={settingsTab}
             actions={{ updateCampaign: patchCampaign }}
             onClose={closeSettings}
+          />
+        </CampaignDataProvider>
+      )}
+
+      {rosterTab && (
+        <CampaignDataProvider value={{ charactersState, creaturesState }}>
+          <RosterManagerModal
+            campaignId={campaign.id}
+            initialTab={rosterTab}
+            charactersState={charactersState}
+            creaturesState={creaturesState}
+            characters={characters}
+            onClose={() => setRosterTab(null)}
           />
         </CampaignDataProvider>
       )}

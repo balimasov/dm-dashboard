@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
 import { SectionDivider } from "./SectionDivider";
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
-      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { PlusIcon } from "./icons";
 
 function TrashIcon({ className }: { className?: string }) {
   return (

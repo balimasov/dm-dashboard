@@ -21,6 +21,7 @@ import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
 /** The add/sync/reorder roster UI, without any page-level chrome — embedded inside `CampaignFormModal`. */
 export function CampaignRosterEditor({
@@ -38,6 +39,8 @@ export function CampaignRosterEditor({
   const [adding, setAdding] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<"active" | "hidden">("active");
 
   const trimmedUrl = url.trim();
   const ddbId = extractDndBeyondCharacterId(trimmedUrl);
@@ -111,15 +114,23 @@ export function CampaignRosterEditor({
     }
   }
 
+  const activeCount = characters.filter((c) => !c.hidden).length;
+  const hiddenCount = characters.filter((c) => c.hidden).length;
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const visibleList = characters
+    .filter((c) => (visibility === "active" ? !c.hidden : c.hidden))
+    .filter((c) => !trimmedQuery || c.name.toLowerCase().includes(trimmedQuery));
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = characters.findIndex((c) => c.id === active.id);
-    const newIndex = characters.findIndex((c) => c.id === over.id);
+    const oldIndex = visibleList.findIndex((c) => c.id === active.id);
+    const newIndex = visibleList.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(characters, oldIndex, newIndex);
+    const reordered = arrayMove(visibleList, oldIndex, newIndex);
     reorderCharacters(reordered.map((c) => c.id));
   }
 
@@ -145,11 +156,29 @@ export function CampaignRosterEditor({
         {syncError && <p className="text-sm text-amber-400">{syncError}</p>}
       </div>
 
-      <h3 className="mb-3 text-sm uppercase tracking-wide text-slate-500">
-        Added Characters ({characters.length})
-      </h3>
+      <h3 className="mb-3 text-sm uppercase tracking-wide text-slate-500">Added Characters</h3>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name..."
+          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+        />
+        <SegmentedControl
+          value={visibility}
+          onChange={setVisibility}
+          options={[
+            { value: "active", label: `Active (${activeCount})` },
+            { value: "hidden", label: `Hidden (${hiddenCount})` },
+          ]}
+        />
+      </div>
 
-      {characters.length === 0 && <p className="text-sm text-slate-600">The list is empty.</p>}
+      {visibleList.length === 0 && (
+        <p className="text-sm text-slate-600">
+          {characters.length === 0 ? "The list is empty." : "No matches for the current search/filter."}
+        </p>
+      )}
 
       <DndContext
         id="characters-dnd"
@@ -157,9 +186,9 @@ export function CampaignRosterEditor({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={characters.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={visibleList.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           <ul className="space-y-2">
-            {characters.map((c) => (
+            {visibleList.map((c) => (
               <SortableCharacterRow
                 key={c.id}
                 character={c}

@@ -22,9 +22,8 @@ import { useCreatures } from "@/hooks/useCreatures";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useCampaignData } from "@/contexts/CampaignDataContext";
-import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
-import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { CampaignLogoPicker } from "@/components/CampaignLogoPicker";
+import { RosterManagerModal } from "@/components/RosterManagerModal";
 import { NotesEditor } from "@/components/NotesEditor";
 import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
@@ -201,59 +200,35 @@ function Section({
   );
 }
 
-type ModalTab = "campaign" | "roster";
-
-/**
- * Segmented control, not a full ARIA tabs pattern — this modal has no other
- * tab-like widget to be consistent with, so it borrows the app's existing
- * button styling (sky-600 active fill) instead of inventing a new look.
- */
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-        active ? "bg-sky-600 text-white" : "text-slate-400 hover:text-slate-200"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
 /**
  * Create mode (`campaign === null`): name/notes/logo only — no roster section
  * since the campaign doesn't exist yet. On successful create, switches to
- * edit mode in place instead of closing, so the roster editor for the new
- * campaign appears immediately — and jumps straight to the Roster tab, since
- * adding characters is the obvious next step right after creating.
+ * edit mode in place instead of closing, and immediately opens
+ * `RosterManagerModal` on top of it (see `rosterOpen`) — adding characters
+ * is the obvious next step right after creating a campaign.
  *
- * Edit mode: same fields, each field saves individually via `updateCampaign`
- * (blur/change), plus the roster editor with characters already loaded.
- * Split across two tabs (Campaign / Characters & Creatures) since the combined
- * single-page version grew too tall to navigate comfortably. Callers that link
- * here with a specific intent (e.g. the "No characters yet" empty state) pass
- * `initialTab="roster"` so the modal opens already on the relevant tab.
+ * Edit mode: same fields, each saves individually via `updateCampaign`
+ * (blur/change). Character/creature roster management no longer lives here
+ * at all — it moved to its own bigger `RosterManagerModal`, reachable from
+ * the dashboard's per-section "+" buttons and kebab menu, since the old
+ * combined "Campaign" + "Characters & Creatures" tabs crammed into this
+ * modal's `max-w-2xl` had grown too cramped to manage a large roster in.
  */
 export function CampaignFormModal({
   campaign,
-  initialTab = "campaign",
   initialCharacters = [],
   initialCreatures = [],
   actions,
   onClose,
 }: {
   campaign: CampaignSummary | null;
-  /** Which tab to open on — irrelevant in create mode (no tabs shown until the campaign exists). Defaults to "campaign". */
-  initialTab?: ModalTab;
   initialCharacters?: Character[];
   initialCreatures?: Creature[];
   actions: Actions;
   onClose: (updated?: CampaignSummary) => void;
 }) {
   const [current, setCurrent] = useState<CampaignSummary | null>(campaign);
-  const [tab, setTab] = useState<ModalTab>(initialTab);
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [name, setName] = useState(campaign?.name ?? "");
   const [notes, setNotes] = useState(campaign?.notes ?? "");
   const [logoUrl, setLogoUrl] = useState(campaign?.logoUrl);
@@ -291,7 +266,7 @@ export function CampaignFormModal({
     try {
       const created = await actions.addCampaign({ name: trimmed, notes, logoUrl });
       setCurrent({ ...created, characterCount: 0 });
-      setTab("roster");
+      setRosterOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign.");
     } finally {
@@ -306,6 +281,7 @@ export function CampaignFormModal({
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={close}>
       <div
         className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5"
@@ -323,20 +299,7 @@ export function CampaignFormModal({
           </button>
         </div>
 
-        {isEditing && (
-          <div className="mb-4 flex gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
-            <TabButton active={tab === "campaign"} onClick={() => setTab("campaign")}>
-              Campaign
-            </TabButton>
-            <TabButton active={tab === "roster"} onClick={() => setTab("roster")}>
-              Characters & Creatures
-            </TabButton>
-          </div>
-        )}
-
         <div className="scrollbar-themed overflow-y-auto px-1">
-          {(!isEditing || tab === "campaign") && (
-            <>
               <form onSubmit={handleCreate}>
                 <Section title="Details">
                   <div className="flex items-center gap-3">
@@ -400,26 +363,6 @@ export function CampaignFormModal({
                   />
                 </Section>
               )}
-            </>
-          )}
-
-          {isEditing && tab === "roster" && (
-            <>
-              <Section
-                title="Characters"
-                description="Add D&D Beyond character links to have them show up on the dashboard. The character's D&D Beyond sharing setting must be Public, or syncing will fail."
-              >
-                <CampaignRosterEditor campaignId={current.id} charactersState={charactersState} />
-              </Section>
-
-              <Section
-                title="Creatures"
-                description="Search the SRD by name or import a YAML file, then fill in the stat block afterwards."
-              >
-                <CreatureRosterEditor creaturesState={creaturesState} characters={charactersState.characters} />
-              </Section>
-            </>
-          )}
         </div>
 
         {isEditing && (
@@ -431,5 +374,17 @@ export function CampaignFormModal({
         )}
       </div>
     </div>
+
+    {rosterOpen && current && (
+      <RosterManagerModal
+        campaignId={current.id}
+        initialTab="characters"
+        charactersState={charactersState}
+        creaturesState={creaturesState}
+        characters={charactersState.characters}
+        onClose={() => setRosterOpen(false)}
+      />
+    )}
+    </>
   );
 }

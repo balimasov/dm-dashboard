@@ -20,9 +20,7 @@ import {
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
 import {
-  CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
-  CREATURE_CATEGORY_ORDER,
   CREATURE_CATEGORY_SINGULAR_LABELS,
   Character,
   Creature,
@@ -40,6 +38,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 
 /** Reports one add/import attempt's outcome up to the shared toast in `CreatureRosterEditor` — success or failure, same convention as the sync-summary toast on the dashboard. */
@@ -229,25 +228,17 @@ function downloadTemplate() {
  * template is generated from the same schema the parser validates against
  * (`creatureImportSchema.ts`), so the two can never silently drift apart.
  */
-/** Best-effort peek at a top-level `category: ...` line without a full YAML parse (which can throw on a mid-edit/invalid file) — lets the shared selector above follow along as a convenience while a file's being loaded, without gating on the file being fully valid yet. */
-function peekYamlCategory(text: string): CreatureCategory | undefined {
-  const match = text.match(/^category:\s*["']?(companion|enemy|npc)["']?\s*$/m);
-  return match ? (match[1] as CreatureCategory) : undefined;
-}
-
 function ImportCreaturePanel({
   onAdd,
   characters,
   category,
-  onCategoryDetected,
   onResult,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Resolves the template's plain-text `ownerCharacter: "Aria"` field to an id — the parser itself only knows the schema, not any particular campaign's roster. */
   characters: Character[];
-  /** Current value of the shared category selector rendered above this panel — wins over whatever the imported file itself says, so loading a file only pre-fills the selector rather than locking it. */
+  /** The roster manager's active category tab — wins over whatever `category:` line the imported file itself has, since the tab is now the one place category is chosen. */
   category: CreatureCategory;
-  onCategoryDetected: (category: CreatureCategory) => void;
   onResult: ResultReporter;
 }) {
   const [text, setText] = useState("");
@@ -259,8 +250,6 @@ function ImportCreaturePanel({
 
   function updateText(next: string) {
     setText(next);
-    const detected = peekYamlCategory(next);
-    if (detected) onCategoryDetected(detected);
   }
 
   function handleFile(file: File) {
@@ -450,12 +439,23 @@ function CreatureRow({
   );
 }
 
-/** The add/edit/remove creature-companion UI, embedded inside `CampaignFormModal` below the character roster editor — same shape as `CampaignRosterEditor`, but for companions/summons instead of player characters. */
+/**
+ * The add/edit/remove UI for one creature category (Companions/Enemies/
+ * NPCs) — embedded as one tab of `RosterManagerModal`. `category` is fixed
+ * by the tab itself now (not a selector in this component), so the "Added
+ * Creatures" list only ever shows/reorders/searches within that one
+ * category — other categories' creatures and their own `position` order
+ * are untouched by anything that happens here (see `reorderCreatures`'s
+ * per-id update in `db.ts`, which never touches ids outside the list it's
+ * given).
+ */
 export function CreatureRosterEditor({
+  category,
   creaturesState,
   characters,
 }: {
-  /** Owned by the caller (`CampaignFormModal`) — either its own `useCreatures()` instance, or one lifted from a page that already renders this same roster elsewhere (e.g. the dashboard), so edits made here apply to that same state instead of a disconnected copy. */
+  category: CreatureCategory;
+  /** Owned by the caller (`RosterManagerModal`) — either its own `useCreatures()` instance, or one lifted from a page that already renders this same roster elsewhere (e.g. the dashboard), so edits made here apply to that same state instead of a disconnected copy. */
   creaturesState: ReturnType<typeof useCreatures>;
   characters: Character[];
 }) {
@@ -466,6 +466,19 @@ export function CreatureRosterEditor({
     if (creature) updateCreature(id, { hidden: !creature.hidden });
   }
 
+  const inCategory = creatures.filter((c) => c.category === category);
+
+  const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<"active" | "hidden">("active");
+
+  const activeCount = inCategory.filter((c) => !c.hidden).length;
+  const hiddenCount = inCategory.filter((c) => c.hidden).length;
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const visibleList = inCategory
+    .filter((c) => (visibility === "active" ? !c.hidden : c.hidden))
+    .filter((c) => !trimmedQuery || c.name.toLowerCase().includes(trimmedQuery));
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -475,11 +488,11 @@ export function CreatureRosterEditor({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = creatures.findIndex((c) => c.id === active.id);
-    const newIndex = creatures.findIndex((c) => c.id === over.id);
+    const oldIndex = visibleList.findIndex((c) => c.id === active.id);
+    const newIndex = visibleList.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(creatures, oldIndex, newIndex);
+    const reordered = arrayMove(visibleList, oldIndex, newIndex);
     reorderCreatures(reordered.map((c) => c.id));
   }
 
@@ -488,30 +501,11 @@ export function CreatureRosterEditor({
   );
 
   const [addMode, setAddMode] = useState<"search" | "import">("search");
-  // "Enemy" is the default since that's the most common Search-SRD case
-  // (looking up a monster to throw at the party) — the DM can still switch
-  // it before adding.
-  const [category, setCategory] = useState<CreatureCategory>("enemy");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
 
   return (
     <div>
-      {/* Two compact dropdowns instead of a button row — guarantees both
-          controls stay on one line at any width, mobile included, instead
-          of a button row that either wraps or needs horizontal scrolling.
-          Custom `SelectMenu` rather than a native <select>: the popup is
-          browser/OS-drawn chrome that `color-scheme: dark` only half-fixes
-          in practice (still flashed light, still used the browser's own
-          blue highlight instead of this app's own colors). */}
-      <div className="mb-3 flex items-center gap-2">
-        <SelectMenu
-          value={category}
-          onChange={setCategory}
-          options={CREATURE_CATEGORY_ORDER.map((c) => ({
-            value: c,
-            label: `${CREATURE_CATEGORY_EMOJI[c]} ${CREATURE_CATEGORY_LABELS[c]}`,
-          }))}
-        />
+      <div className="mb-3">
         <SelectMenu
           value={addMode}
           onChange={setAddMode}
@@ -533,22 +527,39 @@ export function CreatureRosterEditor({
           onAdd={addCreature}
           characters={characters}
           category={category}
-          onCategoryDetected={setCategory}
           onResult={(message, variant) => setToast({ message, variant })}
         />
       )}
       {toast && <Toast message={toast.message} variant={toast.variant} onDismiss={() => setToast(null)} />}
 
-      <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">
-        Added Creatures ({creatures.length})
-      </h3>
-      {creatures.length === 0 ? (
-        <p className="text-sm text-slate-600">No companions or summons yet.</p>
+      <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">Added Creatures</h3>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name..."
+          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+        />
+        <SegmentedControl
+          value={visibility}
+          onChange={setVisibility}
+          options={[
+            { value: "active", label: `Active (${activeCount})` },
+            { value: "hidden", label: `Hidden (${hiddenCount})` },
+          ]}
+        />
+      </div>
+      {visibleList.length === 0 ? (
+        <p className="text-sm text-slate-600">
+          {inCategory.length === 0
+            ? `No ${CREATURE_CATEGORY_LABELS[category].toLowerCase()} yet.`
+            : "No matches for the current search/filter."}
+        </p>
       ) : (
         <DndContext id="creatures-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={creatures.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={visibleList.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {creatures.map((creature) => (
+              {visibleList.map((creature) => (
                 <CreatureRow
                   key={creature.id}
                   creature={creature}
