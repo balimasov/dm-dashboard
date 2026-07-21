@@ -9,8 +9,10 @@ import {
   CreatureTrait,
 } from "@/lib/types";
 import { abilityModifier } from "@/lib/characterMath";
+import { ensureNotesHtml } from "@/lib/journal";
 import { NumberInput } from "@/components/NumberInput";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { NotesEditor } from "@/components/NotesEditor";
 
 export interface CreatureFormValue {
   templateName: string;
@@ -391,12 +393,7 @@ export function CreatureFormFields({
       </div>
 
       <Field label="Notes">
-        <textarea
-          className={`${inputCls} w-full`}
-          rows={3}
-          value={value.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
-        />
+        <NotesEditor value={ensureNotesHtml(value.notes)} onChange={(notes) => onChange({ notes })} placeholder="Add notes..." />
       </Field>
     </div>
   );

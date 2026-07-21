@@ -24,7 +24,9 @@ import {
 } from "@/lib/types";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
+import { ensureNotesHtml } from "@/lib/journal";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { NotesEditor } from "./NotesEditor";
 import { NumberInput } from "./NumberInput";
 import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
@@ -765,12 +767,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
         {/* Notes */}
         <section className="space-y-3">
           <h2 className="text-sm uppercase tracking-wide text-slate-500">Notes</h2>
-          <textarea
-            className={`${inputCls} w-full`}
-            rows={3}
-            value={draft.notes}
-            onChange={(e) => set("notes", e.target.value)}
-          />
+          <NotesEditor value={ensureNotesHtml(draft.notes)} onChange={(notes) => set("notes", notes)} placeholder="Add notes..." />
         </section>
 
         {saveError && <p className="text-sm text-red-400">{saveError}</p>}

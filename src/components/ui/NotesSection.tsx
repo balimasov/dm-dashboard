@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { NotesEditor } from "@/components/NotesEditor";
+import { ensureNotesHtml } from "@/lib/journal";
 import { SectionDivider } from "./SectionDivider";
 import { SubHeading } from "./SubHeading";
 
@@ -11,6 +13,9 @@ import { SubHeading } from "./SubHeading";
  * save-on-blur when one is given, same lightweight pattern as the campaign
  * notes editor (`CampaignNotes` in `DashboardClient.tsx`) — no dedicated save
  * button, and no per-keystroke save either, so typing doesn't hammer the API.
+ * Stored/rendered as HTML via `NotesEditor` (Tiptap), same convention as
+ * `Campaign.notes`/`JournalEntry.text` — `ensureNotesHtml` promotes any
+ * pre-existing plain-text notes the first time they're touched.
  */
 export function NotesSection({
   notes,
@@ -19,14 +24,18 @@ export function NotesSection({
   notes: string;
   onChange?: (notes: string) => void;
 }) {
-  const [draft, setDraft] = useState(notes);
+  const html = ensureNotesHtml(notes);
+  const [draft, setDraft] = useState(html);
 
   if (!onChange) {
     if (!notes) return null;
     return (
       <SectionDivider>
         <SubHeading>Notes</SubHeading>
-        <p className="text-sm text-slate-400 leading-snug">{notes}</p>
+        <div
+          className="notes-editor-content text-sm text-slate-400"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       </SectionDivider>
     );
   }
@@ -34,15 +43,13 @@ export function NotesSection({
   return (
     <SectionDivider>
       <SubHeading>Notes</SubHeading>
-      <textarea
+      <NotesEditor
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={setDraft}
         onBlur={() => {
-          if (draft !== notes) onChange(draft);
+          if (draft !== html) onChange(draft);
         }}
-        rows={3}
         placeholder="Add notes..."
-        className="w-full rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm leading-snug text-slate-300 outline-none placeholder:text-slate-600 focus:border-sky-600"
       />
     </SectionDivider>
   );

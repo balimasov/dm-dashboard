@@ -41,6 +41,19 @@ export function plainTextToParagraphHtml(text: string): string {
 }
 
 /**
+ * `Character.notes`/`Creature.notes` predate rich-text support and may still
+ * hold plain text saved before `NotesEditor` replaced their plain
+ * `<textarea>`. Anything that already looks like HTML (has a tag) is left
+ * untouched; anything else is promoted through `plainTextToParagraphHtml`
+ * exactly like Quick Note's own plain-text input, so an old note opens and
+ * displays exactly as it always did, just now inside an editable rich-text
+ * document instead of a plain string.
+ */
+export function ensureNotesHtml(text: string): string {
+  return /<[a-z][\s\S]*>/i.test(text) ? text : plainTextToParagraphHtml(text);
+}
+
+/**
  * Tiny HTML → tree parser, purpose-built for `JournalEntry.text`'s own
  * closed universe of markup (whatever Tiptap's `StarterKit` — see
  * `NotesEditor.tsx` — or `plainTextToParagraphHtml` above can produce),
