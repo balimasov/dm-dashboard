@@ -49,7 +49,7 @@ export function RosterManagerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-50">Персонажі та істоти</h2>
+          <h2 className="text-lg font-bold text-slate-50">Characters &amp; Creatures</h2>
           <button
             type="button"
             onClick={onClose}
@@ -63,8 +63,9 @@ export function RosterManagerModal({
         <SegmentedControl
           value={tab}
           onChange={setTab}
+          scrollable
           options={[
-            { value: "characters", label: "🛡️ Персонажі" },
+            { value: "characters", label: "🛡️ Characters" },
             ...CREATURE_CATEGORY_ORDER.map((c) => ({
               value: c,
               label: `${CREATURE_CATEGORY_EMOJI[c]} ${CREATURE_CATEGORY_LABELS[c]}`,
@@ -72,7 +73,7 @@ export function RosterManagerModal({
           ]}
         />
 
-        <div className="scrollbar-themed mt-4 flex-1 overflow-y-auto px-1">
+        <div className="scrollbar-themed mt-4 flex-1 overflow-y-auto px-1 pt-1">
           {tab === "characters" ? (
             <CampaignRosterEditor campaignId={campaignId} charactersState={charactersState} />
           ) : (

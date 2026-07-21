@@ -425,7 +425,7 @@ export function DashboardClient({
               </a>
               <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
                 <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                Персонажі та істоти
+                Characters &amp; Creatures
               </button>
               <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
                 <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
