@@ -187,14 +187,24 @@ function SessionManageMenu({
   renameSession,
   toggleSessionArchived,
   deleteSession,
+  variant = "boxed",
 }: {
   session: JournalSessionSummary;
   renameSession: (id: string, title: string) => void;
   toggleSessionArchived: (id: string, archived: boolean) => void;
   deleteSession: (id: string) => void;
+  /**
+   * `"boxed"` (default) — the standalone mobile-header control, sitting
+   * next to other bordered buttons ("+", the session dropdown) as a peer.
+   * `"plain"` — the per-row desktop sidebar trigger, which sits *inside*
+   * an already-visually-distinct row (its own hover/selected background);
+   * a second bordered box there read as a redundant nested control rather
+   * than part of the row.
+   */
+  variant?: "boxed" | "plain";
 }) {
   return (
-    <MoreMenu label={`Manage "${session.title}"`} portal>
+    <MoreMenu label={`Manage "${session.title}"`} portal variant={variant}>
       <button
         type="button"
         className={MORE_MENU_ITEM_CLASS}
@@ -489,6 +499,7 @@ export function CampaignJournalModal({
                           renameSession={renameSession}
                           toggleSessionArchived={toggleSessionArchived}
                           deleteSession={deleteSession}
+                          variant="plain"
                         />
                       </div>
                     )}
@@ -548,10 +559,17 @@ export function CampaignJournalModal({
                   sidebar session list two elements up already carries this
                   same `overflow-x-hidden` for the identical reason; this
                   container was the one place in the modal missing it.
-                  `pr-2` on top reserves room for the scrollbar track so
-                  entries never render flush against it even when it's
-                  actually visible. */}
-              <div className="scrollbar-themed flex-1 overflow-x-hidden overflow-y-auto pt-1 pr-2">
+                  `px-2` on top reserves room on both sides — the right for
+                  the scrollbar track, and the left because `overflow-x:
+                  hidden` clips *any* horizontal bleed at this container's
+                  edge, including a focused entry's own focus ring (a
+                  box-shadow that extends a couple pixels past its border on
+                  every side) and any sub-pixel rounding slop from the entry
+                  box being sized to exactly 100% of the container. Entries
+                  never rendered flush against either edge before this fix
+                  existed; asymmetric padding just swapped which edge the
+                  clip showed up on. */}
+              <div className="scrollbar-themed flex-1 overflow-x-hidden overflow-y-auto px-2 pt-1">
                 {contentLoading ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />

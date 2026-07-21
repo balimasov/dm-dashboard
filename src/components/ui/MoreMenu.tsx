@@ -16,6 +16,7 @@ export function MoreMenu({
   children,
   label = "More actions",
   portal = false,
+  variant = "boxed",
 }: {
   children: React.ReactNode;
   label?: string;
@@ -34,6 +35,17 @@ export function MoreMenu({
    * on scroll is enough for a short-lived action menu).
    */
   portal?: boolean;
+  /**
+   * `"boxed"` (default) is the original look — a bordered square button,
+   * used for the header's Export/Settings menus where it's the only
+   * control in that spot and needs to read as a distinct button. `"plain"`
+   * drops the border/background entirely, leaving just the "⋮" glyph — for
+   * a trigger that sits *inside* an already-visually-distinct row (a
+   * selected/hoverable list item), where a second bordered box on top of
+   * the row's own background read as a redundant nested control rather
+   * than part of the row.
+   */
+  variant?: "boxed" | "plain";
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -115,7 +127,11 @@ export function MoreMenu({
         onClick={() => setOpen((o) => !o)}
         aria-label={label}
         title={label}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-lg leading-none text-slate-300 hover:bg-slate-800"
+        className={
+          variant === "plain"
+            ? "flex h-6 w-6 shrink-0 items-center justify-center rounded text-base leading-none text-slate-400 hover:bg-white/10 hover:text-slate-200"
+            : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-lg leading-none text-slate-300 hover:bg-slate-800"
+        }
       >
         ⋮
       </button>
