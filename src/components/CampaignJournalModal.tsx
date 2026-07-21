@@ -222,6 +222,17 @@ export function CampaignJournalModal({
   const visibleSessions = sessions?.filter((s) => showArchived || !s.archived);
   const visibleEntries = entries?.filter((e) => e.audience === visibleTab);
 
+  // Covers both "just opened the modal" (sessions themselves still in
+  // flight) and "just switched sessions" (the newly-selected one's entries
+  // still in flight) with one flag, so the content pane goes from "loading"
+  // straight to "fully ready" in one step — instead of the previous
+  // sequence of differently-sized interim states (a session list arriving,
+  // then "Select a session", then "Loading entries...", then the real
+  // content) popping in one after another and reading as the whole pane
+  // jumping around.
+  const contentLoading = (sessions === null && !sessionsError) || (selectedSessionId !== null && entries === null && !entriesError);
+  const canExport = !contentLoading && mode === "view" && !!selectedSession && !!visibleEntries && visibleEntries.length > 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
@@ -352,39 +363,47 @@ export function CampaignJournalModal({
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {selectedSession && (
-              <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-                <h3 className="truncate text-sm font-semibold text-slate-100">{selectedSession.title}</h3>
-                {mode === "view" && visibleEntries && visibleEntries.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => downloadSessionMarkdown(selectedSession, visibleEntries)}
-                    aria-label="Export as Markdown"
-                    title="Export as Markdown"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                  >
-                    <DownloadIcon className="h-3.5 w-3.5" />
-                  </button>
-                )}
+            {/* One panel for both the session title and the audience/mode
+                toolbar — previously these sat loose above the entries list
+                (just the title text, then a separate unboxed row of pills),
+                which read as floating controls rather than a deliberate
+                header. Always mounted (title/export button included) rather
+                than conditionally rendered on `selectedSession`/`mode`, so
+                nothing here changes *shape* when switching sessions, tabs,
+                or mode — only the export button's own enabled state does,
+                via `disabled:opacity-0` (space reserved, not collapsed),
+                which is what actually fixes it visibly jumping before. */}
+            <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
+                <button
+                  type="button"
+                  onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
+                  disabled={!canExport}
+                  aria-label="Export as Markdown"
+                  title="Export as Markdown"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-0"
+                >
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                </button>
               </div>
-            )}
-
-            <div className="mb-3 flex shrink-0 items-center gap-3">
-              <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
-              {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
-              <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
+              <div className="flex items-center gap-3">
+                <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
+                {role === "dm" && <div aria-hidden="true" className="h-5 w-px shrink-0 bg-slate-700" />}
+                <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
+              </div>
             </div>
 
-            {mode === "edit" && selectedSessionId && (
+            {!contentLoading && mode === "edit" && selectedSessionId && (
               <Composer onSubmit={(html) => createEntry(html, selectedSessionId, visibleTab as JournalEntryAudience)} />
             )}
 
             <div className="scrollbar-themed flex-1 overflow-y-auto">
-              {!selectedSessionId && <p className="text-sm text-slate-500">Select a session to see its entries.</p>}
-              {selectedSessionId && entries === null && entriesError === null && (
-                <p className="text-sm text-slate-500">Loading entries...</p>
-              )}
-              {entriesError && (
+              {contentLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+                </div>
+              ) : entriesError ? (
                 <div className="text-sm text-red-400">
                   <p className="mb-2">{entriesError}</p>
                   <button
@@ -395,9 +414,11 @@ export function CampaignJournalModal({
                     Retry
                   </button>
                 </div>
-              )}
-              {visibleEntries?.length === 0 && <p className="text-sm text-slate-500">No entries in this session yet.</p>}
-              {mode === "edit" ? (
+              ) : !selectedSessionId ? (
+                <p className="text-sm text-slate-500">Select a session to see its entries.</p>
+              ) : visibleEntries?.length === 0 ? (
+                <p className="text-sm text-slate-500">No entries in this session yet.</p>
+              ) : mode === "edit" ? (
                 <div className="space-y-2">
                   {visibleEntries?.map((entry) => (
                     <JournalEntryRow
@@ -411,12 +432,16 @@ export function CampaignJournalModal({
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {visibleEntries?.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="notes-editor-content text-sm text-slate-200"
-                      dangerouslySetInnerHTML={{ __html: entry.text }}
-                    />
+                  {visibleEntries?.map((entry, index) => (
+                    <div key={entry.id}>
+                      {/* Light separator between notes in the reading view —
+                          the only visual cue that one entry ended and the
+                          next began, now that View mode has no per-entry
+                          border/box at all. Skipped before the first entry;
+                          nothing to separate it from. */}
+                      {index > 0 && <hr className="mb-6 border-slate-800/60" />}
+                      <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: entry.text }} />
+                    </div>
                   ))}
                 </div>
               )}
