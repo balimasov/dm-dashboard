@@ -276,7 +276,7 @@ describe("listAllJournalSessions / listAllJournalEntries", () => {
     expect(entries.map((e) => e.audience).sort()).toEqual(["dm", "party"]);
   });
 
-  it("scope strictly to the given campaign", () => {
+  it("scope strictly to the given campaign", async () => {
     const campaignA = "campaign-export-2a";
     const campaignB = "campaign-export-2b";
     const sessionA = db.resolveOrCreateSessionForDate(campaignA, "2026-01-01");
@@ -288,6 +288,7 @@ describe("listAllJournalSessions / listAllJournalEntries", () => {
       audience: "dm",
       authorRole: "dm",
     });
+    await tick();
     db.resolveOrCreateSessionForDate(campaignB, "2026-01-01");
 
     expect(db.listAllJournalSessions(campaignB)).toHaveLength(1);
