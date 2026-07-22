@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { DotsVerticalIcon } from "./icons";
 
 const EDGE_MARGIN = 8;
 
@@ -127,11 +128,11 @@ export function MoreMenu({
         title={label}
         className={
           variant === "plain"
-            ? "flex h-6 w-6 shrink-0 items-center justify-center rounded text-base leading-none text-slate-400 hover:bg-white/10 hover:text-slate-200"
-            : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-lg leading-none text-slate-300 hover:bg-slate-800"
+            ? "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-white/10 hover:text-slate-200"
+            : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
         }
       >
-        ⋮
+        <DotsVerticalIcon className={variant === "plain" ? "h-4 w-4" : "h-5 w-5"} />
       </button>
       {portal ? panel && typeof document !== "undefined" && createPortal(panel, document.body) : panel}
     </div>

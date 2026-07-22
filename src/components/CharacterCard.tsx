@@ -61,7 +61,7 @@ export function CharacterCard({
           placement as the details modal's own sync+actions row — keeps the
           menu off the header row above, where it would crowd the Heroic
           Inspiration star at that row's right edge. */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <DdbSyncStatus
             dndBeyondUrl={c.dndBeyondUrl}
