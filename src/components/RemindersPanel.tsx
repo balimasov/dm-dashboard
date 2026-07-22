@@ -39,10 +39,33 @@ interface ReminderGroup {
   entries: ReminderEntry[];
 }
 
+/**
+ * Some abilities are legitimately tracked twice in `Character`'s own data —
+ * e.g. an innate spell that's *also* resource-charge-limited shows up once
+ * in `features` (limited-use charges) and again in `knownSpells` (slot
+ * cost), same name both times. Fine on the character's own Features/Spells
+ * tabs (each tab needs its own copy), but flagging that one name with the
+ * reminder flame then matches it in *both* source lists here, producing two
+ * identical-looking reminder rows for what the DM experiences as a single
+ * flagged ability. Collapse back to one row per name — keeping the "spells"
+ * copy when a name has both, since its hint panel carries the more specific
+ * spell info (school/components/material) a plain feature entry lacks.
+ */
+function dedupeReminderEntries(entries: ReminderEntry[]): ReminderEntry[] {
+  const byName = new Map<string, ReminderEntry>();
+  for (const entry of entries) {
+    const existing = byName.get(entry.name);
+    if (!existing || (existing.kind !== "spells" && entry.kind === "spells")) {
+      byName.set(entry.name, entry);
+    }
+  }
+  return Array.from(byName.values());
+}
+
 function characterReminders(character: Character): ReminderGroup | null {
   const flagged = character.flaggedAbilities ?? [];
   if (flagged.length === 0) return null;
-  const entries: ReminderEntry[] = [
+  const entries: ReminderEntry[] = dedupeReminderEntries([
     ...character.attacks
       .filter((a) => flagged.includes(a.name))
       .map((a) => ({
@@ -84,7 +107,7 @@ function characterReminders(character: Character): ReminderGroup | null {
         panel: <ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />,
         kind: "consumables" as const,
       })),
-  ];
+  ]);
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
   return { ownerId: character.id, ownerName: character.name, avatarUrl: character.avatarUrl, entries };
