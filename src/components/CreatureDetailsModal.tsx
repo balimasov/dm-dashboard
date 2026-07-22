@@ -3,6 +3,7 @@
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
@@ -79,11 +80,14 @@ export function CreatureDetailsModal({
           </button>
         </div>
 
-        {/* Kebab actions menu — same row-below-the-header placement as
-            `CharacterDetailsModal`'s (there next to the sync line), kept off
-            the header row above so it doesn't crowd the owner-avatar badge
-            at that row's right edge. */}
-        <div className="flex items-center justify-end gap-1">
+        {/* Created/edited timestamp (left) + kebab actions menu (right) share
+            one row — same placement as `CharacterDetailsModal`'s own
+            sync+actions row, just with a last-edited stamp standing in for
+            the D&D Beyond sync line a creature has no equivalent of. */}
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
+          </div>
           <EntityActionsMenu
             editHref={`/creatures/${creature.id}/edit`}
             name={creature.name}

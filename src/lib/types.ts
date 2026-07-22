@@ -667,6 +667,20 @@ export interface Creature {
   flaggedTraits?: string[];
   /** Same convention as `Character.hidden` — hides this creature from its dashboard category row (and from `RemindersPanel`) without removing it from the campaign. */
   hidden?: boolean;
+  /**
+   * Server-stamped in `createCreature`/`updateCreature` (`db.ts`) — never
+   * accepted from a client request body (absent from `creatureUpdateSchema`),
+   * so a PATCH can't backdate either one. A creature has no external source
+   * to sync with the way a D&D Beyond-linked `Character` does, so this pair
+   * fills that same card row with the DM's own last-edited record instead;
+   * `CreatureTimestampStatus` shows only `updatedAt` (labeled "Edited") once
+   * it differs from `createdAt`, otherwise falls back to `createdAt`
+   * (labeled "Created") — never both at once. Optional (not backfilled) so
+   * creatures saved before this field existed simply render nothing here,
+   * same convention as `Character.dndBeyondUrl` being absent.
+   */
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Which "tab" of the journal an entry belongs to — "dm" is the DM's private journal (never visible to a player), "party" is the shared journal both roles can read and write. Kept on the entry (not a second table) so one `journal_entries` table supports both audiences without a schema change. */

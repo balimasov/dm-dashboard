@@ -361,9 +361,10 @@ export function getCreature(id: string): Creature | null {
   return row ? rowToCreature(row) : null;
 }
 
-export function createCreature(input: Omit<Creature, "id">): Creature {
+export function createCreature(input: Omit<Creature, "id" | "createdAt" | "updatedAt">): Creature {
   const db = getDb();
-  const creature: Creature = { ...input, id: `creature-${Date.now()}` };
+  const now = new Date().toISOString();
+  const creature: Creature = { ...input, id: `creature-${Date.now()}`, createdAt: now, updatedAt: now };
   const maxPosition = db
     .prepare("SELECT MAX(position) AS maxPosition FROM creatures WHERE campaign_id = ?")
     .get(creature.campaignId) as { maxPosition: number | null };
@@ -380,7 +381,13 @@ export function createCreature(input: Omit<Creature, "id">): Creature {
 export function updateCreature(id: string, updates: Partial<Creature>): Creature | null {
   const existing = getCreature(id);
   if (!existing) return null;
-  const updated: Creature = { ...existing, ...updates, id: existing.id };
+  const updated: Creature = {
+    ...existing,
+    ...updates,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
   getDb().prepare("UPDATE creatures SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
   return updated;
 }

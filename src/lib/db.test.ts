@@ -332,3 +332,50 @@ describe("updateJournalEntryText", () => {
     if (result.status === "ok") expect(result.entry.updatedByRole).toBe("player");
   });
 });
+
+const BLANK_STATS = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+
+describe("createCreature / updateCreature — createdAt/updatedAt stamping", () => {
+  it("stamps both createdAt and updatedAt to the same value on creation, ignoring any input", () => {
+    const creature = db.createCreature({
+      campaignId: "campaign-creature-1",
+      category: "companion",
+      templateName: "Otherworldly Steed",
+      name: "Thunder",
+      ac: 13,
+      hp: 20,
+      maxHp: 20,
+      tempHp: 0,
+      speed: 40,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+    });
+    expect(creature.createdAt).toBeTruthy();
+    expect(creature.updatedAt).toBe(creature.createdAt);
+  });
+
+  it("bumps updatedAt on update but leaves createdAt untouched, even if the caller tries to change it", async () => {
+    const created = db.createCreature({
+      campaignId: "campaign-creature-2",
+      category: "enemy",
+      templateName: "Bandit",
+      name: "Bandit",
+      ac: 12,
+      hp: 11,
+      maxHp: 11,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+    });
+    await tick();
+    const updated = db.updateCreature(created.id, { hp: 5, createdAt: "2000-01-01T00:00:00.000Z" });
+    expect(updated?.createdAt).toBe(created.createdAt);
+    expect(updated?.updatedAt).not.toBe(created.updatedAt);
+    expect(updated?.hp).toBe(5);
+  });
+});
