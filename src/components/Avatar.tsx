@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 const SIZE_CLASSES = {
   xs: "h-6 w-6 text-[10px]",
   sm: "h-14 w-14 text-lg",
@@ -6,7 +10,10 @@ const SIZE_CLASSES = {
 
 /**
  * Square image-or-initial avatar shared by characters, creatures, and
- * campaign logos — anywhere a portrait may or may not exist yet.
+ * campaign logos — anywhere a portrait may or may not exist yet. Falls back
+ * to the initials placeholder if `src` fails to load (a stale/expired D&D
+ * Beyond portrait URL, a 404, ...) instead of the browser's own broken-image
+ * icon — same `onError` convention as `CharacterChip`'s avatar.
  */
 export function Avatar({
   src,
@@ -17,12 +24,18 @@ export function Avatar({
   label: string;
   size?: keyof typeof SIZE_CLASSES;
 }) {
+  const [failed, setFailed] = useState(false);
   const sizeClass = SIZE_CLASSES[size];
 
-  if (src) {
+  if (src && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small thumbnail
-      <img src={src} alt="" className={`${sizeClass} shrink-0 rounded-md border border-slate-800 object-cover`} />
+      <img
+        src={src}
+        alt=""
+        onError={() => setFailed(true)}
+        className={`${sizeClass} shrink-0 rounded-md border border-slate-800 object-cover`}
+      />
     );
   }
   return (
