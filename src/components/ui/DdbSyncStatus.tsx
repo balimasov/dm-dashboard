@@ -1,5 +1,5 @@
 import { SyncTimestamp } from "@/components/SyncTimestamp";
-import { RefreshIcon } from "./icons";
+import { ExternalLinkIcon, RefreshIcon } from "./icons";
 
 /**
  * Single shared block for a character's D&D Beyond link/sync state — used
@@ -40,9 +40,14 @@ export function DdbSyncStatus({
           Not synced with D&D Beyond — fill in manually.
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-xs">
-        <a href={dndBeyondUrl} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-          D&D Beyond ↗
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-none">
+        <a
+          href={dndBeyondUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-0.5 whitespace-nowrap text-sky-400 hover:underline"
+        >
+          D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
         </a>
         {onSync && (
           <button
@@ -57,10 +62,10 @@ export function DdbSyncStatus({
           </button>
         )}
         {syncing ? (
-          <span className="text-sky-400">Syncing...</span>
+          <span className="whitespace-nowrap text-sky-400">Syncing...</span>
         ) : (
           lastSyncedAt && (
-            <span className="text-slate-500">
+            <span className="whitespace-nowrap text-slate-500">
               Synced <SyncTimestamp iso={lastSyncedAt} />
             </span>
           )
