@@ -277,7 +277,7 @@ export function CharacterDetailsModal({
             each other — keeps the menu off the header row above, where it
             would crowd the Heroic Inspiration star at that row's right
             edge. */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <DdbSyncStatus
               dndBeyondUrl={c.dndBeyondUrl}
@@ -293,6 +293,8 @@ export function CharacterDetailsModal({
             name={c.name}
             hidden={c.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+            onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
+            syncing={syncing}
             onRemove={onRemove ? () => onRemove(c.id) : undefined}
           />
         </div>

@@ -1,21 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./icons";
+import { EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
 /**
- * Kebab-triggered Edit/Hide/Remove menu shared by `CharacterCard`/
+ * Kebab-triggered Sync/Edit/Hide/Remove menu shared by `CharacterCard`/
  * `CreatureCard` and their details modals — replaces what used to be a
  * standalone Edit link + Remove button in the card footer plus separate
- * pencil/trash icons in the modal, so the same three actions live in one
- * place with one visual convention across all four call sites.
+ * pencil/trash icons in the modal, so the same actions live in one place
+ * with one visual convention across all four call sites. `onSync` is
+ * omitted entirely for creatures (no D&D Beyond link to sync from).
  */
 export function EntityActionsMenu({
   editHref,
   name,
   hidden,
   onToggleHidden,
+  onSync,
+  syncing,
   onRemove,
   variant = "plain",
 }: {
@@ -23,11 +26,19 @@ export function EntityActionsMenu({
   name: string;
   hidden?: boolean;
   onToggleHidden?: () => void;
+  onSync?: () => void;
+  syncing?: boolean;
   onRemove?: () => void;
   variant?: "boxed" | "plain";
 }) {
   return (
     <MoreMenu label="Actions" portal variant={variant}>
+      {onSync && (
+        <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onSync} disabled={syncing}>
+          <RefreshIcon className={`h-4 w-4 shrink-0 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing..." : "Sync"}
+        </button>
+      )}
       <Link href={editHref} className={MORE_MENU_ITEM_CLASS}>
         <PencilIcon className="h-4 w-4 shrink-0" />
         Edit
