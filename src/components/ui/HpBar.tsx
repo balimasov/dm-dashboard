@@ -87,6 +87,7 @@ export function HpBar({
                 max={maxHp}
                 selectOnFocus
                 commitOnBlur
+                deltaMode
                 className={`w-14 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (
@@ -125,6 +126,7 @@ export function HpBar({
                 max={maxHp}
                 selectOnFocus
                 commitOnBlur
+                deltaMode
                 className={`w-14 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right text-2xl font-bold leading-none outline-none hover:border-slate-500 focus:border-slate-400 focus:bg-slate-800 ${hpTextColor}`}
               />
             ) : (

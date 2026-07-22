@@ -7,7 +7,6 @@ import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
-import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 
@@ -19,17 +18,30 @@ import { StatusRail } from "./ui/StatusRail";
  * (same gesture as `CharacterHeader`); `onUpdate` drives inline HP editing,
  * the flame-flag toggle on traits/actions, and quick notes. "Edit" links to
  * a dedicated `/creatures/[id]/edit` page (same convention as `CharacterCard`
- * 's own Edit link), `onRemove` deletes it.
+ * 's own Edit link), `onRemove` deletes it, `onDuplicate` clones it (see
+ * `useCreatures.duplicateCreature`).
+ *
+ * Deliberately shorter than the modal: Traits/Actions/Bonus Actions/
+ * Reactions/Legendary Actions and the long-form Notes preview are both
+ * skipped here (`showActionGroups={false}`, no `NotesSection`) — with
+ * several creature cards open side by side, that tail end of the stat block
+ * was pushing cards tall enough that it got hard to tell which card's HP/
+ * traits belonged to which name at a glance. Both still show in full in
+ * `CreatureDetailsModal` (one click away via the header); Quick Notes stay
+ * on the card since those are the short, glanceable reminders the whole
+ * point of a compact card is to surface.
  */
 export function CreatureCard({
   creature,
   owner,
   onUpdate,
+  onDuplicate,
   onRemove,
 }: {
   creature: Creature;
   owner?: Character;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  onDuplicate?: () => void;
   onRemove?: (id: string) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -66,13 +78,12 @@ export function CreatureCard({
           name={creature.name}
           hidden={creature.hidden}
           onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+          onDuplicate={onDuplicate}
           onRemove={onRemove ? () => onRemove(creature.id) : undefined}
         />
       </div>
 
-      <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
-
-      <NotesSection notes={creature.notes ?? ""} />
+      <CreatureStatBlock creature={creature} onUpdate={onUpdate} showActionGroups={false} />
 
       <QuickNotesSection
         notes={creature.quickNotes ?? []}
@@ -85,6 +96,7 @@ export function CreatureCard({
           owner={owner}
           onClose={() => setDetailsOpen(false)}
           onUpdate={onUpdate}
+          onDuplicate={onDuplicate}
           onRemove={onRemove}
         />
       )}

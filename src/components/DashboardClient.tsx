@@ -18,6 +18,7 @@ import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersPanel } from "@/components/RemindersPanel";
 import { RosterManagerModal, type RosterTab } from "@/components/RosterManagerModal";
+import { SectionNavRail, type SectionNavItem } from "@/components/ui/SectionNavRail";
 import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
@@ -189,6 +190,7 @@ function CreatureCategorySection({
   storageKey,
   initialOpen,
   onUpdate,
+  onDuplicate,
   onRemove,
   onAdd,
 }: {
@@ -198,6 +200,7 @@ function CreatureCategorySection({
   storageKey: string;
   initialOpen: boolean;
   onUpdate: (id: string, updates: Partial<Creature>) => void;
+  onDuplicate: (creature: Creature) => void;
   onRemove: (id: string) => void;
   onAdd?: () => void;
 }) {
@@ -231,7 +234,13 @@ function CreatureCategorySection({
             const owner = characters.find((c) => c.id === creature.ownerCharacterId);
             return (
               <div key={creature.id} className="w-[300px] shrink-0">
-                <CreatureCard creature={creature} owner={owner} onUpdate={onUpdate} onRemove={onRemove} />
+                <CreatureCard
+                  creature={creature}
+                  owner={owner}
+                  onUpdate={onUpdate}
+                  onDuplicate={() => onDuplicate(creature)}
+                  onRemove={onRemove}
+                />
               </div>
             );
           })}
@@ -258,7 +267,7 @@ export function DashboardClient({
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
   const { characters, removeCharacter, updateCharacter } = charactersState;
-  const { creatures, updateCreature, removeCreature } = creaturesState;
+  const { creatures, duplicateCreature, updateCreature, removeCreature } = creaturesState;
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
@@ -349,6 +358,24 @@ export function DashboardClient({
   useGlobalHotkey("j", () => setJournalOpen(true));
   useGlobalHotkey("s", () => void handleSyncAll(), linkedCharacters.length > 0);
 
+  // Mirrors exactly what's actually on the page for this role (see the
+  // matching `id`s below) — a player never gets Campaign/Enemies/NPCs
+  // entries since those sections don't render for them at all.
+  const navItems: SectionNavItem[] = [
+    ...(isDm ? [{ id: "section-campaign", emoji: "📜", label: "Campaign" }] : []),
+    { id: "section-reminders", emoji: "🔥", label: "Reminders" },
+    { id: "section-party-toolkit", emoji: "🧭", label: "Party Toolkit" },
+    { id: "section-party", emoji: "🛡️", label: "Party" },
+    { id: "section-companions", emoji: CREATURE_CATEGORY_EMOJI.companion, label: CREATURE_CATEGORY_LABELS.companion },
+    ...(isDm
+      ? [
+          { id: "section-enemies", emoji: CREATURE_CATEGORY_EMOJI.enemy, label: CREATURE_CATEGORY_LABELS.enemy },
+          { id: "section-npcs", emoji: CREATURE_CATEGORY_EMOJI.npc, label: CREATURE_CATEGORY_LABELS.npc },
+        ]
+      : []),
+    { id: "section-inventory", emoji: "💎", label: "Inventory" },
+  ];
+
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-8">
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
@@ -438,19 +465,21 @@ export function DashboardClient({
       </div>
 
       {isDm && (
-        <CollapsibleSection
-          title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
-          storageKey="dm-dashboard-campaign-open"
-          initialOpen={initialOpen.campaign}
-        >
-          <div className="px-3">
-            <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
-            <CampaignNotes
-              campaign={campaignState}
-              onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
-            />
-          </div>
-        </CollapsibleSection>
+        <div id="section-campaign" className="scroll-mt-[130px]">
+          <CollapsibleSection
+            title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
+            storageKey="dm-dashboard-campaign-open"
+            initialOpen={initialOpen.campaign}
+          >
+            <div className="px-3">
+              <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
+              <CampaignNotes
+                campaign={campaignState}
+                onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
+              />
+            </div>
+          </CollapsibleSection>
+        </div>
       )}
 
       {/* Visible to both roles. `creatures` needs no role filtering here —
@@ -459,77 +488,85 @@ export function DashboardClient({
           browser receives at all), so a player's reminders can only ever
           surface their characters and their own Companions, never an
           Enemy/NPC's traits they've never been shown. */}
-      <RemindersPanel
-        characters={characters}
-        creatures={creatures}
-        onUpdateCharacter={updateCharacter}
-        onUpdateCreature={updateCreature}
-        storageKey="dm-dashboard-reminders-open"
-        initialOpen={initialOpen.reminders}
-      />
+      <div id="section-reminders" className="scroll-mt-[130px]">
+        <RemindersPanel
+          characters={characters}
+          creatures={creatures}
+          onUpdateCharacter={updateCharacter}
+          onUpdateCreature={updateCreature}
+          storageKey="dm-dashboard-reminders-open"
+          initialOpen={initialOpen.reminders}
+        />
+      </div>
 
-
-      <CollapsibleSection
-        title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
-        storageKey="dm-dashboard-party-toolkit-open"
-        initialOpen={initialOpen.partyToolkit}
-      >
-        <p className="mb-4 px-3 text-sm text-slate-500">
-          Party-wide cheat sheet: who&apos;s best at what, what&apos;s left in the tank, and what your spells can
-          solve.
-        </p>
-        <div className="px-3">
-          <PartyToolkit characters={visibleCharacters} initialResourceCoverageOpen={initialOpen.resourceCoverage} />
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
-        storageKey="dm-dashboard-characters-open"
-        initialOpen={initialOpen.characters}
-        actions={isDm && <SectionAddButton onClick={() => openRoster("characters")} label="Add character" />}
-      >
-        <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
-
-        {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
-
-        {visibleCharacters.length === 0 ? (
-          <EmptyRosterState
-            message={characters.length > 0 ? "All characters are hidden — unhide them in the roster manager." : "No characters yet."}
-            onAdd={isDm ? () => openRoster("characters") : undefined}
-          />
-        ) : (
-          // Status badges straddle each card's *top* border and can bleed
-          // sideways too once there are several of them — `overflow-x-auto`
-          // here forces this row's own overflow-y to compute as non-"visible"
-          // regardless of what's set (the same quirk noted on StatusRail),
-          // which clips anything that pokes out above the row's own box, and
-          // the row has no scroll room to the left/right of its first/last
-          // card either. `pt-8`/`px-3` reserve room on every side so the
-          // leftmost, rightmost, and topmost badges always have somewhere to
-          // bleed into before hitting a clipping edge (confirmed clipped
-          // without this) — `px-3` also matches the Campaign/Inventory
-          // blocks' own inset so all three line up on the same left edge.
-          <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
-            {visibleCharacters.map((character) => (
-              <div key={character.id} className="w-[300px] shrink-0">
-                <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
-              </div>
-            ))}
+      <div id="section-party-toolkit" className="scroll-mt-[130px]">
+        <CollapsibleSection
+          title={<SectionTitle emoji="🧭" label="Party Toolkit" />}
+          storageKey="dm-dashboard-party-toolkit-open"
+          initialOpen={initialOpen.partyToolkit}
+        >
+          <p className="mb-4 px-3 text-sm text-slate-500">
+            Party-wide cheat sheet: who&apos;s best at what, what&apos;s left in the tank, and what your spells can
+            solve.
+          </p>
+          <div className="px-3">
+            <PartyToolkit characters={visibleCharacters} initialResourceCoverageOpen={initialOpen.resourceCoverage} />
           </div>
-        )}
-      </CollapsibleSection>
+        </CollapsibleSection>
+      </div>
 
-      <CreatureCategorySection
-        category="companion"
-        creatures={creatures}
-        characters={characters}
-        storageKey="dm-dashboard-companions-open"
-        initialOpen={initialOpen.companions}
-        onUpdate={updateCreature}
-        onRemove={removeCreature}
-        onAdd={isDm ? () => openRoster("companion") : undefined}
-      />
+      <div id="section-party" className="scroll-mt-[130px]">
+        <CollapsibleSection
+          title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
+          storageKey="dm-dashboard-characters-open"
+          initialOpen={initialOpen.characters}
+          actions={isDm && <SectionAddButton onClick={() => openRoster("characters")} label="Add character" />}
+        >
+          <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
+
+          {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
+
+          {visibleCharacters.length === 0 ? (
+            <EmptyRosterState
+              message={characters.length > 0 ? "All characters are hidden — unhide them in the roster manager." : "No characters yet."}
+              onAdd={isDm ? () => openRoster("characters") : undefined}
+            />
+          ) : (
+            // Status badges straddle each card's *top* border and can bleed
+            // sideways too once there are several of them — `overflow-x-auto`
+            // here forces this row's own overflow-y to compute as non-"visible"
+            // regardless of what's set (the same quirk noted on StatusRail),
+            // which clips anything that pokes out above the row's own box, and
+            // the row has no scroll room to the left/right of its first/last
+            // card either. `pt-8`/`px-3` reserve room on every side so the
+            // leftmost, rightmost, and topmost badges always have somewhere to
+            // bleed into before hitting a clipping edge (confirmed clipped
+            // without this) — `px-3` also matches the Campaign/Inventory
+            // blocks' own inset so all three line up on the same left edge.
+            <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+              {visibleCharacters.map((character) => (
+                <div key={character.id} className="w-[300px] shrink-0">
+                  <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleSection>
+      </div>
+
+      <div id="section-companions" className="scroll-mt-[130px]">
+        <CreatureCategorySection
+          category="companion"
+          creatures={creatures}
+          characters={characters}
+          storageKey="dm-dashboard-companions-open"
+          initialOpen={initialOpen.companions}
+          onUpdate={updateCreature}
+          onDuplicate={duplicateCreature}
+          onRemove={removeCreature}
+          onAdd={isDm ? () => openRoster("companion") : undefined}
+        />
+      </div>
 
       {/* Enemies and NPCs are DM-only — a player at the table isn't meant
           to see monster stat blocks or NPC secrets the DM hasn't revealed
@@ -537,41 +574,51 @@ export function DashboardClient({
           summons/mounts/familiars, no different from their characters. */}
       {isDm && (
         <>
-          <CreatureCategorySection
-            category="enemy"
-            creatures={creatures}
-            characters={characters}
-            storageKey="dm-dashboard-enemies-open"
-            initialOpen={initialOpen.enemies}
-            onUpdate={updateCreature}
-            onRemove={removeCreature}
-            onAdd={() => openRoster("enemy")}
-          />
+          <div id="section-enemies" className="scroll-mt-[130px]">
+            <CreatureCategorySection
+              category="enemy"
+              creatures={creatures}
+              characters={characters}
+              storageKey="dm-dashboard-enemies-open"
+              initialOpen={initialOpen.enemies}
+              onUpdate={updateCreature}
+              onDuplicate={duplicateCreature}
+              onRemove={removeCreature}
+              onAdd={() => openRoster("enemy")}
+            />
+          </div>
 
-          <CreatureCategorySection
-            category="npc"
-            creatures={creatures}
-            characters={characters}
-            storageKey="dm-dashboard-npcs-open"
-            initialOpen={initialOpen.npcs}
-            onUpdate={updateCreature}
-            onRemove={removeCreature}
-            onAdd={() => openRoster("npc")}
-          />
+          <div id="section-npcs" className="scroll-mt-[130px]">
+            <CreatureCategorySection
+              category="npc"
+              creatures={creatures}
+              characters={characters}
+              storageKey="dm-dashboard-npcs-open"
+              initialOpen={initialOpen.npcs}
+              onUpdate={updateCreature}
+              onDuplicate={duplicateCreature}
+              onRemove={removeCreature}
+              onAdd={() => openRoster("npc")}
+            />
+          </div>
         </>
       )}
 
-      <CollapsibleSection
-        title={<SectionTitle emoji="💎" label="Inventory" />}
-        storageKey="dm-dashboard-inventory-open"
-        initialOpen={initialOpen.inventory}
-      >
-        <div className="px-3 space-y-4">
-          <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
-          <CoinsPanel characters={characters} />
-          <InventoryOverview characters={characters} />
-        </div>
-      </CollapsibleSection>
+      <div id="section-inventory" className="scroll-mt-[130px]">
+        <CollapsibleSection
+          title={<SectionTitle emoji="💎" label="Inventory" />}
+          storageKey="dm-dashboard-inventory-open"
+          initialOpen={initialOpen.inventory}
+        >
+          <div className="px-3 space-y-4">
+            <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
+            <CoinsPanel characters={characters} />
+            <InventoryOverview characters={characters} />
+          </div>
+        </CollapsibleSection>
+      </div>
+
+      <SectionNavRail items={navItems} />
 
       {settingsOpen && (
         <CampaignDataProvider value={{ charactersState, creaturesState }}>

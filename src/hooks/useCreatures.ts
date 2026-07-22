@@ -55,6 +55,57 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     [campaignId]
   );
 
+  /**
+   * Clones a creature's stat block into a brand-new card — for the common
+   * "one more of these" case (a second Orc, a third Bandit) without
+   * retyping HP/AC/stats/traits by hand. Deliberately resets everything
+   * about *this specific instance* rather than copying it verbatim: full
+   * HP (not whatever the source had taken), no conditions/exhaustion, no
+   * notes/quick notes/flagged reminders, not hidden — a fresh copy of the
+   * template, not a snapshot of an in-progress fight. `" (Copy)"` on the
+   * name makes the two cards tell apart at a glance until the DM renames it
+   * via the existing Edit form — this action intentionally does NOT open
+   * that form itself, so duplicating several at once doesn't interrupt with
+   * a modal each time.
+   */
+  const duplicateCreature = useCallback(
+    async (source: Creature): Promise<Creature> => {
+      return addCreature({
+        templateId: source.templateId,
+        templateName: source.templateName,
+        name: `${source.name} (Copy)`,
+        category: source.category,
+        avatarUrl: source.avatarUrl,
+        creatureType: source.creatureType,
+        size: source.size,
+        alignment: source.alignment,
+        ac: source.ac,
+        armorDesc: source.armorDesc,
+        hp: source.maxHp,
+        maxHp: source.maxHp,
+        hitDice: source.hitDice,
+        speed: source.speed,
+        speedDetail: source.speedDetail,
+        initiativeBonus: source.initiativeBonus,
+        stats: source.stats,
+        savingThrows: source.savingThrows,
+        senses: source.senses,
+        languages: source.languages,
+        challengeRating: source.challengeRating,
+        experiencePoints: source.experiencePoints,
+        skills: source.skills,
+        damageVulnerabilities: source.damageVulnerabilities,
+        damageResistances: source.damageResistances,
+        damageImmunities: source.damageImmunities,
+        conditionImmunities: source.conditionImmunities,
+        traits: source.traits,
+        ownerCharacterId: source.ownerCharacterId,
+        source: source.source,
+      });
+    },
+    [addCreature]
+  );
+
   const updateCreature = useCallback(async (id: string, updates: Partial<Creature>) => {
     setCreatures((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
     const updated = await patchCreature(id, updates);
@@ -78,5 +129,5 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     });
   }, []);
 
-  return { creatures, addCreature, updateCreature, removeCreature, reorderCreatures };
+  return { creatures, addCreature, duplicateCreature, updateCreature, removeCreature, reorderCreatures };
 }

@@ -29,12 +29,14 @@ export function CreatureDetailsModal({
   owner,
   onClose,
   onUpdate,
+  onDuplicate,
   onRemove,
 }: {
   creature: Creature;
   owner?: Character;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  onDuplicate?: () => void;
   onRemove?: (id: string) => void;
 }) {
   useEscapeToClose(onClose);
@@ -93,6 +95,7 @@ export function CreatureDetailsModal({
             name={creature.name}
             hidden={creature.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+            onDuplicate={onDuplicate}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}
           />
         </div>

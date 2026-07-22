@@ -20,6 +20,7 @@ export function NumberInput({
   placeholder,
   selectOnFocus,
   commitOnBlur,
+  deltaMode,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -38,6 +39,17 @@ export function NumberInput({
    * delays when the *parent* (and anything reading its state) finds out.
    */
   commitOnBlur?: boolean;
+  /**
+   * Lets a leading `+`/`-` mean "add/subtract from the current value"
+   * instead of "set to this" — e.g. typing `-8` on a creature at 20 HP
+   * commits 12, not a literal (and clamped-to-0) `-8`. A plain number typed
+   * with no sign still replaces the value wholesale, same as always — this
+   * is purely an extra way to type into the exact same field, not a second
+   * input. Only meaningful for a field where a bare negative value would
+   * never be a real target anyway (HP has `min: 0`), which is what makes the
+   * sign unambiguous as "this is a delta" rather than "this is the number".
+   */
+  deltaMode?: boolean;
 }) {
   const [text, setText] = useState(String(value));
   const [prevValue, setPrevValue] = useState(value);
@@ -53,22 +65,30 @@ export function NumberInput({
     return result;
   }
 
+  /** `raw` still carries its typed `+`/`-` prefix here (that's what makes delta-vs-absolute unambiguous) — `Number("+3")`/`Number("-8")` parse it fine either way. */
+  function resolve(raw: string): number {
+    const n = Number(raw) || 0;
+    if (deltaMode && (raw.startsWith("+") || raw.startsWith("-"))) return clamp(value + n);
+    return clamp(n);
+  }
+
   return (
     <input
       type="text"
       inputMode="numeric"
       placeholder={placeholder}
+      title={deltaMode ? "Type a number to set it, or +N/-N to add or subtract" : undefined}
       className={className}
       value={text}
       onFocus={selectOnFocus ? (e) => e.target.select() : undefined}
       onChange={(e) => {
         const raw = e.target.value;
-        if (!/^-?\d*$/.test(raw)) return;
+        if (!(deltaMode ? /^[+-]?\d*$/ : /^-?\d*$/).test(raw)) return;
         setText(raw);
-        if (!commitOnBlur && raw !== "" && raw !== "-") onChange(clamp(Number(raw)));
+        if (!commitOnBlur && raw !== "" && raw !== "-" && raw !== "+") onChange(resolve(raw));
       }}
       onBlur={() => {
-        const normalized = clamp(Number(text) || 0);
+        const normalized = resolve(text);
         setText(String(normalized));
         onChange(normalized);
       }}

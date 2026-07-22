@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
+import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
 /**
- * Kebab-triggered Sync/Edit/Hide/Remove menu shared by `CharacterCard`/
- * `CreatureCard` and their details modals — replaces what used to be a
- * standalone Edit link + Remove button in the card footer plus separate
- * pencil/trash icons in the modal, so the same actions live in one place
- * with one visual convention across all four call sites. `onSync` is
- * omitted entirely for creatures (no D&D Beyond link to sync from).
+ * Kebab-triggered Sync/Edit/Duplicate/Hide/Remove menu shared by
+ * `CharacterCard`/`CreatureCard` and their details modals — replaces what
+ * used to be a standalone Edit link + Remove button in the card footer plus
+ * separate pencil/trash icons in the modal, so the same actions live in one
+ * place with one visual convention across all four call sites. `onSync` is
+ * omitted entirely for creatures (no D&D Beyond link to sync from);
+ * `onDuplicate` is omitted for characters (cloning a D&D Beyond-linked
+ * character doesn't make sense — only `CreatureCard`/`CreatureDetailsModal`
+ * pass it).
  */
 export function EntityActionsMenu({
   editHref,
@@ -19,6 +22,7 @@ export function EntityActionsMenu({
   onToggleHidden,
   onSync,
   syncing,
+  onDuplicate,
   onRemove,
   variant = "plain",
 }: {
@@ -28,6 +32,7 @@ export function EntityActionsMenu({
   onToggleHidden?: () => void;
   onSync?: () => void;
   syncing?: boolean;
+  onDuplicate?: () => void;
   onRemove?: () => void;
   variant?: "boxed" | "plain";
 }) {
@@ -43,6 +48,12 @@ export function EntityActionsMenu({
         <PencilIcon className="h-4 w-4 shrink-0" />
         Edit
       </Link>
+      {onDuplicate && (
+        <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onDuplicate}>
+          <CopyIcon className="h-4 w-4 shrink-0" />
+          Duplicate
+        </button>
+      )}
       {onToggleHidden && (
         <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onToggleHidden}>
           {hidden ? <EyeIcon className="h-4 w-4 shrink-0" /> : <EyeOffIcon className="h-4 w-4 shrink-0" />}

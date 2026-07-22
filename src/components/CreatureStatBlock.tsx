@@ -57,9 +57,12 @@ function CreatureSkillPanel({ skill }: { skill: ParsedCreatureSkill }) {
 export function CreatureStatBlock({
   creature,
   onUpdate,
+  showActionGroups = true,
 }: {
   creature: Creature;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  /** Hides Traits/Actions/Bonus Actions/Reactions/Legendary Actions — the compact `CreatureCard` turns this off to keep cards short enough to tell apart at a glance mid-session; `CreatureDetailsModal` leaves it on (the default) so nothing is lost, just one click away. */
+  showActionGroups?: boolean;
 }) {
   const isDown = creature.hp <= 0;
   const flaggedTraits = creature.flaggedTraits ?? [];
@@ -232,7 +235,7 @@ export function CreatureStatBlock({
         </SectionDivider>
       )}
 
-      {groups.length > 0 && (
+      {showActionGroups && groups.length > 0 && (
         <SectionDivider className="space-y-3">
           {groups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
