@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Character, Creature } from "@/lib/types";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
-import { SectionDivider } from "./ui/SectionDivider";
 import { StatusRail } from "./ui/StatusRail";
 
 /**
@@ -53,6 +52,19 @@ export function CreatureCard({
 
       <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} />
 
+      {/* Kebab actions menu — own thin row right below the header (no sync
+          line to share it with, unlike `CharacterCard`), right-aligned so it
+          doesn't crowd the owner-avatar badge at the header row's edge. */}
+      <div className="flex items-center justify-end gap-1">
+        <EntityActionsMenu
+          editHref={`/creatures/${creature.id}/edit`}
+          name={creature.name}
+          hidden={creature.hidden}
+          onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+          onRemove={onRemove ? () => onRemove(creature.id) : undefined}
+        />
+      </div>
+
       <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
 
       <NotesSection notes={creature.notes ?? ""} />
@@ -61,24 +73,6 @@ export function CreatureCard({
         notes={creature.quickNotes ?? []}
         onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
       />
-
-      {onRemove && (
-        <SectionDivider className="flex items-center justify-end gap-3 text-xs">
-          <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
-            Edit
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
-              if (confirmed) onRemove(creature.id);
-            }}
-            className="text-red-500/80 hover:text-red-400"
-          >
-            Remove
-          </button>
-        </SectionDivider>
-      )}
 
       {detailsOpen && (
         <CreatureDetailsModal

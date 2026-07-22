@@ -118,6 +118,27 @@ export function PlusIcon({ className }: { className?: string }) {
   );
 }
 
+export function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M9.4 5.14A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a13.9 13.9 0 0 1-3.15 4.02M6.6 6.6C4.2 8.1 2 12 2 12a13.9 13.9 0 0 0 5.13 5.34A10.5 10.5 0 0 0 12 19"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function TrashIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>

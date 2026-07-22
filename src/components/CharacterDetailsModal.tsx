@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   Attack,
   Character,
@@ -29,7 +28,7 @@ import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, PencilIcon, ProficiencyIcon, ShieldIcon, SpeedIcon, TrashIcon } from "./ui/icons";
+import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
@@ -45,6 +44,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
+import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { TabBar } from "./ui/TabBar";
@@ -273,10 +273,10 @@ export function CharacterDetailsModal({
           </button>
         </div>
 
-        {/* Sync (left) + Edit/Delete (right) share one row, level with each
-            other — keeps the two icons off the header row above, where they
-            used to crowd the Heroic Inspiration star/owner badge at its
-            right edge. */}
+        {/* Sync (left) + kebab actions menu (right) share one row, level with
+            each other — keeps the menu off the header row above, where it
+            would crowd the Heroic Inspiration star at that row's right
+            edge. */}
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <DdbSyncStatus
@@ -288,30 +288,13 @@ export function CharacterDetailsModal({
               onSync={onUpdate ? sync : undefined}
             />
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <Link
-              href={`/characters/${c.id}/edit`}
-              aria-label="Edit"
-              title="Edit"
-              className="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-            >
-              <PencilIcon className="h-4 w-4" />
-            </Link>
-            {onRemove && (
-              <button
-                type="button"
-                onClick={() => {
-                  const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
-                  if (confirmed) onRemove(c.id);
-                }}
-                aria-label="Remove"
-                title="Remove"
-                className="rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          <EntityActionsMenu
+            editHref={`/characters/${c.id}/edit`}
+            name={c.name}
+            hidden={c.hidden}
+            onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+            onRemove={onRemove ? () => onRemove(c.id) : undefined}
+          />
         </div>
 
         {/* Combat state — same block as the main card (no divider above it, matching the card's own spacing between this and the sync block), so this modal is a superset of it rather than a different view. */}

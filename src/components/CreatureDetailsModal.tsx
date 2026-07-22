@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { NotesSection } from "./ui/NotesSection";
-import { PencilIcon, TrashIcon } from "./ui/icons";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
@@ -80,33 +79,18 @@ export function CreatureDetailsModal({
           </button>
         </div>
 
-        {/* Edit/Delete — same row-below-the-header placement as
+        {/* Kebab actions menu — same row-below-the-header placement as
             `CharacterDetailsModal`'s (there next to the sync line), kept off
             the header row above so it doesn't crowd the owner-avatar badge
             at that row's right edge. */}
         <div className="flex items-center justify-end gap-1">
-          <Link
-            href={`/creatures/${creature.id}/edit`}
-            aria-label="Edit"
-            title="Edit"
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Link>
-          {onRemove && (
-            <button
-              type="button"
-              onClick={() => {
-                const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
-                if (confirmed) onRemove(creature.id);
-              }}
-              aria-label="Remove"
-              title="Remove"
-              className="rounded-md p-1 text-red-500/80 hover:bg-slate-800 hover:text-red-400"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          )}
+          <EntityActionsMenu
+            editHref={`/creatures/${creature.id}/edit`}
+            name={creature.name}
+            hidden={creature.hidden}
+            onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+            onRemove={onRemove ? () => onRemove(creature.id) : undefined}
+          />
         </div>
 
         <CreatureStatBlock creature={creature} onUpdate={onUpdate} />

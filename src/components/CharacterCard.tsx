@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier, ordinalLevel } from "@/lib/format";
@@ -11,6 +10,7 @@ import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { ShieldIcon, SpeedIcon, InitiativeIcon, ProficiencyIcon } from "./ui/icons";
+import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
 import { StatBox } from "./ui/StatBox";
 import { IconStat } from "./ui/IconStat";
@@ -57,14 +57,29 @@ export function CharacterCard({
       {/* Header */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
 
-      <DdbSyncStatus
-        dndBeyondUrl={c.dndBeyondUrl}
-        synced={c.synced}
-        lastSyncedAt={c.lastSyncedAt}
-        syncing={syncing}
-        error={syncError}
-        onSync={onUpdate ? sync : undefined}
-      />
+      {/* Sync (left) + kebab actions menu (right) share one row, same
+          placement as the details modal's own sync+actions row — keeps the
+          menu off the header row above, where it would crowd the Heroic
+          Inspiration star at that row's right edge. */}
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <DdbSyncStatus
+            dndBeyondUrl={c.dndBeyondUrl}
+            synced={c.synced}
+            lastSyncedAt={c.lastSyncedAt}
+            syncing={syncing}
+            error={syncError}
+            onSync={onUpdate ? sync : undefined}
+          />
+        </div>
+        <EntityActionsMenu
+          editHref={`/characters/${c.id}/edit`}
+          name={c.name}
+          hidden={c.hidden}
+          onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+          onRemove={onRemove ? () => onRemove(c.id) : undefined}
+        />
+      </div>
 
       {/* Combat state */}
       <div>
@@ -254,23 +269,6 @@ export function CharacterCard({
         notes={c.quickNotes ?? []}
         onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
       />
-
-      <SectionDivider className="flex items-center justify-end gap-3 text-xs">
-        <Link href={`/characters/${c.id}/edit`} className="text-slate-400 hover:text-slate-200">
-          Edit
-        </Link>
-        {onRemove && (
-          <button
-            onClick={() => {
-              const confirmed = window.confirm(`Remove "${c.name}" from this campaign? This can't be undone.`);
-              if (confirmed) onRemove(c.id);
-            }}
-            className="text-red-500/80 hover:text-red-400"
-          >
-            Remove
-          </button>
-        )}
-      </SectionDivider>
 
       {detailsOpen && (
         <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} onRemove={onRemove} />

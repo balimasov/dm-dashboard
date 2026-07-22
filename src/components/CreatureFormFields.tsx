@@ -142,56 +142,20 @@ export function CreatureFormFields({
 
   return (
     <div className="space-y-6">
-      {/* Category & Ownership — up top since these change the most often
-          mid-campaign (a companion changing hands, an NPC turning hostile),
-          unlike the stat block below which is mostly set once and forgotten. */}
-      <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Category &amp; Ownership</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Field label="Category" hint="Which dashboard section it lives in.">
-            <select
-              className={inputCls}
-              value={value.category}
-              onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
-            >
-              {CREATURE_CATEGORY_ORDER.map((c) => (
-                <option key={c} value={c}>
-                  {CREATURE_CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Owner" hint="Which character summons/commands it — optional.">
-            <select
-              className={inputCls}
-              value={value.ownerCharacterId}
-              onChange={(e) => onChange({ ownerCharacterId: e.target.value })}
-            >
-              <option value="">— None —</option>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
-            <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
-          </Field>
-        </div>
-      </section>
+      {/* Portrait — leads the whole form, same as a person glancing at a
+          creature's card sees the avatar before anything else. */}
+      <div>
+        <label className="mb-1 block text-xs text-slate-400">Portrait</label>
+        <AvatarPicker
+          imageUrl={value.avatarUrl || undefined}
+          label={value.name.trim() || value.templateName.trim() || "?"}
+          onChange={(dataUrl) => onChange({ avatarUrl: dataUrl })}
+        />
+      </div>
 
-      {/* Basic Info */}
+      {/* Basic Info — what the creature *is*, right after the portrait. */}
       <section className="space-y-3">
         <h2 className="text-sm uppercase tracking-wide text-slate-500">Basic Info</h2>
-        <div>
-          <label className="mb-1 block text-xs text-slate-400">Portrait</label>
-          <AvatarPicker
-            imageUrl={value.avatarUrl || undefined}
-            label={value.name.trim() || value.templateName.trim() || "?"}
-            onChange={(dataUrl) => onChange({ avatarUrl: dataUrl })}
-          />
-        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
             <input
@@ -244,6 +208,45 @@ export function CreatureFormFields({
               value={value.experiencePoints}
               onChange={(e) => onChange({ experiencePoints: e.target.value })}
             />
+          </Field>
+        </div>
+      </section>
+
+      {/* Category & Ownership — these change often mid-campaign (a
+          companion changing hands, an NPC turning hostile), so they still
+          sit near the top rather than down with the rest of the stat block. */}
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-slate-500">Category &amp; Ownership</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <Field label="Category" hint="Which dashboard section it lives in.">
+            <select
+              className={inputCls}
+              value={value.category}
+              onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
+            >
+              {CREATURE_CATEGORY_ORDER.map((c) => (
+                <option key={c} value={c}>
+                  {CREATURE_CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Owner" hint="Which character summons/commands it — optional.">
+            <select
+              className={inputCls}
+              value={value.ownerCharacterId}
+              onChange={(e) => onChange({ ownerCharacterId: e.target.value })}
+            >
+              <option value="">— None —</option>
+              {characters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
+            <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
           </Field>
         </div>
       </section>
