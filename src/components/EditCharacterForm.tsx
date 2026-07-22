@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   AbilityScores,
   CATEGORY_LABELS,
@@ -242,7 +241,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
     setSaveError(null);
     try {
       await patchCharacter(draft.id, { ...draft, synced: true });
-      router.push(`/campaigns/${draft.campaignId}`);
+      router.back();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save character.");
       setSaving(false);
@@ -261,9 +260,9 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
       />
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold text-slate-50">Edit Character</h1>
-        <Link href={`/campaigns/${character.campaignId}`} className="text-sm text-slate-400 hover:text-slate-200">
+        <button type="button" onClick={() => router.back()} className="text-sm text-slate-400 hover:text-slate-200">
           ← Back to dashboard
-        </Link>
+        </button>
       </div>
 
       <div className="mb-6">
@@ -773,12 +772,13 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
         {saveError && <p className="text-sm text-red-400">{saveError}</p>}
 
         <div className="flex justify-end gap-3 pt-2">
-          <Link
-            href={`/campaigns/${character.campaignId}`}
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
           >
             Cancel
-          </Link>
+          </button>
           <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>

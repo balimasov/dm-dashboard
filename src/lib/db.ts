@@ -381,12 +381,23 @@ export function createCreature(input: Omit<Creature, "id" | "createdAt" | "updat
 export function updateCreature(id: string, updates: Partial<Creature>): Creature | null {
   const existing = getCreature(id);
   if (!existing) return null;
+  const now = new Date().toISOString();
   const updated: Creature = {
     ...existing,
     ...updates,
     id: existing.id,
-    createdAt: existing.createdAt,
-    updatedAt: new Date().toISOString(),
+    // A creature saved before this field existed has neither timestamp —
+    // `existing.createdAt` alone would stay permanently undefined, which
+    // made `CreatureTimestampStatus` fall back to `updatedAt` and label
+    // every future edit "Created" instead of "Edited" (no `createdAt` to
+    // differ from). Backfilling from whatever timestamp we DO have on
+    // record — the creature's last known `updatedAt`, or `now` if it has
+    // neither — anchors `createdAt` on this update so every edit after this
+    // one reads correctly; reusing the single `now` for both fields in the
+    // "neither exists yet" case keeps them equal so this first tracked edit
+    // still shows as "Created", same as a brand-new creature would.
+    createdAt: existing.createdAt ?? existing.updatedAt ?? now,
+    updatedAt: now,
   };
   getDb().prepare("UPDATE creatures SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
   return updated;

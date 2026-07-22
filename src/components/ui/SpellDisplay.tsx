@@ -128,19 +128,30 @@ export function SpellHintPanel({
  * way as a weapon's, without opening the hint. Replaces the old plain
  * components (V/S/M) badge here — that's prep-time info, not something a DM
  * needs mid-fight, and now lives in the hint instead (see `SpellHintPanel`).
+ *
+ * Only shows `effect` when `effectType` is there too (a real damage/healing
+ * die, e.g. "4d6 Fire"/"2d8 Healing") — `formatEffect` in `ddbParser/spells.ts`
+ * falls back to a bare D&D Beyond classification tag ("Control", "Buff", ...)
+ * with no `effectType` when a spell has no dice-based effect at all, and that
+ * bare tag cluttered every row it showed up on without saying anything a DM
+ * needs mid-fight the way a real damage/healing number does. Still shown in
+ * the hint (`SpellHintPanel`) — worth a line once you've opened it, just not
+ * worth a permanent spot on every row.
+ *
  * Renders nothing for a spell with neither (most passive/utility spells with
  * no attack/save and no dice-based effect this data can summarize).
  */
 export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
-  if (!spell.hitOrDc && !spell.effect) return null;
+  const hasEffect = Boolean(spell.effect && spell.effectType);
+  if (!spell.hitOrDc && !hasEffect) return null;
   return (
     <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
       {spell.hitOrDc && <span className="font-semibold text-slate-100">{spell.hitOrDc}</span>}
-      {spell.hitOrDc && spell.effect && <span className="text-sm font-bold leading-none text-slate-500">·</span>}
-      {spell.effect && (
+      {spell.hitOrDc && hasEffect && <span className="text-sm font-bold leading-none text-slate-500">·</span>}
+      {hasEffect && (
         <span className="flex items-baseline gap-1">
           <span className="font-semibold text-slate-100">{spell.effect}</span>
-          {spell.effectType && <span className="text-[10px] text-slate-500">{spell.effectType}</span>}
+          <span className="text-[10px] text-slate-500">{spell.effectType}</span>
         </span>
       )}
     </span>

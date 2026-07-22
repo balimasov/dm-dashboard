@@ -6,6 +6,7 @@ import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
+import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./ui/icons";
 
 export function SortableCharacterRow({
   character,
@@ -26,25 +27,35 @@ export function SortableCharacterRow({
       dimmed={character.hidden}
       avatar={<CharacterAvatar character={character} />}
       actions={
-        <div className="flex items-center gap-3">
-          <Link href={`/characters/${character.id}/edit`} className="text-slate-400 hover:text-slate-200">
-            Edit
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/characters/${character.id}/edit`}
+            title="Edit"
+            aria-label="Edit"
+            className="rounded p-1 text-slate-400 hover:text-slate-200"
+          >
+            <PencilIcon className="h-4 w-4" />
           </Link>
           <button
             type="button"
             onClick={() => onToggleHidden(character.id)}
-            className="text-slate-400 hover:text-slate-200"
+            title={character.hidden ? "Show" : "Hide"}
+            aria-label={character.hidden ? "Show" : "Hide"}
+            className="rounded p-1 text-slate-400 hover:text-slate-200"
           >
-            {character.hidden ? "Show" : "Hide"}
+            {character.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
           </button>
           <button
+            type="button"
             onClick={() => {
               const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
               if (confirmed) onRemove(character.id);
             }}
-            className="text-red-500/80 hover:text-red-400"
+            title="Remove"
+            aria-label="Remove"
+            className="rounded p-1 text-red-500/80 hover:text-red-400"
           >
-            Remove
+            <TrashIcon className="h-4 w-4" />
           </button>
         </div>
       }

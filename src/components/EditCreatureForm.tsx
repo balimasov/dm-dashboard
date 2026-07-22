@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Character, Creature } from "@/lib/types";
 import { CreatureFormFields, CreatureFormValue } from "@/components/CreatureFormFields";
 import { creatureToFormValue, formValueToCreatureUpdates } from "@/lib/creatureForm";
@@ -36,7 +35,7 @@ export function EditCreatureForm({
     setSaveError(null);
     try {
       await patchCreature(creature.id, formValueToCreatureUpdates(draft));
-      router.push(`/campaigns/${creature.campaignId}`);
+      router.back();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save creature.");
       setSaving(false);
@@ -55,9 +54,9 @@ export function EditCreatureForm({
       />
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-50">Edit Creature</h1>
-        <Link href={`/campaigns/${creature.campaignId}`} className="text-sm text-slate-400 hover:text-slate-200">
+        <button type="button" onClick={() => router.back()} className="text-sm text-slate-400 hover:text-slate-200">
           ← Back to dashboard
-        </Link>
+        </button>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -66,12 +65,13 @@ export function EditCreatureForm({
         {saveError && <p className="text-sm text-red-400">{saveError}</p>}
 
         <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
-          <Link
-            href={`/campaigns/${creature.campaignId}`}
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
           >
             Cancel
-          </Link>
+          </button>
           <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>

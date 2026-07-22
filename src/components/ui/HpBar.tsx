@@ -142,6 +142,7 @@ export function HpBar({
                   min={0}
                   selectOnFocus
                   commitOnBlur
+                  deltaMode
                   className="w-9 rounded-md border border-slate-700 bg-transparent px-1 py-0.5 text-right leading-none outline-none hover:border-amber-700 focus:border-amber-500 focus:bg-slate-800"
                 />
                 THP)

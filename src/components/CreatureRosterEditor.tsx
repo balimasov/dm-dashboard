@@ -38,6 +38,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
+import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 
@@ -377,11 +378,13 @@ function CreatureRow({
   characters,
   onRemove,
   onToggleHidden,
+  onDuplicate,
 }: {
   creature: Creature;
   characters: Character[];
   onRemove: (id: string) => Promise<void>;
   onToggleHidden: (id: string) => void;
+  onDuplicate: (creature: Creature) => void;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
   const infoLine = creatureInfoLine(creature);
@@ -401,11 +404,26 @@ function CreatureRow({
       }
       actions={
         <>
-          <Link href={`/creatures/${creature.id}/edit`} className="text-slate-400 hover:text-slate-200">
-            Edit
+          <Link href={`/creatures/${creature.id}/edit`} title="Edit" aria-label="Edit" className="rounded p-1 text-slate-400 hover:text-slate-200">
+            <PencilIcon className="h-4 w-4" />
           </Link>
-          <button type="button" onClick={() => onToggleHidden(creature.id)} className="text-slate-400 hover:text-slate-200">
-            {creature.hidden ? "Show" : "Hide"}
+          <button
+            type="button"
+            onClick={() => onDuplicate(creature)}
+            title="Duplicate"
+            aria-label="Duplicate"
+            className="rounded p-1 text-slate-400 hover:text-slate-200"
+          >
+            <CopyIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleHidden(creature.id)}
+            title={creature.hidden ? "Show" : "Hide"}
+            aria-label={creature.hidden ? "Show" : "Hide"}
+            className="rounded p-1 text-slate-400 hover:text-slate-200"
+          >
+            {creature.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
           </button>
           <button
             type="button"
@@ -413,9 +431,11 @@ function CreatureRow({
               const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
               if (confirmed) onRemove(creature.id);
             }}
-            className="text-red-500/80 hover:text-red-400"
+            title="Remove"
+            aria-label="Remove"
+            className="rounded p-1 text-red-500/80 hover:text-red-400"
           >
-            Remove
+            <TrashIcon className="h-4 w-4" />
           </button>
         </>
       }
@@ -459,11 +479,20 @@ export function CreatureRosterEditor({
   creaturesState: ReturnType<typeof useCreatures>;
   characters: Character[];
 }) {
-  const { creatures, addCreature, removeCreature, reorderCreatures, updateCreature } = creaturesState;
+  const { creatures, addCreature, duplicateCreature, removeCreature, reorderCreatures, updateCreature } = creaturesState;
 
   function handleToggleHidden(id: string) {
     const creature = creatures.find((c) => c.id === id);
     if (creature) updateCreature(id, { hidden: !creature.hidden });
+  }
+
+  async function handleDuplicate(creature: Creature) {
+    try {
+      const copy = await duplicateCreature(creature);
+      setToast({ message: `Duplicated "${creature.name}" as "${copy.name}".`, variant: "success" });
+    } catch {
+      setToast({ message: `Failed to duplicate "${creature.name}".`, variant: "error" });
+    }
   }
 
   const inCategory = creatures.filter((c) => c.category === category);
@@ -566,6 +595,7 @@ export function CreatureRosterEditor({
                   characters={characters}
                   onRemove={removeCreature}
                   onToggleHidden={handleToggleHidden}
+                  onDuplicate={handleDuplicate}
                 />
               ))}
             </ul>

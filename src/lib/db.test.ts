@@ -378,4 +378,48 @@ describe("createCreature / updateCreature — createdAt/updatedAt stamping", () 
     expect(updated?.updatedAt).not.toBe(created.updatedAt);
     expect(updated?.hp).toBe(5);
   });
+
+  it("backfills createdAt on first update for a creature saved before this field existed", async () => {
+    const created = db.createCreature({
+      campaignId: "campaign-creature-3",
+      category: "enemy",
+      templateName: "Goblin",
+      name: "Goblin",
+      ac: 15,
+      hp: 7,
+      maxHp: 7,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+    });
+
+    // Simulate a row saved before `createdAt`/`updatedAt` existed — directly
+    // strip them from the stored JSON, bypassing `updateCreature` (which
+    // would otherwise refuse to ever unset them).
+    const Database = (await import("better-sqlite3")).default;
+    const rawDb = new Database(path.join(process.env.DATA_DIR!, "dm-dashboard.sqlite"));
+    const row = rawDb.prepare("SELECT data FROM creatures WHERE id = ?").get(created.id) as { data: string };
+    const legacy = JSON.parse(row.data);
+    delete legacy.createdAt;
+    delete legacy.updatedAt;
+    rawDb.prepare("UPDATE creatures SET data = ? WHERE id = ?").run(JSON.stringify(legacy), created.id);
+    rawDb.close();
+
+    await tick();
+    const firstEdit = db.updateCreature(created.id, { hp: 4 });
+    // Neither timestamp existed yet — this first tracked edit anchors both
+    // to the same value, so it still reads as "Created", not "Edited".
+    expect(firstEdit?.createdAt).toBeTruthy();
+    expect(firstEdit?.updatedAt).toBe(firstEdit?.createdAt);
+
+    await tick();
+    const secondEdit = db.updateCreature(created.id, { hp: 3 });
+    // From here on, createdAt stays anchored and updatedAt keeps advancing —
+    // this is the "Edited" case the timestamp badge should now show.
+    expect(secondEdit?.createdAt).toBe(firstEdit?.createdAt);
+    expect(secondEdit?.updatedAt).not.toBe(firstEdit?.updatedAt);
+  });
 });
