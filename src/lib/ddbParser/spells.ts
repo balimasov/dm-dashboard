@@ -1,6 +1,84 @@
-import { AbilityScores, KnownSpell, SpellSlotLevel } from "../types";
-import { ABILITY_BY_ID, abilityModifier, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription } from "./shared";
+import { AbilityScores, KnownSpell, SpellcastingStats, SpellSlotLevel } from "../types";
+import { formatModifier } from "../format";
+import { ABILITY_BY_ID, abilityModifier, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
+
+const ABILITY_ABBR: Record<number, string> = { 1: "STR", 2: "DEX", 3: "CON", 4: "INT", 5: "WIS", 6: "CHA" };
+
+/** D&D Beyond's own `activation.activationType` codes for a spell's casting time — 1/2 are both plain "action" (2, "no action", is rare enough on real spells not to distinguish), 3 is bonus action, 4 is reaction, 6/7 are minute-/hour-long rituals and long castings. Same convention `Feature.group`'s activation grouping uses, just kept as a real duration string here instead of a bucket name since a spell's hint has room to say "1 bonus action" outright. */
+const ACTIVATION_UNIT: Record<number, string> = {
+  1: "action",
+  2: "action",
+  3: "bonus action",
+  4: "reaction",
+  6: "minute",
+  7: "hour",
+};
+
+function formatCastingTime(activation: RawDdbAny): string | undefined {
+  const unit = ACTIVATION_UNIT[activation?.activationType];
+  if (!unit) return undefined;
+  const time = activation.activationTime || 1;
+  return `${time} ${unit}${time === 1 ? "" : "s"}`;
+}
+
+/** `origin` is "Self"/"Touch" for those two special cases, otherwise a plain distance in `rangeValue` — an area spell (`aoeType`/`aoeValue` set, e.g. Fireball's 20 ft. Sphere) appends its shape/size, matching the parenthetical D&D Beyond itself shows next to the base range. */
+function formatRange(range: RawDdbAny): string | undefined {
+  if (!range) return undefined;
+  const base: string | undefined =
+    range.origin === "Self" ? "Self" : range.origin === "Touch" ? "Touch" : range.rangeValue ? `${range.rangeValue} ft.` : range.origin || undefined;
+  if (!base) return undefined;
+  return range.aoeType && range.aoeValue ? `${base} (${range.aoeValue} ft. ${range.aoeType})` : base;
+}
+
+/**
+ * A spell's own `saveDcAbilityId` names *which ability the target rolls* (a
+ * fixed rule per spell, e.g. Fireball is always a Dex save) — it's not the
+ * caster's spellcasting ability, so it only supplies the ability-abbreviation
+ * half of the DC text. The DC *number* itself always comes from the caster's
+ * own `spellcasting.saveDc` (computed once per character in
+ * `computeSpellcastingStats`), the same for every spell they know.
+ */
+function formatHitOrDc(df: RawDdbAny, spellcasting: SpellcastingStats | undefined): string | undefined {
+  if (!spellcasting) return undefined;
+  if (df.requiresAttackRoll) return formatModifier(spellcasting.attack);
+  if (df.requiresSavingThrow) {
+    const abbr = ABILITY_ABBR[df.saveDcAbilityId as number];
+    return abbr ? `DC ${spellcasting.saveDc} ${abbr}` : `DC ${spellcasting.saveDc}`;
+  }
+  return undefined;
+}
+
+/**
+ * D&D Beyond's spell definitions never carry a plain "damage dice" field —
+ * the actual roll lives inside `modifiers`, as a `type: "damage"` entry (its
+ * `die.diceString` + `friendlySubtypeName` giving e.g. "8d6 Fire" for
+ * Fireball) or, for healing, a `type: "bonus", subType: "hit-points"` entry
+ * (confirmed on Cure Wounds: "2d8" with no damage type, hence the plain
+ * "Healing" label). A spell with neither — most buffs, control, and utility
+ * effects — falls back to its first D&D Beyond classification tag (e.g.
+ * "Buff", "Control") as the closest one-word summary this data offers.
+ */
+function formatEffect(df: RawDdbAny): string | undefined {
+  const mods: RawDdbAny[] = df.modifiers ?? [];
+  const damageMod = mods.find((m) => m.type === "damage" && m.die?.diceString);
+  if (damageMod) return `${damageMod.die.diceString} ${damageMod.friendlySubtypeName || titleCase(damageMod.subType ?? "")}`.trim();
+  const healMod = mods.find((m) => m.type === "bonus" && m.subType === "hit-points" && m.die?.diceString);
+  if (healMod) return `${healMod.die.diceString} Healing`;
+  return (df.tags ?? [])[0] || undefined;
+}
+
+/** D&D Beyond's "Notes" column, duration half (components/material already surface separately via `components`/`materialComponent`) — `durationType` "Instantaneous" and the open-ended "Until Dispelled(...)" cases stand alone, everything else pairs `durationInterval`+`durationUnit` into a real duration string, prefixed "Concentration, " when `durationType` is "Concentration". */
+function formatDuration(duration: RawDdbAny): string | undefined {
+  if (!duration?.durationType) return undefined;
+  if (duration.durationType === "Instantaneous") return "Instantaneous";
+  if (duration.durationUnit && duration.durationInterval) {
+    const unit = String(duration.durationUnit).toLowerCase();
+    const time = `${duration.durationInterval} ${unit}${duration.durationInterval === 1 ? "" : "s"}`;
+    return duration.durationType === "Concentration" ? `Concentration, ${time}` : time;
+  }
+  return duration.durationType;
+}
 
 /**
  * A third-caster subclass (Arcane Trickster, Eldritch Knight) is where
@@ -53,7 +131,8 @@ export function computeSpells(
   profBonus: number,
   level: number,
   speed: number,
-  spellSlots: SpellSlotLevel[]
+  spellSlots: SpellSlotLevel[],
+  spellcasting: SpellcastingStats | undefined
 ): KnownSpell[] {
   const spells: KnownSpell[] = [];
   const seenKeys = new Set<string>();
@@ -105,6 +184,11 @@ export function computeSpells(
       // uses (see `ddbParser/features.ts`'s own doc comment) — 4 is reaction,
       // confirmed on real Shield/Counterspell exports.
       ...(df.activation?.activationType === 4 ? { isReaction: true } : {}),
+      ...(formatCastingTime(df.activation) ? { castingTime: formatCastingTime(df.activation) } : {}),
+      ...(formatRange(df.range) ? { range: formatRange(df.range) } : {}),
+      ...(formatHitOrDc(df, spellcasting) ? { hitOrDc: formatHitOrDc(df, spellcasting) } : {}),
+      ...(formatEffect(df) ? { effect: formatEffect(df) } : {}),
+      ...(formatDuration(df.duration) ? { duration: formatDuration(df.duration) } : {}),
     };
     spells.push(spell);
   }

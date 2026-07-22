@@ -72,6 +72,7 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
   const resources = computeResources(data, abilities, profBonus, level, speed);
   const senses = computeSenses(mods);
   const spellSlots = computeSpellSlots(data);
+  const spellcasting = computeSpellcastingStats(data, abilities, profBonus);
 
   return {
     ...existing,
@@ -105,8 +106,8 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
     stats: abilities,
     resources,
     spellSlots,
-    spellcasting: computeSpellcastingStats(data, abilities, profBonus),
-    knownSpells: computeSpells(data, abilities, profBonus, level, speed, spellSlots),
+    spellcasting,
+    knownSpells: computeSpells(data, abilities, profBonus, level, speed, spellSlots, spellcasting),
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     attacks: computeAttacks(data, abilities, profBonus, mods),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),

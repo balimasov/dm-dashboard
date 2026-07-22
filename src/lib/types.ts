@@ -77,6 +77,16 @@ export interface KnownSpell {
   isAreaEffect?: boolean;
   /** Cast as a Reaction (`activation.activationType === 4`) — same activation-type convention `Feature.group`'s "reaction" bucket already uses. */
   isReaction?: boolean;
+  /** e.g. "1 action", "1 bonus action", "1 reaction", "1 minute" — D&D Beyond's own "Time" column, shown in the hint since a spell's Action/Bonus Action/Reaction split isn't visible anywhere else on the card. */
+  castingTime?: string;
+  /** e.g. "Self", "Touch", "150 ft.", "150 ft. (20 ft. Sphere)" for an area spell — D&D Beyond's "Range" column. */
+  range?: string;
+  /** The attack bonus (e.g. "+6") for a spell requiring an attack roll, or the save DC + ability (e.g. "DC 15 DEX") for one requiring a saving throw — D&D Beyond's "Hit/DC" column. Absent for a spell that's neither (most buffs/utility). */
+  hitOrDc?: string;
+  /** The spell's primary damage/healing dice + type (e.g. "8d6 Fire", "2d8 Healing"), read off its own `modifiers` — falls back to its first D&D Beyond classification tag (e.g. "Buff", "Control") when it deals no dice-based effect, since that's the closest this data gets to a one-word summary for those. D&D Beyond's "Effect" column. */
+  effect?: string;
+  /** e.g. "Instantaneous", "1 round", "Concentration, 1 minute", "Until Dispelled" — D&D Beyond's "Notes" column (duration half of it; components/material already surface via `components`/`materialComponent`). */
+  duration?: string;
 }
 
 export interface Feature {

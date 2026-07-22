@@ -574,8 +574,13 @@ export function CharacterDetailsModal({
                                     <AbilityHintPanel
                                       name={spell.name}
                                       subtitle={spell.school}
-                                      metaLines={[[spell.source, spell.components].filter(Boolean).join(" · ")]}
-                                      note={spell.materialComponent && `Material: ${spell.materialComponent}`}
+                                      metaLines={[
+                                        [spell.source, spell.components].filter(Boolean).join(" · "),
+                                        [spell.castingTime, spell.range, spell.hitOrDc, spell.effect].filter(Boolean).join(" · "),
+                                      ]}
+                                      note={[spell.duration, spell.materialComponent && `Material: ${spell.materialComponent}`]
+                                        .filter(Boolean)
+                                        .join(" · ")}
                                       status={spell.max !== undefined && recoveryStatus(spell.recovery!)}
                                       description={spell.description}
                                     />

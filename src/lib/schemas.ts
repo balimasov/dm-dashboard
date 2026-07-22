@@ -55,6 +55,11 @@ const knownSpellSchema = z.object({
   tags: z.array(z.string()).optional(),
   isAreaEffect: z.boolean().optional(),
   isReaction: z.boolean().optional(),
+  castingTime: z.string().optional(),
+  range: z.string().optional(),
+  hitOrDc: z.string().optional(),
+  effect: z.string().optional(),
+  duration: z.string().optional(),
 });
 
 const featureSchema = z.object({

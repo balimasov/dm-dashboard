@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseDdbCharacter } from "./ddbParser";
 import { Character } from "./types";
+import { formatModifier } from "./format";
 
 const FIXTURES_DIR = path.join(__dirname, "__fixtures__");
 const blank = { id: "x", campaignId: "x", name: "" } as unknown as Character;
@@ -224,6 +225,44 @@ describe("spell tags/isAreaEffect/isReaction — Party Toolkit coverage categori
   test("Cure Wounds carries the Healing tag", () => {
     const c = load("durgin-cleric");
     expect(c.knownSpells.find((s) => s.name === "Cure Wounds")?.tags).toEqual(["Healing"]);
+  });
+});
+
+describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matches D&D Beyond's own Time/Range/Hit-DC/Effect/Notes columns", () => {
+  test("Fireball: 1 action, ranged+AOE, save DC, damage dice, instantaneous", () => {
+    const c = load("yorun-all-immunities");
+    const fireball = c.knownSpells.find((s) => s.name === "Fireball");
+    expect(fireball?.castingTime).toBe("1 action");
+    expect(fireball?.range).toBe("150 ft. (20 ft. Sphere)");
+    expect(fireball?.hitOrDc).toBe(`DC ${c.spellcasting!.saveDc} DEX`);
+    expect(fireball?.effect).toBe("8d6 Fire");
+    expect(fireball?.duration).toBe("Instantaneous");
+  });
+
+  test("Fire Bolt: attack roll instead of a save DC", () => {
+    const c = load("yorun-all-immunities");
+    const fireBolt = c.knownSpells.find((s) => s.name === "Fire Bolt");
+    expect(fireBolt?.hitOrDc).toBe(formatModifier(c.spellcasting!.attack));
+  });
+
+  test("Cure Wounds: touch range, healing dice fall back to a plain 'Healing' label", () => {
+    const c = load("durgin-cleric");
+    const cureWounds = c.knownSpells.find((s) => s.name === "Cure Wounds");
+    expect(cureWounds?.range).toBe("Touch");
+    expect(cureWounds?.effect).toBe("2d8 Healing");
+    expect(cureWounds?.duration).toBe("Instantaneous");
+  });
+
+  test("Shield: reaction casting time, no dice-based effect falls back to its own D&D Beyond tag", () => {
+    const c = load("yorun-all-immunities");
+    const shield = c.knownSpells.find((s) => s.name === "Shield");
+    expect(shield?.castingTime).toBe("1 reaction");
+    expect(shield?.effect).toBeTruthy();
+  });
+
+  test("Bless: concentration duration formatted as 'Concentration, 1 minute'", () => {
+    const c = load("durgin-cleric");
+    expect(c.knownSpells.find((s) => s.name === "Bless")?.duration).toBe("Concentration, 1 minute");
   });
 });
 
