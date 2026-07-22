@@ -12,6 +12,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { AttackHintPanel } from "./ui/AttackDisplay";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
+import { SpellHintPanel } from "./ui/SpellDisplay";
 
 const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Trait",
@@ -87,16 +88,7 @@ function characterReminders(character: Character): ReminderGroup | null {
       .map((s) => ({
         name: s.name,
         label: s.name,
-        panel: (
-          <AbilityHintPanel
-            name={s.name}
-            subtitle={s.school}
-            metaLines={[[s.source, s.components].filter(Boolean).join(" · ")]}
-            note={s.materialComponent && `Material: ${s.materialComponent}`}
-            description={s.description}
-            emptyDescription="No description."
-          />
-        ),
+        panel: <SpellHintPanel spell={s} />,
         kind: "spells" as const,
       })),
     ...dedupeInventoryItems(character.inventory.filter((item) => item.category === "Consumable"))

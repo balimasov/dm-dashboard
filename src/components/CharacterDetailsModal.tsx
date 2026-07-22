@@ -47,6 +47,7 @@ import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
 import { TabBar } from "./ui/TabBar";
 
 function spellLevelLabel(level: number): string {
@@ -67,11 +68,6 @@ function ChargeBadge({ current, max, recovery }: { current: number; max: number;
       <RecoveryBadge recovery={recovery} />
     </span>
   );
-}
-
-/** Small muted tag showing where a Feature/Spell comes from — kept separate from ChargeBadge so usage (right edge) and origin (this) never share the same slot. */
-function TypeTag({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{children}</span>;
 }
 
 /** Same "when does this come back" status line every other `AbilityHintPanel` shows for a pool-kind resource (Party Toolkit's Resources & Coverage, Actions & Resources) — only for a Feature/Spell that has its own charge pool (`ChargeBadge` already shown on the row), since one with no pool has nothing to recover. */
@@ -562,7 +558,7 @@ export function CharacterDetailsModal({
                                 onToggleFlag={() => toggleFlag(spell.name)}
                                 trailing={
                                   <>
-                                    {spell.components && <TypeTag>{spell.components}</TypeTag>}
+                                    <SpellTrailing spell={spell} />
                                     {spell.max !== undefined && (
                                       <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
                                     )}
@@ -571,19 +567,7 @@ export function CharacterDetailsModal({
                               >
                                 <InfoTooltip
                                   panel={
-                                    <AbilityHintPanel
-                                      name={spell.name}
-                                      subtitle={spell.school}
-                                      metaLines={[
-                                        [spell.source, spell.components].filter(Boolean).join(" · "),
-                                        [spell.castingTime, spell.range, spell.hitOrDc, spell.effect].filter(Boolean).join(" · "),
-                                      ]}
-                                      note={[spell.duration, spell.materialComponent && `Material: ${spell.materialComponent}`]
-                                        .filter(Boolean)
-                                        .join(" · ")}
-                                      status={spell.max !== undefined && recoveryStatus(spell.recovery!)}
-                                      description={spell.description}
-                                    />
+                                    <SpellHintPanel spell={spell} status={spell.max !== undefined && recoveryStatus(spell.recovery!)} />
                                   }
                                 >
                                   {spell.name}

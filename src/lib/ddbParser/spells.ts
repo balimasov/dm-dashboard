@@ -59,13 +59,17 @@ function formatHitOrDc(df: RawDdbAny, spellcasting: SpellcastingStats | undefine
  * effects — falls back to its first D&D Beyond classification tag (e.g.
  * "Buff", "Control") as the closest one-word summary this data offers.
  */
-function formatEffect(df: RawDdbAny): string | undefined {
+function formatEffect(df: RawDdbAny): { value: string; type?: string } | undefined {
   const mods: RawDdbAny[] = df.modifiers ?? [];
   const damageMod = mods.find((m) => m.type === "damage" && m.die?.diceString);
-  if (damageMod) return `${damageMod.die.diceString} ${damageMod.friendlySubtypeName || titleCase(damageMod.subType ?? "")}`.trim();
+  if (damageMod) {
+    const type = damageMod.friendlySubtypeName || titleCase(damageMod.subType ?? "");
+    return { value: damageMod.die.diceString, ...(type ? { type } : {}) };
+  }
   const healMod = mods.find((m) => m.type === "bonus" && m.subType === "hit-points" && m.die?.diceString);
-  if (healMod) return `${healMod.die.diceString} Healing`;
-  return (df.tags ?? [])[0] || undefined;
+  if (healMod) return { value: healMod.die.diceString, type: "Healing" };
+  const tag = (df.tags ?? [])[0];
+  return tag ? { value: tag } : undefined;
 }
 
 /** D&D Beyond's "Notes" column, duration half (components/material already surface separately via `components`/`materialComponent`) — `durationType` "Instantaneous" and the open-ended "Until Dispelled(...)" cases stand alone, everything else pairs `durationInterval`+`durationUnit` into a real duration string, prefixed "Concentration, " when `durationType` is "Concentration". */
@@ -164,6 +168,7 @@ export function computeSpells(
     const rawDescription = shortDescription(df.snippet, df.description);
     const components: number[] = df.components ?? [];
     const tags: string[] = df.tags ?? [];
+    const effect = formatEffect(df);
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
@@ -187,7 +192,7 @@ export function computeSpells(
       ...(formatCastingTime(df.activation) ? { castingTime: formatCastingTime(df.activation) } : {}),
       ...(formatRange(df.range) ? { range: formatRange(df.range) } : {}),
       ...(formatHitOrDc(df, spellcasting) ? { hitOrDc: formatHitOrDc(df, spellcasting) } : {}),
-      ...(formatEffect(df) ? { effect: formatEffect(df) } : {}),
+      ...(effect ? { effect: effect.value, ...(effect.type ? { effectType: effect.type } : {}) } : {}),
       ...(formatDuration(df.duration) ? { duration: formatDuration(df.duration) } : {}),
     };
     spells.push(spell);

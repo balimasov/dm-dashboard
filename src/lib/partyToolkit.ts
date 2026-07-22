@@ -361,6 +361,21 @@ export interface PartySpellEntry {
   source?: string;
   /** Short rules blurb for the hover hint — taken from whichever holder's copy has one first, since the same spell's text doesn't vary by character. */
   description?: string;
+  /**
+   * Casting time/range/duration/effect are fixed rules facts of the spell
+   * itself (same for every holder), so — like `school`/`components`/
+   * `source`/`description` above — they're taken from whichever holder's
+   * copy has one first. Deliberately excludes `KnownSpell.hitOrDc`: an
+   * attack bonus or save DC depends on the *caster's* own spellcasting
+   * stats, so it genuinely differs between two characters who both know the
+   * same spell — there's no single correct value to show on a row that's
+   * already collapsed multiple holders into one.
+   */
+  castingTime?: string;
+  range?: string;
+  duration?: string;
+  effect?: string;
+  effectType?: string;
   holders: CoverageHolder[];
 }
 
@@ -402,6 +417,11 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
         existing.materialComponent ??= spell.materialComponent;
         existing.source ??= spell.source;
         existing.description ??= spell.description;
+        existing.castingTime ??= spell.castingTime;
+        existing.range ??= spell.range;
+        existing.duration ??= spell.duration;
+        existing.effect ??= spell.effect;
+        existing.effectType ??= spell.effectType;
       } else {
         levelMap.set(key, {
           name: spell.name,
@@ -411,6 +431,11 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
           materialComponent: spell.materialComponent,
           source: spell.source,
           description: spell.description,
+          castingTime: spell.castingTime,
+          range: spell.range,
+          duration: spell.duration,
+          effect: spell.effect,
+          effectType: spell.effectType,
           holders: [holder],
         });
       }

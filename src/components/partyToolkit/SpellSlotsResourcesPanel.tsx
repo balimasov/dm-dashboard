@@ -25,6 +25,7 @@ import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { ConsumableQuantity } from "../ui/ConsumableQuantity";
 import { ItemHintPanel } from "../ui/ItemHintPanel";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
+import { SpellHintPanel, SpellTrailing } from "../ui/SpellDisplay";
 import { TabBar } from "../ui/TabBar";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
@@ -80,20 +81,11 @@ function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
       <div className="min-w-0 flex-1">
-        <InfoTooltip
-          panel={
-            <AbilityHintPanel
-              name={spell.name}
-              subtitle={spell.school}
-              metaLines={[[spell.source, spell.components].filter(Boolean).join(" · ")]}
-              note={spell.materialComponent && `Material: ${spell.materialComponent}`}
-              description={spell.description}
-            />
-          }
-        >
+        <InfoTooltip panel={<SpellHintPanel spell={spell} />}>
           <span className="text-slate-300">{spell.name}</span>
         </InfoTooltip>
       </div>
+      <SpellTrailing spell={spell} />
       <CharacterChipRow holders={spell.holders} />
     </div>
   );

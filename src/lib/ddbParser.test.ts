@@ -235,7 +235,8 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
     expect(fireball?.castingTime).toBe("1 action");
     expect(fireball?.range).toBe("150 ft. (20 ft. Sphere)");
     expect(fireball?.hitOrDc).toBe(`DC ${c.spellcasting!.saveDc} DEX`);
-    expect(fireball?.effect).toBe("8d6 Fire");
+    expect(fireball?.effect).toBe("8d6");
+    expect(fireball?.effectType).toBe("Fire");
     expect(fireball?.duration).toBe("Instantaneous");
   });
 
@@ -249,7 +250,8 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
     const c = load("durgin-cleric");
     const cureWounds = c.knownSpells.find((s) => s.name === "Cure Wounds");
     expect(cureWounds?.range).toBe("Touch");
-    expect(cureWounds?.effect).toBe("2d8 Healing");
+    expect(cureWounds?.effect).toBe("2d8");
+    expect(cureWounds?.effectType).toBe("Healing");
     expect(cureWounds?.duration).toBe("Instantaneous");
   });
 
@@ -258,6 +260,7 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
     const shield = c.knownSpells.find((s) => s.name === "Shield");
     expect(shield?.castingTime).toBe("1 reaction");
     expect(shield?.effect).toBeTruthy();
+    expect(shield?.effectType).toBeUndefined();
   });
 
   test("Bless: concentration duration formatted as 'Concentration, 1 minute'", () => {

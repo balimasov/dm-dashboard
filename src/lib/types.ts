@@ -83,8 +83,10 @@ export interface KnownSpell {
   range?: string;
   /** The attack bonus (e.g. "+6") for a spell requiring an attack roll, or the save DC + ability (e.g. "DC 15 DEX") for one requiring a saving throw — D&D Beyond's "Hit/DC" column. Absent for a spell that's neither (most buffs/utility). */
   hitOrDc?: string;
-  /** The spell's primary damage/healing dice + type (e.g. "8d6 Fire", "2d8 Healing"), read off its own `modifiers` — falls back to its first D&D Beyond classification tag (e.g. "Buff", "Control") when it deals no dice-based effect, since that's the closest this data gets to a one-word summary for those. D&D Beyond's "Effect" column. */
+  /** The dice/number half of the spell's primary damage/healing roll (e.g. "8d6", "2d8"), read off its own `modifiers` — falls back to its first D&D Beyond classification tag (e.g. "Buff", "Control") as a one-word summary when it deals no dice-based effect, in which case `effectType` is absent. Kept separate from `effectType` so the UI can bold/whiten just the roll the same way a weapon's damage die is styled, leaving the type as a plain secondary label. D&D Beyond's "Effect" column. */
   effect?: string;
+  /** The type/label half of `effect` (e.g. "Fire" for damage, "Healing" for healing) — present only alongside a dice-based `effect`; a fallback classification word (e.g. "Buff") has no separate type to show. */
+  effectType?: string;
   /** e.g. "Instantaneous", "1 round", "Concentration, 1 minute", "Until Dispelled" — D&D Beyond's "Notes" column (duration half of it; components/material already surface via `components`/`materialComponent`). */
   duration?: string;
 }
