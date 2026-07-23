@@ -44,9 +44,10 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
       )}
     >
       <div className="w-64 max-w-[80vw] p-2">
-        <h3 className="mb-1.5 flex items-center gap-1.5 px-0.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+        <h3 className="mb-2 flex items-center gap-2 px-0.5 text-sm font-bold text-slate-50">
           <span aria-hidden="true">🔥</span>
           Reminders
+          <span className="font-normal text-slate-500">({group.entries.length})</span>
         </h3>
         <div className="space-y-0.5">
           {group.entries.map((entry) => (

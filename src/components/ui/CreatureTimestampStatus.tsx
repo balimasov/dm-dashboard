@@ -20,8 +20,13 @@ export function CreatureTimestampStatus({ createdAt, updatedAt }: { createdAt?: 
 
   return (
     <div className="flex items-center gap-1.5 text-xs leading-none text-slate-500">
-      <ClockIcon className="h-3 w-3" />
-      <span className="whitespace-nowrap">
+      <ClockIcon className="h-3 w-3 shrink-0" />
+      {/* `min-w-0 truncate` (not `whitespace-nowrap` alone) — a sibling
+          taking up more of the shared row's width (the "🔥 N" reminder
+          badge, the kebab menu) needs this to shrink *within* the row
+          rather than overflow past it, same fix as `DdbSyncStatus`'s own
+          timestamp. */}
+      <span className="min-w-0 truncate">
         {edited ? "Edited" : "Created"} <SyncTimestamp iso={iso} />
       </span>
     </div>

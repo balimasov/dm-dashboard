@@ -40,12 +40,20 @@ export function DdbSyncStatus({
           Not synced with D&D Beyond — fill in manually.
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-none">
+      {/* `flex-nowrap` deliberately, not `flex-wrap` — this row's parent
+          shrinks whenever a sibling (the "🔥 N" reminder badge, the kebab
+          menu) takes up more of the shared row's width, and letting this
+          wrap to a second line grew the *whole card* taller the moment a
+          reminder got flagged, shifting the HP bar and everything below it
+          down. The link and sync button always stay on one line and fully
+          legible (`shrink-0`); only the trailing timestamp — the least
+          essential part — truncates first when room gets tight. */}
+      <div className="flex items-center gap-1.5 text-xs leading-none">
         <a
           href={dndBeyondUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-0.5 whitespace-nowrap text-sky-400 hover:underline"
+          className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-sky-400 hover:underline"
         >
           D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
         </a>
@@ -56,16 +64,16 @@ export function DdbSyncStatus({
             disabled={syncing}
             aria-label="Sync with D&D Beyond"
             title="Sync with D&D Beyond"
-            className="rounded p-0.5 text-slate-500 hover:text-sky-400 disabled:opacity-50"
+            className="shrink-0 rounded p-0.5 text-slate-500 hover:text-sky-400 disabled:opacity-50"
           >
             <RefreshIcon className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
           </button>
         )}
         {syncing ? (
-          <span className="whitespace-nowrap text-sky-400">Syncing...</span>
+          <span className="min-w-0 truncate text-sky-400">Syncing...</span>
         ) : (
           lastSyncedAt && (
-            <span className="whitespace-nowrap text-slate-500">
+            <span className="min-w-0 truncate text-slate-500">
               Synced <SyncTimestamp iso={lastSyncedAt} />
             </span>
           )

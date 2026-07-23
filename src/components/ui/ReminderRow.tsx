@@ -30,18 +30,25 @@ import { InfoTooltip } from "../InfoTooltip";
  * is optional: omitted (button hidden) for a read-only view with no way to
  * mutate the underlying character/creature, same "presence toggles
  * visibility" convention used throughout this app's action menus.
+ *
+ * The hint trigger wraps only the name text, not the whole row — an
+ * earlier version put `flex-1` directly on `InfoTooltip`'s own trigger
+ * span, which stretched its hover/tap target across all the row's leftover
+ * width (past a short name, right up to the "✕" button) instead of just
+ * the text itself. `flex-1`/`truncate` now live on a plain sibling span
+ * that only handles layout — the `InfoTooltip` nested inside it stays its
+ * default `inline-block`, sized to the text alone regardless of how much
+ * extra room its flex-item parent claims.
  */
 export function ReminderRow({ entry, onRemove }: { entry: ReminderEntry; onRemove?: () => void }) {
   return (
-    <div className="-mx-1.5 flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-sm text-slate-300">
-      <InfoTooltip panel={entry.panel} className="min-w-0 flex-1">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span aria-hidden="true" className="shrink-0 text-xs leading-none">
-            {CONTENT_KIND_ICON[entry.kind]}
-          </span>
-          <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-        </span>
-      </InfoTooltip>
+    <div className="-mx-1.5 flex items-center gap-1.5 rounded bg-amber-500/10 px-1.5 py-0.5 text-sm text-slate-300">
+      <span aria-hidden="true" className="shrink-0 text-xs leading-none">
+        {CONTENT_KIND_ICON[entry.kind]}
+      </span>
+      <span className="min-w-0 flex-1 truncate">
+        <InfoTooltip panel={entry.panel}>{entry.label}</InfoTooltip>
+      </span>
       {onRemove && (
         <button
           type="button"
