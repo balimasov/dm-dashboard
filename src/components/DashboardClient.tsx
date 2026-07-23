@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
+import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
 import { QuickNoteButton } from "@/components/QuickNoteButton";
@@ -264,6 +265,7 @@ export function DashboardClient({
   role: UserRole;
 }) {
   const isDm = role === "dm";
+  useScrollPositionMemory(`dashboard-scroll:${campaign.id}`);
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
   const { characters, removeCharacter, updateCharacter } = charactersState;
@@ -361,20 +363,29 @@ export function DashboardClient({
   // Mirrors exactly what's actually on the page for this role (see the
   // matching `id`s below) — a player never gets Campaign/Enemies/NPCs
   // entries since those sections don't render for them at all.
-  const navItems: SectionNavItem[] = [
-    ...(isDm ? [{ id: "section-campaign", emoji: "📜", label: "Campaign" }] : []),
-    { id: "section-reminders", emoji: "🔥", label: "Reminders" },
-    { id: "section-party-toolkit", emoji: "🧭", label: "Party Toolkit" },
-    { id: "section-party", emoji: "🛡️", label: "Party" },
-    { id: "section-companions", emoji: CREATURE_CATEGORY_EMOJI.companion, label: CREATURE_CATEGORY_LABELS.companion },
-    ...(isDm
-      ? [
-          { id: "section-enemies", emoji: CREATURE_CATEGORY_EMOJI.enemy, label: CREATURE_CATEGORY_LABELS.enemy },
-          { id: "section-npcs", emoji: CREATURE_CATEGORY_EMOJI.npc, label: CREATURE_CATEGORY_LABELS.npc },
-        ]
-      : []),
-    { id: "section-inventory", emoji: "💎", label: "Inventory" },
-  ];
+  // Memoized so `SectionNavRail` gets the same array reference across
+  // re-renders (this component re-renders on every unrelated bit of local
+  // state — a toast, a sync flag, an inline edit — and a fresh array literal
+  // each time was tearing down and rebuilding that component's
+  // `IntersectionObserver` on every one of those, not just when the actual
+  // section list changes).
+  const navItems: SectionNavItem[] = useMemo(
+    () => [
+      ...(isDm ? [{ id: "section-campaign", emoji: "📜", label: "Campaign" }] : []),
+      { id: "section-reminders", emoji: "🔥", label: "Reminders" },
+      { id: "section-party-toolkit", emoji: "🧭", label: "Party Toolkit" },
+      { id: "section-party", emoji: "🛡️", label: "Party" },
+      { id: "section-companions", emoji: CREATURE_CATEGORY_EMOJI.companion, label: CREATURE_CATEGORY_LABELS.companion },
+      ...(isDm
+        ? [
+            { id: "section-enemies", emoji: CREATURE_CATEGORY_EMOJI.enemy, label: CREATURE_CATEGORY_LABELS.enemy },
+            { id: "section-npcs", emoji: CREATURE_CATEGORY_EMOJI.npc, label: CREATURE_CATEGORY_LABELS.npc },
+          ]
+        : []),
+      { id: "section-inventory", emoji: "💎", label: "Inventory" },
+    ],
+    [isDm]
+  );
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-8">

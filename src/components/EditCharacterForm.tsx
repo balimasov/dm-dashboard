@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AbilityScores,
   CATEGORY_LABELS,
@@ -38,6 +39,17 @@ function nextId() {
   return `new-${Date.now()}-${uid}`;
 }
 
+/**
+ * Every way out of this page — Save, Cancel, "Back to dashboard" — is a
+ * genuine forward navigation to `/campaigns/[id]` (`Link`/`router.push`),
+ * deliberately not `router.back()`: back/forward navigation restores the
+ * dashboard's *exact previous* client component instance from the router's
+ * cache, state and all, which still held the pre-edit character — the save
+ * this page just made would never show up. A forward navigation forces a
+ * real remount with fresh data. The dashboard's own scroll position across
+ * that round trip is handled separately, by `useScrollPositionMemory` in
+ * `DashboardClient` — not by anything here.
+ */
 export function EditCharacterForm({ character, campaignName }: { character: Character; campaignName: string }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Character>(character);
@@ -241,7 +253,7 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
     setSaveError(null);
     try {
       await patchCharacter(draft.id, { ...draft, synced: true });
-      router.back();
+      router.push(`/campaigns/${draft.campaignId}`);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save character.");
       setSaving(false);
@@ -260,9 +272,9 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
       />
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold text-slate-50">Edit Character</h1>
-        <button type="button" onClick={() => router.back()} className="text-sm text-slate-400 hover:text-slate-200">
+        <Link href={`/campaigns/${character.campaignId}`} className="text-sm text-slate-400 hover:text-slate-200">
           ← Back to dashboard
-        </button>
+        </Link>
       </div>
 
       <div className="mb-6">
@@ -772,13 +784,12 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
         {saveError && <p className="text-sm text-red-400">{saveError}</p>}
 
         <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => router.back()}
+          <Link
+            href={`/campaigns/${character.campaignId}`}
             className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
           >
             Cancel
-          </button>
+          </Link>
           <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>

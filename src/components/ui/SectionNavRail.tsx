@@ -9,28 +9,6 @@ export interface SectionNavItem {
 }
 
 /**
- * First item (in page order) whose section is already scrolled into the
- * same activation band the `IntersectionObserver` below watches for —
- * `130`/`0.3` mirror that effect's own `rootMargin: "-130px 0px -70% 0px"`
- * math, just evaluated once via direct `getBoundingClientRect()` reads
- * instead of waiting on the observer's own (inherently async) first
- * callback. Falls back to the first item when nothing matches yet (e.g. the
- * page hasn't scrolled at all).
- */
-function findActiveSection(items: SectionNavItem[]): string | undefined {
-  if (typeof document === "undefined") return items[0]?.id;
-  const bandTop = 130;
-  const bandBottom = window.innerHeight * 0.3;
-  for (const item of items) {
-    const el = document.getElementById(item.id);
-    if (!el) continue;
-    const rect = el.getBoundingClientRect();
-    if (rect.top < bandBottom && rect.bottom > bandTop) return item.id;
-  }
-  return items[0]?.id;
-}
-
-/**
  * A tiny fixed rail of emoji-only jump links, one per dashboard section — a
  * DM scrolling through Party/Companions/Enemies/NPCs/Inventory on a long
  * campaign page previously had no way to jump straight to one without
@@ -47,16 +25,18 @@ function findActiveSection(items: SectionNavItem[]): string | undefined {
  * scrolled into view.
  */
 export function SectionNavRail({ items }: { items: SectionNavItem[] }) {
-  // Lazy initializer (runs once, synchronously, during the very first
-  // render) instead of defaulting to `items[0]?.id` and correcting it later
-  // in an effect — reloading mid-scroll (the browser restores the prior
-  // scroll position on refresh) made that first paint briefly highlight the
-  // first item before snapping to the right one once the effect's own
-  // `IntersectionObserver` caught up. Computing the real answer up front, by
-  // reading the DOM the server already rendered (hydration attaches to
-  // existing markup, so these elements and their layout are already there),
-  // means the first paint is already correct.
-  const [activeId, setActiveId] = useState<string | undefined>(() => findActiveSection(items));
+  // Starts `undefined` (nothing highlighted) — this component is
+  // server-rendered first, and the server has no scroll position to read at
+  // all, so guessing an answer (e.g. defaulting to the first item) during
+  // the client's own first render would render markup that mismatches what
+  // the server sent and trip up hydration. `undefined` matches the server's
+  // own "nothing highlighted yet" output exactly; `IntersectionObserver`
+  // below is the only source of truth for what's actually active, and its
+  // own first callback (fired as soon as it starts observing, reflecting
+  // whatever the real scroll position already is at that point) resolves it
+  // within the same frame or two — imperceptible in practice, and never
+  // wrong the way a guessed default could be.
+  const [activeId, setActiveId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const intersecting = new Map<string, boolean>();
