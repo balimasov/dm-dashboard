@@ -98,22 +98,6 @@ export function CampaignRosterEditor({
     if (character) updateCharacter(id, { hidden: !character.hidden });
   }
 
-  async function handleResync(id: string) {
-    const character = characters.find((c) => c.id === id);
-    if (!character) return;
-    setSyncError(null);
-    setSyncingId(id);
-    try {
-      const synced = await fetchAndParseDdbCharacter(character);
-      await updateCharacter(id, synced);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown sync error.";
-      setSyncError(`Failed to sync "${character.name}": ${message}`);
-    } finally {
-      setSyncingId(null);
-    }
-  }
-
   const activeCount = characters.filter((c) => !c.hidden).length;
   const hiddenCount = characters.filter((c) => c.hidden).length;
 
@@ -193,7 +177,6 @@ export function CampaignRosterEditor({
                 key={c.id}
                 character={c}
                 syncing={syncingId === c.id}
-                onResync={handleResync}
                 onRemove={removeCharacter}
                 onToggleHidden={handleToggleHidden}
               />

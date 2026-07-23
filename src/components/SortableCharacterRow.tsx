@@ -11,13 +11,11 @@ import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./ui/icons";
 export function SortableCharacterRow({
   character,
   syncing,
-  onResync,
   onRemove,
   onToggleHidden,
 }: {
   character: Character;
   syncing: boolean;
-  onResync: (id: string) => void;
   onRemove: (id: string) => void;
   onToggleHidden: (id: string) => void;
 }) {
@@ -80,7 +78,6 @@ export function SortableCharacterRow({
           synced={character.synced}
           lastSyncedAt={character.lastSyncedAt}
           syncing={syncing}
-          onSync={() => onResync(character.id)}
         />
       </div>
     </RosterRow>

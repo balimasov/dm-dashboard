@@ -22,7 +22,6 @@ import {
   SpellcastingStats,
   SpellSlotLevel,
 } from "@/lib/types";
-import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { patchCharacter } from "@/lib/characterApi";
 import { ensureNotesHtml } from "@/lib/journal";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -53,23 +52,8 @@ function nextId() {
 export function EditCharacterForm({ character, campaignName }: { character: Character; campaignName: string }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Character>(character);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  async function handleSync() {
-    setSyncing(true);
-    setSyncError(null);
-    try {
-      const synced = await fetchAndParseDdbCharacter(draft);
-      setDraft(synced);
-    } catch (err) {
-      setSyncError(`Sync failed: ${err instanceof Error ? err.message : "Unknown error."}`);
-    } finally {
-      setSyncing(false);
-    }
-  }
 
   function set<K extends keyof Character>(key: K, value: Character[K]) {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
@@ -282,9 +266,6 @@ export function EditCharacterForm({ character, campaignName }: { character: Char
           dndBeyondUrl={draft.dndBeyondUrl}
           synced={draft.synced}
           lastSyncedAt={draft.lastSyncedAt}
-          syncing={syncing}
-          error={syncError}
-          onSync={handleSync}
         />
       </div>
 

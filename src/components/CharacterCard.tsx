@@ -71,22 +71,27 @@ export function CharacterCard({
             lastSyncedAt={c.lastSyncedAt}
             syncing={syncing}
             error={syncError}
-            onSync={onUpdate ? sync : undefined}
           />
         </div>
-        <ReminderBadge
-          group={characterReminders(c)}
-          onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
-        />
-        <EntityActionsMenu
-          editHref={`/characters/${c.id}/edit`}
-          name={c.name}
-          hidden={c.hidden}
-          onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
-          onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
-          syncing={syncing}
-          onRemove={onRemove ? () => onRemove(c.id) : undefined}
-        />
+        {/* Badge sits right next to the kebab (its own small `gap-1.5`,
+            tighter than the row's own `gap-3` to the sync block) rather than
+            centered in the leftover space between the two — reads as part
+            of the same corner of controls instead of floating mid-row. */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ReminderBadge
+            group={characterReminders(c)}
+            onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
+          />
+          <EntityActionsMenu
+            editHref={`/characters/${c.id}/edit`}
+            name={c.name}
+            hidden={c.hidden}
+            onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+            onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
+            syncing={syncing}
+            onRemove={onRemove ? () => onRemove(c.id) : undefined}
+          />
+        </div>
       </div>
 
       {/* Combat state */}

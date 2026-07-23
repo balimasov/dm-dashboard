@@ -79,19 +79,24 @@ export function CreatureCard({
         <div className="min-w-0 flex-1">
           <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
         </div>
-        <ReminderBadge
-          group={creatureReminders(creature)}
-          onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
-        />
-        <EntityActionsMenu
-          editHref={`/creatures/${creature.id}/edit`}
-          name={creature.name}
-          hidden={creature.hidden}
-          onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
-          onDuplicate={onDuplicate}
-          onShowHpHistory={() => setHpHistoryOpen(true)}
-          onRemove={onRemove ? () => onRemove(creature.id) : undefined}
-        />
+        {/* Badge sits right next to the kebab (own tighter `gap-1.5`, vs.
+            the row's own `gap-3` to the timestamp block) — same convention
+            as `CharacterCard`'s equivalent row. */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ReminderBadge
+            group={creatureReminders(creature)}
+            onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+          />
+          <EntityActionsMenu
+            editHref={`/creatures/${creature.id}/edit`}
+            name={creature.name}
+            hidden={creature.hidden}
+            onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+            onDuplicate={onDuplicate}
+            onShowHpHistory={() => setHpHistoryOpen(true)}
+            onRemove={onRemove ? () => onRemove(creature.id) : undefined}
+          />
+        </div>
       </div>
 
       <CreatureStatBlock creature={creature} onUpdate={onUpdate} showActionGroups={false} />

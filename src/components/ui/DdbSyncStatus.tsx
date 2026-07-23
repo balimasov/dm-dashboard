@@ -1,13 +1,19 @@
 import { SyncTimestamp } from "@/components/SyncTimestamp";
-import { ExternalLinkIcon, RefreshIcon } from "./icons";
+import { ExternalLinkIcon } from "./icons";
 
 /**
  * Single shared block for a character's D&D Beyond link/sync state — used
- * identically by `CharacterCard`, `CharacterDetailsModal`, and
- * `EditCharacterForm` (previously each of these built its own version, with
- * three different layouts, colors, and button styles). Renders nothing when
- * there's no `dndBeyondUrl`, since an unlinked character has nothing to show
- * here.
+ * identically by `CharacterCard`, `CharacterDetailsModal`,
+ * `EditCharacterForm`, and `SortableCharacterRow` (previously each of these
+ * built its own version, with three different layouts, colors, and button
+ * styles). Renders nothing when there's no `dndBeyondUrl`, since an unlinked
+ * character has nothing to show here.
+ *
+ * Purely read-only display — no sync trigger of its own. Every caller that
+ * needs one already has its own dedicated "Sync" action elsewhere (the
+ * card/modal kebab menu, the add-character flow's automatic first sync), so
+ * this block just reflects whatever that action last did rather than
+ * duplicating a second, redundant button for it.
  *
  * `synced` (persisted — did the last save reflect a good D&D Beyond fetch or
  * a manual confirmation?) and `error` (transient — did *this* sync attempt
@@ -22,14 +28,12 @@ export function DdbSyncStatus({
   lastSyncedAt,
   syncing,
   error,
-  onSync,
 }: {
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;
   syncing?: boolean;
   error?: string | null;
-  onSync?: () => void;
 }) {
   if (!dndBeyondUrl) return null;
 
@@ -57,24 +61,12 @@ export function DdbSyncStatus({
         >
           D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
         </a>
-        {onSync && (
-          <button
-            type="button"
-            onClick={onSync}
-            disabled={syncing}
-            aria-label="Sync with D&D Beyond"
-            title="Sync with D&D Beyond"
-            className="shrink-0 rounded p-0.5 text-slate-500 hover:text-sky-400 disabled:opacity-50"
-          >
-            <RefreshIcon className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
-          </button>
-        )}
         {syncing ? (
           <span className="min-w-0 truncate text-sky-400">Syncing...</span>
         ) : (
           lastSyncedAt && (
             <span className="min-w-0 truncate text-slate-500">
-              Synced <SyncTimestamp iso={lastSyncedAt} />
+              <SyncTimestamp iso={lastSyncedAt} />
             </span>
           )
         )}

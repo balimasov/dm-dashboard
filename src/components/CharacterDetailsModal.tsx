@@ -281,7 +281,6 @@ export function CharacterDetailsModal({
               lastSyncedAt={c.lastSyncedAt}
               syncing={syncing}
               error={syncError}
-              onSync={onUpdate ? sync : undefined}
             />
           </div>
           <EntityActionsMenu
