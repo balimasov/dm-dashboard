@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
+import { creatureReminders } from "@/lib/reminders";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
@@ -9,6 +10,7 @@ import { CreatureStatBlock } from "./CreatureStatBlock";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
+import { ReminderBadge } from "./ui/ReminderBadge";
 import { StatusRail } from "./ui/StatusRail";
 
 /**
@@ -77,6 +79,10 @@ export function CreatureCard({
         <div className="min-w-0 flex-1">
           <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
         </div>
+        <ReminderBadge
+          group={creatureReminders(creature)}
+          onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+        />
         <EntityActionsMenu
           editHref={`/creatures/${creature.id}/edit`}
           name={creature.name}

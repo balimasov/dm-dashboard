@@ -17,6 +17,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { NotesEditor } from "@/components/NotesEditor";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
+import { RemindersFab } from "@/components/RemindersFab";
 import { RemindersPanel } from "@/components/RemindersPanel";
 import { RosterManagerModal, type RosterTab } from "@/components/RosterManagerModal";
 import { SectionNavRail, type SectionNavItem } from "@/components/ui/SectionNavRail";
@@ -512,6 +513,18 @@ export function DashboardClient({
           initialOpen={initialOpen.reminders}
         />
       </div>
+
+      {/* Floating quick-access counterpart to the block above, plus the new
+          per-card "🔥 N" badges on `CharacterCard`/`CreatureCard` — same
+          data, reachable without scrolling back to this section. Kept
+          alongside the block (not replacing it) while this round of
+          reminders UX changes is still being tried out. */}
+      <RemindersFab
+        characters={characters}
+        creatures={creatures}
+        onUpdateCharacter={updateCharacter}
+        onUpdateCreature={updateCreature}
+      />
 
       <div id="section-party-toolkit" className="scroll-mt-[130px]">
         <CollapsibleSection

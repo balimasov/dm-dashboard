@@ -18,6 +18,7 @@ export function MoreMenu({
   label = "More actions",
   portal = false,
   variant = "boxed",
+  renderTrigger,
 }: {
   children: React.ReactNode;
   label?: string;
@@ -45,6 +46,16 @@ export function MoreMenu({
    * than part of the row.
    */
   variant?: "boxed" | "plain";
+  /**
+   * Replaces the default kebab-dots trigger button with a caller-supplied
+   * one (e.g. `ReminderBadge`'s "🔥 N" pill) while keeping every other
+   * `MoreMenu` mechanic — portal positioning, outside-click/scroll close —
+   * exactly as-is, so a differently-shaped trigger doesn't need its own
+   * from-scratch popover implementation. `toggle` opens/closes the same
+   * `open` state the default button drives; the caller wires it to
+   * whatever click target it needs.
+   */
+  renderTrigger?: (args: { open: boolean; toggle: () => void }) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,19 +132,23 @@ export function MoreMenu({
 
   return (
     <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={label}
-        title={label}
-        className={
-          variant === "plain"
-            ? "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-white/10 hover:text-slate-200"
-            : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
-        }
-      >
-        <DotsVerticalIcon className={variant === "plain" ? "h-4 w-4" : "h-5 w-5"} />
-      </button>
+      {renderTrigger ? (
+        renderTrigger({ open, toggle: () => setOpen((o) => !o) })
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={label}
+          title={label}
+          className={
+            variant === "plain"
+              ? "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-white/10 hover:text-slate-200"
+              : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
+          }
+        >
+          <DotsVerticalIcon className={variant === "plain" ? "h-4 w-4" : "h-5 w-5"} />
+        </button>
+      )}
       {portal ? panel && typeof document !== "undefined" && createPortal(panel, document.body) : panel}
     </div>
   );

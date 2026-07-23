@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier, ordinalLevel } from "@/lib/format";
+import { characterReminders } from "@/lib/reminders";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { DotMeter, ResourceMeter, ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
@@ -12,6 +13,7 @@ import { SkillPanel } from "./SkillPanel";
 import { ShieldIcon, SpeedIcon, InitiativeIcon, ProficiencyIcon } from "./ui/icons";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
+import { ReminderBadge } from "./ui/ReminderBadge";
 import { StatBox } from "./ui/StatBox";
 import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
@@ -72,6 +74,10 @@ export function CharacterCard({
             onSync={onUpdate ? sync : undefined}
           />
         </div>
+        <ReminderBadge
+          group={characterReminders(c)}
+          onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
+        />
         <EntityActionsMenu
           editHref={`/characters/${c.id}/edit`}
           name={c.name}
