@@ -29,16 +29,37 @@ export function SectionNavRail({ items }: { items: SectionNavItem[] }) {
   // server-rendered first, and the server has no scroll position to read at
   // all, so guessing an answer (e.g. defaulting to the first item) during
   // the client's own first render would render markup that mismatches what
-  // the server sent and trip up hydration. `undefined` matches the server's
-  // own "nothing highlighted yet" output exactly; `IntersectionObserver`
-  // below is the only source of truth for what's actually active, and its
-  // own first callback (fired as soon as it starts observing, reflecting
-  // whatever the real scroll position already is at that point) resolves it
-  // within the same frame or two — imperceptible in practice, and never
-  // wrong the way a guessed default could be.
+  // the server sent and trip up hydration. The effect below resolves the
+  // real value as soon as it runs (a synchronous DOM read, not a guess).
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    // Top offset clears the sticky header + action bar; a section only
+    // counts as "active" once its top has scrolled up past that line.
+    const topOffset = 130;
+
+    // Resolve the very first highlight with a direct DOM measurement rather
+    // than waiting on the IntersectionObserver's own first notification
+    // below: that notification's delivery isn't pinned to any particular
+    // timing guarantee, and in practice (especially in a dev-mode build,
+    // with a page this long) it can trail this effect running by the better
+    // part of a second — long enough that the rail visibly sits unlit and
+    // then pops on, which reads as a flash of its own. By the time this
+    // effect runs, the scroll position is already final (this is a passive
+    // effect, and every layout effect — including the parent dashboard's own
+    // scroll-restoration one — has already committed tree-wide beforehand),
+    // so a `getBoundingClientRect()` read here gets the real answer
+    // immediately. `queueMicrotask` (rather than calling `setActiveId`
+    // straight from the effect body) is only there to keep this a reaction
+    // to a callback rather than a synchronous derive-during-effect — it
+    // still lands well before the observer's own notification would.
+    let current: string | undefined;
+    for (const item of items) {
+      const el = document.getElementById(item.id);
+      if (el && el.getBoundingClientRect().top <= topOffset) current = item.id;
+    }
+    if (current) queueMicrotask(() => setActiveId(current));
+
     const intersecting = new Map<string, boolean>();
     const observer = new IntersectionObserver(
       (entries) => {
@@ -46,11 +67,10 @@ export function SectionNavRail({ items }: { items: SectionNavItem[] }) {
         const firstVisible = items.find((item) => intersecting.get(item.id));
         if (firstVisible) setActiveId(firstVisible.id);
       },
-      // Top offset clears the sticky header + action bar; the large negative
-      // bottom margin means a section only counts as "active" once its top
-      // has scrolled into the upper slice of the viewport, not merely
-      // anywhere on screen.
-      { rootMargin: "-130px 0px -70% 0px", threshold: 0 }
+      // Same top offset as above; the large negative bottom margin means a
+      // section only counts as "active" once its top has scrolled into the
+      // upper slice of the viewport, not merely anywhere on screen.
+      { rootMargin: `-${topOffset}px 0px -70% 0px`, threshold: 0 }
     );
     for (const item of items) {
       const el = document.getElementById(item.id);
