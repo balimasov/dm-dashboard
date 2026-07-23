@@ -3,12 +3,17 @@
 import { Creature, HpHistoryEntry } from "@/lib/types";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { TrashIcon } from "./ui/icons";
 
 const FIELD_LABEL: Record<HpHistoryEntry["field"], string> = {
   hp: "HP",
   tempHp: "Temp HP",
 };
 
+// Seconds included deliberately — this table exists to pin down exactly
+// when a mistyped number happened, and two edits made moments apart (a
+// damage roll immediately followed by a correction) are common enough that
+// minute-only timestamps would show them as identical rows.
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     year: "numeric",
@@ -16,6 +21,7 @@ function formatTimestamp(iso: string): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   });
 }
 
@@ -26,12 +32,34 @@ function formatTimestamp(iso: string): string {
  * actually made, newest first, so a DM who suspects they fat-fingered a
  * number mid-session can check exactly when and by how much a pool changed
  * without having to reconstruct it from memory.
+ *
+ * `onClear` wipes the whole log for this creature (confirmed first, same
+ * `window.confirm` convention as `EntityActionsMenu`'s Remove action) — the
+ * modal stays open afterward, showing the now-empty state, rather than
+ * closing, so clearing reads as a visible result rather than a dismissal.
+ * Omitted (button not rendered) whenever there's nothing to clear or the
+ * caller didn't wire up a handler, same "presence toggles visibility"
+ * convention used throughout this app's action menus.
  */
-export function CreatureHpHistoryModal({ creature, onClose }: { creature: Creature; onClose: () => void }) {
+export function CreatureHpHistoryModal({
+  creature,
+  onClear,
+  onClose,
+}: {
+  creature: Creature;
+  onClear?: () => void;
+  onClose: () => void;
+}) {
   useScrollLock();
   useEscapeToClose(onClose);
 
   const entries = [...(creature.hpHistory ?? [])].reverse();
+
+  function handleClear() {
+    if (!onClear) return;
+    const confirmed = window.confirm(`Clear all HP history for "${creature.name}"? This can't be undone.`);
+    if (confirmed) onClear();
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
@@ -41,14 +69,26 @@ export function CreatureHpHistoryModal({ creature, onClose }: { creature: Creatu
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="min-w-0 truncate text-lg font-bold text-slate-50">HP History — {creature.name}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 rounded p-1 text-slate-500 hover:text-slate-200"
-          >
-            ✕
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {onClear && entries.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-500 hover:bg-white/10 hover:text-red-400"
+              >
+                <TrashIcon className="h-3.5 w-3.5 shrink-0" />
+                Clear
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded p-1 text-slate-500 hover:text-slate-200"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {entries.length === 0 ? (

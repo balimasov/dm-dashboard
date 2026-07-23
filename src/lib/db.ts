@@ -425,6 +425,21 @@ export function updateCreature(id: string, updates: Partial<Creature>): Creature
   return updated;
 }
 
+/**
+ * Wipes a creature's `hpHistory` log without touching `hp`/`tempHp`
+ * themselves or bumping `updatedAt` — a separate action from `updateCreature`
+ * (which only ever appends to the log, never lets a caller clear it via a
+ * client-writable field; see `Creature.hpHistory`'s doc comment) so this is
+ * the one deliberate, explicit way to reset it.
+ */
+export function clearCreatureHpHistory(id: string): Creature | null {
+  const existing = getCreature(id);
+  if (!existing) return null;
+  const updated: Creature = { ...existing, hpHistory: [] };
+  getDb().prepare("UPDATE creatures SET data = ? WHERE id = ?").run(JSON.stringify(updated), id);
+  return updated;
+}
+
 export function removeCreature(id: string): void {
   getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
 }

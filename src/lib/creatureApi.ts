@@ -9,3 +9,8 @@ export async function patchCreature(id: string, updates: Partial<Creature>): Pro
   });
   return parseJsonOrThrow<Creature>(res, "Failed to save creature.");
 }
+
+export async function clearCreatureHpHistory(id: string): Promise<Creature> {
+  const res = await apiFetch(`/api/creatures/${id}/hp-history`, { method: "DELETE" });
+  return parseJsonOrThrow<Creature>(res, "Failed to clear HP history.");
+}

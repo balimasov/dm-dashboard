@@ -32,6 +32,7 @@ export function CreatureDetailsModal({
   onClose,
   onUpdate,
   onDuplicate,
+  onClearHpHistory,
   onRemove,
 }: {
   creature: Creature;
@@ -39,6 +40,7 @@ export function CreatureDetailsModal({
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
   onDuplicate?: () => void;
+  onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
@@ -117,7 +119,13 @@ export function CreatureDetailsModal({
         />
       </div>
 
-      {hpHistoryOpen && <CreatureHpHistoryModal creature={creature} onClose={() => setHpHistoryOpen(false)} />}
+      {hpHistoryOpen && (
+        <CreatureHpHistoryModal
+          creature={creature}
+          onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
+          onClose={() => setHpHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -491,3 +491,43 @@ describe("updateCreature — hpHistory", () => {
     expect(healed?.hpHistory?.at(-1)?.delta).toBe(6);
   });
 });
+
+describe("clearCreatureHpHistory", () => {
+  function createBasicCreature(campaignId: string) {
+    return db.createCreature({
+      campaignId,
+      category: "enemy",
+      templateName: "Goblin",
+      name: "Goblin",
+      ac: 15,
+      hp: 7,
+      maxHp: 7,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+    });
+  }
+
+  it("wipes an accumulated log back to empty", () => {
+    const created = createBasicCreature("campaign-hp-clear-1");
+    db.updateCreature(created.id, { hp: 4 });
+    db.updateCreature(created.id, { hp: 2 });
+    const cleared = db.clearCreatureHpHistory(created.id);
+    expect(cleared?.hpHistory).toEqual([]);
+  });
+
+  it("leaves hp/tempHp and updatedAt untouched", () => {
+    const created = createBasicCreature("campaign-hp-clear-2");
+    const edited = db.updateCreature(created.id, { hp: 4 })!;
+    const cleared = db.clearCreatureHpHistory(created.id);
+    expect(cleared?.hp).toBe(4);
+    expect(cleared?.updatedAt).toBe(edited.updatedAt);
+  });
+
+  it("returns null for a creature that doesn't exist", () => {
+    expect(db.clearCreatureHpHistory("no-such-creature")).toBeNull();
+  });
+});

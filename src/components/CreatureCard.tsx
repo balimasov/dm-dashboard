@@ -37,12 +37,14 @@ export function CreatureCard({
   owner,
   onUpdate,
   onDuplicate,
+  onClearHpHistory,
   onRemove,
 }: {
   creature: Creature;
   owner?: Character;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
   onDuplicate?: () => void;
+  onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -100,11 +102,18 @@ export function CreatureCard({
           onClose={() => setDetailsOpen(false)}
           onUpdate={onUpdate}
           onDuplicate={onDuplicate}
+          onClearHpHistory={onClearHpHistory}
           onRemove={onRemove}
         />
       )}
 
-      {hpHistoryOpen && <CreatureHpHistoryModal creature={creature} onClose={() => setHpHistoryOpen(false)} />}
+      {hpHistoryOpen && (
+        <CreatureHpHistoryModal
+          creature={creature}
+          onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
+          onClose={() => setHpHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }

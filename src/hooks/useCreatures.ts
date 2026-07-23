@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { AbilityScores, Creature, CreatureCategory, CreatureTrait } from "@/lib/types";
-import { patchCreature } from "@/lib/creatureApi";
+import { clearCreatureHpHistory, patchCreature } from "@/lib/creatureApi";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 
 export interface AddCreatureInput {
@@ -112,6 +112,11 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     setCreatures((prev) => prev.map((c) => (c.id === id ? updated : c)));
   }, []);
 
+  const clearHpHistory = useCallback(async (id: string) => {
+    const updated = await clearCreatureHpHistory(id);
+    setCreatures((prev) => prev.map((c) => (c.id === id ? updated : c)));
+  }, []);
+
   const removeCreature = useCallback(async (id: string) => {
     setCreatures((prev) => prev.filter((c) => c.id !== id));
     await apiFetch(`/api/creatures/${id}`, { method: "DELETE" });
@@ -129,5 +134,5 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     });
   }, []);
 
-  return { creatures, addCreature, duplicateCreature, updateCreature, removeCreature, reorderCreatures };
+  return { creatures, addCreature, duplicateCreature, updateCreature, clearHpHistory, removeCreature, reorderCreatures };
 }

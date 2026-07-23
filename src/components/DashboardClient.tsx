@@ -192,6 +192,7 @@ function CreatureCategorySection({
   initialOpen,
   onUpdate,
   onDuplicate,
+  onClearHpHistory,
   onRemove,
   onAdd,
 }: {
@@ -202,6 +203,7 @@ function CreatureCategorySection({
   initialOpen: boolean;
   onUpdate: (id: string, updates: Partial<Creature>) => void;
   onDuplicate: (creature: Creature) => void;
+  onClearHpHistory: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd?: () => void;
 }) {
@@ -240,6 +242,7 @@ function CreatureCategorySection({
                   owner={owner}
                   onUpdate={onUpdate}
                   onDuplicate={() => onDuplicate(creature)}
+                  onClearHpHistory={onClearHpHistory}
                   onRemove={onRemove}
                 />
               </div>
@@ -269,7 +272,7 @@ export function DashboardClient({
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
   const { characters, removeCharacter, updateCharacter } = charactersState;
-  const { creatures, duplicateCreature, updateCreature, removeCreature } = creaturesState;
+  const { creatures, duplicateCreature, updateCreature, clearHpHistory, removeCreature } = creaturesState;
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
@@ -374,6 +377,7 @@ export function DashboardClient({
       ...(isDm ? [{ id: "section-campaign", emoji: "📜", label: "Campaign" }] : []),
       { id: "section-reminders", emoji: "🔥", label: "Reminders" },
       { id: "section-party-toolkit", emoji: "🧭", label: "Party Toolkit" },
+      { id: "section-inventory", emoji: "💎", label: "Inventory" },
       { id: "section-party", emoji: "🛡️", label: "Party" },
       { id: "section-companions", emoji: CREATURE_CATEGORY_EMOJI.companion, label: CREATURE_CATEGORY_LABELS.companion },
       ...(isDm
@@ -382,7 +386,6 @@ export function DashboardClient({
             { id: "section-npcs", emoji: CREATURE_CATEGORY_EMOJI.npc, label: CREATURE_CATEGORY_LABELS.npc },
           ]
         : []),
-      { id: "section-inventory", emoji: "💎", label: "Inventory" },
     ],
     [isDm]
   );
@@ -526,6 +529,20 @@ export function DashboardClient({
         </CollapsibleSection>
       </div>
 
+      <div id="section-inventory" className="scroll-mt-[130px]">
+        <CollapsibleSection
+          title={<SectionTitle emoji="💎" label="Inventory" />}
+          storageKey="dm-dashboard-inventory-open"
+          initialOpen={initialOpen.inventory}
+        >
+          <div className="px-3 space-y-4">
+            <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
+            <CoinsPanel characters={characters} />
+            <InventoryOverview characters={characters} />
+          </div>
+        </CollapsibleSection>
+      </div>
+
       <div id="section-party" className="scroll-mt-[130px]">
         <CollapsibleSection
           title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
@@ -574,6 +591,7 @@ export function DashboardClient({
           initialOpen={initialOpen.companions}
           onUpdate={updateCreature}
           onDuplicate={duplicateCreature}
+          onClearHpHistory={clearHpHistory}
           onRemove={removeCreature}
           onAdd={isDm ? () => openRoster("companion") : undefined}
         />
@@ -594,6 +612,7 @@ export function DashboardClient({
               initialOpen={initialOpen.enemies}
               onUpdate={updateCreature}
               onDuplicate={duplicateCreature}
+              onClearHpHistory={clearHpHistory}
               onRemove={removeCreature}
               onAdd={() => openRoster("enemy")}
             />
@@ -608,26 +627,13 @@ export function DashboardClient({
               initialOpen={initialOpen.npcs}
               onUpdate={updateCreature}
               onDuplicate={duplicateCreature}
+              onClearHpHistory={clearHpHistory}
               onRemove={removeCreature}
               onAdd={() => openRoster("npc")}
             />
           </div>
         </>
       )}
-
-      <div id="section-inventory" className="scroll-mt-[130px]">
-        <CollapsibleSection
-          title={<SectionTitle emoji="💎" label="Inventory" />}
-          storageKey="dm-dashboard-inventory-open"
-          initialOpen={initialOpen.inventory}
-        >
-          <div className="px-3 space-y-4">
-            <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
-            <CoinsPanel characters={characters} />
-            <InventoryOverview characters={characters} />
-          </div>
-        </CollapsibleSection>
-      </div>
 
       <SectionNavRail items={navItems} />
 
