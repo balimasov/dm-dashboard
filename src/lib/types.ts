@@ -614,7 +614,7 @@ export const CREATURE_CATEGORY_SINGULAR_LABELS: Record<CreatureCategory, string>
 /** One emoji per category, used before the dashboard section title (see also the Campaign/Party/Inventory emoji picked directly in `DashboardClient`). */
 export const CREATURE_CATEGORY_EMOJI: Record<CreatureCategory, string> = {
   companion: "🐺",
-  enemy: "⚔️",
+  enemy: "😈",
   npc: "🧙",
 };
 
