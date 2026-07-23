@@ -423,3 +423,71 @@ describe("createCreature / updateCreature — createdAt/updatedAt stamping", () 
     expect(secondEdit?.updatedAt).not.toBe(firstEdit?.updatedAt);
   });
 });
+
+describe("updateCreature — hpHistory", () => {
+  function createBasicCreature(campaignId: string) {
+    return db.createCreature({
+      campaignId,
+      category: "enemy",
+      templateName: "Goblin",
+      name: "Goblin",
+      ac: 15,
+      hp: 7,
+      maxHp: 7,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+    });
+  }
+
+  it("appends an hp entry when a PATCH changes hp, whether the caller sent a delta-resolved or absolute number", () => {
+    const created = createBasicCreature("campaign-hp-history-1");
+    const updated = db.updateCreature(created.id, { hp: 4 });
+    expect(updated?.hpHistory).toEqual([
+      expect.objectContaining({ field: "hp", previous: 7, next: 4, delta: -3 }),
+    ]);
+  });
+
+  it("does not append an entry when hp is sent but unchanged, or not sent at all", () => {
+    const created = createBasicCreature("campaign-hp-history-2");
+    const sameValue = db.updateCreature(created.id, { hp: 7 });
+    expect(sameValue?.hpHistory).toEqual([]);
+    const unrelatedField = db.updateCreature(created.id, { concentrating: true });
+    expect(unrelatedField?.hpHistory).toEqual([]);
+  });
+
+  it("appends both an hp and a tempHp entry when a single PATCH changes both at once", () => {
+    const created = createBasicCreature("campaign-hp-history-3");
+    const updated = db.updateCreature(created.id, { hp: 2, tempHp: 5 });
+    expect(updated?.hpHistory).toEqual([
+      expect.objectContaining({ field: "hp", previous: 7, next: 2, delta: -5 }),
+      expect.objectContaining({ field: "tempHp", previous: 0, next: 5, delta: 5 }),
+    ]);
+    // Distinct ids even though both entries were stamped in the same call.
+    expect(updated!.hpHistory![0].id).not.toBe(updated!.hpHistory![1].id);
+  });
+
+  it("keeps accumulating across repeated updates instead of overwriting the log", () => {
+    const created = createBasicCreature("campaign-hp-history-4");
+    db.updateCreature(created.id, { hp: 5 });
+    db.updateCreature(created.id, { hp: 2 });
+    const third = db.updateCreature(created.id, { hp: 6 });
+    expect(third?.hpHistory).toHaveLength(3);
+    expect(third?.hpHistory?.map((e) => [e.previous, e.next])).toEqual([
+      [7, 5],
+      [5, 2],
+      [2, 6],
+    ]);
+  });
+
+  it("a healing (positive) change and a damage (negative) change both record the correct sign of delta", () => {
+    const created = createBasicCreature("campaign-hp-history-5");
+    const damaged = db.updateCreature(created.id, { hp: 1 });
+    expect(damaged?.hpHistory?.at(-1)?.delta).toBe(-6);
+    const healed = db.updateCreature(created.id, { hp: 7 });
+    expect(healed?.hpHistory?.at(-1)?.delta).toBe(6);
+  });
+});

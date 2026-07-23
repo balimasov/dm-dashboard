@@ -7,6 +7,7 @@ import {
   CampaignSummary,
   Character,
   Creature,
+  HpHistoryEntry,
   ItemCategory,
   ItemRarity,
   JournalEntry,
@@ -378,14 +379,35 @@ export function createCreature(input: Omit<Creature, "id" | "createdAt" | "updat
   return creature;
 }
 
+/** Builds an `HpHistoryEntry` for a pool that actually changed, or `null` if `updates` didn't touch it or left it at the same value. */
+function hpHistoryEntry(
+  field: HpHistoryEntry["field"],
+  previous: number,
+  next: number | undefined,
+  now: string
+): HpHistoryEntry | null {
+  if (next === undefined || next === previous) return null;
+  return { id: `hp-history-${now}-${field}-${Math.random().toString(36).slice(2, 7)}`, timestamp: now, field, previous, next, delta: next - previous };
+}
+
 export function updateCreature(id: string, updates: Partial<Creature>): Creature | null {
   const existing = getCreature(id);
   if (!existing) return null;
   const now = new Date().toISOString();
+  // Append-only, and computed here rather than trusted from the client (see
+  // `Creature.hpHistory`'s own doc comment) — this is the one place every
+  // PATCH that changes `hp`/`tempHp` actually passes through, regardless of
+  // whether the DM typed a delta or an absolute number into the HP bar.
+  const hpHistory = [
+    ...(existing.hpHistory ?? []),
+    hpHistoryEntry("hp", existing.hp, updates.hp, now),
+    hpHistoryEntry("tempHp", existing.tempHp, updates.tempHp, now),
+  ].filter((entry): entry is HpHistoryEntry => entry !== null);
   const updated: Creature = {
     ...existing,
     ...updates,
     id: existing.id,
+    hpHistory,
     // A creature saved before this field existed has neither timestamp —
     // `existing.createdAt` alone would stay permanently undefined, which
     // made `CreatureTimestampStatus` fall back to `updatedAt` and label

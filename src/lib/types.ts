@@ -618,6 +618,19 @@ export const CREATURE_CATEGORY_EMOJI: Record<CreatureCategory, string> = {
   npc: "🧙",
 };
 
+/** One row in a creature's `hpHistory` — see that field's doc comment on `Creature`. */
+export interface HpHistoryEntry {
+  id: string;
+  /** ISO timestamp, same convention as `Creature.createdAt`/`updatedAt`. */
+  timestamp: string;
+  /** Which pool this entry recorded a change to. */
+  field: "hp" | "tempHp";
+  previous: number;
+  next: number;
+  /** `next - previous`, precomputed so the viewer doesn't need to re-derive it. */
+  delta: number;
+}
+
 export interface Creature {
   id: string;
   /** Every creature belongs to exactly one campaign, same as `Character.campaignId`. */
@@ -647,6 +660,19 @@ export interface Creature {
   maxHp: number;
   hitDice?: string;
   tempHp: number;
+  /**
+   * Append-only change log for `hp`/`tempHp`, newest entries last —
+   * server-stamped in `updateCreature` (`db.ts`) whenever a PATCH actually
+   * changes one of those two values, regardless of whether the DM typed a
+   * delta (`+5`/`-8`) or an absolute number into the HP bar; never accepted
+   * from a client request body (absent from `creatureUpdateSchema`), same
+   * convention as `createdAt`/`updatedAt`. Purely a debugging trail ("did I
+   * actually fat-finger that number?"), viewed via a dedicated modal off the
+   * card's kebab menu — not shown anywhere on the dashboard itself. Optional
+   * and never backfilled, so a creature saved before this field existed
+   * simply starts with none until its next HP change.
+   */
+  hpHistory?: HpHistoryEntry[];
   speed: number;
   speedDetail?: string;
   initiativeBonus?: number;

@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { CreatureHeader } from "./CreatureHeader";
+import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
@@ -39,6 +41,8 @@ export function CreatureDetailsModal({
   onDuplicate?: () => void;
   onRemove?: (id: string) => void;
 }) {
+  const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
+
   useEscapeToClose(onClose);
   useScrollLock();
 
@@ -96,6 +100,7 @@ export function CreatureDetailsModal({
             hidden={creature.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
             onDuplicate={onDuplicate}
+            onShowHpHistory={() => setHpHistoryOpen(true)}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}
           />
         </div>
@@ -111,6 +116,8 @@ export function CreatureDetailsModal({
           onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
         />
       </div>
+
+      {hpHistoryOpen && <CreatureHpHistoryModal creature={creature} onClose={() => setHpHistoryOpen(false)} />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { CreatureHeader } from "./CreatureHeader";
+import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
@@ -45,6 +46,7 @@ export function CreatureCard({
   onRemove?: (id: string) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
 
   return (
     <div
@@ -79,6 +81,7 @@ export function CreatureCard({
           hidden={creature.hidden}
           onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
           onDuplicate={onDuplicate}
+          onShowHpHistory={() => setHpHistoryOpen(true)}
           onRemove={onRemove ? () => onRemove(creature.id) : undefined}
         />
       </div>
@@ -100,6 +103,8 @@ export function CreatureCard({
           onRemove={onRemove}
         />
       )}
+
+      {hpHistoryOpen && <CreatureHpHistoryModal creature={creature} onClose={() => setHpHistoryOpen(false)} />}
     </div>
   );
 }
