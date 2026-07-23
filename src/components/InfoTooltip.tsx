@@ -216,7 +216,16 @@ export function InfoTooltip({
           <div
             ref={panelRef}
             style={{ left: "-9999px", visibility: "hidden" }}
-            className="pointer-events-none fixed z-50 w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+            // z-[70] — a hint has to win over whatever floating panel it's
+            // nested inside (e.g. `ReminderBadge`'s own `MoreMenu` popover
+            // at z-[60]), since it's meant to sit visually on top of its
+            // trigger no matter where that trigger lives. Both this panel
+            // and the trigger it's nested inside portal independently to
+            // `document.body`, so without an explicit z-index above every
+            // other floating layer, mount order alone decided which one
+            // painted on top — and the hint, being the deeper-nested
+            // portal, didn't reliably mount after its host popover.
+            className="pointer-events-none fixed z-[70] w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
             // No-ops while the panel is `pointer-events: none` (the common
             // case — the browser never dispatches mouse events to it then),
             // and only actually fire once `computePosition` switches it to

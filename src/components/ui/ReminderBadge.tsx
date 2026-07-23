@@ -43,10 +43,16 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
         </button>
       )}
     >
-      <div className="w-64 max-w-[80vw] space-y-0.5 p-2">
-        {group.entries.map((entry) => (
-          <ReminderRow key={entry.name} entry={entry} onRemove={onRemove ? () => onRemove(entry.name) : undefined} />
-        ))}
+      <div className="w-64 max-w-[80vw] p-2">
+        <h3 className="mb-1.5 flex items-center gap-1.5 px-0.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+          <span aria-hidden="true">🔥</span>
+          Reminders
+        </h3>
+        <div className="space-y-0.5">
+          {group.entries.map((entry) => (
+            <ReminderRow key={entry.name} entry={entry} onRemove={onRemove ? () => onRemove(entry.name) : undefined} />
+          ))}
+        </div>
       </div>
     </MoreMenu>
   );

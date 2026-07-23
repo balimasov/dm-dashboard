@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { ReminderGroup, characterReminders, creatureReminders } from "@/lib/reminders";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
@@ -22,6 +22,15 @@ import { ReminderRow } from "./ui/ReminderRow";
  * Deliberately coexists with `RemindersPanel` for now rather than replacing
  * it — same underlying data and toggle-off behavior, just a second, more
  * situational way to reach it while this round of changes gets tried out.
+ *
+ * Stacked directly above `QuickLinksButton` (same `right-5`, one button-
+ * height-plus-gap higher) rather than sharing its `bottom-5` spot — the two
+ * used to sit at the exact same fixed position, so this one silently covered
+ * the quick-links button any session that had at least one reminder flagged.
+ * Same self-anchoring `absolute bottom-full` popover pattern as
+ * `QuickLinksButton` too, so it opens upward from *this* button specifically
+ * instead of a viewport-fixed offset that would need updating by hand if the
+ * stack order ever changes again.
  */
 export function RemindersFab({
   characters,
@@ -37,7 +46,17 @@ export function RemindersFab({
   const [open, setOpen] = useState(false);
   const [openCharacterId, setOpenCharacterId] = useState<string | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(() => setOpen(false), open);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   // Same hidden-character/creature exclusion as `RemindersPanel` — a card
   // taken off the dashboard for this session shouldn't resurface here.
@@ -85,25 +104,22 @@ export function RemindersFab({
         />
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
-        title={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
-        className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
-      >
-        <span aria-hidden="true">🔥</span>
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-slate-950">
-          {totalCount}
-        </span>
-      </button>
+      <div ref={containerRef} className="fixed bottom-20 right-5 z-40">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
+          title={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
+          className="relative flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
+        >
+          <span aria-hidden="true">🔥</span>
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-slate-950">
+            {totalCount}
+          </span>
+        </button>
 
-      {open && (
-        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}>
-          <div
-            className="scrollbar-themed fixed bottom-20 right-5 z-40 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        {open && (
+          <div className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl">
             <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-slate-50">
               <span aria-hidden="true">🔥</span>
               Reminders
@@ -132,8 +148,8 @@ export function RemindersFab({
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
