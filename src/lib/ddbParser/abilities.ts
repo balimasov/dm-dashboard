@@ -38,6 +38,28 @@ const SAVE_SUBTYPE: Record<keyof AbilityScores, string> = {
 
 export function computeAbilityScores(data: RawDdbData, mods: RawDdbModifier[]): AbilityScores {
   const result = {} as AbilityScores;
+
+  // A 2014-ruleset race's flat Ability Score Increase trait (e.g. a
+  // Tiefling's "+2 Charisma, +1 Intelligence") stays in the raw data marked
+  // `isGranted: true` even when the character sheet no longer actually
+  // applies it — which happens whenever the character's background instead
+  // grants its own 2024-style ability score improvement, exposed as a
+  // synthetic feat literally named "<Background Name> Ability Score
+  // Improvements". D&D Beyond's own site suppresses the old race bonus in
+  // that case (confirmed against a real Tiefling/Criminal export: her actual
+  // INT and CHA only reflected the background's and a separate feat's
+  // bonuses, not the race's on top of those) — but nothing in the API
+  // payload flags that suppression, so it has to be detected the same way
+  // the character sheet does, by that synthetic feat's presence, and only
+  // the race's own modifiers excluded (an ordinary Ability Score Improvement
+  // feat elsewhere, or a race with no such trait, is unaffected).
+  const backgroundName = data.background?.definition?.name;
+  const hasBackgroundAsiFeat = Boolean(
+    backgroundName &&
+      (data.feats ?? []).some((f) => f?.definition?.name === `${backgroundName} Ability Score Improvements`)
+  );
+  const raceMods = new Set<RawDdbModifier>(hasBackgroundAsiFeat ? data.modifiers?.race ?? [] : []);
+
   for (const [idStr, key] of Object.entries(ABILITY_BY_ID)) {
     const id = Number(idStr);
     const base = data.stats?.find((s) => s.id === id)?.value ?? 10;
@@ -57,7 +79,9 @@ export function computeAbilityScores(data: RawDdbData, mods: RawDdbModifier[]): 
     // free-choice "pick any ability" case (entityId null) can't be resolved this
     // way and is intentionally left out.
     const flatBonus = mods
-      .filter((m) => m.type === "bonus" && m.subType === ABILITY_SUBTYPE[key] && m.entityId === id)
+      .filter(
+        (m) => m.type === "bonus" && m.subType === ABILITY_SUBTYPE[key] && m.entityId === id && !raceMods.has(m)
+      )
       .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
     result[key] = base + bonus + flatBonus;
   }

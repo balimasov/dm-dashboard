@@ -27,6 +27,15 @@ describe("half-proficiency (Jack of All Trades) passive senses", () => {
   });
 });
 
+describe("ability scores — a 2014-ruleset race's flat racial ASI stays isGranted:true even when superseded", () => {
+  test("Esmeralda (Tiefling/Criminal) — the Tiefling's +1 Int/+2 Cha racial trait doesn't stack with the Criminal background's own (2024-style) ability score improvements, matching her real D&D Beyond sheet (STR 9, DEX 16, CON 15, INT 12, WIS 10, CHA 18)", () => {
+    const c = load("esmeralda-bard");
+    expect(c.stats).toEqual({ str: 9, dex: 16, con: 15, int: 12, wis: 10, cha: 18 });
+    expect(c.combat.ac).toBe(17);
+    expect(c.initiative).toBe(6);
+  });
+});
+
 describe("solo-caster spell slots", () => {
   test("Lori (Artificer 8, solo) — multiClassSpellSlotDivisor must not apply to a single-class caster", () => {
     const c = load("lori-artificer");
@@ -106,8 +115,8 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
     const rapier = c.attacks.find((a) => a.name === "Rapier, +1")!;
     expect(rapier).toMatchObject({
       attackType: "melee",
-      attackBonus: 3, // dex +2 (Finesse) + magic +1, no proficiency bonus
-      damage: "1d8 +3",
+      attackBonus: 4, // dex +3 (Finesse) + magic +1, no proficiency bonus
+      damage: "1d8 +4",
       category: "Martial",
       range: "5 ft.",
       proficient: false,
@@ -120,8 +129,8 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
     const crossbow = c.attacks.find((a) => a.name === "Crossbow, Hand")!;
     expect(crossbow).toMatchObject({
       attackType: "ranged",
-      attackBonus: 2, // dex +2 only, not proficient with a Martial weapon
-      damage: "1d6 +2",
+      attackBonus: 3, // dex +3 only, not proficient with a Martial weapon
+      damage: "1d6 +3",
       category: "Martial",
       range: "30/120 ft.",
       proficient: false,
@@ -130,8 +139,8 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
 
     const dagger = c.attacks.find((a) => a.name === "Dagger")!;
     expect(dagger).toMatchObject({
-      attackBonus: 5, // dex +2 (Finesse) + proficiency +3 (Simple weapon)
-      damage: "1d4 +2",
+      attackBonus: 6, // dex +3 (Finesse) + proficiency +3 (Simple weapon)
+      damage: "1d4 +3",
       category: "Simple",
       range: "20/60 ft.", // Thrown
       proficient: true,
