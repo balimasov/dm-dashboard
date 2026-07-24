@@ -118,8 +118,14 @@ export function RemindersFab({
           </span>
         </button>
 
+        {/* `overscroll-contain` — without it, dragging past this list's own
+            top/bottom edge on a touch screen fell through to the dashboard
+            page underneath and started scrolling *that* instead, since a
+            nested scroller's "no more room to scroll" bounce chains to the
+            next scrollable ancestor by default. This list is meant to be a
+            self-contained overlay, not a window into the page behind it. */}
         {open && (
-          <div className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl">
+          <div className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto overscroll-contain rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl">
             <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-slate-50">
               <span aria-hidden="true">🔥</span>
               Reminders
