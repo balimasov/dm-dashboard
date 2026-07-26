@@ -89,6 +89,7 @@ export function RemindersPanel({
         <CreatureDetailsModal
           creature={openCreature}
           owner={characters.find((c) => c.id === openCreature.ownerCharacterId)}
+          characters={characters}
           onClose={() => setOpenCreatureId(null)}
           onUpdate={onUpdateCreature}
         />

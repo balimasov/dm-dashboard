@@ -6,6 +6,7 @@ import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { NotesSection } from "./ui/NotesSection";
@@ -30,6 +31,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 export function CreatureDetailsModal({
   creature,
   owner,
+  characters,
   onClose,
   onUpdate,
   onDuplicate,
@@ -38,12 +40,14 @@ export function CreatureDetailsModal({
 }: {
   creature: Creature;
   owner?: Character;
+  characters: Character[];
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
   onDuplicate?: () => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {
+  const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
 
   useEscapeToClose(onClose);
@@ -98,7 +102,7 @@ export function CreatureDetailsModal({
             <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
           </div>
           <EntityActionsMenu
-            editHref={`/creatures/${creature.id}/edit`}
+            onEdit={() => setEditOpen(true)}
             name={creature.name}
             hidden={creature.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
@@ -126,6 +130,15 @@ export function CreatureDetailsModal({
           creature={creature}
           onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
           onClose={() => setHpHistoryOpen(false)}
+        />
+      )}
+
+      {editOpen && onUpdate && (
+        <EditCreatureModal
+          creature={creature}
+          characters={characters}
+          onClose={() => setEditOpen(false)}
+          onUpdate={onUpdate}
         />
       )}
     </div>

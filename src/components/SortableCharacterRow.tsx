@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
@@ -11,11 +10,13 @@ import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./ui/icons";
 export function SortableCharacterRow({
   character,
   syncing,
+  onEdit,
   onRemove,
   onToggleHidden,
 }: {
   character: Character;
   syncing: boolean;
+  onEdit: (character: Character) => void;
   onRemove: (id: string) => void;
   onToggleHidden: (id: string) => void;
 }) {
@@ -26,14 +27,15 @@ export function SortableCharacterRow({
       avatar={<CharacterAvatar character={character} />}
       actions={
         <div className="flex items-center gap-1">
-          <Link
-            href={`/characters/${character.id}/edit`}
+          <button
+            type="button"
+            onClick={() => onEdit(character)}
             title="Edit"
             aria-label="Edit"
             className="rounded p-1 text-slate-400 hover:text-slate-200"
           >
             <PencilIcon className="h-4 w-4" />
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => onToggleHidden(character.id)}

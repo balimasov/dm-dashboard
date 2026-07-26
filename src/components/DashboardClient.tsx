@@ -241,6 +241,7 @@ function CreatureCategorySection({
                 <CreatureCard
                   creature={creature}
                   owner={owner}
+                  characters={characters}
                   onUpdate={onUpdate}
                   onDuplicate={() => onDuplicate(creature)}
                   onClearHpHistory={onClearHpHistory}

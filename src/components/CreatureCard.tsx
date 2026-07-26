@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { creatureReminders } from "@/lib/reminders";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
+import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
@@ -38,6 +39,7 @@ import { StatusRail } from "./ui/StatusRail";
 export function CreatureCard({
   creature,
   owner,
+  characters,
   onUpdate,
   onDuplicate,
   onClearHpHistory,
@@ -45,12 +47,14 @@ export function CreatureCard({
 }: {
   creature: Creature;
   owner?: Character;
+  characters: Character[];
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
   onDuplicate?: () => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
 
   return (
@@ -89,7 +93,7 @@ export function CreatureCard({
             onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
           />
           <EntityActionsMenu
-            editHref={`/creatures/${creature.id}/edit`}
+            onEdit={() => setEditOpen(true)}
             name={creature.name}
             hidden={creature.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
@@ -111,11 +115,21 @@ export function CreatureCard({
         <CreatureDetailsModal
           creature={creature}
           owner={owner}
+          characters={characters}
           onClose={() => setDetailsOpen(false)}
           onUpdate={onUpdate}
           onDuplicate={onDuplicate}
           onClearHpHistory={onClearHpHistory}
           onRemove={onRemove}
+        />
+      )}
+
+      {editOpen && onUpdate && (
+        <EditCreatureModal
+          creature={creature}
+          characters={characters}
+          onClose={() => setEditOpen(false)}
+          onUpdate={onUpdate}
         />
       )}
 

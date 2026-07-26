@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
@@ -17,7 +16,7 @@ import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
  * worth showing — only `CreatureCard`/`CreatureDetailsModal` pass either).
  */
 export function EntityActionsMenu({
-  editHref,
+  onEdit,
   name,
   hidden,
   onToggleHidden,
@@ -28,7 +27,7 @@ export function EntityActionsMenu({
   onRemove,
   variant = "plain",
 }: {
-  editHref: string;
+  onEdit: () => void;
   name: string;
   hidden?: boolean;
   onToggleHidden?: () => void;
@@ -47,10 +46,10 @@ export function EntityActionsMenu({
           {syncing ? "Syncing..." : "Sync"}
         </button>
       )}
-      <Link href={editHref} className={MORE_MENU_ITEM_CLASS}>
+      <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onEdit}>
         <PencilIcon className="h-4 w-4 shrink-0" />
         Edit
-      </Link>
+      </button>
       {onDuplicate && (
         <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onDuplicate}>
           <CopyIcon className="h-4 w-4 shrink-0" />

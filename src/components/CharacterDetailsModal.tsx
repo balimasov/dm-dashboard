@@ -21,6 +21,7 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
 import { CharacterHeader } from "./CharacterHeader";
+import { EditCharacterModal } from "./EditCharacterModal";
 import { SkillPanel } from "./SkillPanel";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { ConsumableQuantity } from "./ui/ConsumableQuantity";
@@ -182,6 +183,7 @@ export function CharacterDetailsModal({
 }) {
   const c = character;
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
+  const [editOpen, setEditOpen] = useState(false);
 
   const flaggedAbilities = c.flaggedAbilities ?? [];
   function toggleFlag(name: string) {
@@ -284,7 +286,7 @@ export function CharacterDetailsModal({
             />
           </div>
           <EntityActionsMenu
-            editHref={`/characters/${c.id}/edit`}
+            onEdit={() => setEditOpen(true)}
             name={c.name}
             hidden={c.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
@@ -616,6 +618,10 @@ export function CharacterDetailsModal({
           onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
         />
       </div>
+
+      {editOpen && onUpdate && (
+        <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
+      )}
     </div>
   );
 }

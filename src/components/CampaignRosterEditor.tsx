@@ -19,6 +19,8 @@ import {
 import { useCharacters } from "@/hooks/useCharacters";
 import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
+import { Character } from "@/lib/types";
+import { EditCharacterModal } from "@/components/EditCharacterModal";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -34,6 +36,7 @@ export function CampaignRosterEditor({
 }) {
   const { characters, addFromUrl, removeCharacter, updateCharacter, reorderCharacters } = charactersState;
 
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -177,6 +180,7 @@ export function CampaignRosterEditor({
                 key={c.id}
                 character={c}
                 syncing={syncingId === c.id}
+                onEdit={setEditingCharacter}
                 onRemove={removeCharacter}
                 onToggleHidden={handleToggleHidden}
               />
@@ -184,6 +188,14 @@ export function CampaignRosterEditor({
           </ul>
         </SortableContext>
       </DndContext>
+
+      {editingCharacter && (
+        <EditCharacterModal
+          character={editingCharacter}
+          onClose={() => setEditingCharacter(null)}
+          onUpdate={updateCharacter}
+        />
+      )}
     </div>
   );
 }

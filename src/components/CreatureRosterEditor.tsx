@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
 import {
   DndContext,
   PointerSensor,
@@ -34,6 +33,7 @@ import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creature
 import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
 import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
+import { EditCreatureModal } from "@/components/EditCreatureModal";
 import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
@@ -49,9 +49,9 @@ type ResultReporter = (message: string, variant: "success" | "error") => void;
  * Deliberately minimal, same weight as the character roster's "paste a
  * D&D Beyond link" add step — search for the general name, pick a match (or
  * add it blank if nothing's found), done. No stat-block form shown here at
- * all; the full stat block is filled in afterwards via each creature's own
- * `/creatures/[id]/edit` page, same as a character's details live on its own
- * edit page rather than inline in this list.
+ * all; the full stat block is filled in afterwards via the creature's own
+ * edit modal (the pencil icon on its row below), same as a character's
+ * details are edited via its own modal rather than inline in this list.
  *
  * Search results are lightweight previews (name/type/size/CR) — a popular
  * query can return upwards of a hundred creature hits, so the full stat
@@ -205,7 +205,7 @@ function AddCreaturePanel({
           >
             {addingId === "manual" ? "Adding..." : "Add it anyway"}
           </button>
-          , then fill in its stat block on its own edit page.
+          , then fill in its stat block via its own edit modal.
         </p>
       )}
     </div>
@@ -376,12 +376,14 @@ function ImportCreaturePanel({
 function CreatureRow({
   creature,
   characters,
+  onEdit,
   onRemove,
   onToggleHidden,
   onDuplicate,
 }: {
   creature: Creature;
   characters: Character[];
+  onEdit: (creature: Creature) => void;
   onRemove: (id: string) => Promise<void>;
   onToggleHidden: (id: string) => void;
   onDuplicate: (creature: Creature) => void;
@@ -404,9 +406,15 @@ function CreatureRow({
       }
       actions={
         <>
-          <Link href={`/creatures/${creature.id}/edit`} title="Edit" aria-label="Edit" className="rounded p-1 text-slate-400 hover:text-slate-200">
+          <button
+            type="button"
+            onClick={() => onEdit(creature)}
+            title="Edit"
+            aria-label="Edit"
+            className="rounded p-1 text-slate-400 hover:text-slate-200"
+          >
             <PencilIcon className="h-4 w-4" />
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => onDuplicate(creature)}
@@ -480,6 +488,8 @@ export function CreatureRosterEditor({
   characters: Character[];
 }) {
   const { creatures, addCreature, duplicateCreature, removeCreature, reorderCreatures, updateCreature } = creaturesState;
+
+  const [editingCreature, setEditingCreature] = useState<Creature | null>(null);
 
   function handleToggleHidden(id: string) {
     const creature = creatures.find((c) => c.id === id);
@@ -593,6 +603,7 @@ export function CreatureRosterEditor({
                   key={creature.id}
                   creature={creature}
                   characters={characters}
+                  onEdit={setEditingCreature}
                   onRemove={removeCreature}
                   onToggleHidden={handleToggleHidden}
                   onDuplicate={handleDuplicate}
@@ -601,6 +612,15 @@ export function CreatureRosterEditor({
             </ul>
           </SortableContext>
         </DndContext>
+      )}
+
+      {editingCreature && (
+        <EditCreatureModal
+          creature={editingCreature}
+          characters={characters}
+          onClose={() => setEditingCreature(null)}
+          onUpdate={updateCreature}
+        />
       )}
     </div>
   );

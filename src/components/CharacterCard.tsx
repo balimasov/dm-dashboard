@@ -8,6 +8,7 @@ import { characterReminders } from "@/lib/reminders";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { DotMeter, ResourceMeter, ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
+import { EditCharacterModal } from "./EditCharacterModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { ShieldIcon, SpeedIcon, InitiativeIcon, ProficiencyIcon } from "./ui/icons";
@@ -38,6 +39,7 @@ export function CharacterCard({
   const c = character;
   const isDown = c.combat.hp <= 0;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
 
@@ -83,7 +85,7 @@ export function CharacterCard({
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
           />
           <EntityActionsMenu
-            editHref={`/characters/${c.id}/edit`}
+            onEdit={() => setEditOpen(true)}
             name={c.name}
             hidden={c.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
@@ -285,6 +287,10 @@ export function CharacterCard({
 
       {detailsOpen && (
         <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} onRemove={onRemove} />
+      )}
+
+      {editOpen && onUpdate && (
+        <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
       )}
     </div>
   );
