@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Creature, CreatureTrait } from "@/lib/types";
+import { AbilityScores, Creature, CreatureTrait } from "@/lib/types";
 import { abilityModifier } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
@@ -40,6 +40,65 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
         </span>
       )}
     </span>
+  );
+}
+
+const ABILITY_FULL_NAMES: Record<keyof AbilityScores, string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
+
+/**
+ * The hover-hint for a trait row — same idea as `AttackHintPanel`/
+ * `SpellHintPanel` on the character side: the row's trailing content
+ * (`AbilityTraitTrailing`) is a fast-glance summary, not the whole picture,
+ * so the hint fills in what the row has no room for. Two fields are
+ * editable (via `EditCreatureForm`) but had nowhere to show at all before
+ * this — `attack.attackType` (melee/ranged) and `attack.range` — both
+ * surface here as a meta line, same "Melee · 5 ft." convention
+ * `AttackHintPanel` uses. `save.ability` also gets spelled out in full
+ * ("Wisdom saving throw") here, since the row itself only has room for the
+ * three-letter abbreviation.
+ */
+function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
+  const metaLines: Array<string | undefined> = [];
+  if (trait.attack) {
+    metaLines.push(
+      `${trait.attack.attackType === "melee" ? "Melee" : "Ranged"}${trait.attack.range ? ` · ${trait.attack.range}` : ""}`
+    );
+  }
+  return (
+    <AbilityHintPanel
+      name={trait.name}
+      metaLines={metaLines}
+      status={
+        (trait.attack || trait.save) && (
+          <span className="block space-y-0.5">
+            {trait.attack && (
+              <span className="block">
+                <span className="text-slate-500">To Hit</span>{" "}
+                <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
+                {" · "}
+                <span className="text-slate-500">Damage</span>{" "}
+                <span className="font-semibold text-slate-100">{trait.attack.damage}</span>
+                {trait.attack.damageType && ` ${trait.attack.damageType}`}
+              </span>
+            )}
+            {trait.save && (
+              <span className="block">
+                <span className="font-semibold text-slate-100">DC {trait.save.dc}</span>{" "}
+                {ABILITY_FULL_NAMES[trait.save.ability]} saving throw
+              </span>
+            )}
+          </span>
+        )
+      }
+      description={trait.description}
+    />
   );
 }
 
@@ -138,9 +197,7 @@ export function CreatureAbilitiesPanel({
                     onToggleFlag={() => toggleFlag(trait.name)}
                     trailing={<AbilityTraitTrailing trait={trait} />}
                   >
-                    <InfoTooltip panel={<AbilityHintPanel name={trait.name} description={trait.description} />}>
-                      {trait.name}
-                    </InfoTooltip>
+                    <InfoTooltip panel={<CreatureAbilityHintPanel trait={trait} />}>{trait.name}</InfoTooltip>
                   </FlaggableRow>
                 );
               })}

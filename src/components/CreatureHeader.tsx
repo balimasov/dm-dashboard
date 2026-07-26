@@ -48,7 +48,14 @@ export function CreatureHeader({
             {infoLine}
           </p>
         )}
-        {creature.challengeRating && <p className="text-xs text-slate-500">CR {creature.challengeRating}</p>}
+        {creature.challengeRating &&
+          (creature.experiencePoints !== undefined ? (
+            <InfoTooltip disableTap className="text-xs text-slate-500" panel={<p>{creature.experiencePoints.toLocaleString()} XP</p>}>
+              CR {creature.challengeRating}
+            </InfoTooltip>
+          ) : (
+            <p className="text-xs text-slate-500">CR {creature.challengeRating}</p>
+          ))}
       </div>
     </>
   );
