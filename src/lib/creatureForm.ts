@@ -1,4 +1,4 @@
-import { AbilityScores, Creature, CreatureTemplate } from "./types";
+import { AbilityScores, Creature, CreatureSpellcasting, CreatureTemplate } from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CreatureFormValue, emptyCreatureFormValue } from "@/components/CreatureFormFields";
 
@@ -12,6 +12,7 @@ export function templateToFormValue(template: CreatureTemplate): CreatureFormVal
     alignment: template.alignment ?? "",
     ac: template.ac,
     armorDesc: template.armorDesc ?? "",
+    proficiencyBonus: template.proficiencyBonus !== undefined ? String(template.proficiencyBonus) : "",
     hp: template.maxHp,
     maxHp: template.maxHp,
     hitDice: template.hitDice ?? "",
@@ -30,6 +31,10 @@ export function templateToFormValue(template: CreatureTemplate): CreatureFormVal
     damageImmunities: template.damageImmunities ?? "",
     conditionImmunities: template.conditionImmunities ?? "",
     traits: template.traits,
+    spellcastingAbility: template.spellcasting?.ability ?? "",
+    spellcastingSaveDc: template.spellcasting ? String(template.spellcasting.saveDc) : "",
+    spellcastingAttackBonus: template.spellcasting ? String(template.spellcasting.attackBonus) : "",
+    spellcastingSpells: template.spellcasting?.spells.join("\n") ?? "",
   };
 }
 
@@ -45,6 +50,7 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
     alignment: creature.alignment ?? "",
     ac: creature.ac,
     armorDesc: creature.armorDesc ?? "",
+    proficiencyBonus: creature.proficiencyBonus !== undefined ? String(creature.proficiencyBonus) : "",
     hp: creature.hp,
     maxHp: creature.maxHp,
     hitDice: creature.hitDice ?? "",
@@ -63,6 +69,10 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
     damageImmunities: creature.damageImmunities ?? "",
     conditionImmunities: creature.conditionImmunities ?? "",
     traits: creature.traits,
+    spellcastingAbility: creature.spellcasting?.ability ?? "",
+    spellcastingSaveDc: creature.spellcasting ? String(creature.spellcasting.saveDc) : "",
+    spellcastingAttackBonus: creature.spellcasting ? String(creature.spellcasting.attackBonus) : "",
+    spellcastingSpells: creature.spellcasting?.spells.join("\n") ?? "",
     ownerCharacterId: creature.ownerCharacterId ?? "",
     source: creature.source ?? "",
     notes: creature.notes ?? "",
@@ -80,6 +90,20 @@ function parseOptionalNumber(text: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** `spellcastingAbility` blank = no spellcasting at all, regardless of what's typed into the other `spellcasting*` fields — same "the ability picker is the on/off switch" convention the form's own disabled-inputs use. */
+function buildSpellcasting(value: CreatureFormValue): CreatureSpellcasting | undefined {
+  if (!value.spellcastingAbility) return undefined;
+  return {
+    ability: value.spellcastingAbility,
+    saveDc: parseOptionalNumber(value.spellcastingSaveDc) ?? 0,
+    attackBonus: parseOptionalNumber(value.spellcastingAttackBonus) ?? 0,
+    spells: value.spellcastingSpells
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+  };
+}
+
 /** Everything an edited creature instance needs, shared between the Settings roster editor and the dashboard's own edit modal. */
 export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Creature> {
   return {
@@ -92,6 +116,7 @@ export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Cr
     alignment: value.alignment || undefined,
     ac: value.ac,
     armorDesc: value.armorDesc || undefined,
+    proficiencyBonus: parseOptionalNumber(value.proficiencyBonus),
     hp: value.hp,
     maxHp: value.maxHp,
     hitDice: value.hitDice || undefined,
@@ -110,6 +135,7 @@ export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Cr
     damageImmunities: value.damageImmunities || undefined,
     conditionImmunities: value.conditionImmunities || undefined,
     traits: value.traits,
+    spellcasting: buildSpellcasting(value),
     ownerCharacterId: value.ownerCharacterId || undefined,
     source: value.source || undefined,
     notes: value.notes || undefined,
@@ -128,6 +154,7 @@ export function formValueToAddCreatureInput(value: CreatureFormValue, templateId
     alignment: value.alignment || undefined,
     ac: value.ac,
     armorDesc: value.armorDesc || undefined,
+    proficiencyBonus: parseOptionalNumber(value.proficiencyBonus),
     hp: value.hp,
     maxHp: value.maxHp,
     hitDice: value.hitDice || undefined,
@@ -146,6 +173,7 @@ export function formValueToAddCreatureInput(value: CreatureFormValue, templateId
     damageImmunities: value.damageImmunities || undefined,
     conditionImmunities: value.conditionImmunities || undefined,
     traits: value.traits,
+    spellcasting: buildSpellcasting(value),
     ownerCharacterId: value.ownerCharacterId || undefined,
     source: value.source || undefined,
     templateId,

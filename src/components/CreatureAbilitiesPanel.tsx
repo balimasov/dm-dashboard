@@ -9,11 +9,12 @@ import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
 import { SectionDivider } from "./ui/SectionDivider";
 import { StatBox } from "./ui/StatBox";
 import { TabBar } from "./ui/TabBar";
 
-type AbilitiesTab = "attacks" | "spellcasting";
+type AbilitiesTab = "traits" | "attacks" | "spellcasting";
 
 /** Bonus/damage (attack), DC (save), and a recharge badge — the fast-glance numbers a DM needs mid-combat without reading `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing` on the character side. */
 function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
@@ -43,17 +44,53 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   );
 }
 
+/** Groups a trait list by `GROUP_ORDER`, dropping empty groups — shared by the "Traits & Actions" tab (every trait) and the "Attacks" tab (only ones with structured data). */
+function groupTraits(traits: CreatureTrait[]) {
+  return GROUP_ORDER.map((group) => ({
+    group,
+    items: traits.filter((t) => (t.group ?? "trait") === group),
+  })).filter((g) => g.items.length > 0);
+}
+
 /**
- * The "one more tab" the DM asked for — everything new and structured
+ * One frequency-group line (e.g. `"At will: mage hand, minor illusion"`,
+ * `"3/day each: charm person, invisibility"`) split into its label and the
+ * individual spell names — so the Spellcasting tab can render a short
+ * bulleted list per cantrip/spell-slot bucket instead of one comma-packed
+ * sentence per line (a wall of text otherwise, per DM feedback). A line with
+ * no ": " separator (a DM just typed one bare spell name) still renders fine
+ * as a single-item, label-less group.
+ */
+function parseSpellFrequencyLine(line: string): { label: string; spells: string[] } {
+  const separatorIndex = line.indexOf(":");
+  if (separatorIndex === -1) {
+    return { label: "", spells: [line.trim()].filter(Boolean) };
+  }
+  return {
+    label: line.slice(0, separatorIndex).trim(),
+    spells: line
+      .slice(separatorIndex + 1)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  };
+}
+
+/**
+ * A creature's tabbed "how do its abilities actually work" view — everything
+ * a DM needs at a glance mid-combat, without rereading prose
  * (`proficiencyBonus` already shows in `CreatureStatBlock`'s own icon-stat
- * row, not here) laid out for a fast glance, next to (not replacing) the
- * existing free-text Traits/Actions/Reactions/Legendary Actions block in
- * `CreatureStatBlock`. Mirrors `CharacterDetailsModal`'s own tab pattern —
- * same `TabBar`, same "renders nothing with under 2 populated tabs" rule.
+ * row, not here). Mirrors `CharacterDetailsModal`'s own tab pattern — same
+ * `TabBar`, same "renders nothing with under 2 populated tabs" rule.
  *
- * "Attacks" only lists traits that actually carry `.attack`/`.save`/
- * `.recharge` — a creature with none of those (most NPCs, most companions)
- * shows no tab at all rather than an empty one.
+ * "Traits & Actions" is every trait/action/bonus action/reaction/legendary
+ * action, same content and grouping the stat block used to always show
+ * inline — moved here as this panel's first tab instead, so a creature's
+ * full narrative text and its structured combat numbers live in one place
+ * instead of the free-text block always showing above a separate structured
+ * section. "Attacks" narrows that same list down to just the entries that
+ * carry `.attack`/`.save`/`.recharge`, with those numbers as trailing
+ * content instead of buried in `description`.
  */
 export function CreatureAbilitiesPanel({
   creature,
@@ -69,15 +106,14 @@ export function CreatureAbilitiesPanel({
     onUpdate(creature.id, { flaggedTraits: next });
   }
 
-  const abilityTraits = creature.traits.filter((t) => t.attack || t.save || t.recharge);
-  const groups = GROUP_ORDER.map((group) => ({
-    group,
-    items: abilityTraits.filter((t) => (t.group ?? "trait") === group),
-  })).filter((g) => g.items.length > 0);
-  const hasAttacks = groups.length > 0;
+  const allGroups = groupTraits(creature.traits);
+  const abilityGroups = groupTraits(creature.traits.filter((t) => t.attack || t.save || t.recharge));
+  const hasTraits = allGroups.length > 0;
+  const hasAttacks = abilityGroups.length > 0;
   const hasSpellcasting = Boolean(creature.spellcasting);
 
   const tabs: Array<{ key: AbilitiesTab; icon: string; text: string }> = [
+    ...(hasTraits ? [{ key: "traits" as const, icon: CONTENT_KIND_ICON.features, text: "Traits & Actions" }] : []),
     ...(hasAttacks ? [{ key: "attacks" as const, icon: CONTENT_KIND_ICON.weapons, text: "Attacks" }] : []),
     ...(hasSpellcasting ? [{ key: "spellcasting" as const, icon: CONTENT_KIND_ICON.spells, text: "Spellcasting" }] : []),
   ];
@@ -90,9 +126,28 @@ export function CreatureAbilitiesPanel({
     <SectionDivider>
       <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
+      {currentTab === "traits" && (
+        <div className="space-y-3">
+          {allGroups.map(({ group, items }) => (
+            <div key={group} className="space-y-1">
+              <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
+              {items.map((trait, index) => {
+                const flagged = flaggedTraits.includes(trait.name);
+                return (
+                  <FlaggableRow key={`${group}-${index}`} flagged={flagged} onToggleFlag={() => toggleFlag(trait.name)}>
+                    <span className="font-semibold">{trait.name}.</span>{" "}
+                    {trait.description && <RichText text={trait.description} />}
+                  </FlaggableRow>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+
       {currentTab === "attacks" && (
         <div className="space-y-3">
-          {groups.map(({ group, items }) => (
+          {abilityGroups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
               <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
               {items.map((trait, index) => {
@@ -126,11 +181,22 @@ export function CreatureAbilitiesPanel({
             <StatBox label="Save DC" value={String(creature.spellcasting.saveDc)} />
           </div>
           {creature.spellcasting.spells.length > 0 && (
-            <ul className="space-y-1 text-sm text-slate-300">
-              {creature.spellcasting.spells.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
+            <div className="space-y-2">
+              {creature.spellcasting.spells.map((line, i) => {
+                const { label, spells } = parseSpellFrequencyLine(line);
+                if (spells.length === 0) return null;
+                return (
+                  <div key={i}>
+                    {label && <p className="text-[10px] uppercase tracking-wide text-slate-600">{label}</p>}
+                    <ul className="mt-0.5 space-y-0.5 text-sm text-slate-300">
+                      {spells.map((spell, j) => (
+                        <li key={j}>{spell}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}

@@ -26,7 +26,8 @@ import { StatusRail } from "./ui/StatusRail";
  *
  * Deliberately shorter than the modal: Traits/Actions/Bonus Actions/
  * Reactions/Legendary Actions and the long-form Notes preview are both
- * skipped here (`showActionGroups={false}`, no `NotesSection`) — with
+ * skipped here (they live in `CreatureDetailsModal`'s own
+ * `CreatureAbilitiesPanel`/`NotesSection`, not on this card at all) — with
  * several creature cards open side by side, that tail end of the stat block
  * was pushing cards tall enough that it got hard to tell which card's HP/
  * traits belonged to which name at a glance. Both still show in full in
@@ -99,7 +100,7 @@ export function CreatureCard({
         </div>
       </div>
 
-      <CreatureStatBlock creature={creature} onUpdate={onUpdate} showActionGroups={false} />
+      <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
 
       <QuickNotesSection
         notes={creature.quickNotes ?? []}
