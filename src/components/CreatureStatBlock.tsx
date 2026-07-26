@@ -9,7 +9,7 @@ import { FlaggableRow } from "./ui/FlaggableRow";
 import { HintPanel } from "./ui/HintPanel";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
@@ -17,14 +17,14 @@ import { StatBox } from "./ui/StatBox";
 import { SubHeading } from "./ui/SubHeading";
 import { RichText } from "./RichText";
 
-const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
+export const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
   trait: "Traits",
   action: "Actions",
   bonusAction: "Bonus Actions",
   reaction: "Reactions",
   legendary: "Legendary Actions",
 };
-const GROUP_ORDER: Array<NonNullable<CreatureTrait["group"]>> = [
+export const GROUP_ORDER: Array<NonNullable<CreatureTrait["group"]>> = [
   "trait",
   "action",
   "bonusAction",
@@ -134,6 +134,15 @@ export function CreatureStatBlock({
               label="Initiative"
             >
               {formatModifier(creature.initiativeBonus)}
+            </IconStat>
+          )}
+          {creature.proficiencyBonus !== undefined && (
+            <IconStat
+              icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              panel={<p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>}
+              label="Prof"
+            >
+              {formatModifier(creature.proficiencyBonus)}
             </IconStat>
           )}
           <IconStat

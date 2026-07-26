@@ -5,7 +5,13 @@ import { AddCreatureInput } from "@/hooks/useCreatures";
  * How a field's value should be read/written when generating or parsing the
  * hand-fillable YAML template (`creatureImportTemplate.ts`/`creatureImportParser.ts`).
  */
-export type CreatureFieldKind = "string" | "number" | "abilityScores" | "partialAbilityScores" | "traits";
+export type CreatureFieldKind =
+  | "string"
+  | "number"
+  | "abilityScores"
+  | "partialAbilityScores"
+  | "traits"
+  | "spellcasting";
 
 export interface CreatureFieldSpec {
   key: keyof AddCreatureInput;
@@ -173,6 +179,15 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     includeInTemplate: true,
   },
   {
+    key: "proficiencyBonus",
+    section: "Бойові характеристики",
+    kind: "number",
+    required: false,
+    doc: "Бонус майстерності — додається до атак/рятівних кидків, де застосовний. Необов'язково.",
+    example: 3,
+    includeInTemplate: true,
+  },
+  {
     key: "stats",
     section: "Характеристики",
     kind: "abilityScores",
@@ -276,11 +291,39 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     section: "Риси, дії, реакції",
     kind: "traits",
     required: false,
-    doc: 'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково). Залиш порожнім списком [], якщо рис немає.',
+    doc:
+      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackBonus — число, damage — рядок, range/damageType — необов\'язково), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число). Залиш порожнім списком [], якщо рис немає.',
     example: [
       { name: "Charge", group: "trait", description: "If the unicorn moves at least 20 feet straight toward a target..." },
-      { name: "Hooves", group: "action", description: "Melee Weapon Attack: +7 to hit, reach 5 ft., one target." },
+      {
+        name: "Hooves",
+        group: "action",
+        description: "Melee Weapon Attack: +7 to hit, reach 5 ft., one target.",
+        attack: { attackType: "melee", attackBonus: 7, range: "5 ft.", damage: "2d6 +4", damageType: "bludgeoning" },
+      },
+      {
+        name: "Frightful Presence",
+        group: "action",
+        recharge: "Recharge 5-6",
+        save: { ability: "wis", dc: 15 },
+        description: "Each creature of the DM's choice within 120 feet must succeed on a Wisdom saving throw...",
+      },
     ],
+    includeInTemplate: true,
+  },
+  {
+    key: "spellcasting",
+    section: "Чарування",
+    kind: "spellcasting",
+    required: false,
+    doc:
+      "Чарування (необов'язково) — характеристика (ability, одна з str/dex/con/int/wis/cha), DC рятівного кидка від закляття (saveDc), бонус атаки закляттями (attackBonus) і список заклять вільним текстом, згрупований за частотою використання. Прибери весь блок, якщо істота не чаклує.",
+    example: {
+      ability: "cha",
+      saveDc: 15,
+      attackBonus: 7,
+      spells: ["At will: mage hand, minor illusion", "3/day each: charm person, invisibility"],
+    },
     includeInTemplate: true,
   },
   {
@@ -311,6 +354,7 @@ export const CREATURE_IMPORT_SECTIONS = [
   "Опір і вразливість до шкоди",
   "Виклик і досвід",
   "Риси, дії, реакції",
+  "Чарування",
   "Прив'язка до персонажа",
 ] as const;
 

@@ -15,10 +15,26 @@ describe("creature import template round-trip", () => {
       hp: 67,
       maxHp: 67,
       speed: 50,
+      proficiencyBonus: 3,
       stats: { str: 18, dex: 14, con: 15, int: 11, wis: 17, cha: 16 },
       savingThrows: { wis: 5 },
+      spellcasting: {
+        ability: "cha",
+        saveDc: 15,
+        attackBonus: 7,
+        spells: ["At will: mage hand, minor illusion", "3/day each: charm person, invisibility"],
+      },
     });
-    expect(outcome.result.input.traits).toHaveLength(2);
+    expect(outcome.result.input.traits).toHaveLength(3);
+    expect(outcome.result.input.traits?.[1]).toMatchObject({
+      name: "Hooves",
+      attack: { attackType: "melee", attackBonus: 7, range: "5 ft.", damage: "2d6 +4", damageType: "bludgeoning" },
+    });
+    expect(outcome.result.input.traits?.[2]).toMatchObject({
+      name: "Frightful Presence",
+      recharge: "Recharge 5-6",
+      save: { ability: "wis", dc: 15 },
+    });
     // The template's owner-character field is intentionally left blank —
     // resolving a filled-in name to an id needs the campaign's character
     // list, which this data-only module never sees.
@@ -120,6 +136,141 @@ damageResistance: "Cold"
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(outcome.warnings).toEqual([expect.stringContaining('"damageResistance"')]);
+  });
+});
+
+describe("backward compatibility — old files with none of the new structured fields", () => {
+  test("a YAML saved before proficiencyBonus/attack/save/recharge/spellcasting existed still imports unchanged", () => {
+    const yaml = `
+templateName: "Giant Rat"
+ac: 12
+maxHp: 7
+speed: 30
+stats:
+  str: 7
+  dex: 15
+  con: 11
+  int: 2
+  wis: 10
+  cha: 4
+traits:
+  - name: "Keen Smell"
+    group: "trait"
+    description: "The rat has advantage on Wisdom (Perception) checks that rely on smell."
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.warnings).toEqual([]);
+    expect(outcome.result.input.proficiencyBonus).toBeUndefined();
+    expect(outcome.result.input.spellcasting).toBeUndefined();
+    expect(outcome.result.input.traits).toEqual([
+      { name: "Keen Smell", group: "trait", description: expect.any(String), recharge: undefined, attack: undefined, save: undefined },
+    ]);
+  });
+});
+
+describe("new structured fields — valid and invalid shapes", () => {
+  test("proficiencyBonus, trait.attack/save/recharge, and spellcasting all parse when well-formed", () => {
+    const yaml = `
+templateName: "Young Sorcerer"
+ac: 13
+maxHp: 30
+speed: 30
+proficiencyBonus: 3
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Bite"
+    group: "action"
+    attack:
+      attackType: melee
+      attackBonus: 5
+      range: "5 ft."
+      damage: "1d6 +2"
+      damageType: piercing
+  - name: "Frightful Presence"
+    group: "action"
+    recharge: "Recharge 5-6"
+    save:
+      ability: wis
+      dc: 13
+spellcasting:
+  ability: cha
+  saveDc: 14
+  attackBonus: 6
+  spells:
+    - "At will: fire bolt"
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.result.input.proficiencyBonus).toBe(3);
+    expect(outcome.result.input.traits[0].attack).toEqual({
+      attackType: "melee",
+      attackBonus: 5,
+      range: "5 ft.",
+      damage: "1d6 +2",
+      damageType: "piercing",
+    });
+    expect(outcome.result.input.traits[1].recharge).toBe("Recharge 5-6");
+    expect(outcome.result.input.traits[1].save).toEqual({ ability: "wis", dc: 13 });
+    expect(outcome.result.input.spellcasting).toEqual({
+      ability: "cha",
+      saveDc: 14,
+      attackBonus: 6,
+      spells: ["At will: fire bolt"],
+    });
+  });
+
+  test("malformed attack/save/spellcasting shapes are reported clearly, not thrown", () => {
+    const yaml = `
+templateName: "Broken Example"
+ac: 13
+maxHp: 30
+speed: 30
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Bad Attack"
+    attack:
+      attackType: "diagonal"
+      attackBonus: 5
+      damage: "1d6"
+  - name: "Missing Damage"
+    attack:
+      attackType: melee
+      attackBonus: 5
+  - name: "Bad Save"
+    save:
+      ability: "luck"
+      dc: 13
+spellcasting:
+  ability: "luck"
+  saveDc: 14
+  attackBonus: 6
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("traits[0].attack.attackType"),
+        expect.stringContaining("traits[1].attack.damage"),
+        expect.stringContaining("traits[2].save.ability"),
+        expect.stringContaining('"spellcasting.ability"'),
+      ])
+    );
   });
 });
 

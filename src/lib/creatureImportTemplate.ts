@@ -44,6 +44,11 @@ function fieldBlock(field: CreatureFieldSpec): string {
     return `${doc}\n${String(field.key)}:\n${indent(body, 2)}`;
   }
 
+  if (field.kind === "spellcasting") {
+    const body = dumpYaml(field.example ?? {}, { indent: 2 }).trimEnd();
+    return `${doc}\n${String(field.key)}:\n${indent(body, 2)}`;
+  }
+
   return `${doc}\n${String(field.key)}: ${scalarValue(field.example)}`;
 }
 

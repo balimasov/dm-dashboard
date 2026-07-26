@@ -1,5 +1,5 @@
 import "server-only";
-import { AbilityScores, CreatureSearchHit, CreatureTemplate, CreatureTrait } from "./types";
+import { AbilityScores, CreatureAttack, CreatureSearchHit, CreatureTemplate, CreatureTrait } from "./types";
 import { abilityModifier } from "./characterMath";
 
 /**
@@ -131,6 +131,79 @@ function toChallengeRatingText(cr: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * `usage_limits` on an Open5e v2 action is `{type, param}` (confirmed from
+ * `api_v2/serializers/creature.py`'s `get_usage_limits`), `type` one of
+ * `PER_DAY | RECHARGE | RECHARGE_ON_ROLL | RECHARGE_AFTER_REST` (confirmed
+ * from `api_v2/models/enums.py`) — mapped to the same free-text `recharge`
+ * a hand-authored YAML would use.
+ */
+const USAGE_LIMIT_LABELS: Record<string, (param: number | undefined) => string> = {
+  PER_DAY: (param) => `${param ?? "?"}/Day`,
+  RECHARGE: () => "Recharge",
+  RECHARGE_ON_ROLL: (param) => `Recharge ${param ?? "?"}-6`,
+  RECHARGE_AFTER_REST: () => "Recharge after a Short or Long Rest",
+};
+
+function mapRecharge(a: Record<string, unknown>): string | undefined {
+  const usageLimits = get(a, "usage_limits");
+  if (!usageLimits || typeof usageLimits !== "object") return undefined;
+  const type = String((usageLimits as Record<string, unknown>).type ?? "");
+  const paramRaw = Number((usageLimits as Record<string, unknown>).param);
+  const label = USAGE_LIMIT_LABELS[type];
+  return label ? label(Number.isFinite(paramRaw) ? paramRaw : undefined) : undefined;
+}
+
+/** e.g. "5 ft." (reach only), "80/320 ft." (range + long_range), or "5 ft. or 20/60 ft." (both) — same convention as a real stat block's attack line. */
+function formatAttackRange(attack: Record<string, unknown>): string | undefined {
+  const unit = firstString(attack, ["distance_unit"]) || "ft.";
+  const reach = firstNumber(attack, ["reach"], NaN);
+  const range = firstNumber(attack, ["range"], NaN);
+  const longRange = firstNumber(attack, ["long_range"], NaN);
+  const parts: string[] = [];
+  if (Number.isFinite(reach) && reach > 0) parts.push(`${reach} ${unit}`);
+  if (Number.isFinite(range) && range > 0) {
+    parts.push(Number.isFinite(longRange) && longRange > 0 ? `${range}/${longRange} ${unit}` : `${range} ${unit}`);
+  }
+  return parts.length > 0 ? parts.join(" or ") : undefined;
+}
+
+/**
+ * Maps the first entry of an action's `attacks[]` (confirmed real field
+ * shape from `api_v2/models/creature.py`'s `CreatureActionAttack`) — melee
+ * vs ranged is inferred from `reach`/`range` presence, since Open5e's own
+ * `attack_type` on this object distinguishes SPELL/WEAPON, not melee/ranged.
+ * Returns `undefined` for an action with no `attacks` (most traits/legendary
+ * actions) or one missing the numbers this shape actually needs.
+ */
+function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined {
+  const attacksRaw = Array.isArray(a.attacks) ? a.attacks : [];
+  const attack = attacksRaw.find((x): x is Record<string, unknown> => typeof x === "object" && x !== null);
+  if (!attack) return undefined;
+
+  const attackBonus = firstNumber(attack, ["to_hit_mod"], NaN);
+  const dieCount = firstNumber(attack, ["damage_die_count"], NaN);
+  const dieType = firstNumber(attack, ["damage_die_type"], NaN);
+  if (!Number.isFinite(attackBonus) || !Number.isFinite(dieCount) || !Number.isFinite(dieType)) return undefined;
+
+  const reach = firstNumber(attack, ["reach"], NaN);
+  const attackType: "melee" | "ranged" = Number.isFinite(reach) && reach > 0 ? "melee" : "ranged";
+
+  const bonus = firstNumber(attack, ["damage_bonus"], 0);
+  let damage = `${dieCount}d${dieType}${bonus !== 0 ? ` ${bonus >= 0 ? "+" : ""}${bonus}` : ""}`;
+  const extraCount = firstNumber(attack, ["extra_damage_die_count"], NaN);
+  const extraType = firstNumber(attack, ["extra_damage_die_type"], NaN);
+  if (Number.isFinite(extraCount) && Number.isFinite(extraType)) damage += ` plus ${extraCount}d${extraType}`;
+
+  return {
+    attackType,
+    attackBonus,
+    damage,
+    range: formatAttackRange(attack),
+    damageType: firstString(attack, ["damage_type.name", "damage_type"]),
+  };
+}
+
 /** `traits` (name/desc) map straight across. `actions` merges what this app models as four separate groups (action/bonusAction/reaction/legendary), disambiguated by `action_type` — grouped first, then ordered by `order_in_statblock` within each group, since that field restarts from 0 per action_type rather than running across the whole array. */
 function mapTraitsAndActions(m: Record<string, unknown>): CreatureTrait[] {
   const traitsRaw = Array.isArray(m.traits) ? m.traits : [];
@@ -164,6 +237,8 @@ function mapTraitsAndActions(m: Record<string, unknown>): CreatureTrait[] {
       name: a.name as string,
       description: firstString(a, ["desc", "description"]),
       group: GROUP_BY_TYPE[type],
+      recharge: mapRecharge(a),
+      attack: mapActionAttack(a),
     }))
   );
 
@@ -197,6 +272,7 @@ function mapOpen5eV2Creature(m: Record<string, unknown>): CreatureTemplate | nul
   const rai = (get(m, "resistances_and_immunities") ?? {}) as Record<string, unknown>;
   const initiativeBonus = firstNumber(m, ["initiative_bonus"], NaN);
   const experiencePoints = firstNumber(m, ["experience_points"], NaN);
+  const proficiencyBonus = firstNumber(m, ["proficiency_bonus"], NaN);
   const slug = typeof m.key === "string" && m.key ? m.key : name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return {
@@ -207,6 +283,7 @@ function mapOpen5eV2Creature(m: Record<string, unknown>): CreatureTemplate | nul
     alignment: firstString(m, ["alignment"]),
     ac: firstNumber(m, ["armor_class"], 10),
     armorDesc: firstString(m, ["armor_detail"]),
+    ...(Number.isFinite(proficiencyBonus) ? { proficiencyBonus } : {}),
     maxHp: firstNumber(m, ["hit_points"], 1),
     hitDice: firstString(m, ["hit_dice"]),
     speed,

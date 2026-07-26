@@ -194,10 +194,33 @@ const quickLinkSchema = z.object({
   url: z.string(),
 });
 
+const creatureAttackSchema = z.object({
+  attackType: z.enum(["melee", "ranged"]),
+  attackBonus: z.number(),
+  range: z.string().optional(),
+  damage: z.string(),
+  damageType: z.string().optional(),
+});
+
+const creatureSaveSchema = z.object({
+  ability: z.enum(["str", "dex", "con", "int", "wis", "cha"]),
+  dc: z.number(),
+});
+
+const creatureSpellcastingSchema = z.object({
+  ability: z.enum(["str", "dex", "con", "int", "wis", "cha"]),
+  saveDc: z.number(),
+  attackBonus: z.number(),
+  spells: z.array(z.string()),
+});
+
 const creatureTraitSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   group: z.enum(["trait", "action", "bonusAction", "reaction", "legendary"]).optional(),
+  recharge: z.string().optional(),
+  attack: creatureAttackSchema.optional(),
+  save: creatureSaveSchema.optional(),
 });
 
 const creatureCategorySchema = z.enum(["companion", "enemy", "npc"]);
@@ -270,6 +293,7 @@ export const creatureUpdateSchema = z
     alignment: z.string().optional(),
     ac: z.number(),
     armorDesc: z.string().optional(),
+    proficiencyBonus: z.number().optional(),
     hp: z.number(),
     maxHp: z.number(),
     hitDice: z.string().optional(),
@@ -289,6 +313,7 @@ export const creatureUpdateSchema = z
     damageImmunities: z.string().optional(),
     conditionImmunities: z.string().optional(),
     traits: z.array(creatureTraitSchema),
+    spellcasting: creatureSpellcastingSchema.optional(),
     conditions: z.array(z.string()),
     exhaustion: z.number(),
     concentrating: z.boolean().optional(),

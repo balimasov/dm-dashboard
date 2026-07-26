@@ -1,10 +1,24 @@
 import { NextResponse } from "next/server";
 import { getSessionRole, requireRole } from "@/lib/auth";
 import { createCreature, listCreatures } from "@/lib/db";
-import { AbilityScores, CreatureCategory, CreatureTrait } from "@/lib/types";
+import { AbilityScores, CreatureCategory, CreatureSpellcasting, CreatureTrait } from "@/lib/types";
 
 const DEFAULT_STATS: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
 const VALID_CATEGORIES: CreatureCategory[] = ["companion", "enemy", "npc"];
+const STAT_KEYS = ["str", "dex", "con", "int", "wis", "cha"] as const;
+
+function parseSpellcasting(raw: unknown): CreatureSpellcasting | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const obj = raw as Record<string, unknown>;
+  const ability = obj.ability;
+  const saveDc = Number(obj.saveDc);
+  const attackBonus = Number(obj.attackBonus);
+  if (!STAT_KEYS.includes(ability as (typeof STAT_KEYS)[number]) || !Number.isFinite(saveDc) || !Number.isFinite(attackBonus)) {
+    return undefined;
+  }
+  const spells = Array.isArray(obj.spells) ? obj.spells.filter((s): s is string => typeof s === "string") : [];
+  return { ability: ability as keyof AbilityScores, saveDc, attackBonus, spells };
+}
 
 function parseCategory(raw: unknown): CreatureCategory {
   return VALID_CATEGORIES.includes(raw as CreatureCategory) ? (raw as CreatureCategory) : "companion";
@@ -89,7 +103,9 @@ export async function POST(req: Request) {
   const speedDetail = typeof body?.speedDetail === "string" ? body.speedDetail : undefined;
   const skills = typeof body?.skills === "string" ? body.skills : undefined;
   const initiativeBonus = parseOptionalNumber(body?.initiativeBonus);
+  const proficiencyBonus = parseOptionalNumber(body?.proficiencyBonus);
   const experiencePoints = parseOptionalNumber(body?.experiencePoints);
+  const spellcasting = parseSpellcasting(body?.spellcasting);
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
 
   const avatarUrl = typeof body?.avatarUrl === "string" ? body.avatarUrl : undefined;
@@ -113,6 +129,7 @@ export async function POST(req: Request) {
     speed,
     speedDetail,
     initiativeBonus,
+    proficiencyBonus,
     stats,
     savingThrows,
     senses,
@@ -125,6 +142,7 @@ export async function POST(req: Request) {
     damageImmunities,
     conditionImmunities,
     traits,
+    spellcasting,
     conditions: [],
     exhaustion: 0,
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,

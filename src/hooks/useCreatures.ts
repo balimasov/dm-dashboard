@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AbilityScores, Creature, CreatureCategory, CreatureTrait } from "@/lib/types";
+import { AbilityScores, Creature, CreatureCategory, CreatureSpellcasting, CreatureTrait } from "@/lib/types";
 import { clearCreatureHpHistory, patchCreature } from "@/lib/creatureApi";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 
@@ -15,6 +15,7 @@ export interface AddCreatureInput {
   alignment?: string;
   ac: number;
   armorDesc?: string;
+  proficiencyBonus?: number;
   hp: number;
   maxHp: number;
   hitDice?: string;
@@ -33,6 +34,7 @@ export interface AddCreatureInput {
   damageImmunities?: string;
   conditionImmunities?: string;
   traits: CreatureTrait[];
+  spellcasting?: CreatureSpellcasting;
   ownerCharacterId?: string;
   source?: string;
   templateId?: string;

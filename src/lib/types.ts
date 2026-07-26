@@ -515,6 +515,24 @@ export interface Character {
   hidden?: boolean;
 }
 
+/** A trait/action's structured to-hit + damage — e.g. a Bite or Claw attack. Melee/ranged is an explicit choice here rather than derived, since some attacks (thrown weapons) are one or the other depending on how they're used. */
+export interface CreatureAttack {
+  attackType: "melee" | "ranged";
+  /** To-hit modifier, proficiency (if any) already folded in — same convention as `Attack.attackBonus`. */
+  attackBonus: number;
+  /** e.g. "5 ft." or "80/320 ft." — free text, same convention as `CreatureTemplate.speedDetail`. */
+  range?: string;
+  /** Dice plus flat bonus already combined into one string, e.g. "2d6 +4" — same convention as `Attack.damage`. */
+  damage: string;
+  damageType?: string;
+}
+
+/** A trait/action's structured saving-throw DC — e.g. a breath weapon or Frightful Presence. */
+export interface CreatureSave {
+  ability: keyof AbilityScores;
+  dc: number;
+}
+
 export interface CreatureTrait {
   name: string;
   description?: string;
@@ -524,6 +542,34 @@ export interface CreatureTrait {
    * rendered) on anything saved before this field existed.
    */
   group?: "trait" | "action" | "bonusAction" | "reaction" | "legendary";
+  /**
+   * Free text covering both 5e's "(X/Day)" and "(Recharge 5-6)" parenthetical
+   * conventions — deliberately one flexible string rather than a
+   * `RecoveryType` enum (which has no dice-based recharge concept) or two
+   * separate fields (in a stat block these are the same slot, just phrased
+   * differently depending on whether the limit is a fixed daily count or a
+   * random recharge roll).
+   */
+  recharge?: string;
+  attack?: CreatureAttack;
+  save?: CreatureSave;
+}
+
+/**
+ * A creature's spellcasting block — separate from the free-text
+ * "Spellcasting" trait's own prose (which still carries the full rules text
+ * and stays untouched in `traits`), this is just the fast-glance numbers plus
+ * a lightweight spell list. `spells` is free-text lines grouped by usage
+ * frequency (e.g. "At will: mage hand, minor illusion") rather than discrete
+ * `KnownSpell`-like entries — a real stat block groups spells this way, not
+ * one at a time, and there's no per-spell id/level/school data to hang a
+ * richer shape off of here anyway.
+ */
+export interface CreatureSpellcasting {
+  ability: keyof AbilityScores;
+  saveDc: number;
+  attackBonus: number;
+  spells: string[];
 }
 
 /**
@@ -560,6 +606,7 @@ export interface CreatureTemplate {
   ac: number;
   /** e.g. "natural armor" — shown as "19 (natural armor)", same convention as a real stat block's AC line. */
   armorDesc?: string;
+  proficiencyBonus?: number;
   maxHp: number;
   /** e.g. "19d12 + 133" — shown as "256 (19d12 + 133)". */
   hitDice?: string;
@@ -584,6 +631,7 @@ export interface CreatureTemplate {
   damageImmunities?: string;
   conditionImmunities?: string;
   traits: CreatureTrait[];
+  spellcasting?: CreatureSpellcasting;
 }
 
 /**
@@ -656,6 +704,8 @@ export interface Creature {
   alignment?: string;
   ac: number;
   armorDesc?: string;
+  /** Added to attack rolls/saving throws where applicable — shown alongside AC/Speed/Initiative in the icon-stat row when present; omitted for creatures saved before this field existed. */
+  proficiencyBonus?: number;
   hp: number;
   maxHp: number;
   hitDice?: string;
@@ -688,6 +738,8 @@ export interface Creature {
   damageImmunities?: string;
   conditionImmunities?: string;
   traits: CreatureTrait[];
+  /** See `CreatureSpellcasting`'s own doc comment — the fast-glance numbers + spell list, separate from the free-text "Spellcasting" trait's prose (still in `traits`, untouched). */
+  spellcasting?: CreatureSpellcasting;
   conditions: string[];
   exhaustion: number;
   /** Same convention as `Character.concentrating` — a spellcasting enemy/NPC/companion concentrating on a spell is exactly the kind of thing worth a save-or-lose reminder mid-combat, same as a player forgetting their own. Manually toggled via the same `StatusRail` badge and ring the character card uses. */

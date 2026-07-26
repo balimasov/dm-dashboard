@@ -1,10 +1,12 @@
 import { load as loadYaml } from "js-yaml";
-import { AbilityScores, CreatureCategory, CreatureTrait } from "./types";
+import { AbilityScores, CreatureCategory, CreatureSpellcasting, CreatureTrait } from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CREATURE_IMPORT_FIELDS, CREATURE_STAT_KEYS } from "./creatureImportSchema";
 
 const TRAIT_GROUPS = new Set(["trait", "action", "bonusAction", "reaction", "legendary"]);
 const CREATURE_CATEGORIES = new Set(["companion", "enemy", "npc"]);
+const ATTACK_TYPES = new Set(["melee", "ranged"]);
+const STAT_KEY_SET = new Set<string>(CREATURE_STAT_KEYS);
 
 export interface CreatureImportResult {
   input: AddCreatureInput;
@@ -73,6 +75,56 @@ function readPartialAbilityScores(raw: unknown, errors: string[], label: string)
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+/** `traits[index].attack` — returns `undefined` (with an error pushed) on any malformed sub-field rather than throwing, same "collect everything" style as the rest of this file. */
+function readTraitAttack(raw: unknown, index: number, errors: string[]): CreatureTrait["attack"] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isPlainObject(raw)) {
+    errors.push(`traits[${index}].attack має бути об'єктом з полями attackType/attackBonus/damage.`);
+    return undefined;
+  }
+  const attackType = raw.attackType;
+  if (!ATTACK_TYPES.has(String(attackType))) {
+    errors.push(`traits[${index}].attack.attackType має бути "melee" або "ranged" (отримано "${String(attackType)}").`);
+    return undefined;
+  }
+  const attackBonus = Number(raw.attackBonus);
+  if (raw.attackBonus === undefined || !Number.isFinite(attackBonus)) {
+    errors.push(`traits[${index}].attack.attackBonus має бути числом.`);
+    return undefined;
+  }
+  if (isBlank(raw.damage)) {
+    errors.push(`traits[${index}].attack.damage є обов'язковим (напр. "2d6 +4").`);
+    return undefined;
+  }
+  return {
+    attackType: attackType as "melee" | "ranged",
+    attackBonus,
+    damage: readString(raw.damage),
+    range: isBlank(raw.range) ? undefined : readString(raw.range),
+    damageType: isBlank(raw.damageType) ? undefined : readString(raw.damageType),
+  };
+}
+
+/** `traits[index].save` — same "collect everything" style as `readTraitAttack`. */
+function readTraitSave(raw: unknown, index: number, errors: string[]): CreatureTrait["save"] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isPlainObject(raw)) {
+    errors.push(`traits[${index}].save має бути об'єктом з полями ability/dc.`);
+    return undefined;
+  }
+  const ability = raw.ability;
+  if (!STAT_KEY_SET.has(String(ability))) {
+    errors.push(`traits[${index}].save.ability має бути одним з: ${CREATURE_STAT_KEYS.join(", ")} (отримано "${String(ability)}").`);
+    return undefined;
+  }
+  const dc = Number(raw.dc);
+  if (raw.dc === undefined || !Number.isFinite(dc)) {
+    errors.push(`traits[${index}].save.dc має бути числом.`);
+    return undefined;
+  }
+  return { ability: ability as keyof AbilityScores, dc };
+}
+
 function readTraits(raw: unknown, errors: string[]): CreatureTrait[] {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) {
@@ -100,9 +152,42 @@ function readTraits(raw: unknown, errors: string[]): CreatureTrait[] {
       name: readString(entry.name),
       description: isBlank(entry.description) ? undefined : readString(entry.description),
       group: group as CreatureTrait["group"] | undefined,
+      recharge: isBlank(entry.recharge) ? undefined : readString(entry.recharge),
+      attack: readTraitAttack(entry.attack, index, errors),
+      save: readTraitSave(entry.save, index, errors),
     });
   });
   return traits;
+}
+
+function readSpellcasting(raw: unknown, errors: string[]): CreatureSpellcasting | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isPlainObject(raw)) {
+    errors.push(`"spellcasting" має бути об'єктом з полями ability/saveDc/attackBonus/spells.`);
+    return undefined;
+  }
+  const ability = raw.ability;
+  if (!STAT_KEY_SET.has(String(ability))) {
+    errors.push(`"spellcasting.ability" має бути одним з: ${CREATURE_STAT_KEYS.join(", ")} (отримано "${String(ability)}").`);
+    return undefined;
+  }
+  const saveDc = Number(raw.saveDc);
+  if (raw.saveDc === undefined || !Number.isFinite(saveDc)) {
+    errors.push(`"spellcasting.saveDc" має бути числом.`);
+    return undefined;
+  }
+  const attackBonus = Number(raw.attackBonus);
+  if (raw.attackBonus === undefined || !Number.isFinite(attackBonus)) {
+    errors.push(`"spellcasting.attackBonus" має бути числом.`);
+    return undefined;
+  }
+  const spellsRaw = raw.spells;
+  if (spellsRaw !== undefined && !Array.isArray(spellsRaw)) {
+    errors.push(`"spellcasting.spells" має бути списком рядків (навіть порожнім — []).`);
+    return undefined;
+  }
+  const spells = Array.isArray(spellsRaw) ? spellsRaw.map((s) => readString(s)) : [];
+  return { ability: ability as keyof AbilityScores, saveDc, attackBonus, spells };
 }
 
 /**
@@ -169,6 +254,9 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
       case "traits":
         values[field.key] = readTraits(raw, errors);
         break;
+      case "spellcasting":
+        values[field.key] = readSpellcasting(raw, errors);
+        break;
     }
   }
 
@@ -204,6 +292,7 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
     speed: values.speed as number,
     speedDetail: values.speedDetail as string | undefined,
     initiativeBonus: values.initiativeBonus as number | undefined,
+    proficiencyBonus: values.proficiencyBonus as number | undefined,
     stats: values.stats as AbilityScores,
     savingThrows: values.savingThrows as Partial<AbilityScores> | undefined,
     senses: values.senses as string | undefined,
@@ -216,6 +305,7 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
     damageImmunities: values.damageImmunities as string | undefined,
     conditionImmunities: values.conditionImmunities as string | undefined,
     traits: (values.traits as CreatureTrait[] | undefined) ?? [],
+    spellcasting: values.spellcasting as CreatureSpellcasting | undefined,
     source: values.source as string | undefined,
   };
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
+import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
@@ -108,6 +109,7 @@ export function CreatureDetailsModal({
         </div>
 
         <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
+        <CreatureAbilitiesPanel creature={creature} onUpdate={onUpdate} />
 
         <NotesSection
           notes={creature.notes ?? ""}
