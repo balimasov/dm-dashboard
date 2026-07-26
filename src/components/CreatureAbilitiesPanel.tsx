@@ -9,12 +9,11 @@ import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { InfoTooltip } from "./InfoTooltip";
-import { RichText } from "./RichText";
 import { SectionDivider } from "./ui/SectionDivider";
 import { StatBox } from "./ui/StatBox";
 import { TabBar } from "./ui/TabBar";
 
-type AbilitiesTab = "traits" | "attacks" | "spellcasting";
+type AbilitiesTab = "traits" | "spellcasting";
 
 /** Bonus/damage (attack), DC (save), and a recharge badge — the fast-glance numbers a DM needs mid-combat without reading `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing` on the character side. */
 function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
@@ -44,7 +43,7 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   );
 }
 
-/** Groups a trait list by `GROUP_ORDER`, dropping empty groups — shared by the "Traits & Actions" tab (every trait) and the "Attacks" tab (only ones with structured data). */
+/** Groups the full trait list by `GROUP_ORDER`, dropping empty groups. */
 function groupTraits(traits: CreatureTrait[]) {
   return GROUP_ORDER.map((group) => ({
     group,
@@ -84,13 +83,15 @@ function parseSpellFrequencyLine(line: string): { label: string; spells: string[
  * `TabBar`, same "renders nothing with under 2 populated tabs" rule.
  *
  * "Traits & Actions" is every trait/action/bonus action/reaction/legendary
- * action, same content and grouping the stat block used to always show
- * inline — moved here as this panel's first tab instead, so a creature's
- * full narrative text and its structured combat numbers live in one place
- * instead of the free-text block always showing above a separate structured
- * section. "Attacks" narrows that same list down to just the entries that
- * carry `.attack`/`.save`/`.recharge`, with those numbers as trailing
- * content instead of buried in `description`.
+ * action, one row per trait — name + hover-hint (the full description text
+ * lives in the hint, not inline in the row, same "no wall of text" reasoning
+ * that drove this whole feature). A single row shape for every trait rather
+ * than a separate "Attacks" tab for the subset with structured data: one
+ * shape to maintain, and a trait's `.attack`/`.save`/`.recharge` (if any)
+ * just show as trailing content on its own already-existing row instead of
+ * duplicating that row into a second tab. "Spellcasting" stays a separate,
+ * optional tab — a creature's spell list doesn't fit this same per-trait
+ * row shape.
  */
 export function CreatureAbilitiesPanel({
   creature,
@@ -107,14 +108,11 @@ export function CreatureAbilitiesPanel({
   }
 
   const allGroups = groupTraits(creature.traits);
-  const abilityGroups = groupTraits(creature.traits.filter((t) => t.attack || t.save || t.recharge));
   const hasTraits = allGroups.length > 0;
-  const hasAttacks = abilityGroups.length > 0;
   const hasSpellcasting = Boolean(creature.spellcasting);
 
   const tabs: Array<{ key: AbilitiesTab; icon: string; text: string }> = [
     ...(hasTraits ? [{ key: "traits" as const, icon: CONTENT_KIND_ICON.features, text: "Traits & Actions" }] : []),
-    ...(hasAttacks ? [{ key: "attacks" as const, icon: CONTENT_KIND_ICON.weapons, text: "Attacks" }] : []),
     ...(hasSpellcasting ? [{ key: "spellcasting" as const, icon: CONTENT_KIND_ICON.spells, text: "Spellcasting" }] : []),
   ];
   const [activeTab, setActiveTab] = useState<AbilitiesTab | undefined>(tabs[0]?.key);
@@ -129,25 +127,6 @@ export function CreatureAbilitiesPanel({
       {currentTab === "traits" && (
         <div className="space-y-3">
           {allGroups.map(({ group, items }) => (
-            <div key={group} className="space-y-1">
-              <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
-              {items.map((trait, index) => {
-                const flagged = flaggedTraits.includes(trait.name);
-                return (
-                  <FlaggableRow key={`${group}-${index}`} flagged={flagged} onToggleFlag={() => toggleFlag(trait.name)}>
-                    <span className="font-semibold">{trait.name}.</span>{" "}
-                    {trait.description && <RichText text={trait.description} />}
-                  </FlaggableRow>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {currentTab === "attacks" && (
-        <div className="space-y-3">
-          {abilityGroups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
               <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
               {items.map((trait, index) => {
