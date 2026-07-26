@@ -113,24 +113,20 @@ export function CreatureStatBlock({
           >
             {creature.speedDetail ?? `${creature.speed}ft`}
           </IconStat>
-          {creature.initiativeBonus !== undefined && (
-            <IconStat
-              icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
-              label="Initiative"
-            >
-              {formatModifier(creature.initiativeBonus)}
-            </IconStat>
-          )}
-          {creature.proficiencyBonus !== undefined && (
-            <IconStat
-              icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              panel={<p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>}
-              label="Prof"
-            >
-              {formatModifier(creature.proficiencyBonus)}
-            </IconStat>
-          )}
+          <IconStat
+            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+            label="Initiative"
+          >
+            {creature.initiativeBonus !== undefined ? formatModifier(creature.initiativeBonus) : "—"}
+          </IconStat>
+          <IconStat
+            icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            panel={<p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>}
+            label="Prof"
+          >
+            {creature.proficiencyBonus !== undefined ? formatModifier(creature.proficiencyBonus) : "—"}
+          </IconStat>
           <IconStat
             icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}

@@ -144,6 +144,35 @@ describe("creatureUpdateSchema", () => {
     const result = creatureUpdateSchema.safeParse({ category: "villain" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts an explicit null on every clearable optional field — the 'clear this field' signal formValueToCreatureUpdates sends", () => {
+    const result = creatureUpdateSchema.safeParse({
+      avatarUrl: null,
+      creatureType: null,
+      size: null,
+      alignment: null,
+      armorDesc: null,
+      proficiencyBonus: null,
+      hitDice: null,
+      speedDetail: null,
+      initiativeBonus: null,
+      savingThrows: null,
+      senses: null,
+      languages: null,
+      challengeRating: null,
+      experiencePoints: null,
+      skills: null,
+      damageVulnerabilities: null,
+      damageResistances: null,
+      damageImmunities: null,
+      conditionImmunities: null,
+      spellcasting: null,
+      ownerCharacterId: null,
+      source: null,
+      notes: null,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("campaignUpdateSchema", () => {

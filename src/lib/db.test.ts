@@ -571,6 +571,60 @@ describe("updateCreature — hpHistory", () => {
   });
 });
 
+describe("updateCreature — clearing an optional field with null", () => {
+  it("clears ownerCharacterId when the update sends null (the 'can't unassign an owner' bug)", () => {
+    const created = db.createCreature({
+      campaignId: "campaign-clear-owner",
+      category: "companion",
+      templateName: "Owl",
+      name: "Owl",
+      ac: 11,
+      hp: 1,
+      maxHp: 1,
+      tempHp: 0,
+      speed: 5,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+      ownerCharacterId: "demo-lilith",
+    });
+    expect(created.ownerCharacterId).toBe("demo-lilith");
+
+    const updated = db.updateCreature(created.id, { ownerCharacterId: null });
+    expect(updated?.ownerCharacterId).toBeUndefined();
+
+    // The clear must actually persist, not just come back on the in-memory
+    // return value — re-fetching from storage is the real regression check.
+    const refetched = db.getCreature(created.id);
+    expect(refetched?.ownerCharacterId).toBeUndefined();
+  });
+
+  it("clears an arbitrary string field (source) with null while leaving other fields untouched", () => {
+    const created = db.createCreature({
+      campaignId: "campaign-clear-source",
+      category: "enemy",
+      templateName: "Bandit",
+      name: "Bandit",
+      ac: 12,
+      hp: 11,
+      maxHp: 11,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      conditions: [],
+      exhaustion: 0,
+      source: "Monster Manual",
+      notes: "Keep an eye on this one.",
+    });
+
+    const updated = db.updateCreature(created.id, { source: null });
+    expect(updated?.source).toBeUndefined();
+    expect(updated?.notes).toBe("Keep an eye on this one.");
+  });
+});
+
 describe("clearCreatureHpHistory", () => {
   function createBasicCreature(campaignId: string) {
     return db.createCreature({

@@ -443,9 +443,36 @@ function hpHistoryEntry(
   return { id: `hp-history-${now}-${field}-${Math.random().toString(36).slice(2, 7)}`, timestamp: now, field, previous, next, delta: next - previous };
 }
 
-export function updateCreature(id: string, updates: Partial<Creature>): Creature | null {
+/**
+ * `formValueToCreatureUpdates` (in `creatureForm.ts`) sends an explicit
+ * `null` for an optional field the form left blank — a "please clear this"
+ * signal that (unlike `undefined`) actually survives `JSON.stringify` over
+ * the wire. `creatureUpdateSchema` in `schemas.ts` accepts that `null` on
+ * every field it can arrive on, so `updateCreature`'s own parameter type
+ * has to admit it too — hence `NullableCreatureUpdates` instead of a plain
+ * `Partial<Creature>` here.
+ */
+type NullableCreatureUpdates = { [K in keyof Creature]?: Creature[K] | null };
+
+/**
+ * By the time a `null` reaches here it needs converting back to
+ * `undefined`: the `Creature` type itself never has `| null`, and
+ * `{...existing, ...updates}` below already does the right thing for an
+ * `undefined`-valued key (it overwrites, clearing the field) — it just can't
+ * receive one straight from the client.
+ */
+function nullsToUndefined(updates: NullableCreatureUpdates): Partial<Creature> {
+  const result: Record<string, unknown> = { ...updates };
+  for (const key of Object.keys(result)) {
+    if (result[key] === null) result[key] = undefined;
+  }
+  return result as Partial<Creature>;
+}
+
+export function updateCreature(id: string, updates: NullableCreatureUpdates): Creature | null {
   const existing = getCreature(id);
   if (!existing) return null;
+  const normalizedUpdates = nullsToUndefined(updates);
   const now = new Date().toISOString();
   // Append-only, and computed here rather than trusted from the client (see
   // `Creature.hpHistory`'s own doc comment) — this is the one place every
@@ -453,12 +480,12 @@ export function updateCreature(id: string, updates: Partial<Creature>): Creature
   // whether the DM typed a delta or an absolute number into the HP bar.
   const hpHistory = [
     ...(existing.hpHistory ?? []),
-    hpHistoryEntry("hp", existing.hp, updates.hp, now),
-    hpHistoryEntry("tempHp", existing.tempHp, updates.tempHp, now),
+    hpHistoryEntry("hp", existing.hp, normalizedUpdates.hp, now),
+    hpHistoryEntry("tempHp", existing.tempHp, normalizedUpdates.tempHp, now),
   ].filter((entry): entry is HpHistoryEntry => entry !== null);
   const updated: Creature = {
     ...existing,
-    ...updates,
+    ...normalizedUpdates,
     id: existing.id,
     hpHistory,
     // A creature saved before this field existed has neither timestamp —

@@ -295,7 +295,17 @@ export const characterUpdateSchema = z
   })
   .partial();
 
-/** `Partial<Creature>` — PATCH `/api/creatures/[id]`. */
+/**
+ * `Partial<Creature>` — PATCH `/api/creatures/[id]`.
+ *
+ * Fields below marked `.nullable()` are ones `formValueToCreatureUpdates`
+ * (in `creatureForm.ts`) can send as an explicit `null` to mean "clear this
+ * field" — plain omission only means "don't touch it", and `undefined`
+ * doesn't survive `JSON.stringify` over the wire, so `null` is the only
+ * value that can carry a "clear" instruction to this route. `updateCreature`
+ * in `db.ts` normalizes any incoming `null` back to `undefined` before
+ * merging/storing.
+ */
 export const creatureUpdateSchema = z
   .object({
     campaignId: z.string(),
@@ -303,40 +313,40 @@ export const creatureUpdateSchema = z
     templateId: z.string().optional(),
     templateName: z.string(),
     name: z.string(),
-    avatarUrl: z.string().optional(),
-    creatureType: z.string().optional(),
-    size: z.string().optional(),
-    alignment: z.string().optional(),
+    avatarUrl: z.string().nullable().optional(),
+    creatureType: z.string().nullable().optional(),
+    size: z.string().nullable().optional(),
+    alignment: z.string().nullable().optional(),
     ac: z.number(),
-    armorDesc: z.string().optional(),
-    proficiencyBonus: z.number().optional(),
+    armorDesc: z.string().nullable().optional(),
+    proficiencyBonus: z.number().nullable().optional(),
     hp: z.number(),
     maxHp: z.number(),
-    hitDice: z.string().optional(),
+    hitDice: z.string().nullable().optional(),
     tempHp: z.number(),
     speed: z.number(),
-    speedDetail: z.string().optional(),
-    initiativeBonus: z.number().optional(),
+    speedDetail: z.string().nullable().optional(),
+    initiativeBonus: z.number().nullable().optional(),
     stats: abilityScoresSchema,
-    savingThrows: partialAbilityScoresSchema.optional(),
-    senses: z.string().optional(),
-    languages: z.string().optional(),
-    challengeRating: z.string().optional(),
-    experiencePoints: z.number().optional(),
-    skills: z.string().optional(),
-    damageVulnerabilities: z.string().optional(),
-    damageResistances: z.string().optional(),
-    damageImmunities: z.string().optional(),
-    conditionImmunities: z.string().optional(),
+    savingThrows: partialAbilityScoresSchema.nullable().optional(),
+    senses: z.string().nullable().optional(),
+    languages: z.string().nullable().optional(),
+    challengeRating: z.string().nullable().optional(),
+    experiencePoints: z.number().nullable().optional(),
+    skills: z.string().nullable().optional(),
+    damageVulnerabilities: z.string().nullable().optional(),
+    damageResistances: z.string().nullable().optional(),
+    damageImmunities: z.string().nullable().optional(),
+    conditionImmunities: z.string().nullable().optional(),
     traits: z.array(creatureTraitSchema),
-    spellcasting: creatureSpellcastingSchema.optional(),
+    spellcasting: creatureSpellcastingSchema.nullable().optional(),
     conditions: z.array(z.string()),
     exhaustion: z.number(),
     concentrating: z.boolean().optional(),
     deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
-    ownerCharacterId: z.string().optional(),
-    source: z.string().optional(),
-    notes: z.string().optional(),
+    ownerCharacterId: z.string().nullable().optional(),
+    source: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
     quickNotes: z.array(quickNoteSchema).optional(),
     flaggedTraits: z.array(z.string()).optional(),
     hidden: z.boolean().optional(),
