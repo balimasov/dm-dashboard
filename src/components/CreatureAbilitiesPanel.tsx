@@ -257,13 +257,21 @@ export function CreatureAbilitiesPanel({
             return (
               <div key={i}>
                 {group.label && <p className="text-[10px] uppercase tracking-wide text-slate-600">{group.label}</p>}
-                {/* Same plain-row shape (no bullets) as the character Spells tab's own per-level list. */}
+                {/* Same plain-row shape as the character Spells tab's own per-level list, but flaggable —
+                    a creature's spells previously had no reminder flame at all, unlike its traits above, even
+                    though "the DM forgets this creature can cast X" is exactly the kind of thing worth
+                    flagging. There's no richer per-spell data to show here (just a name, unlike a trait's
+                    attack/save/effects), so the hint stays a minimal "Spell" tag rather than going hint-less
+                    — `ReminderEntry.panel` always needs *something* to show in the Reminders panel/FAB. */}
                 <div className="mt-1 space-y-1">
-                  {group.spells.map((spell, j) => (
-                    <p key={j} className="text-sm text-slate-300">
-                      {spell}
-                    </p>
-                  ))}
+                  {group.spells.map((spell, j) => {
+                    const flagged = flaggedTraits.includes(spell);
+                    return (
+                      <FlaggableRow key={j} flagged={flagged} onToggleFlag={() => toggleFlag(spell)}>
+                        <InfoTooltip panel={<AbilityHintPanel name={spell} metaLines={["Spell"]} />}>{spell}</InfoTooltip>
+                      </FlaggableRow>
+                    );
+                  })}
                 </div>
               </div>
             );

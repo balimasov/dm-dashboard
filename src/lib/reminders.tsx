@@ -93,14 +93,30 @@ export function characterReminders(character: Character): ReminderGroup | null {
 export function creatureReminders(creature: Creature): ReminderGroup | null {
   const flagged = creature.flaggedTraits ?? [];
   if (flagged.length === 0) return null;
-  const entries: ReminderEntry[] = creature.traits
-    .filter((t) => flagged.includes(t.name))
-    .map((t) => ({
-      name: t.name,
-      label: t.name,
-      panel: <CreatureAbilityHintPanel trait={t} />,
-      kind: "features" as const,
-    }));
+  const spellNames = (creature.spellcasting?.spellGroups ?? []).flatMap((g) => g.spells);
+  const entries: ReminderEntry[] = dedupeReminderEntries([
+    ...creature.traits
+      .filter((t) => flagged.includes(t.name))
+      .map((t) => ({
+        name: t.name,
+        label: t.name,
+        panel: <CreatureAbilityHintPanel trait={t} />,
+        kind: "features" as const,
+      })),
+    // A creature's spell is just a bare name (no description/components the
+    // way a character's `KnownSpell` has), so there's no rich hint to show —
+    // a minimal "Spell" tag panel is the best this can do, and that's fine:
+    // the point is letting the DM flag "this creature can cast X" at all,
+    // which the Spells tab had no way to do before this.
+    ...spellNames
+      .filter((name) => flagged.includes(name))
+      .map((name) => ({
+        name,
+        label: name,
+        panel: <AbilityHintPanel name={name} metaLines={["Spell"]} />,
+        kind: "spells" as const,
+      })),
+  ]);
   if (entries.length === 0) return null;
   entries.sort((a, b) => a.name.localeCompare(b.name));
   return { ownerId: creature.id, ownerName: creature.name, avatarUrl: creature.avatarUrl, entries };

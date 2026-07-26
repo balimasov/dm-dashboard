@@ -793,7 +793,7 @@ export interface Creature {
   notes?: string;
   /** Same convention as `Character.quickNotes` — short reminders added/edited/removed straight from the dashboard card, separate from the long-form `notes` field above. */
   quickNotes?: QuickNote[];
-  /** Same convention as `Character.flaggedAbilities` — names of traits/actions the DM has flagged as a reminder, shown with a flame icon and amber highlight. */
+  /** Same convention as `Character.flaggedAbilities` — names of traits/actions *and* known spells the DM has flagged as a reminder, shown with a flame icon and amber highlight. One flat array across both (matched by name), same as `Character.flaggedAbilities` already spans attacks/features/spells/items. */
   flaggedTraits?: string[];
   /** Same convention as `Character.hidden` — hides this creature from its dashboard category row (and from `RemindersPanel`) without removing it from the campaign. */
   hidden?: boolean;
