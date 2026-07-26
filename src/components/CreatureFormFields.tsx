@@ -7,6 +7,9 @@ import {
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_ORDER,
   CreatureCategory,
+  CreatureDamageRoll,
+  CreatureEffect,
+  CreatureEffectKind,
   CreatureTrait,
   STAT_ORDER,
 } from "@/lib/types";
@@ -50,8 +53,8 @@ export interface CreatureFormValue {
   spellcastingAbility: "" | keyof AbilityScores;
   spellcastingSaveDc: string;
   spellcastingAttackBonus: string;
-  /** One frequency-group line per row (e.g. "At will: mage hand, minor illusion"), same convention as the YAML template's `spellcasting.spells` list — split into `CreatureSpellcasting.spells` on save. */
-  spellcastingSpells: string;
+  /** One row per frequency/level bucket (e.g. label "At will", spells "Mage Hand, Minor Illusion") — `spells` is comma-separated free text here, split into `CreatureSpellGroup.spells` on save. */
+  spellcastingGroups: Array<{ label: string; spells: string }>;
   ownerCharacterId: string;
   source: string;
   notes: string;
@@ -90,7 +93,7 @@ export function emptyCreatureFormValue(): CreatureFormValue {
     spellcastingAbility: "",
     spellcastingSaveDc: "",
     spellcastingAttackBonus: "",
-    spellcastingSpells: "",
+    spellcastingGroups: [],
     ownerCharacterId: "",
     source: "",
     notes: "",
@@ -109,12 +112,21 @@ const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: s
   { value: "legendary", label: "Legendary Action" },
 ];
 
+const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
+  heal: "Heal",
+  tempHp: "Temp HP",
+  acBonus: "AC",
+  other: "",
+};
+
 /** Short summary of a trait's structured fields, shown next to its row when collapsed so a DM can tell at a glance which ones already have them without expanding every row. */
 function traitStructuredSummary(trait: CreatureTrait): string | undefined {
+  const damageText = trait.attack?.damage.map((d) => (d.damageType ? `${d.dice} ${d.damageType}` : d.dice)).join(" + ");
   const parts = [
-    trait.attack && `⚔️ ${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus} · ${trait.attack.damage}`,
+    trait.attack && `⚔️ ${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus} · ${damageText}`,
     trait.save && `🛡 DC ${trait.save.dc} ${trait.save.ability.toUpperCase()}`,
     trait.recharge && `🔄 ${trait.recharge}`,
+    ...(trait.effects ?? []).map((e) => `✨ ${e.kind === "other" ? e.label || "Effect" : EFFECT_KIND_LABELS[e.kind]} ${e.amount}`),
   ].filter((p): p is string => Boolean(p));
   return parts.length > 0 ? parts.join("  ·  ") : undefined;
 }
@@ -194,7 +206,19 @@ export function CreatureFormFields({
     onChange({ savingThrows: next });
   }
 
-  const [expandedTraits, setExpandedTraits] = useState<Set<number>>(new Set());
+  // Pre-expanded for any trait that already has structured data set — a DM
+  // opening the form to check/tweak an existing creature shouldn't have to
+  // click open every row just to see what's already configured. Lazy
+  // initializer, so this only looks at the traits present on first render;
+  // a trait added afterward still starts collapsed like any blank one.
+  const [expandedTraits, setExpandedTraits] = useState<Set<number>>(
+    () =>
+      new Set(
+        value.traits
+          .map((t, i) => (t.attack || t.save || t.recharge || (t.effects && t.effects.length > 0) ? i : -1))
+          .filter((i) => i !== -1)
+      )
+  );
   const [autoDetectMessage, setAutoDetectMessage] = useState<string | null>(null);
 
   function updateTrait(index: number, updates: Partial<CreatureTrait>) {
@@ -208,7 +232,27 @@ export function CreatureFormFields({
       return;
     }
     const current = value.traits[index].attack;
-    updateTrait(index, { attack: { attackType: "melee", attackBonus: 0, damage: "", ...current, ...patch } });
+    updateTrait(index, { attack: { attackType: "melee", attackBonus: 0, damage: [], ...current, ...patch } });
+  }
+
+  function addTraitAttackDamage(index: number) {
+    const current = value.traits[index].attack;
+    if (!current) return;
+    updateTraitAttack(index, { damage: [...current.damage, { dice: "", damageType: undefined }] });
+  }
+
+  function updateTraitAttackDamage(index: number, damageIndex: number, patch: Partial<CreatureDamageRoll>) {
+    const current = value.traits[index].attack;
+    if (!current) return;
+    updateTraitAttack(index, {
+      damage: current.damage.map((d, i) => (i === damageIndex ? { ...d, ...patch } : d)),
+    });
+  }
+
+  function removeTraitAttackDamage(index: number, damageIndex: number) {
+    const current = value.traits[index].attack;
+    if (!current) return;
+    updateTraitAttack(index, { damage: current.damage.filter((_, i) => i !== damageIndex) });
   }
 
   /** Same "null clears, otherwise merge with defaults" convention as `updateTraitAttack`. */
@@ -219,6 +263,35 @@ export function CreatureFormFields({
     }
     const current = value.traits[index].save;
     updateTrait(index, { save: { ability: "dex", dc: 10, ...current, ...patch } });
+  }
+
+  function addTraitEffect(index: number) {
+    const current = value.traits[index].effects ?? [];
+    updateTrait(index, { effects: [...current, { kind: "heal", amount: "" }] });
+  }
+
+  function updateTraitEffect(index: number, effectIndex: number, patch: Partial<CreatureEffect>) {
+    const current = value.traits[index].effects ?? [];
+    updateTrait(index, { effects: current.map((e, i) => (i === effectIndex ? { ...e, ...patch } : e)) });
+  }
+
+  function removeTraitEffect(index: number, effectIndex: number) {
+    const current = value.traits[index].effects ?? [];
+    updateTrait(index, { effects: current.filter((_, i) => i !== effectIndex) });
+  }
+
+  function addSpellcastingGroup() {
+    onChange({ spellcastingGroups: [...value.spellcastingGroups, { label: "", spells: "" }] });
+  }
+
+  function updateSpellcastingGroup(index: number, patch: Partial<{ label: string; spells: string }>) {
+    onChange({
+      spellcastingGroups: value.spellcastingGroups.map((g, i) => (i === index ? { ...g, ...patch } : g)),
+    });
+  }
+
+  function removeSpellcastingGroup(index: number) {
+    onChange({ spellcastingGroups: value.spellcastingGroups.filter((_, i) => i !== index) });
   }
 
   function toggleTraitExpanded(index: number) {
@@ -569,7 +642,7 @@ export function CreatureFormFields({
                     onClick={() => toggleTraitExpanded(index)}
                     className="mt-1.5 shrink-0 text-xs text-sky-400 hover:underline"
                   >
-                    {expanded ? "▾" : "▸"} Attack/Save
+                    {expanded ? "▾" : "▸"} Attack/Save/Effects
                   </button>
                   <button
                     type="button"
@@ -581,85 +654,173 @@ export function CreatureFormFields({
                 </div>
                 {!expanded && summary && <p className="mt-1 pl-1 text-[11px] text-slate-500">{summary}</p>}
                 {expanded && (
-                  <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-800 pt-2 sm:grid-cols-4">
-                    <Field label="Recharge" hint='e.g. "3/Day", "Recharge 5-6"'>
-                      <input
-                        className={inputCls}
-                        value={t.recharge ?? ""}
-                        onChange={(e) => updateTrait(index, { recharge: e.target.value || undefined })}
-                      />
-                    </Field>
-                    <Field label="Attack Type">
-                      <select
-                        className={inputCls}
-                        value={t.attack?.attackType ?? ""}
-                        onChange={(e) =>
-                          updateTraitAttack(index, e.target.value ? { attackType: e.target.value as "melee" | "ranged" } : null)
-                        }
-                      >
-                        <option value="">— None —</option>
-                        <option value="melee">Melee</option>
-                        <option value="ranged">Ranged</option>
-                      </select>
-                    </Field>
-                    <Field label="Attack Bonus">
-                      <input
-                        className={inputCls}
-                        type="number"
-                        disabled={!t.attack}
-                        value={t.attack?.attackBonus ?? ""}
-                        onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
-                      />
-                    </Field>
-                    <Field label="Damage" hint='e.g. "2d6 +4"'>
-                      <input
-                        className={inputCls}
-                        disabled={!t.attack}
-                        value={t.attack?.damage ?? ""}
-                        onChange={(e) => updateTraitAttack(index, { damage: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Damage Type">
-                      <input
-                        className={inputCls}
-                        disabled={!t.attack}
-                        value={t.attack?.damageType ?? ""}
-                        onChange={(e) => updateTraitAttack(index, { damageType: e.target.value || undefined })}
-                      />
-                    </Field>
-                    <Field label="Range" hint='e.g. "5 ft."'>
-                      <input
-                        className={inputCls}
-                        disabled={!t.attack}
-                        value={t.attack?.range ?? ""}
-                        onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
-                      />
-                    </Field>
-                    <Field label="Save Ability">
-                      <select
-                        className={inputCls}
-                        value={t.save?.ability ?? ""}
-                        onChange={(e) =>
-                          updateTraitSave(index, e.target.value ? { ability: e.target.value as keyof AbilityScores } : null)
-                        }
-                      >
-                        <option value="">— None —</option>
-                        {STAT_ORDER.map((key) => (
-                          <option key={key} value={key}>
-                            {key.toUpperCase()}
-                          </option>
+                  <div className="mt-2 space-y-3 border-t border-slate-800 pt-2">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <Field label="Recharge" hint='e.g. "3/Day", "Recharge 5-6"'>
+                        <input
+                          className={inputCls}
+                          value={t.recharge ?? ""}
+                          onChange={(e) => updateTrait(index, { recharge: e.target.value || undefined })}
+                        />
+                      </Field>
+                      <Field label="Attack Type">
+                        <select
+                          className={inputCls}
+                          value={t.attack?.attackType ?? ""}
+                          onChange={(e) =>
+                            updateTraitAttack(index, e.target.value ? { attackType: e.target.value as "melee" | "ranged" } : null)
+                          }
+                        >
+                          <option value="">— None —</option>
+                          <option value="melee">Melee</option>
+                          <option value="ranged">Ranged</option>
+                        </select>
+                      </Field>
+                      <Field label="Attack Bonus">
+                        <input
+                          className={inputCls}
+                          type="number"
+                          disabled={!t.attack}
+                          value={t.attack?.attackBonus ?? ""}
+                          onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
+                        />
+                      </Field>
+                      <Field label="Range" hint='Just the number(s), e.g. "5" or "100/400" — "ft." is added automatically.'>
+                        <input
+                          className={inputCls}
+                          disabled={!t.attack}
+                          value={t.attack?.range ?? ""}
+                          onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
+                        />
+                      </Field>
+                    </div>
+
+                    {/* Damage — a list rather than one dice+type pair, since a single attack can deal several
+                        at once (e.g. "1d6 +3 bludgeoning plus 2d8 cold"). */}
+                    <div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Damage</span>
+                        <button
+                          type="button"
+                          onClick={() => addTraitAttackDamage(index)}
+                          disabled={!t.attack}
+                          className={`${addBtnCls} disabled:cursor-not-allowed disabled:opacity-40`}
+                        >
+                          + Damage Roll
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {(t.attack?.damage ?? []).map((roll, damageIndex) => (
+                          <div key={damageIndex} className="flex items-center gap-2">
+                            <input
+                              className={`${inputCls} min-w-[100px] flex-1`}
+                              placeholder='Dice, e.g. "2d6 +4"'
+                              value={roll.dice}
+                              onChange={(e) => updateTraitAttackDamage(index, damageIndex, { dice: e.target.value })}
+                            />
+                            <input
+                              className={`${inputCls} min-w-[100px] flex-1`}
+                              placeholder="Damage type"
+                              value={roll.damageType ?? ""}
+                              onChange={(e) =>
+                                updateTraitAttackDamage(index, damageIndex, { damageType: e.target.value || undefined })
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeTraitAttackDamage(index, damageIndex)}
+                              className="text-sm text-red-500/80 hover:text-red-400"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         ))}
-                      </select>
-                    </Field>
-                    <Field label="Save DC">
-                      <input
-                        className={inputCls}
-                        type="number"
-                        disabled={!t.save}
-                        value={t.save?.dc ?? ""}
-                        onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
-                      />
-                    </Field>
+                        {(t.attack?.damage ?? []).length === 0 && (
+                          <p className="text-[11px] text-slate-600">
+                            {t.attack ? "No damage rolls yet." : "Set an Attack Type above first."}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <Field label="Save Ability">
+                        <select
+                          className={inputCls}
+                          value={t.save?.ability ?? ""}
+                          onChange={(e) =>
+                            updateTraitSave(index, e.target.value ? { ability: e.target.value as keyof AbilityScores } : null)
+                          }
+                        >
+                          <option value="">— None —</option>
+                          {STAT_ORDER.map((key) => (
+                            <option key={key} value={key}>
+                              {key.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Save DC">
+                        <input
+                          className={inputCls}
+                          type="number"
+                          disabled={!t.save}
+                          value={t.save?.dc ?? ""}
+                          onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
+                        />
+                      </Field>
+                    </div>
+
+                    {/* Effects — anything an action grants that isn't damage or a saving throw: healing, temp HP, a
+                        temporary AC bonus (a Shield-like reaction), or a free-form "other" effect. */}
+                    <div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Effects</span>
+                        <button type="button" onClick={() => addTraitEffect(index)} className={addBtnCls}>
+                          + Effect
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {(t.effects ?? []).map((effect, effectIndex) => (
+                          <div key={effectIndex} className="flex items-center gap-2">
+                            <select
+                              className={`${inputCls} shrink-0`}
+                              value={effect.kind}
+                              onChange={(e) =>
+                                updateTraitEffect(index, effectIndex, { kind: e.target.value as CreatureEffectKind })
+                              }
+                            >
+                              <option value="heal">Heal</option>
+                              <option value="tempHp">Temp HP</option>
+                              <option value="acBonus">AC Bonus (Shield)</option>
+                              <option value="other">Other</option>
+                            </select>
+                            <input
+                              className={`${inputCls} w-24 shrink-0`}
+                              placeholder='e.g. "2d8 +4"'
+                              value={effect.amount}
+                              onChange={(e) => updateTraitEffect(index, effectIndex, { amount: e.target.value })}
+                            />
+                            <input
+                              className={`${inputCls} min-w-[140px] flex-1`}
+                              placeholder={
+                                effect.kind === "other" ? "Name, e.g. \"Push\"" : "Note (optional), e.g. \"until next turn\""
+                              }
+                              value={effect.label ?? ""}
+                              onChange={(e) => updateTraitEffect(index, effectIndex, { label: e.target.value || undefined })}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeTraitEffect(index, effectIndex)}
+                              className="text-sm text-red-500/80 hover:text-red-400"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        {(t.effects ?? []).length === 0 && <p className="text-[11px] text-slate-600">No effects yet.</p>}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -703,14 +864,50 @@ export function CreatureFormFields({
             />
           </Field>
         </div>
-        <Field label="Spells" hint='One frequency group per line, e.g. "At will: mage hand, minor illusion".'>
-          <textarea
-            className={`${inputCls} min-h-[80px] w-full`}
-            disabled={!value.spellcastingAbility}
-            value={value.spellcastingSpells}
-            onChange={(e) => onChange({ spellcastingSpells: e.target.value })}
-          />
-        </Field>
+        {/* Spell groups — one row per frequency/level bucket (e.g. "At will", "3/day each", "1st level"),
+            each with its own comma-separated spell list, same table-like shape as the Traits & Actions
+            list above. Both fields auto-grow to fit their content, same reason as a trait's name/description. */}
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs text-slate-400">Spell Groups</span>
+            <button
+              type="button"
+              onClick={addSpellcastingGroup}
+              disabled={!value.spellcastingAbility}
+              className={`${addBtnCls} disabled:cursor-not-allowed disabled:opacity-40`}
+            >
+              + Group
+            </button>
+          </div>
+          <div className="space-y-2">
+            {value.spellcastingGroups.map((group, index) => (
+              <div key={index} className="flex items-start gap-2 rounded-md border border-slate-800 p-2">
+                <AutoGrowTextarea
+                  className={`${inputCls} min-w-[100px] flex-1`}
+                  placeholder='Label, e.g. "At will"'
+                  value={group.label}
+                  onChange={(v) => updateSpellcastingGroup(index, { label: v })}
+                />
+                <AutoGrowTextarea
+                  className={`${inputCls} min-w-[200px] flex-[2]`}
+                  placeholder="Spells, comma-separated"
+                  value={group.spells}
+                  onChange={(v) => updateSpellcastingGroup(index, { spells: v })}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSpellcastingGroup(index)}
+                  className="mt-1.5 text-sm text-red-500/80 hover:text-red-400"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {value.spellcastingGroups.length === 0 && (
+              <p className="text-[11px] text-slate-600">No spell groups yet.</p>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Notes */}

@@ -1,5 +1,5 @@
 import "server-only";
-import { AbilityScores, CreatureAttack, CreatureSearchHit, CreatureTemplate, CreatureTrait } from "./types";
+import { AbilityScores, CreatureAttack, CreatureDamageRoll, CreatureSearchHit, CreatureTemplate, CreatureTrait } from "./types";
 import { abilityModifier } from "./characterMath";
 
 /**
@@ -154,18 +154,41 @@ function mapRecharge(a: Record<string, unknown>): string | undefined {
   return label ? label(Number.isFinite(paramRaw) ? paramRaw : undefined) : undefined;
 }
 
-/** e.g. "5 ft." (reach only), "80/320 ft." (range + long_range), or "5 ft. or 20/60 ft." (both) — same convention as a real stat block's attack line. */
-function formatAttackRange(attack: Record<string, unknown>): string | undefined {
-  const unit = firstString(attack, ["distance_unit"]) || "ft.";
-  const reach = firstNumber(attack, ["reach"], NaN);
-  const range = firstNumber(attack, ["range"], NaN);
-  const longRange = firstNumber(attack, ["long_range"], NaN);
-  const parts: string[] = [];
-  if (Number.isFinite(reach) && reach > 0) parts.push(`${reach} ${unit}`);
-  if (Number.isFinite(range) && range > 0) {
-    parts.push(Number.isFinite(longRange) && longRange > 0 ? `${range}/${longRange} ${unit}` : `${range} ${unit}`);
+/** e.g. "5" (melee reach) or "80/320" (ranged, with a long range) — no "ft." suffix, matching `CreatureAttack.range`'s own "numbers only, unit added on display" convention. Picks reach for a melee attack and range/long_range for a ranged one, matching whichever distance `attackType` (derived from the same reach/range presence) actually describes. */
+function formatAttackRange(attack: Record<string, unknown>, attackType: "melee" | "ranged"): string | undefined {
+  if (attackType === "melee") {
+    const reach = firstNumber(attack, ["reach"], NaN);
+    return Number.isFinite(reach) && reach > 0 ? String(reach) : undefined;
   }
-  return parts.length > 0 ? parts.join(" or ") : undefined;
+  const range = firstNumber(attack, ["range"], NaN);
+  if (!Number.isFinite(range) || range <= 0) return undefined;
+  const longRange = firstNumber(attack, ["long_range"], NaN);
+  return Number.isFinite(longRange) && longRange > 0 ? `${range}/${longRange}` : String(range);
+}
+
+/** An attack's damage rolls — the main die/bonus/type, plus a second roll when Open5e's own `extra_damage_*` fields are present (e.g. a weapon with a bonus elemental die) — same "list of rolls" shape `CreatureAttack.damage` uses for a hand-authored multi-type attack. */
+function mapActionDamage(attack: Record<string, unknown>): CreatureDamageRoll[] {
+  const dieCount = firstNumber(attack, ["damage_die_count"], NaN);
+  const dieType = firstNumber(attack, ["damage_die_type"], NaN);
+  if (!Number.isFinite(dieCount) || !Number.isFinite(dieType)) return [];
+
+  const bonus = firstNumber(attack, ["damage_bonus"], 0);
+  const rolls: CreatureDamageRoll[] = [
+    {
+      dice: `${dieCount}d${dieType}${bonus !== 0 ? ` ${bonus >= 0 ? "+" : ""}${bonus}` : ""}`,
+      damageType: firstString(attack, ["damage_type.name", "damage_type"]),
+    },
+  ];
+
+  const extraCount = firstNumber(attack, ["extra_damage_die_count"], NaN);
+  const extraType = firstNumber(attack, ["extra_damage_die_type"], NaN);
+  if (Number.isFinite(extraCount) && Number.isFinite(extraType)) {
+    rolls.push({
+      dice: `${extraCount}d${extraType}`,
+      damageType: firstString(attack, ["extra_damage_type.name", "extra_damage_type"]),
+    });
+  }
+  return rolls;
 }
 
 /**
@@ -174,7 +197,7 @@ function formatAttackRange(attack: Record<string, unknown>): string | undefined 
  * vs ranged is inferred from `reach`/`range` presence, since Open5e's own
  * `attack_type` on this object distinguishes SPELL/WEAPON, not melee/ranged.
  * Returns `undefined` for an action with no `attacks` (most traits/legendary
- * actions) or one missing the numbers this shape actually needs.
+ * actions), one missing the to-hit number, or one with no damage dice at all.
  */
 function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined {
   const attacksRaw = Array.isArray(a.attacks) ? a.attacks : [];
@@ -182,25 +205,19 @@ function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined
   if (!attack) return undefined;
 
   const attackBonus = firstNumber(attack, ["to_hit_mod"], NaN);
-  const dieCount = firstNumber(attack, ["damage_die_count"], NaN);
-  const dieType = firstNumber(attack, ["damage_die_type"], NaN);
-  if (!Number.isFinite(attackBonus) || !Number.isFinite(dieCount) || !Number.isFinite(dieType)) return undefined;
+  if (!Number.isFinite(attackBonus)) return undefined;
+
+  const damage = mapActionDamage(attack);
+  if (damage.length === 0) return undefined;
 
   const reach = firstNumber(attack, ["reach"], NaN);
   const attackType: "melee" | "ranged" = Number.isFinite(reach) && reach > 0 ? "melee" : "ranged";
-
-  const bonus = firstNumber(attack, ["damage_bonus"], 0);
-  let damage = `${dieCount}d${dieType}${bonus !== 0 ? ` ${bonus >= 0 ? "+" : ""}${bonus}` : ""}`;
-  const extraCount = firstNumber(attack, ["extra_damage_die_count"], NaN);
-  const extraType = firstNumber(attack, ["extra_damage_die_type"], NaN);
-  if (Number.isFinite(extraCount) && Number.isFinite(extraType)) damage += ` plus ${extraCount}d${extraType}`;
 
   return {
     attackType,
     attackBonus,
     damage,
-    range: formatAttackRange(attack),
-    damageType: firstString(attack, ["damage_type.name", "damage_type"]),
+    range: formatAttackRange(attack, attackType),
   };
 }
 

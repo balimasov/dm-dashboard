@@ -1,4 +1,4 @@
-import { AbilityScores, CreatureAttack, CreatureSave, CreatureTrait } from "./types";
+import { AbilityScores, CreatureAttack, CreatureDamageRoll, CreatureSave, CreatureTrait } from "./types";
 
 const ABILITY_NAME_TO_KEY: Record<string, keyof AbilityScores> = {
   strength: "str",
@@ -21,21 +21,28 @@ function stripRechargeSuffix(name: string): string {
   return name.replace(RECHARGE_SUFFIX, "").trim();
 }
 
-/** e.g. "Melee Weapon Attack: +7 to hit, reach 5 ft., one target." / "Ranged Weapon Attack: +5 to hit, range 80/320 ft., one target." — the standard 5e stat-block phrasing for a weapon/spell attack line. */
-const ATTACK_PATTERN = /(Melee|Ranged)\s+(?:Weapon|Spell)\s+Attack:\s*([+-]\d+)\s+to hit,\s*(?:reach|range)\s+([\d/]+\s*ft\.?)/i;
-/** e.g. "Hit: 13 (2d6 + 6) piercing damage." */
-const DAMAGE_PATTERN = /Hit:\s*\d+\s*\(([^)]+)\)\s*([A-Za-z]+)\s*damage/i;
+/** e.g. "Melee Weapon Attack: +7 to hit, reach 5 ft., one target." / "Ranged Weapon Attack: +5 to hit, range 80/320 ft., one target." — the standard 5e stat-block phrasing for a weapon/spell attack line. The "ft." unit is stripped from the captured range — same "numbers only, unit added on display" convention the range field itself uses. */
+const ATTACK_PATTERN = /(Melee|Ranged)\s+(?:Weapon|Spell)\s+Attack:\s*([+-]\d+)\s+to hit,\s*(?:reach|range)\s+([\d/]+)\s*ft\.?/i;
+/** e.g. "Hit: 13 (2d6 + 6) piercing damage." — optionally followed by a second damage roll, e.g. "plus 4 (1d8) fire damage", for an attack that deals more than one type at once. */
+const DAMAGE_PATTERN =
+  /Hit:\s*\d+\s*\(([^)]+)\)\s*([A-Za-z]+)\s*damage(?:\s*plus\s*\d+\s*\(([^)]+)\)\s*([A-Za-z]+)\s*damage)?/i;
 
 function inferAttack(description: string): CreatureAttack | undefined {
   const attackMatch = description.match(ATTACK_PATTERN);
   if (!attackMatch) return undefined;
   const damageMatch = description.match(DAMAGE_PATTERN);
+  const damage: CreatureDamageRoll[] = [];
+  if (damageMatch) {
+    damage.push({ dice: damageMatch[1].trim(), damageType: damageMatch[2].toLowerCase() });
+    if (damageMatch[3] && damageMatch[4]) {
+      damage.push({ dice: damageMatch[3].trim(), damageType: damageMatch[4].toLowerCase() });
+    }
+  }
   return {
     attackType: attackMatch[1].toLowerCase() === "melee" ? "melee" : "ranged",
     attackBonus: Number(attackMatch[2]),
     range: attackMatch[3].trim(),
-    damage: damageMatch ? damageMatch[1].trim() : "",
-    damageType: damageMatch ? damageMatch[2].toLowerCase() : undefined,
+    damage,
   };
 }
 

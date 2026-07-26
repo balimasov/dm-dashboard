@@ -1,6 +1,11 @@
-import { AbilityScores, Creature, CreatureSpellcasting, CreatureTemplate } from "./types";
+import { AbilityScores, Creature, CreatureSpellcasting, CreatureSpellGroup, CreatureTemplate } from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CreatureFormValue, emptyCreatureFormValue } from "@/components/CreatureFormFields";
+
+/** Seeds the edit form's spell-group rows from a stored `CreatureSpellGroup[]` — each group's `spells` array becomes one comma-separated line, split back apart on save (see `buildSpellcasting`). */
+function spellGroupsToFormValue(groups: CreatureSpellGroup[] | undefined): Array<{ label: string; spells: string }> {
+  return (groups ?? []).map((g) => ({ label: g.label, spells: g.spells.join(", ") }));
+}
 
 /** Seeds an "Add Creature" draft from a picked bestiary/SRD search result. */
 export function templateToFormValue(template: CreatureTemplate): CreatureFormValue {
@@ -34,7 +39,7 @@ export function templateToFormValue(template: CreatureTemplate): CreatureFormVal
     spellcastingAbility: template.spellcasting?.ability ?? "",
     spellcastingSaveDc: template.spellcasting ? String(template.spellcasting.saveDc) : "",
     spellcastingAttackBonus: template.spellcasting ? String(template.spellcasting.attackBonus) : "",
-    spellcastingSpells: template.spellcasting?.spells.join("\n") ?? "",
+    spellcastingGroups: spellGroupsToFormValue(template.spellcasting?.spellGroups),
   };
 }
 
@@ -72,7 +77,7 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
     spellcastingAbility: creature.spellcasting?.ability ?? "",
     spellcastingSaveDc: creature.spellcasting ? String(creature.spellcasting.saveDc) : "",
     spellcastingAttackBonus: creature.spellcasting ? String(creature.spellcasting.attackBonus) : "",
-    spellcastingSpells: creature.spellcasting?.spells.join("\n") ?? "",
+    spellcastingGroups: spellGroupsToFormValue(creature.spellcasting?.spellGroups),
     ownerCharacterId: creature.ownerCharacterId ?? "",
     source: creature.source ?? "",
     notes: creature.notes ?? "",
@@ -90,17 +95,23 @@ function parseOptionalNumber(text: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** `spellcastingAbility` blank = no spellcasting at all, regardless of what's typed into the other `spellcasting*` fields — same "the ability picker is the on/off switch" convention the form's own disabled-inputs use. */
+/** `spellcastingAbility` blank = no spellcasting at all, regardless of what's typed into the other `spellcasting*` fields — same "the ability picker is the on/off switch" convention the form's own disabled-inputs use. Each group's comma-separated `spells` text splits into individual names; a group left with no spells (blank text) is dropped rather than saved as an empty bucket. */
 function buildSpellcasting(value: CreatureFormValue): CreatureSpellcasting | undefined {
   if (!value.spellcastingAbility) return undefined;
+  const spellGroups: CreatureSpellGroup[] = value.spellcastingGroups
+    .map((g) => ({
+      label: g.label.trim(),
+      spells: g.spells
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }))
+    .filter((g) => g.spells.length > 0);
   return {
     ability: value.spellcastingAbility,
     saveDc: parseOptionalNumber(value.spellcastingSaveDc) ?? 0,
     attackBonus: parseOptionalNumber(value.spellcastingAttackBonus) ?? 0,
-    spells: value.spellcastingSpells
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean),
+    spellGroups,
   };
 }
 

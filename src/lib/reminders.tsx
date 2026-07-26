@@ -1,18 +1,11 @@
-import { Character, Creature, CreatureTrait, RARITY_COLOR } from "@/lib/types";
+import { Character, Creature, RARITY_COLOR } from "@/lib/types";
 import { ContentKind } from "@/lib/contentKindIcons";
 import { dedupeInventoryItems } from "@/lib/partyToolkit";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
 import { AttackHintPanel } from "@/components/ui/AttackDisplay";
+import { CreatureAbilityHintPanel } from "@/components/CreatureAbilitiesPanel";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
 import { SpellHintPanel } from "@/components/ui/SpellDisplay";
-
-const TRAIT_GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
-  trait: "Trait",
-  action: "Action",
-  bonusAction: "Bonus Action",
-  reaction: "Reaction",
-  legendary: "Legendary Action",
-};
 
 export interface ReminderEntry {
   /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `label`). */
@@ -105,14 +98,7 @@ export function creatureReminders(creature: Creature): ReminderGroup | null {
     .map((t) => ({
       name: t.name,
       label: t.name,
-      panel: (
-        <AbilityHintPanel
-          name={t.name}
-          metaLines={[TRAIT_GROUP_LABELS[t.group ?? "trait"]]}
-          description={t.description}
-          emptyDescription="No description."
-        />
-      ),
+      panel: <CreatureAbilityHintPanel trait={t} />,
       kind: "features" as const,
     }));
   if (entries.length === 0) return null;

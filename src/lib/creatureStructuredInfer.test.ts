@@ -11,9 +11,8 @@ describe("inferStructuredTraitFields", () => {
     expect(result.attack).toEqual({
       attackType: "melee",
       attackBonus: 7,
-      range: "5 ft.",
-      damage: "2d10 + 6",
-      damageType: "piercing",
+      range: "5",
+      damage: [{ dice: "2d10 + 6", damageType: "piercing" }],
     });
     expect(result.save).toBeUndefined();
     expect(result.recharge).toBeUndefined();
@@ -26,7 +25,20 @@ describe("inferStructuredTraitFields", () => {
       description: "Ranged Weapon Attack: +5 to hit, range 150/600 ft., one target. Hit: 6 (1d8 + 2) piercing damage.",
     });
     expect(result.attack?.attackType).toBe("ranged");
-    expect(result.attack?.range).toBe("150/600 ft.");
+    expect(result.attack?.range).toBe("150/600");
+  });
+
+  test("infers a second damage roll from a 'plus' clause", () => {
+    const result = inferStructuredTraitFields({
+      name: "Flaming Bite",
+      group: "action",
+      description:
+        "Melee Weapon Attack: +6 to hit, reach 5 ft., one target. Hit: 6 (1d6 + 3) bludgeoning damage plus 9 (2d8) fire damage.",
+    });
+    expect(result.attack?.damage).toEqual([
+      { dice: "1d6 + 3", damageType: "bludgeoning" },
+      { dice: "2d8", damageType: "fire" },
+    ]);
   });
 
   test("infers a saving throw DC + ability", () => {
@@ -56,7 +68,7 @@ describe("inferStructuredTraitFields", () => {
       group: "action",
       description: "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 17 (2d10 + 6) piercing damage.",
       recharge: "Recharge 6",
-      attack: { attackType: "melee", attackBonus: 99, damage: "1" },
+      attack: { attackType: "melee", attackBonus: 99, damage: [{ dice: "1" }] },
     });
     expect(result.attack).toBeUndefined();
     expect(result.recharge).toBeUndefined();

@@ -7,6 +7,16 @@ const DEFAULT_STATS: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 
 const VALID_CATEGORIES: CreatureCategory[] = ["companion", "enemy", "npc"];
 const STAT_KEYS = ["str", "dex", "con", "int", "wis", "cha"] as const;
 
+function parseSpellGroups(raw: unknown): CreatureSpellcasting["spellGroups"] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((g): g is Record<string, unknown> => Boolean(g) && typeof g === "object")
+    .map((g) => ({
+      label: typeof g.label === "string" ? g.label : "",
+      spells: Array.isArray(g.spells) ? g.spells.filter((s): s is string => typeof s === "string") : [],
+    }));
+}
+
 function parseSpellcasting(raw: unknown): CreatureSpellcasting | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const obj = raw as Record<string, unknown>;
@@ -16,8 +26,7 @@ function parseSpellcasting(raw: unknown): CreatureSpellcasting | undefined {
   if (!STAT_KEYS.includes(ability as (typeof STAT_KEYS)[number]) || !Number.isFinite(saveDc) || !Number.isFinite(attackBonus)) {
     return undefined;
   }
-  const spells = Array.isArray(obj.spells) ? obj.spells.filter((s): s is string => typeof s === "string") : [];
-  return { ability: ability as keyof AbilityScores, saveDc, attackBonus, spells };
+  return { ability: ability as keyof AbilityScores, saveDc, attackBonus, spellGroups: parseSpellGroups(obj.spellGroups) };
 }
 
 function parseCategory(raw: unknown): CreatureCategory {

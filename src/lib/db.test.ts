@@ -424,6 +424,85 @@ describe("createCreature / updateCreature — createdAt/updatedAt stamping", () 
   });
 });
 
+describe("rowToCreature — legacy trait/spellcasting shape migration", () => {
+  it("converts a pre-1.30 trait.attack (bare damage/damageType strings) into the current damage-list shape on read", async () => {
+    const created = db.createCreature({
+      campaignId: "campaign-legacy-attack",
+      category: "enemy",
+      templateName: "Legacy Wolf",
+      name: "Legacy Wolf",
+      ac: 13,
+      hp: 11,
+      maxHp: 11,
+      tempHp: 0,
+      speed: 40,
+      stats: BLANK_STATS,
+      traits: [
+        {
+          name: "Bite",
+          group: "action",
+          attack: { attackType: "melee", attackBonus: 4, range: "5 ft.", damage: "2d4 +2", damageType: "piercing" } as never,
+        },
+      ],
+      conditions: [],
+      exhaustion: 0,
+    });
+
+    const Database = (await import("better-sqlite3")).default;
+    const rawDb = new Database(path.join(process.env.DATA_DIR!, "dm-dashboard.sqlite"));
+    const row = rawDb.prepare("SELECT data FROM creatures WHERE id = ?").get(created.id) as { data: string };
+    // `db.createCreature` above already stores whatever shape it's given —
+    // the point of this test is what `getCreature` (via `rowToCreature`)
+    // does when *reading* a row saved in the old shape, so no further raw
+    // mutation is needed; the JSON on disk already has the legacy fields.
+    expect(JSON.parse(row.data).traits[0].attack.damage).toBe("2d4 +2");
+    rawDb.close();
+
+    const fetched = db.getCreature(created.id);
+    expect(fetched?.traits[0].attack).toEqual({
+      attackType: "melee",
+      attackBonus: 4,
+      range: "5 ft.",
+      damage: [{ dice: "2d4 +2", damageType: "piercing" }],
+    });
+  });
+
+  it("converts a pre-1.30 spellcasting.spells flat-line list into spellGroups on read", async () => {
+    const created = db.createCreature({
+      campaignId: "campaign-legacy-spells",
+      category: "enemy",
+      templateName: "Legacy Sorcerer",
+      name: "Legacy Sorcerer",
+      ac: 12,
+      hp: 20,
+      maxHp: 20,
+      tempHp: 0,
+      speed: 30,
+      stats: BLANK_STATS,
+      traits: [],
+      spellcasting: {
+        ability: "cha",
+        saveDc: 14,
+        attackBonus: 6,
+        spells: ["At will: fire bolt, mage hand", "3/day each: invisibility"],
+      } as never,
+      conditions: [],
+      exhaustion: 0,
+    });
+
+    const fetched = db.getCreature(created.id);
+    expect(fetched?.spellcasting).toEqual({
+      ability: "cha",
+      saveDc: 14,
+      attackBonus: 6,
+      spellGroups: [
+        { label: "At will", spells: ["fire bolt", "mage hand"] },
+        { label: "3/day each", spells: ["invisibility"] },
+      ],
+    });
+  });
+});
+
 describe("updateCreature — hpHistory", () => {
   function createBasicCreature(campaignId: string) {
     return db.createCreature({

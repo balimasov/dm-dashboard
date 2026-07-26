@@ -7,6 +7,7 @@ import {
   CampaignSummary,
   Character,
   Creature,
+  CreatureTrait,
   HpHistoryEntry,
   ItemCategory,
   ItemRarity,
@@ -333,6 +334,57 @@ export function reorderCharacters(orderedIds: string[]): void {
   transaction(orderedIds);
 }
 
+/**
+ * A trait's `attack.damage` used to be one `{ damage: string; damageType?:
+ * string }` pair rather than a list of rolls — reading a row saved before
+ * that changed would otherwise break every consumer that now expects
+ * `damage` to be an array (`.map`, `.length`, ...). `attack.damage` is
+ * checked directly rather than trusting the type system here, since a
+ * legacy row's actual runtime shape doesn't match `CreatureAttack` even
+ * though `JSON.parse` above types it as one.
+ */
+function normalizeTrait(trait: CreatureTrait): CreatureTrait {
+  const attack = trait.attack;
+  if (!attack) return trait;
+  if (Array.isArray(attack.damage as unknown)) return trait;
+  const legacy = attack as unknown as { damage?: string; damageType?: string };
+  return {
+    ...trait,
+    attack: {
+      attackType: attack.attackType,
+      attackBonus: attack.attackBonus,
+      range: attack.range,
+      damage: legacy.damage ? [{ dice: legacy.damage, damageType: legacy.damageType }] : [],
+    },
+  };
+}
+
+/**
+ * `CreatureSpellcasting` used to carry a flat `spells: string[]` of
+ * pre-combined "label: spell, spell" lines rather than structured
+ * `spellGroups` — same "old shape doesn't match the current type at
+ * runtime" situation as `normalizeTrait` above, parsed with the same
+ * label/comma-split convention the old display code used.
+ */
+function normalizeSpellcasting(spellcasting: Creature["spellcasting"]): Creature["spellcasting"] {
+  if (!spellcasting) return spellcasting;
+  if (Array.isArray(spellcasting.spellGroups as unknown)) return spellcasting;
+  const legacy = spellcasting as unknown as { spells?: string[] };
+  const spellGroups = (legacy.spells ?? []).map((line) => {
+    const separatorIndex = line.indexOf(":");
+    if (separatorIndex === -1) return { label: "", spells: [line.trim()].filter(Boolean) };
+    return {
+      label: line.slice(0, separatorIndex).trim(),
+      spells: line
+        .slice(separatorIndex + 1)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+  });
+  return { ability: spellcasting.ability, saveDc: spellcasting.saveDc, attackBonus: spellcasting.attackBonus, spellGroups };
+}
+
 /** Rows saved before `conditions`/`exhaustion`/`tempHp`/`templateName`/`category` existed on Creature won't have them in their stored JSON. */
 function rowToCreature(row: { data: string }): Creature {
   const parsed = JSON.parse(row.data) as Creature;
@@ -341,7 +393,8 @@ function rowToCreature(row: { data: string }): Creature {
     tempHp: parsed.tempHp ?? 0,
     conditions: parsed.conditions ?? [],
     exhaustion: parsed.exhaustion ?? 0,
-    traits: parsed.traits ?? [],
+    traits: (parsed.traits ?? []).map(normalizeTrait),
+    spellcasting: normalizeSpellcasting(parsed.spellcasting),
     templateName: parsed.templateName ?? parsed.name,
     // Historically this whole block was used only for player-controlled
     // summons/companions, so that's the least surprising default for

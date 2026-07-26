@@ -292,14 +292,19 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     kind: "traits",
     required: false,
     doc:
-      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackBonus — число, damage — рядок, range/damageType — необов\'язково), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число). Залиш порожнім списком [], якщо рис немає.',
+      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackBonus — число, range — лише число/числа без "ft." (напр. "5" чи "80/320"), damage — список {dice, damageType} для кожного джерела шкоди, якщо атака завдає кількох типів одразу), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число), effects (необов\'язково, список нешкодних ефектів — {kind: "heal"/"tempHp"/"acBonus"/"other", amount — рядок з кидком чи числом, label — необов\'язковий короткий підпис, обов\'язковий для "other"}). Залиш порожнім списком [], якщо рис немає.',
     example: [
       { name: "Charge", group: "trait", description: "If the unicorn moves at least 20 feet straight toward a target..." },
       {
         name: "Hooves",
         group: "action",
-        description: "Melee Weapon Attack: +7 to hit, reach 5 ft., one target.",
-        attack: { attackType: "melee", attackBonus: 7, range: "5 ft.", damage: "2d6 +4", damageType: "bludgeoning" },
+        description: "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 11 (2d6 +4) bludgeoning damage.",
+        attack: {
+          attackType: "melee",
+          attackBonus: 7,
+          range: "5",
+          damage: [{ dice: "2d6 +4", damageType: "bludgeoning" }],
+        },
       },
       {
         name: "Frightful Presence",
@@ -307,6 +312,13 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
         recharge: "Recharge 5-6",
         save: { ability: "wis", dc: 15 },
         description: "Each creature of the DM's choice within 120 feet must succeed on a Wisdom saving throw...",
+      },
+      {
+        name: "Lay On Hooves",
+        group: "action",
+        recharge: "1/Day",
+        effects: [{ kind: "heal", amount: "6d8 +4" }],
+        description: "The unicorn touches another creature. That creature magically regains hit points.",
       },
     ],
     includeInTemplate: true,
@@ -317,12 +329,15 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     kind: "spellcasting",
     required: false,
     doc:
-      "Чарування (необов'язково) — характеристика (ability, одна з str/dex/con/int/wis/cha), DC рятівного кидка від закляття (saveDc), бонус атаки закляттями (attackBonus) і список заклять вільним текстом, згрупований за частотою використання. Прибери весь блок, якщо істота не чаклує.",
+      "Чарування (необов'язково) — характеристика (ability, одна з str/dex/con/int/wis/cha), DC рятівного кидка від закляття (saveDc), бонус атаки закляттями (attackBonus) і spellGroups — список груп за частотою використання, кожна: label (напр. \"At will\", \"3/day each\", \"1st level\") і spells — список назв заклять. Прибери весь блок, якщо істота не чаклує.",
     example: {
       ability: "cha",
       saveDc: 15,
       attackBonus: 7,
-      spells: ["At will: mage hand, minor illusion", "3/day each: charm person, invisibility"],
+      spellGroups: [
+        { label: "At will", spells: ["Mage Hand", "Minor Illusion"] },
+        { label: "3/day each", spells: ["Charm Person", "Invisibility"] },
+      ],
     },
     includeInTemplate: true,
   },

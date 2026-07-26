@@ -515,22 +515,50 @@ export interface Character {
   hidden?: boolean;
 }
 
+/**
+ * One damage roll a trait's attack deals — a single attack can deal several
+ * dice/types at once (e.g. "6 (1d6 + 3) bludgeoning plus 9 (2d8) cold"), so
+ * this is a list on `CreatureAttack` rather than one dice+type pair.
+ */
+export interface CreatureDamageRoll {
+  /** Dice plus flat bonus already combined into one string, e.g. "2d6 +4" — same convention as `Attack.damage`. */
+  dice: string;
+  damageType?: string;
+}
+
 /** A trait/action's structured to-hit + damage — e.g. a Bite or Claw attack. Melee/ranged is an explicit choice here rather than derived, since some attacks (thrown weapons) are one or the other depending on how they're used. */
 export interface CreatureAttack {
   attackType: "melee" | "ranged";
   /** To-hit modifier, proficiency (if any) already folded in — same convention as `Attack.attackBonus`. */
   attackBonus: number;
-  /** e.g. "5 ft." or "80/320 ft." — free text, same convention as `CreatureTemplate.speedDetail`. */
+  /** Just the distance number(s), e.g. "5" or "80/320" — no "ft." suffix; that unit is added automatically wherever this is displayed, so it's never hand-typed. */
   range?: string;
-  /** Dice plus flat bonus already combined into one string, e.g. "2d6 +4" — same convention as `Attack.damage`. */
-  damage: string;
-  damageType?: string;
+  damage: CreatureDamageRoll[];
 }
 
 /** A trait/action's structured saving-throw DC — e.g. a breath weapon or Frightful Presence. */
 export interface CreatureSave {
   ability: keyof AbilityScores;
   dc: number;
+}
+
+export type CreatureEffectKind = "heal" | "tempHp" | "acBonus" | "other";
+
+/**
+ * A trait/action effect that isn't damage or a saving throw — restoring HP,
+ * granting temporary HP, or a temporary AC bonus (a Shield-like reaction),
+ * plus a free-form "other" bucket for anything else (a push, a condition, a
+ * teleport...). Kept separate from `attack`/`save` since an action can grant
+ * one of these without making an attack roll at all (a Heal action, a
+ * reaction that grants +2 AC), and a single action can have more than one
+ * (e.g. a bite that both damages and heals the creature for the same amount).
+ */
+export interface CreatureEffect {
+  kind: CreatureEffectKind;
+  /** Dice or flat amount, e.g. "2d8 +4", "+2", "10". */
+  amount: string;
+  /** Required for "other" (a short name for what it does, e.g. "Push"); optional extra context for the rest (e.g. "until the start of its next turn"). */
+  label?: string;
 }
 
 export interface CreatureTrait {
@@ -553,23 +581,35 @@ export interface CreatureTrait {
   recharge?: string;
   attack?: CreatureAttack;
   save?: CreatureSave;
+  effects?: CreatureEffect[];
+}
+
+/**
+ * One frequency/level bucket of a creature's spell list — e.g.
+ * `{ label: "At will", spells: ["Mage Hand", "Minor Illusion"] }` or
+ * `{ label: "3/day each", spells: ["Charm Person", "Invisibility"] }`. A real
+ * stat block always groups spells this way rather than listing them one at a
+ * time, so `label` and `spells` are separate structured fields instead of one
+ * combined free-text line — a DM can edit either half without re-typing the
+ * other.
+ */
+export interface CreatureSpellGroup {
+  label: string;
+  spells: string[];
 }
 
 /**
  * A creature's spellcasting block — separate from the free-text
  * "Spellcasting" trait's own prose (which still carries the full rules text
  * and stays untouched in `traits`), this is just the fast-glance numbers plus
- * a lightweight spell list. `spells` is free-text lines grouped by usage
- * frequency (e.g. "At will: mage hand, minor illusion") rather than discrete
- * `KnownSpell`-like entries — a real stat block groups spells this way, not
- * one at a time, and there's no per-spell id/level/school data to hang a
- * richer shape off of here anyway.
+ * a lightweight spell list grouped by usage frequency. There's no per-spell
+ * id/level/school data to hang a richer `KnownSpell`-like shape off of here.
  */
 export interface CreatureSpellcasting {
   ability: keyof AbilityScores;
   saveDc: number;
   attackBonus: number;
-  spells: string[];
+  spellGroups: CreatureSpellGroup[];
 }
 
 /**

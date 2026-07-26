@@ -22,18 +22,26 @@ describe("creature import template round-trip", () => {
         ability: "cha",
         saveDc: 15,
         attackBonus: 7,
-        spells: ["At will: mage hand, minor illusion", "3/day each: charm person, invisibility"],
+        spellGroups: [
+          { label: "At will", spells: ["Mage Hand", "Minor Illusion"] },
+          { label: "3/day each", spells: ["Charm Person", "Invisibility"] },
+        ],
       },
     });
-    expect(outcome.result.input.traits).toHaveLength(3);
+    expect(outcome.result.input.traits).toHaveLength(4);
     expect(outcome.result.input.traits?.[1]).toMatchObject({
       name: "Hooves",
-      attack: { attackType: "melee", attackBonus: 7, range: "5 ft.", damage: "2d6 +4", damageType: "bludgeoning" },
+      attack: { attackType: "melee", attackBonus: 7, range: "5", damage: [{ dice: "2d6 +4", damageType: "bludgeoning" }] },
     });
     expect(outcome.result.input.traits?.[2]).toMatchObject({
       name: "Frightful Presence",
       recharge: "Recharge 5-6",
       save: { ability: "wis", dc: 15 },
+    });
+    expect(outcome.result.input.traits?.[3]).toMatchObject({
+      name: "Lay On Hooves",
+      recharge: "1/Day",
+      effects: [{ kind: "heal", amount: "6d8 +4" }],
     });
     // The template's owner-character field is intentionally left blank —
     // resolving a filled-in name to an id needs the campaign's character
@@ -171,7 +179,7 @@ traits:
 });
 
 describe("new structured fields — valid and invalid shapes", () => {
-  test("proficiencyBonus, trait.attack/save/recharge, and spellcasting all parse when well-formed", () => {
+  test("a YAML using the pre-1.30 attack/spellcasting shape (bare-string damage + damageType sibling, range with 'ft.', flat spells lines) still imports, converted into the current shapes", () => {
     const yaml = `
 templateName: "Young Sorcerer"
 ac: 13
@@ -214,9 +222,8 @@ spellcasting:
     expect(outcome.result.input.traits[0].attack).toEqual({
       attackType: "melee",
       attackBonus: 5,
-      range: "5 ft.",
-      damage: "1d6 +2",
-      damageType: "piercing",
+      range: "5",
+      damage: [{ dice: "1d6 +2", damageType: "piercing" }],
     });
     expect(outcome.result.input.traits[1].recharge).toBe("Recharge 5-6");
     expect(outcome.result.input.traits[1].save).toEqual({ ability: "wis", dc: 13 });
@@ -224,7 +231,67 @@ spellcasting:
       ability: "cha",
       saveDc: 14,
       attackBonus: 6,
-      spells: ["At will: fire bolt"],
+      spellGroups: [{ label: "At will", spells: ["fire bolt"] }],
+    });
+  });
+
+  test("the current shapes — multi-roll damage, effects, and structured spellGroups — parse when well-formed", () => {
+    const yaml = `
+templateName: "Young Sorcerer"
+ac: 13
+maxHp: 30
+speed: 30
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Flaming Bite"
+    group: "action"
+    attack:
+      attackType: melee
+      attackBonus: 5
+      range: "5"
+      damage:
+        - dice: "1d6 +2"
+          damageType: piercing
+        - dice: "2d6"
+          damageType: fire
+  - name: "Lay On Hooves"
+    group: "action"
+    recharge: "1/Day"
+    effects:
+      - kind: heal
+        amount: "6d8 +4"
+spellcasting:
+  ability: cha
+  saveDc: 14
+  attackBonus: 6
+  spellGroups:
+    - label: "At will"
+      spells: ["Fire Bolt", "Mage Hand"]
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.result.input.traits[0].attack).toEqual({
+      attackType: "melee",
+      attackBonus: 5,
+      range: "5",
+      damage: [
+        { dice: "1d6 +2", damageType: "piercing" },
+        { dice: "2d6", damageType: "fire" },
+      ],
+    });
+    expect(outcome.result.input.traits[1].effects).toEqual([{ kind: "heal", amount: "6d8 +4", label: undefined }]);
+    expect(outcome.result.input.spellcasting).toEqual({
+      ability: "cha",
+      saveDc: 14,
+      attackBonus: 6,
+      spellGroups: [{ label: "At will", spells: ["Fire Bolt", "Mage Hand"] }],
     });
   });
 

@@ -194,12 +194,16 @@ const quickLinkSchema = z.object({
   url: z.string(),
 });
 
+const creatureDamageRollSchema = z.object({
+  dice: z.string(),
+  damageType: z.string().optional(),
+});
+
 const creatureAttackSchema = z.object({
   attackType: z.enum(["melee", "ranged"]),
   attackBonus: z.number(),
   range: z.string().optional(),
-  damage: z.string(),
-  damageType: z.string().optional(),
+  damage: z.array(creatureDamageRollSchema),
 });
 
 const creatureSaveSchema = z.object({
@@ -207,11 +211,22 @@ const creatureSaveSchema = z.object({
   dc: z.number(),
 });
 
+const creatureEffectSchema = z.object({
+  kind: z.enum(["heal", "tempHp", "acBonus", "other"]),
+  amount: z.string(),
+  label: z.string().optional(),
+});
+
+const creatureSpellGroupSchema = z.object({
+  label: z.string(),
+  spells: z.array(z.string()),
+});
+
 const creatureSpellcastingSchema = z.object({
   ability: z.enum(["str", "dex", "con", "int", "wis", "cha"]),
   saveDc: z.number(),
   attackBonus: z.number(),
-  spells: z.array(z.string()),
+  spellGroups: z.array(creatureSpellGroupSchema),
 });
 
 const creatureTraitSchema = z.object({
@@ -221,6 +236,7 @@ const creatureTraitSchema = z.object({
   recharge: z.string().optional(),
   attack: creatureAttackSchema.optional(),
   save: creatureSaveSchema.optional(),
+  effects: z.array(creatureEffectSchema).optional(),
 });
 
 const creatureCategorySchema = z.enum(["companion", "enemy", "npc"]);
