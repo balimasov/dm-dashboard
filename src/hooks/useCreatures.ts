@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { AbilityScores, Creature, CreatureCategory, CreatureSpellcasting, CreatureTrait } from "@/lib/types";
 import { clearCreatureHpHistory, patchCreature } from "@/lib/creatureApi";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
+import { nullsToUndefined } from "@/lib/nullsToUndefined";
 
 export interface AddCreatureInput {
   templateName: string;
@@ -109,7 +110,15 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
   );
 
   const updateCreature = useCallback(async (id: string, updates: Partial<Creature>) => {
-    setCreatures((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+    // `updates` can carry an explicit `null` for a field the edit form
+    // cleared (see `formValueToCreatureUpdates`'s doc comment) — the API
+    // needs that real `null` to know to clear the field, but this
+    // optimistic local merge must not leave it sitting in `Creature` state
+    // as-is: `Creature` never has `| null`, and code elsewhere (e.g.
+    // `CreatureHeader`'s `experiencePoints !== undefined` check) assumes
+    // that, so a stray `null` reads as "still set" and crashes on first use.
+    const normalizedUpdates = nullsToUndefined(updates) as Partial<Creature>;
+    setCreatures((prev) => prev.map((c) => (c.id === id ? { ...c, ...normalizedUpdates } : c)));
     const updated = await patchCreature(id, updates);
     setCreatures((prev) => prev.map((c) => (c.id === id ? updated : c)));
   }, []);

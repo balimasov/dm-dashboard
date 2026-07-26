@@ -18,6 +18,7 @@ import {
 } from "./types";
 import type { UserRole } from "./auth";
 import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
+import { nullsToUndefined } from "./nullsToUndefined";
 import { demoCharacters } from "./mockData";
 import { formatSessionTitle } from "./journal";
 
@@ -454,25 +455,13 @@ function hpHistoryEntry(
  */
 type NullableCreatureUpdates = { [K in keyof Creature]?: Creature[K] | null };
 
-/**
- * By the time a `null` reaches here it needs converting back to
- * `undefined`: the `Creature` type itself never has `| null`, and
- * `{...existing, ...updates}` below already does the right thing for an
- * `undefined`-valued key (it overwrites, clearing the field) — it just can't
- * receive one straight from the client.
- */
-function nullsToUndefined(updates: NullableCreatureUpdates): Partial<Creature> {
-  const result: Record<string, unknown> = { ...updates };
-  for (const key of Object.keys(result)) {
-    if (result[key] === null) result[key] = undefined;
-  }
-  return result as Partial<Creature>;
-}
-
 export function updateCreature(id: string, updates: NullableCreatureUpdates): Creature | null {
   const existing = getCreature(id);
   if (!existing) return null;
-  const normalizedUpdates = nullsToUndefined(updates);
+  // `{...existing, ...updates}` below already does the right thing for an
+  // `undefined`-valued key (it overwrites, clearing the field) — it just
+  // can't receive one straight from the client, hence the normalization.
+  const normalizedUpdates = nullsToUndefined(updates) as Partial<Creature>;
   const now = new Date().toISOString();
   // Append-only, and computed here rather than trusted from the client (see
   // `Creature.hpHistory`'s own doc comment) — this is the one place every
