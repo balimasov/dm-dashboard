@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import { LIST_ROW_TITLE_CLS, MUTED_BODY_CLS } from "@/components/ui/typography";
 import "./globals.css";
 
 /**
@@ -20,8 +21,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full items-center justify-center bg-slate-950 px-4 text-slate-100">
         <div className="w-full max-w-sm space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-center shadow-lg shadow-black/20">
-          <h1 className="text-lg font-semibold text-slate-100">Something went wrong</h1>
-          <p className="text-sm text-slate-500">The app failed to load.</p>
+          <h1 className={LIST_ROW_TITLE_CLS}>Something went wrong</h1>
+          <p className={MUTED_BODY_CLS}>The app failed to load.</p>
           <Button type="button" onClick={reset}>
             Try again
           </Button>

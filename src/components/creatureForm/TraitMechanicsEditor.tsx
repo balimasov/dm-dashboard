@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { inferStructuredTraitFields } from "@/lib/creatureStructuredInfer";
 import { addBtnCls, AutoGrowTextarea, Field, groupInputCls, inputCls } from "./shared";
+import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: string }> = [
   { value: "trait", label: "Trait" },
@@ -460,7 +461,7 @@ export function TraitMechanicsEditor({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Traits &amp; Actions</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Traits &amp; Actions</h2>
         <div className="flex items-center gap-3">
           {traits.length > 0 && (
             <button
@@ -638,7 +639,7 @@ export function TraitMechanicsEditor({
                             </div>
                           ))}
                           {(t.attack?.damage ?? []).length === 0 && (
-                            <p className="text-[11px] text-slate-600">No damage rolls yet.</p>
+                            <p className={HINT_TEXT_CLS}>No damage rolls yet.</p>
                           )}
                         </div>
                       </div>
@@ -710,7 +711,7 @@ export function TraitMechanicsEditor({
                           </div>
                         ))}
                         {healEffectEntries(t).length === 0 && (
-                          <p className="text-[11px] text-slate-600">No heal effects yet.</p>
+                          <p className={HINT_TEXT_CLS}>No heal effects yet.</p>
                         )}
                       </div>
                     </MechanicGroup>
@@ -761,7 +762,7 @@ export function TraitMechanicsEditor({
                           </div>
                         ))}
                         {genericEffectEntries(t).length === 0 && (
-                          <p className="text-[11px] text-slate-600">No effects yet.</p>
+                          <p className={HINT_TEXT_CLS}>No effects yet.</p>
                         )}
                       </div>
                     </MechanicGroup>
@@ -817,7 +818,7 @@ export function TraitMechanicsEditor({
                           </div>
                         ))}
                         {customEffectEntries(t).length === 0 && (
-                          <p className="text-[11px] text-slate-600">No custom effects yet.</p>
+                          <p className={HINT_TEXT_CLS}>No custom effects yet.</p>
                         )}
                       </div>
                     </MechanicGroup>

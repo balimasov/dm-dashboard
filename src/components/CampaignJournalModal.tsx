@@ -13,6 +13,7 @@ import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
 import { ArchiveIcon, DownloadIcon, PencilIcon, TrashIcon } from "./ui/icons";
+import { INLINE_ERROR_CLS, LIST_ROW_TITLE_CLS, MODAL_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 type JournalTab = "dm" | "party";
 type JournalMode = "view" | "edit";
@@ -360,7 +361,7 @@ export function CampaignJournalModal({
         className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-5"
       >
         <div className="mb-3 flex shrink-0 items-center justify-between sm:mb-4">
-          <h2 className="text-lg font-bold text-slate-50">Campaign Journal</h2>
+          <h2 className={MODAL_TITLE_CLS}>Campaign Journal</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-slate-500 hover:text-slate-200">
             ✕
           </button>
@@ -411,7 +412,7 @@ export function CampaignJournalModal({
                   always-visible list, which a closed dropdown never is. */}
               <div className="flex shrink-0 items-center gap-2 sm:hidden">
                 {sessionsError ? (
-                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-red-400">
+                  <div className={`flex min-w-0 flex-1 items-center gap-2 ${INLINE_ERROR_CLS}`}>
                     <p className="min-w-0 flex-1 truncate">{sessionsError}</p>
                     <button
                       type="button"
@@ -422,7 +423,7 @@ export function CampaignJournalModal({
                     </button>
                   </div>
                 ) : sessions && sessions.length === 0 ? (
-                  <p className="min-w-0 flex-1 truncate text-sm text-slate-500">No sessions yet — write a note to start one.</p>
+                  <p className={`min-w-0 flex-1 truncate ${MUTED_BODY_CLS}`}>No sessions yet — write a note to start one.</p>
                 ) : (
                   <SelectMenu
                     value={selectedSessionId ?? ""}
@@ -454,7 +455,7 @@ export function CampaignJournalModal({
 
               <div className="scrollbar-themed hidden gap-1 overflow-x-hidden overflow-y-auto border-slate-800 pr-3 sm:flex sm:flex-col sm:border-r">
                 {sessionsError && (
-                  <div className="shrink-0 text-sm text-red-400">
+                  <div className={`shrink-0 ${INLINE_ERROR_CLS}`}>
                     <p className="mb-2">{sessionsError}</p>
                     <button type="button" onClick={() => void loadSessions()} className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800">
                       Retry
@@ -462,7 +463,7 @@ export function CampaignJournalModal({
                   </div>
                 )}
                 {visibleSessions?.length === 0 && (
-                  <p className="shrink-0 text-sm text-slate-500">No sessions yet — write a note to start one.</p>
+                  <p className={`shrink-0 ${MUTED_BODY_CLS}`}>No sessions yet — write a note to start one.</p>
                 )}
                 {visibleSessions?.map((session) => (
                   <div
@@ -530,7 +531,7 @@ export function CampaignJournalModal({
                   out" on every mode switch; a plain disabled state is the
                   one users already expect not to blink. */}
               <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                <h3 className="mb-2 truncate text-lg font-semibold text-slate-100">{selectedSession?.title}</h3>
+                <h3 className={`mb-2 truncate ${LIST_ROW_TITLE_CLS}`}>{selectedSession?.title}</h3>
                 {/* View/Edit anchored left, DM/Party + Export grouped on the
                     right — was two separate rows (title+export on one, the
                     audience/mode toggles + a divider on the other); the
@@ -588,7 +589,7 @@ export function CampaignJournalModal({
                     <Spinner />
                   </div>
                 ) : entriesError ? (
-                  <div className="text-sm text-red-400">
+                  <div className={INLINE_ERROR_CLS}>
                     <p className="mb-2">{entriesError}</p>
                     <button
                       type="button"
@@ -599,9 +600,9 @@ export function CampaignJournalModal({
                     </button>
                   </div>
                 ) : !selectedSessionId ? (
-                  <p className="text-sm text-slate-500">Select a session to see its notes.</p>
+                  <p className={MUTED_BODY_CLS}>Select a session to see its notes.</p>
                 ) : visibleEntries?.length === 0 ? (
-                  <p className="text-sm text-slate-500">No notes in this session yet.</p>
+                  <p className={MUTED_BODY_CLS}>No notes in this session yet.</p>
                 ) : mode === "edit" ? (
                   // `divide-y` instead of each row owning its own bordered
                   // card — a thin rule between entries reads just as clearly

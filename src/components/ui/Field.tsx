@@ -1,4 +1,5 @@
 import { ReactNode, TextareaHTMLAttributes, InputHTMLAttributes } from "react";
+import { HINT_TEXT_CLS } from "./typography";
 
 /**
  * Canonical input look, per a UI-kit audit: `creatureForm/shared.tsx` and
@@ -29,7 +30,7 @@ export function Field({
     <label className="flex flex-col gap-1 text-xs text-slate-400">
       {label}
       {children}
-      {hint && <span className="text-[11px] text-slate-600">{hint}</span>}
+      {hint && <span className={HINT_TEXT_CLS}>{hint}</span>}
     </label>
   );
 }

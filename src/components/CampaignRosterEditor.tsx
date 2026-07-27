@@ -24,6 +24,12 @@ import { EditCharacterModal } from "@/components/EditCharacterModal";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import {
+  EMPTY_STATE_CLS,
+  FORM_SECTION_HEADING_CLS,
+  INLINE_ERROR_CLS,
+  WARNING_TEXT_CLS,
+} from "@/components/ui/typography";
 
 /** The add/sync/reorder roster UI, without any page-level chrome — embedded inside `CampaignFormModal`. */
 export function CampaignRosterEditor({
@@ -139,11 +145,11 @@ export function CampaignRosterEditor({
         </Button>
       </form>
       <div className="mb-4 space-y-1">
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        {syncError && <p className="text-sm text-amber-400">{syncError}</p>}
+        {error && <p className={INLINE_ERROR_CLS}>{error}</p>}
+        {syncError && <p className={WARNING_TEXT_CLS}>{syncError}</p>}
       </div>
 
-      <h3 className="mb-3 text-sm uppercase tracking-wide text-slate-500">Added Characters</h3>
+      <h3 className={`mb-3 ${FORM_SECTION_HEADING_CLS}`}>Added Characters</h3>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <input
           value={query}
@@ -162,7 +168,7 @@ export function CampaignRosterEditor({
       </div>
 
       {visibleList.length === 0 && (
-        <p className="text-sm text-slate-600">
+        <p className={EMPTY_STATE_CLS}>
           {characters.length === 0 ? "The list is empty." : "No matches for the current search/filter."}
         </p>
       )}

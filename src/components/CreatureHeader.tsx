@@ -3,6 +3,7 @@ import { creatureInfoLine } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { CreatureCategoryChip } from "./ui/CreatureCategoryChip";
+import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
 /**
  * Shared between the compact `CreatureCard` and `CreatureDetailsModal`
@@ -34,27 +35,21 @@ export function CreatureHeader({
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <p
-          title={creature.name}
-          className="truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white"
-        >
+        <p title={creature.name} className={CARD_TITLE_CLS}>
           {creature.name}
         </p>
         {infoLine && (
-          <p
-            title={infoLine}
-            className="truncate text-sm text-slate-400 transition-colors group-hover:text-slate-200"
-          >
+          <p title={infoLine} className={CARD_SUBTITLE_CLS}>
             {infoLine}
           </p>
         )}
         {creature.challengeRating &&
           (creature.experiencePoints != null ? (
-            <InfoTooltip disableTap className="text-xs text-slate-500" panel={<p>{creature.experiencePoints.toLocaleString()} XP</p>}>
+            <InfoTooltip disableTap className={MUTED_LABEL_CLS} panel={<p>{creature.experiencePoints.toLocaleString()} XP</p>}>
               CR {creature.challengeRating}
             </InfoTooltip>
           ) : (
-            <p className="text-xs text-slate-500">CR {creature.challengeRating}</p>
+            <p className={MUTED_LABEL_CLS}>CR {creature.challengeRating}</p>
           ))}
       </div>
     </>

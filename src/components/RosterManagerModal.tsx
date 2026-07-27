@@ -8,6 +8,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { MODAL_TITLE_CLS } from "@/components/ui/typography";
 import { CREATURE_CATEGORY_EMOJI, CREATURE_CATEGORY_LABELS, CREATURE_CATEGORY_ORDER, Character, CreatureCategory } from "@/lib/types";
 
 export type RosterTab = "characters" | CreatureCategory;
@@ -46,7 +47,7 @@ export function RosterManagerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-50">Characters &amp; Creatures</h2>
+          <h2 className={MODAL_TITLE_CLS}>Characters &amp; Creatures</h2>
           <button
             type="button"
             onClick={onClose}

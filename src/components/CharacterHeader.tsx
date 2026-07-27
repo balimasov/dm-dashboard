@@ -1,6 +1,7 @@
 import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
+import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 
 /**
  * Shared between the compact card and the Character Details modal (clicking
@@ -19,19 +20,13 @@ export function CharacterHeader({
     <>
       <CharacterAvatar character={c} size="md" />
       <div className="min-w-0 flex-1">
-        <h2
-          title={c.name}
-          className="truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white"
-        >
+        <h2 title={c.name} className={CARD_TITLE_CLS}>
           {c.name}
         </h2>
-        <p
-          title={characterInfoLine(c)}
-          className="truncate text-sm text-slate-400 transition-colors group-hover:text-slate-200"
-        >
+        <p title={characterInfoLine(c)} className={CARD_SUBTITLE_CLS}>
           {characterInfoLine(c)}
         </p>
-        <p className="text-xs text-slate-500">Lvl {c.level}</p>
+        <p className={MUTED_LABEL_CLS}>Lvl {c.level}</p>
       </div>
       <span
         title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}

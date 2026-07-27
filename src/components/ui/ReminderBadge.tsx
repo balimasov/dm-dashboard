@@ -3,6 +3,7 @@
 import { ReminderGroup } from "@/lib/reminders";
 import { MoreMenu } from "./MoreMenu";
 import { ReminderRow } from "./ReminderRow";
+import { PANEL_HEADING_CLS } from "./typography";
 
 /**
  * Small "🔥 N" pill shown on a `CharacterCard`/`CreatureCard` header row —
@@ -44,7 +45,7 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
       )}
     >
       <div className="w-64 max-w-[80vw] p-2">
-        <h3 className="mb-2 flex items-center gap-2 px-0.5 text-sm font-bold text-slate-50">
+        <h3 className={`mb-2 flex items-center gap-2 px-0.5 ${PANEL_HEADING_CLS}`}>
           <span aria-hidden="true">🔥</span>
           Reminders
           <span className="font-normal text-slate-500">({group.entries.length})</span>

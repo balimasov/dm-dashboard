@@ -4,6 +4,7 @@ import { Creature, HpHistoryEntry } from "@/lib/types";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { TrashIcon } from "./ui/icons";
+import { MODAL_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 const FIELD_LABEL: Record<HpHistoryEntry["field"], string> = {
   hp: "HP",
@@ -65,7 +66,7 @@ export function CreatureHpHistoryModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="min-w-0 truncate text-lg font-bold text-slate-50">HP History — {creature.name}</h2>
+          <h2 className={`min-w-0 truncate ${MODAL_TITLE_CLS}`}>HP History — {creature.name}</h2>
           <div className="flex shrink-0 items-center gap-1">
             {onClear && entries.length > 0 && (
               <button
@@ -89,7 +90,7 @@ export function CreatureHpHistoryModal({
         </div>
 
         {entries.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No HP changes recorded yet.</p>
+          <p className={`py-8 text-center ${MUTED_BODY_CLS}`}>No HP changes recorded yet.</p>
         ) : (
           <div className="scrollbar-themed flex-1 overflow-y-auto rounded-lg border border-slate-800">
             <table className="w-full text-left text-sm">

@@ -17,6 +17,7 @@ import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
+import { EMPTY_STATE_CLS } from "../ui/typography";
 import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, distributeIntoColumns, usageColorClass } from "./shared";
 
 /** Heroic Inspiration is the one entry with no real character behind it — same special case `CoveragePanel` handled, rendered as plain "x/partySize" text instead of a chip row. */
@@ -265,7 +266,7 @@ export function ResourceCoveragePanel({ characters, initialOpen }: { characters:
       }}
     >
       {categories.length === 0 ? (
-        <p className="text-sm text-slate-600">No tracked resources or known spells/abilities yet.</p>
+        <p className={EMPTY_STATE_CLS}>No tracked resources or known spells/abilities yet.</p>
       ) : (
         <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {columns.map(

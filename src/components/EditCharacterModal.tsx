@@ -27,6 +27,8 @@ import { NotesEditor } from "./NotesEditor";
 import { NumberInput } from "./NumberInput";
 import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
+import { Field } from "./ui/Field";
+import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
 
@@ -259,7 +261,7 @@ export function EditCharacterModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h2 className="text-lg font-bold text-slate-50">Edit Character</h2>
+          <h2 className={MODAL_TITLE_CLS}>Edit Character</h2>
           <button
             type="button"
             onClick={onClose}
@@ -280,7 +282,7 @@ export function EditCharacterModal({
 
             {/* Basic info */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Basic Info</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Basic Info</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Field label="Name">
                   <input className={inputCls} value={draft.name} onChange={(e) => set("name", e.target.value)} />
@@ -320,7 +322,7 @@ export function EditCharacterModal({
 
             {/* Combat state */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Combat State</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Combat State</h2>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                 <Field label="HP">
                   <NumberInput className={inputCls} value={draft.combat.hp} onChange={(n) => setCombat("hp", n)} />
@@ -412,7 +414,7 @@ export function EditCharacterModal({
 
             {/* Stats */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Stats</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Stats</h2>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                 {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
                   <Field key={key} label={key.toUpperCase()}>
@@ -424,7 +426,7 @@ export function EditCharacterModal({
 
             {/* Saving throws */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Saving Throws (proficient)</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Saving Throws (proficient)</h2>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                 {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
                   <label key={key} className="flex items-center gap-1.5 text-sm text-slate-300">
@@ -441,7 +443,7 @@ export function EditCharacterModal({
 
             {/* Skills */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Skills</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Skills</h2>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {(Object.keys(SKILL_LABELS) as SkillName[]).map((name) => {
                   const current = draft.skillProficiencies.find((s) => s.name === name);
@@ -480,7 +482,7 @@ export function EditCharacterModal({
 
             {/* Resistances / Immunities / Vulnerabilities */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">
+              <h2 className={FORM_SECTION_HEADING_CLS}>
                 Resistances / Immunities / Vulnerabilities
               </h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -522,7 +524,7 @@ export function EditCharacterModal({
             {/* Senses */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm uppercase tracking-wide text-slate-500">Senses</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Senses</h2>
                 <button type="button" onClick={addSense} className={addBtnCls}>
                   + Sense
                 </button>
@@ -557,7 +559,7 @@ export function EditCharacterModal({
             {/* Resources */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm uppercase tracking-wide text-slate-500">Resources</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Resources</h2>
                 <button type="button" onClick={addResource} className={addBtnCls}>
                   + Resource
                 </button>
@@ -624,7 +626,7 @@ export function EditCharacterModal({
             {/* Spell slots */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm uppercase tracking-wide text-slate-500">Spells</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Spells</h2>
                 <button type="button" onClick={addSlot} className={addBtnCls}>
                   + Level
                 </button>
@@ -685,7 +687,7 @@ export function EditCharacterModal({
             {/* Inventory */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm uppercase tracking-wide text-slate-500">Inventory</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Inventory</h2>
                 <button type="button" onClick={addItem} className={addBtnCls}>
                   + Item
                 </button>
@@ -766,13 +768,13 @@ export function EditCharacterModal({
 
             {/* Notes */}
             <section className="space-y-3">
-              <h2 className="text-sm uppercase tracking-wide text-slate-500">Notes</h2>
+              <h2 className={FORM_SECTION_HEADING_CLS}>Notes</h2>
               <NotesEditor value={ensureNotesHtml(draft.notes)} onChange={(notes) => set("notes", notes)} placeholder="Add notes..." />
             </section>
           </div>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-4">
-            {saveError && <p className="mr-auto text-sm text-red-400">{saveError}</p>}
+            {saveError && <p className={`mr-auto ${INLINE_ERROR_CLS}`}>{saveError}</p>}
             <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
               Cancel
             </button>
@@ -789,21 +791,3 @@ export function EditCharacterModal({
 const inputCls =
   "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 const addBtnCls = "text-xs text-sky-400 hover:underline";
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-slate-400">
-      {label}
-      {children}
-      {hint && <span className="text-[11px] text-slate-600">{hint}</span>}
-    </label>
-  );
-}

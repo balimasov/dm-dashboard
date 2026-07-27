@@ -28,6 +28,7 @@ import { RecoveryBadge } from "../ui/RecoveryBadge";
 import { SpellHintPanel, SpellTrailing } from "../ui/SpellDisplay";
 import { TabBar } from "../ui/TabBar";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
+import { EMPTY_STATE_CLS } from "../ui/typography";
 import { HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, SpellSlotLevelPanel, usageColorClass } from "./shared";
 
 function HeroicInspirationRow({ summary }: { summary: HeroicInspirationSummary }) {
@@ -230,7 +231,7 @@ export function SpellSlotsResourcesPanel({ characters }: { characters: Character
 
           <SectionLabel className="mt-4">Limited Use</SectionLabel>
           {resources.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-600">No limited-use resources tracked.</p>
+            <p className={`mt-2 ${EMPTY_STATE_CLS}`}>No limited-use resources tracked.</p>
           ) : (
             <div className="divide-y divide-slate-800/60">
               {resources.map((entry) => (

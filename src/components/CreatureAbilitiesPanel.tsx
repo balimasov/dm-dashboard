@@ -9,6 +9,7 @@ import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { MICRO_ITEM_LABEL_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
 import { SectionDivider } from "./ui/SectionDivider";
 import { StatBox } from "./ui/StatBox";
@@ -265,7 +266,7 @@ export function CreatureAbilitiesPanel({
         <div className="space-y-3">
           {allGroups.map(({ group, items }) => (
             <div key={group} className="space-y-1">
-              <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
+              <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
               {items.map((trait, index) => {
                 const flagged = flaggedTraits.includes(trait.name);
                 return (
@@ -298,7 +299,7 @@ export function CreatureAbilitiesPanel({
             if (group.spells.length === 0) return null;
             return (
               <div key={i}>
-                {group.label && <p className="text-[10px] uppercase tracking-wide text-slate-600">{group.label}</p>}
+                {group.label && <p className={MICRO_ITEM_LABEL_CLS}>{group.label}</p>}
                 {/* Same plain-row shape as the character Spells tab's own per-level list, but flaggable —
                     a creature's spells previously had no reminder flame at all, unlike its traits above, even
                     though "the DM forgets this creature can cast X" is exactly the kind of thing worth

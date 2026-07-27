@@ -29,6 +29,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "@/components/ui/typography";
 
 const MAX_QUICK_LINKS = 15;
 
@@ -285,7 +286,7 @@ export function CampaignFormModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-50">{isEditing ? "Edit Campaign" : "New Campaign"}</h2>
+          <h2 className={MODAL_TITLE_CLS}>{isEditing ? "Edit Campaign" : "New Campaign"}</h2>
           <button
             type="button"
             onClick={close}
@@ -339,7 +340,7 @@ export function CampaignFormModal({
                   />
                 </Section>
 
-                {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+                {error && <p className={`mt-4 ${INLINE_ERROR_CLS}`}>{error}</p>}
 
                 {!isEditing && (
                   <Button type="submit" disabled={!name.trim() || creating} className="mt-5 w-full">

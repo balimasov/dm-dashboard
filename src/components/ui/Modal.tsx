@@ -1,5 +1,6 @@
 import { ReactNode, useId } from "react";
 import { IconButton } from "./IconButton";
+import { MODAL_TITLE_CLS } from "./typography";
 
 /**
  * The two `fixed inset-0` overlay shapes 8 files across the app each
@@ -53,7 +54,7 @@ export function Modal({
       >
         {title && (
           <div className="flex items-center justify-between gap-3">
-            <h2 id={titleId} className="text-lg font-bold text-slate-50">
+            <h2 id={titleId} className={MODAL_TITLE_CLS}>
               {title}
             </h2>
             <IconButton onClick={onClose} aria-label="Close">

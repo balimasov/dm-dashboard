@@ -13,6 +13,7 @@ import {
   PartySpellSlotSummary,
 } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
+import { EMPTY_STATE_CLS } from "../ui/typography";
 import { HintPanel } from "../ui/HintPanel";
 import { MetaBadge } from "../ui/MetaBadge";
 
@@ -427,7 +428,7 @@ export function SpellChartsRow({
           <SpellSlotHistogram spellSlots={spellSlots} />
         </ChartBox>
       ) : (
-        <p className="text-sm text-slate-600">No spell slots in the party.</p>
+        <p className={EMPTY_STATE_CLS}>No spell slots in the party.</p>
       )}
       {consumables && (
         <ChartBox title="Consumables" hint={<ConsumablesHeaderHint consumables={consumables} />}>

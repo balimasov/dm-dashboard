@@ -5,6 +5,7 @@ import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
 import { HintPanel } from "./HintPanel";
+import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 /**
  * Same hover-hint everywhere a weapon attack shows up — a character's own
@@ -30,7 +31,7 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
       title={<span className={RARITY_COLOR[attack.rarity ?? "Common"]}>{attack.name}</span>}
       description={
         <span className="block space-y-1.5">
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
             {attack.attackType === "ranged" ? "Ranged" : "Melee"}
             {attack.range ? ` · ${attack.range}` : ""}
           </span>
@@ -70,7 +71,7 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
           )}
           {isSpecialWeapon && (
             <span className="block space-y-1 border-t border-slate-800 pt-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
                 {[attack.rarity, attack.weaponType].filter(Boolean).join(" ")}
               </span>
               <span className="block">

@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { CoverageHolder } from "@/lib/partyToolkit";
 import { RichText } from "../RichText";
 import { HintPanel } from "./HintPanel";
+import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 /**
  * One hover-hint shape for every "trackable ability" in the app — a spell, a
@@ -62,7 +63,7 @@ export function AbilityHintPanel({
         hasBody && (
           <span className="block space-y-1">
             {meta.map((line, i) => (
-              <span key={i} className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <span key={i} className={`block ${MICRO_LABEL_STRONG_CLS}`}>
                 {line}
               </span>
             ))}

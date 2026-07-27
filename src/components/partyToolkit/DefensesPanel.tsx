@@ -1,6 +1,7 @@
 import { Character } from "@/lib/types";
 import { computeConditionProtectionCoverage, computeResistanceCoverage } from "@/lib/partyToolkit";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
+import { EMPTY_STATE_CLS } from "../ui/typography";
 import { CoverageCountRow } from "./shared";
 
 /**
@@ -21,7 +22,7 @@ export function DefensesPanel({ characters }: { characters: Character[] }) {
     <ToolkitCard title="Defense Coverage">
       <SectionLabel>Resistances</SectionLabel>
       {resistances.length === 0 ? (
-        <p className="text-sm text-slate-600">No resistances in the party.</p>
+        <p className={EMPTY_STATE_CLS}>No resistances in the party.</p>
       ) : (
         <div className="space-y-1.5">
           {resistances.map((entry) => (
@@ -31,7 +32,7 @@ export function DefensesPanel({ characters }: { characters: Character[] }) {
       )}
       <SectionLabel className="mt-3">Immunities</SectionLabel>
       {immunities.length === 0 ? (
-        <p className="text-sm text-slate-600">No immunities in the party.</p>
+        <p className={EMPTY_STATE_CLS}>No immunities in the party.</p>
       ) : (
         <div className="space-y-1.5">
           {immunities.map((entry) => (

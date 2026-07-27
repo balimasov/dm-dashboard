@@ -27,6 +27,7 @@ import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
+import { MUTED_BODY_CLS } from "@/components/ui/typography";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -241,7 +242,7 @@ function CreatureCategorySection({
         <SectionCountButton count={filtered.length} onClick={onAdd} label={`Manage ${CREATURE_CATEGORY_LABELS[category]}`} />
       }
     >
-      <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
+      <p className={`mb-4 px-3 ${MUTED_BODY_CLS}`}>{CREATURE_SECTION_DESCRIPTION[category]}</p>
       {filtered.length === 0 ? (
         <EmptyRosterState
           message={
@@ -511,7 +512,7 @@ export function DashboardClient({
             initialOpen={initialOpen.campaign}
           >
             <div className="px-3">
-              <p className="mb-4 text-sm text-slate-500">Freeform notes and overview for the campaign.</p>
+              <p className={`mb-4 ${MUTED_BODY_CLS}`}>Freeform notes and overview for the campaign.</p>
               <CampaignNotes
                 campaign={campaignState}
                 onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
@@ -556,7 +557,7 @@ export function DashboardClient({
           storageKey="dm-dashboard-party-toolkit-open"
           initialOpen={initialOpen.partyToolkit}
         >
-          <p className="mb-4 px-3 text-sm text-slate-500">
+          <p className={`mb-4 px-3 ${MUTED_BODY_CLS}`}>
             Party-wide cheat sheet: who&apos;s best at what, what&apos;s left in the tank, and what your spells can
             solve.
           </p>
@@ -573,7 +574,7 @@ export function DashboardClient({
           initialOpen={initialOpen.inventory}
         >
           <div className="px-3 space-y-4">
-            <p className="text-sm text-slate-500">Items and gold shared across the whole party.</p>
+            <p className={MUTED_BODY_CLS}>Items and gold shared across the whole party.</p>
             <CoinsPanel characters={characters} />
             <InventoryOverview characters={characters} />
           </div>
@@ -593,7 +594,7 @@ export function DashboardClient({
             />
           }
         >
-          <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
+          <p className={`mb-4 px-3 ${MUTED_BODY_CLS}`}>Combat stats, resources, and notes for each character.</p>
 
           {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
 

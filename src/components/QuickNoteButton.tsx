@@ -7,6 +7,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
 import { PencilIcon } from "./ui/icons";
+import { INLINE_ERROR_XS_CLS } from "./ui/typography";
 
 /**
  * Always-visible fast-entry point for a DM-private journal note — doesn't
@@ -106,7 +107,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
             rows={6}
             className="w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
           />
-          {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+          {error && <p className={`mt-1 ${INLINE_ERROR_XS_CLS}`}>{error}</p>}
           <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
             <span>Enter to save · Shift+Enter for a new line</span>
             <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PAGE_TITLE_CLS } from "./ui/typography";
 
 /**
  * Open/closed state is seeded from a cookie read server-side (see
@@ -47,7 +48,7 @@ export function CollapsibleSection({
           >
             ▶
           </span>
-          <h2 className="break-words text-2xl font-bold text-slate-50 group-hover:text-slate-200">{title}</h2>
+          <h2 className={`break-words group-hover:text-slate-200 ${PAGE_TITLE_CLS}`}>{title}</h2>
         </button>
         {actions}
       </div>

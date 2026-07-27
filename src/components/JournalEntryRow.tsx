@@ -5,6 +5,7 @@ import { JournalConflictError } from "@/lib/journalApi";
 import { JournalEntry } from "@/lib/types";
 import { NotesEditor } from "./NotesEditor";
 import { SyncTimestamp } from "./SyncTimestamp";
+import { INLINE_ERROR_XS_CLS } from "./ui/typography";
 
 /**
  * View mode reuses `NotesEditor`'s own `.notes-editor-content` class so a
@@ -140,7 +141,7 @@ export function JournalEntryRow({
               </div>
             </div>
           )}
-          {saveError && <p className="mt-2 text-xs text-red-400">{saveError}</p>}
+          {saveError && <p className={`mt-2 ${INLINE_ERROR_XS_CLS}`}>{saveError}</p>}
           <div className="mt-2 flex justify-end gap-2 text-sm">
             <button type="button" onClick={cancelEditing} className="rounded-lg px-3 py-1.5 text-slate-400 hover:text-slate-200">
               Cancel

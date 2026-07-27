@@ -1,21 +1,13 @@
 import { useLayoutEffect, useRef } from "react";
 
+export { Field } from "@/components/ui/Field";
+
 export const inputCls =
   "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 /** Same look as `inputCls` minus the border — for fields inside a `MechanicGroup`, whose colored left-accent and tinted background already separate it from its neighbors. */
 export const groupInputCls =
   "rounded-md bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 export const addBtnCls = "text-xs text-sky-400 hover:underline";
-
-export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-slate-400">
-      {label}
-      {children}
-      {hint && <span className="text-[11px] text-slate-600">{hint}</span>}
-    </label>
-  );
-}
 
 /**
  * A single-line-by-default `<textarea>` that grows to fit its content

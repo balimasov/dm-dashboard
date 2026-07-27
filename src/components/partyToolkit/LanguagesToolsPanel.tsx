@@ -1,6 +1,7 @@
 import { Character } from "@/lib/types";
 import { computeLanguageCoverage, computeToolCoverage } from "@/lib/partyToolkit";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
+import { EMPTY_STATE_CLS } from "../ui/typography";
 import { CoverageCountRow } from "./shared";
 
 /** Only languages/tools actually present in the party — no pinned list anymore, see `computeLanguageCoverage`/`computeToolCoverage`. */
@@ -15,7 +16,7 @@ export function LanguagesToolsPanel({ characters }: { characters: Character[] })
     <ToolkitCard title="Languages & Tools">
       <SectionLabel>Languages</SectionLabel>
       {languages.length === 0 ? (
-        <p className="text-sm text-slate-600">No languages tracked.</p>
+        <p className={EMPTY_STATE_CLS}>No languages tracked.</p>
       ) : (
         <div className="space-y-1.5">
           {languages.map((entry) => (
@@ -25,7 +26,7 @@ export function LanguagesToolsPanel({ characters }: { characters: Character[] })
       )}
       <SectionLabel className="mt-3">Tools</SectionLabel>
       {tools.length === 0 ? (
-        <p className="text-sm text-slate-600">No tool proficiencies tracked.</p>
+        <p className={EMPTY_STATE_CLS}>No tool proficiencies tracked.</p>
       ) : (
         <div className="space-y-1.5">
           {tools.map((entry) => (

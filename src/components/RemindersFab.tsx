@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { ReminderRow } from "./ui/ReminderRow";
+import { PANEL_HEADING_CLS, REMINDER_LINK_TITLE_CLS } from "./ui/typography";
 
 /**
  * Floating counterpart to the per-card `ReminderBadge` — where that one
@@ -127,7 +128,7 @@ export function RemindersFab({
             self-contained overlay, not a window into the page behind it. */}
         {open && (
           <div className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto overscroll-contain rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl">
-            <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-slate-50">
+            <h2 className={`mb-2 flex items-center gap-2 px-1 ${PANEL_HEADING_CLS}`}>
               <span aria-hidden="true">🔥</span>
               Reminders
               <span className="font-normal text-slate-500">({totalCount})</span>
@@ -141,7 +142,7 @@ export function RemindersFab({
                       type="button"
                       onClick={() => openOwnerModal(group.ownerId)}
                       title={`Open ${group.ownerName}`}
-                      className="min-w-0 max-w-full truncate text-left text-sm font-semibold text-slate-100 hover:opacity-80"
+                      className={REMINDER_LINK_TITLE_CLS}
                     >
                       {group.ownerName}
                     </button>

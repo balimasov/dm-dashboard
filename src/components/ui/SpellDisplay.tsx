@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { RichText } from "../RichText";
 import { HintPanel } from "./HintPanel";
+import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 const CONCENTRATION_PREFIX = "Concentration, ";
 
@@ -68,10 +69,10 @@ export function SpellHintPanel({
       description={
         <span className="block space-y-1.5">
           {spell.source && (
-            <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">{spell.source}</span>
+            <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>{spell.source}</span>
           )}
           {(spell.castingTime || spell.range) && (
-            <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
               {[spell.castingTime, spell.range].filter(Boolean).join(" · ")}
             </span>
           )}

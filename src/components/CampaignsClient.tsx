@@ -6,6 +6,12 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { Hero } from "@/components/Hero";
 import { Button } from "@/components/ui/Button";
+import {
+  EMPTY_STATE_CLS,
+  FORM_SECTION_HEADING_CLS,
+  LIST_ROW_TITLE_CLS,
+  MUTED_BODY_CLS,
+} from "@/components/ui/typography";
 import { apiFetch } from "@/lib/apiClient";
 import { UserRole } from "@/lib/auth";
 import { CampaignSummary, Character, Creature } from "@/lib/types";
@@ -53,11 +59,11 @@ function CampaignRow({
               which stacks above this overlay. */}
           <Link
             href={`/campaigns/${campaign.id}`}
-            className="line-clamp-2 break-words text-lg font-semibold text-slate-100 after:absolute after:inset-0"
+            className={`line-clamp-2 break-words after:absolute after:inset-0 ${LIST_ROW_TITLE_CLS}`}
           >
             {campaign.name}
           </Link>
-          <p className="text-sm text-slate-500">
+          <p className={MUTED_BODY_CLS}>
             {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
           </p>
         </div>
@@ -136,7 +142,7 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
       <Hero />
 
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Your Campaigns ({campaigns.length})</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Your Campaigns ({campaigns.length})</h2>
         {isDm && (
           <Button type="button" onClick={() => setModalState({ campaign: null, characters: [], creatures: [] })}>
             + New Campaign
@@ -145,7 +151,7 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
       </div>
 
       {campaigns.length === 0 ? (
-        <p className="text-sm text-slate-600">No campaigns yet — create one above.</p>
+        <p className={EMPTY_STATE_CLS}>No campaigns yet — create one above.</p>
       ) : (
         <ul className="space-y-2">
           {campaigns.map((c) => (
@@ -158,7 +164,7 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
           ))}
         </ul>
       )}
-      {loadingEdit && <p className="mt-3 text-sm text-slate-600">Loading...</p>}
+      {loadingEdit && <p className={`mt-3 ${EMPTY_STATE_CLS}`}>Loading...</p>}
 
       {modalState && (
         <CampaignFormModal

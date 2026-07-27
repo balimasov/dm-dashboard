@@ -41,6 +41,12 @@ import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectMenu } from "@/components/ui/SelectMenu";
+import {
+  EMPTY_STATE_CLS,
+  FORM_SECTION_HEADING_CLS,
+  LIST_ROW_TITLE_CLS,
+  WARNING_TEXT_CLS,
+} from "@/components/ui/typography";
 
 /** Reports one add/import attempt's outcome up to the shared toast in `CreatureRosterEditor` — success or failure, same convention as the sync-summary toast on the dashboard. */
 type ResultReporter = (message: string, variant: "success" | "error") => void;
@@ -166,7 +172,7 @@ function AddCreaturePanel({
           {searching ? "Searching..." : "Search"}
         </Button>
       </div>
-      {searchError && <p className="text-sm text-amber-400">{searchError}</p>}
+      {searchError && <p className={WARNING_TEXT_CLS}>{searchError}</p>}
 
       {searched && results.length > 0 && (
         <ul className="scrollbar-themed max-h-80 space-y-1.5 overflow-y-auto pr-1">
@@ -195,7 +201,7 @@ function AddCreaturePanel({
         </ul>
       )}
       {searched && results.length === 0 && (
-        <p className="text-sm text-slate-600">
+        <p className={EMPTY_STATE_CLS}>
           No matches for &quot;{query.trim()}&quot; — likely not free SRD content (e.g. a Monster Manual exclusive).{" "}
           <button
             type="button"
@@ -448,7 +454,7 @@ function CreatureRow({
         </>
       }
     >
-      <p title={creature.name} className="truncate text-lg font-semibold text-slate-100">
+      <p title={creature.name} className={`truncate ${LIST_ROW_TITLE_CLS}`}>
         {creature.name}
         {creature.hidden && <span className="ml-2 text-xs font-normal text-slate-500">(hidden)</span>}
       </p>
@@ -571,7 +577,7 @@ export function CreatureRosterEditor({
       )}
       {toast && <Toast message={toast.message} variant={toast.variant} onDismiss={() => setToast(null)} />}
 
-      <h3 className="mb-3 mt-5 text-sm uppercase tracking-wide text-slate-500">Added Creatures</h3>
+      <h3 className={`mb-3 mt-5 ${FORM_SECTION_HEADING_CLS}`}>Added Creatures</h3>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <input
           value={query}
@@ -589,7 +595,7 @@ export function CreatureRosterEditor({
         />
       </div>
       {visibleList.length === 0 ? (
-        <p className="text-sm text-slate-600">
+        <p className={EMPTY_STATE_CLS}>
           {inCategory.length === 0
             ? `No ${CREATURE_CATEGORY_LABELS[category].toLowerCase()} yet.`
             : "No matches for the current search/filter."}

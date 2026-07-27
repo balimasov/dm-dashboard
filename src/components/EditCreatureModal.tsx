@@ -7,6 +7,7 @@ import { creatureToFormValue, formValueToCreatureUpdates } from "@/lib/creatureF
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { Button } from "./ui/Button";
+import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 /**
  * Wide modal replacement for the old dedicated `/creatures/[id]/edit` page —
@@ -60,7 +61,7 @@ export function EditCreatureModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h2 className="text-lg font-bold text-slate-50">Edit Creature</h2>
+          <h2 className={MODAL_TITLE_CLS}>Edit Creature</h2>
           <button
             type="button"
             onClick={onClose}
@@ -77,7 +78,7 @@ export function EditCreatureModal({
           </div>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-4">
-            {saveError && <p className="mr-auto text-sm text-red-400">{saveError}</p>}
+            {saveError && <p className={`mr-auto ${INLINE_ERROR_CLS}`}>{saveError}</p>}
             <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
               Cancel
             </button>

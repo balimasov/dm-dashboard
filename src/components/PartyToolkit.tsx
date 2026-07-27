@@ -10,6 +10,7 @@ import { SensesPanel } from "./partyToolkit/SensesPanel";
 import { SkillsPanel } from "./partyToolkit/SkillsPanel";
 import { SpellSlotsResourcesPanel } from "./partyToolkit/SpellSlotsResourcesPanel";
 import { VitalsPanel } from "./partyToolkit/VitalsPanel";
+import { EMPTY_STATE_CLS } from "./ui/typography";
 
 /**
  * Party Toolkit — Iterations 1-4: Skills, Passives, Spell Slots, Resources,
@@ -33,7 +34,7 @@ export function PartyToolkit({
   const passives = computePartyPassiveSummary(characters);
 
   if (characters.length === 0 || !passives) {
-    return <p className="text-sm text-slate-600">No characters yet.</p>;
+    return <p className={EMPTY_STATE_CLS}>No characters yet.</p>;
   }
 
   return (

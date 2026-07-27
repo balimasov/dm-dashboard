@@ -8,6 +8,7 @@ import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { ReminderRow } from "./ui/ReminderRow";
+import { MUTED_BODY_CLS, REMINDER_LINK_TITLE_CLS } from "./ui/typography";
 
 /**
  * A quick-glance strip of every ability/trait/item either the DM or a player
@@ -106,7 +107,7 @@ export function RemindersPanel({
         storageKey={storageKey}
         initialOpen={initialOpen}
       >
-        <p className="mb-4 px-3 text-sm text-slate-500">
+        <p className={`mb-4 px-3 ${MUTED_BODY_CLS}`}>
           Abilities flagged with the reminder flame across every character and creature — the ones easy to forget mid-session.
         </p>
         {/* `flex-wrap` instead of the `overflow-x-auto` horizontal-scroll rows
@@ -131,7 +132,7 @@ export function RemindersPanel({
                   type="button"
                   onClick={() => openOwnerModal(group.ownerId)}
                   title={`Open ${group.ownerName}`}
-                  className="min-w-0 max-w-full truncate text-left text-sm font-semibold text-slate-100 hover:opacity-80"
+                  className={REMINDER_LINK_TITLE_CLS}
                 >
                   {group.ownerName}
                 </button>

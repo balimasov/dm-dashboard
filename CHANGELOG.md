@@ -12,6 +12,16 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [1.40.0] - 2026-07-27
+### Added
+- **Повний аудит + підключення повторюваних текстових стилів по всьому застосунку.** Розширив `src/components/ui/typography.ts` 15 новими константами (`FORM_SECTION_HEADING_CLS`, `MUTED_BODY_CLS`, `EMPTY_STATE_CLS`, `INLINE_ERROR_CLS`/`INLINE_ERROR_XS_CLS`, `WARNING_TEXT_CLS`, `MICRO_ITEM_LABEL_CLS`, `MICRO_LABEL_STRONG_CLS`, `MODAL_TITLE_CLS`, `PAGE_TITLE_CLS`, `PANEL_HEADING_CLS`, `LIST_ROW_TITLE_CLS`, `CARD_TITLE_CLS`/`CARD_SUBTITLE_CLS`, `REMINDER_LINK_TITLE_CLS`, `HINT_TEXT_CLS`) і, на відміну від попередніх 6 кроків UI-kit'у, одразу підключив їх — близько 130 місць у 40 файлах, де раніше той самий рецепт className був захардкоджений повторно. Найбільший кластер — заголовок секції форми (`text-sm uppercase tracking-wide text-slate-500`, 25 місць у 6 файлах: `EditCharacterModal`, `CreatureFormFields`, роутери ростерів тощо). Свідомо НЕ об'єднував візуально різні "майже дублі" (наприклад, `SortableCharacterRow`'s назва картки використовує інший відтінок і `hover:`, а не `group-hover:` — залишена окремою).
+### Changed
+- **`ui/Field.tsx`: власний рядок хінта тепер теж через `HINT_TEXT_CLS`**, замість хардкоду — той самий рядок, що й раніше.
+- **Прибрано дублювання самого компонента `Field`, а не лише стилю.** `creatureForm/shared.tsx` і `EditCharacterModal.tsx` мали власні, байт-в-байт ідентичні копії `Field` (label+hint обгортка) — обидві тепер імпортують спільний `ui/Field.tsx` замість повторної реалізації. Розмір інпутів (`inputCls`) в обох файлах свідомо НЕ змінювався — це окреме, більш ризиковане рішення (кит використовує більший розмір), не займали в цьому раунді.
+### Verification
+- `tsc --noEmit`, `eslint .`, `vitest run` (257 тестів) — усе чисто.
+- Візуальна звірка через тимчасовий Playwright-прогін: список кампаній, повний дашборд кампанії (картки персонажів/істот, Party Toolkit, Reminders), і модалка "Edit Campaign" — усі виглядають ідентично до змін (як і мало бути: це підстановка джерела className, не редизайн).
+
 ## [1.39.0] - 2026-07-27
 ### Added
 - **Шостий крок UI-kit'у: типографічні ролі.** Новий `src/components/ui/typography.ts` — `MUTED_LABEL_CLS` (`text-xs text-slate-500`, звичайна приглушена підпис-мітка, не uppercase) і `MICRO_LABEL_CLS` (`text-[10px] uppercase tracking-wide text-slate-500`, дрібний внутрішньокартковий заголовок). Обидва значення взяті з переважаючого варіанта серед наявних у коді (аудит грепом), а не вигадані з нуля. `SubHeading`/`SectionLabel` — вже наявні 2 іменовані ролі — цим кроком не чіпаються. Жодних компонентів для рендер-перевірки тут немає (лише рядкові константи), тож перевірено лише tsc/eslint/vitest, без Playwright-скріншотів. Поки що ніде не підключається — за планом, це останній примітив; крок 7 не додає нового файлу.

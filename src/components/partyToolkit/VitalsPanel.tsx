@@ -8,6 +8,7 @@ import { CharacterChip } from "../ui/CharacterChip";
 import { ShieldIcon } from "../ui/icons";
 import { CONDITION_HUES } from "../ui/StatusRail";
 import { ToolkitCard } from "../ui/ToolkitCard";
+import { MICRO_LABEL_STRONG_CLS } from "../ui/typography";
 
 const RING_SIZE = 60;
 const RING_STROKE = 5;
@@ -316,7 +317,7 @@ function TotalRing({ summary }: { summary: PartyHpSummary }) {
         {summary.totalHp}/{summary.totalMaxHp}
         {summary.totalTempHp > 0 && <span className="text-amber-400"> +{summary.totalTempHp}</span>}
       </span>
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total</span>
+      <span className={MICRO_LABEL_STRONG_CLS}>Total</span>
     </div>
   );
 }

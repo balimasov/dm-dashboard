@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
 import { Hero } from "@/components/Hero";
 import { Button } from "@/components/ui/Button";
+import { INLINE_ERROR_CLS, MUTED_BODY_CLS } from "@/components/ui/typography";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, undefined);
@@ -15,7 +16,7 @@ export default function LoginPage() {
         action={formAction}
         className="w-full max-w-sm space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-black/20"
       >
-        <p className="text-sm text-slate-500">Enter your password to continue.</p>
+        <p className={MUTED_BODY_CLS}>Enter your password to continue.</p>
         <div>
           <label htmlFor="password" className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
             Password
@@ -43,7 +44,7 @@ export default function LoginPage() {
             className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-600"
           />
         </div>
-        {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
+        {state?.error && <p className={INLINE_ERROR_CLS}>{state.error}</p>}
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Checking..." : "Log in"}
         </Button>

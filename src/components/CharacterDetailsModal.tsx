@@ -40,6 +40,7 @@ import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { SubHeading } from "./ui/SubHeading";
+import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -491,7 +492,7 @@ export function CharacterDetailsModal({
                     >
                       {groupFeaturesByOrigin(features).map(([origin, originFeatures]) => (
                         <div key={origin} className="space-y-1">
-                          <p className="text-[10px] uppercase tracking-wide text-slate-600">{ORIGIN_LABELS[origin]}</p>
+                          <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
                           {originFeatures.map((feature) => (
                             <FeatureRow
                               key={feature.id}
@@ -505,7 +506,7 @@ export function CharacterDetailsModal({
                     </div>
                   ) : (
                     <div key={group} className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-wide text-slate-600">{GROUP_LABELS[group]}</p>
+                      <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
                       {features.map((feature) => (
                         <FeatureRow
                           key={feature.id}
@@ -534,7 +535,7 @@ export function CharacterDetailsModal({
                   return (
                     <div key={level}>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-[10px] uppercase tracking-wide text-slate-600">{spellLevelLabel(level)}</p>
+                        <p className={MICRO_ITEM_LABEL_CLS}>{spellLevelLabel(level)}</p>
                         {slot &&
                           (slot.max > 0 && slot.max <= 6 ? (
                             <DotMeter current={slot.current} max={slot.max} colorClass="bg-violet-400" />
@@ -585,7 +586,7 @@ export function CharacterDetailsModal({
               <div className="space-y-3">
                 {consumableGroups.map(({ label, entries }) => (
                   <div key={label} className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-600">{label}</p>
+                    <p className={MICRO_ITEM_LABEL_CLS}>{label}</p>
                     {entries.map((item) => (
                       <ConsumableRow
                         key={item.id}
@@ -602,7 +603,7 @@ export function CharacterDetailsModal({
         )}
 
         {tabs.length === 0 && (
-          <p className="border-t border-slate-800 pt-3 text-sm text-slate-500">
+          <p className={`border-t border-slate-800 pt-3 ${MUTED_BODY_CLS}`}>
             No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
           </p>
         )}

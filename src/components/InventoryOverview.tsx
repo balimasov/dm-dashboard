@@ -9,6 +9,7 @@ import { splitIntoColumns } from "./partyToolkit/shared";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { ToolkitCard } from "./ui/ToolkitCard";
+import { MUTED_BODY_CLS } from "./ui/typography";
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 
@@ -255,7 +256,7 @@ const ITEM_LIST_COLUMNS = 4;
 export function InventoryOverview({ characters }: { characters: Character[] }) {
   const groups = buildCategoryGroups(characters);
   if (groups.length === 0) {
-    return <p className="text-sm text-slate-500">No items tracked on any character.</p>;
+    return <p className={MUTED_BODY_CLS}>No items tracked on any character.</p>;
   }
 
   const columns = splitIntoColumns(
@@ -314,7 +315,7 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
       }
     >
       {charactersWithCurrency.length === 0 ? (
-        <p className="text-sm text-slate-500">No gold on any character.</p>
+        <p className={MUTED_BODY_CLS}>No gold on any character.</p>
       ) : (
         <CurrencyStrip characters={charactersWithCurrency} />
       )}

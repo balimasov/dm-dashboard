@@ -16,6 +16,7 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { NotesEditor } from "@/components/NotesEditor";
 import { TraitMechanicsEditor } from "@/components/creatureForm/TraitMechanicsEditor";
 import { addBtnCls, AutoGrowTextarea, Field, inputCls } from "@/components/creatureForm/shared";
+import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 export interface CreatureFormValue {
   templateName: string;
@@ -150,7 +151,7 @@ export function CreatureFormFields({
 
       {/* Basic Info — what the creature *is*, right after the portrait. */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Basic Info</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Basic Info</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
             <input
@@ -211,7 +212,7 @@ export function CreatureFormFields({
           companion changing hands, an NPC turning hostile), so they still
           sit near the top rather than down with the rest of the stat block. */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Category &amp; Ownership</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Category &amp; Ownership</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Field label="Category" hint="Which dashboard section it lives in.">
             <select
@@ -248,7 +249,7 @@ export function CreatureFormFields({
 
       {/* Combat */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Combat</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Combat</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="AC">
             <NumberInput className={inputCls} value={value.ac} onChange={(n) => onChange({ ac: n })} />
@@ -298,7 +299,7 @@ export function CreatureFormFields({
 
       {/* Stats */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Stats</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Stats</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
             <Field key={key} label={key.toUpperCase()}>
@@ -310,7 +311,7 @@ export function CreatureFormFields({
 
       {/* Saving throws */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Saving Throws</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Saving Throws</h2>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
             <Field key={key} label={key.toUpperCase()} hint="Blank = plain modifier.">
@@ -328,7 +329,7 @@ export function CreatureFormFields({
 
       {/* Senses & Languages */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Senses &amp; Languages</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Senses &amp; Languages</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Field label="Senses" hint='e.g. "Darkvision 60 ft., passive Perception 11"'>
             <input className={inputCls} value={value.senses} onChange={(e) => onChange({ senses: e.target.value })} />
@@ -345,7 +346,7 @@ export function CreatureFormFields({
 
       {/* Skills */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Skills</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Skills</h2>
         <Field label="Skills" hint='e.g. "Perception +13, Stealth +6"'>
           <input className={`${inputCls} w-full`} value={value.skills} onChange={(e) => onChange({ skills: e.target.value })} />
         </Field>
@@ -353,7 +354,7 @@ export function CreatureFormFields({
 
       {/* Damage types */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Damage Types</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Damage Types</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Field label="Damage Vulnerabilities">
             <input
@@ -390,7 +391,7 @@ export function CreatureFormFields({
 
       {/* Spellcasting */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Spellcasting</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Spellcasting</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="Ability" hint="Blank = no spellcasting.">
             <select
@@ -463,7 +464,7 @@ export function CreatureFormFields({
               </div>
             ))}
             {value.spellcastingGroups.length === 0 && (
-              <p className="text-[11px] text-slate-600">No spell groups yet.</p>
+              <p className={HINT_TEXT_CLS}>No spell groups yet.</p>
             )}
           </div>
         </div>
@@ -471,7 +472,7 @@ export function CreatureFormFields({
 
       {/* Notes */}
       <section className="space-y-3">
-        <h2 className="text-sm uppercase tracking-wide text-slate-500">Notes</h2>
+        <h2 className={FORM_SECTION_HEADING_CLS}>Notes</h2>
         <NotesEditor value={ensureNotesHtml(value.notes)} onChange={(notes) => onChange({ notes })} placeholder="Add notes..." />
       </section>
     </div>
