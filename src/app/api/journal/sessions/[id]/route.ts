@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { getJournalSession, removeJournalSession, updateJournalSession } from "@/lib/db";
 import { journalSessionUpdateSchema } from "@/lib/schemas";
 
@@ -9,13 +10,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/journal/sessio
   if (denied) return denied;
 
   const { id } = await ctx.params;
-  const body = await req.json().catch(() => null);
-  const result = journalSessionUpdateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, journalSessionUpdateSchema);
+  if ("error" in parsed) return parsed.error;
 
-  const updated = updateJournalSession(id, result.data);
+  const updated = updateJournalSession(id, parsed.data);
   if (!updated) {
     return NextResponse.json({ error: "Journal session not found." }, { status: 404 });
   }

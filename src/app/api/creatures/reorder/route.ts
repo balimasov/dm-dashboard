@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { reorderCreatures } from "@/lib/db";
 import { reorderBodySchema } from "@/lib/schemas";
 
@@ -8,12 +9,9 @@ export async function POST(req: Request) {
   const denied = await requireRole("dm");
   if (denied) return denied;
 
-  const body = await req.json().catch(() => null);
-  const result = reorderBodySchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "orderedIds must be an array of strings." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, reorderBodySchema, "orderedIds must be an array of strings.");
+  if ("error" in parsed) return parsed.error;
 
-  reorderCreatures(result.data.orderedIds);
+  reorderCreatures(parsed.data.orderedIds);
   return NextResponse.json({ ok: true });
 }

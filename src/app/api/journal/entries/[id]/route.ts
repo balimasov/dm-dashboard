@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionRole, UserRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { getJournalEntry, removeJournalEntry, updateJournalEntryText } from "@/lib/db";
 import { journalEntryUpdateSchema } from "@/lib/schemas";
 import { JournalEntry } from "@/lib/types";
@@ -19,11 +20,8 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/journal/entrie
   const role = await getSessionRole();
 
   const { id } = await ctx.params;
-  const body = await req.json().catch(() => null);
-  const result = journalEntryUpdateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, journalEntryUpdateSchema);
+  if ("error" in parsed) return parsed.error;
 
   const existing = getJournalEntry(id);
   if (!existing) {
@@ -33,7 +31,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/journal/entrie
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const result2 = updateJournalEntryText(id, result.data.text, role, result.data.expectedUpdatedAt);
+  const result2 = updateJournalEntryText(id, parsed.data.text, role, parsed.data.expectedUpdatedAt);
   if (result2.status === "not_found") {
     return NextResponse.json({ error: "Journal note not found." }, { status: 404 });
   }

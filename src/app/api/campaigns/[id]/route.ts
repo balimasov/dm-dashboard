@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { deleteCampaign, getCampaign, updateCampaign } from "@/lib/db";
 import { campaignUpdateSchema } from "@/lib/schemas";
 
@@ -9,13 +10,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/campaigns/[id]
   if (denied) return denied;
 
   const { id } = await ctx.params;
-  const body = await req.json().catch(() => null);
-  const result = campaignUpdateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, campaignUpdateSchema);
+  if ("error" in parsed) return parsed.error;
 
-  const updated = updateCampaign(id, result.data);
+  const updated = updateCampaign(id, parsed.data);
   if (!updated) {
     return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
   }

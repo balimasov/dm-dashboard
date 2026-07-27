@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { createCampaign, listCampaigns } from "@/lib/db";
 import { campaignCreateSchema } from "@/lib/schemas";
 
@@ -12,12 +13,9 @@ export async function POST(req: Request) {
   const denied = await requireRole("dm");
   if (denied) return denied;
 
-  const body = await req.json().catch(() => null);
-  const result = campaignCreateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "A campaign name is required." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, campaignCreateSchema, "A campaign name is required.");
+  if ("error" in parsed) return parsed.error;
 
-  const campaign = createCampaign(result.data);
+  const campaign = createCampaign(parsed.data);
   return NextResponse.json(campaign, { status: 201 });
 }

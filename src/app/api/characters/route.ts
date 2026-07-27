@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { addCharacterFromUrl, listCharacters } from "@/lib/db";
 import { extractDndBeyondCharacterId } from "@/lib/dndBeyondUrl";
 import { characterCreateSchema } from "@/lib/schemas";
@@ -17,13 +18,10 @@ export async function POST(req: Request) {
   const denied = await requireRole("dm");
   if (denied) return denied;
 
-  const body = await req.json().catch(() => null);
-  const result = characterCreateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "campaignId is required." }, { status: 400 });
-  }
-  const { campaignId } = result.data;
-  const url = result.data.url.trim();
+  const parsed = await parseJsonBody(req, characterCreateSchema, "campaignId is required.");
+  if ("error" in parsed) return parsed.error;
+  const { campaignId } = parsed.data;
+  const url = parsed.data.url.trim();
 
   if (!url || !extractDndBeyondCharacterId(url)) {
     return NextResponse.json(

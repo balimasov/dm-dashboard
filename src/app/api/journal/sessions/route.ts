@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionRole, requireRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { createJournalSession, listJournalSessions } from "@/lib/db";
 import { dateKeyForTimeZone } from "@/lib/journal";
 import { journalSessionCreateSchema } from "@/lib/schemas";
@@ -21,17 +22,14 @@ export async function POST(req: Request) {
   const denied = await requireRole("dm");
   if (denied) return denied;
 
-  const body = await req.json().catch(() => null);
-  const result = journalSessionCreateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, journalSessionCreateSchema);
+  if ("error" in parsed) return parsed.error;
 
-  let timeZone = result.data.timeZone;
+  let timeZone = parsed.data.timeZone;
   if (!timeZone) {
     const cookieStore = await cookies();
     timeZone = cookieStore.get(TZ_COOKIE_NAME)?.value ?? "UTC";
   }
-  const session = createJournalSession(result.data.campaignId, dateKeyForTimeZone(timeZone));
+  const session = createJournalSession(parsed.data.campaignId, dateKeyForTimeZone(timeZone));
   return NextResponse.json(session, { status: 201 });
 }

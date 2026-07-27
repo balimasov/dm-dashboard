@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionRole } from "@/lib/auth";
+import { parseJsonBody } from "@/lib/apiRoute";
 import { createJournalEntry, getJournalSession, listJournalEntries } from "@/lib/db";
 import { dateKeyForTimeZone } from "@/lib/journal";
 import { journalEntryCreateSchema } from "@/lib/schemas";
@@ -26,14 +27,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const role = await getSessionRole();
 
-  const body = await req.json().catch(() => null);
-  const result = journalEntryCreateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  const parsed = await parseJsonBody(req, journalEntryCreateSchema);
+  if ("error" in parsed) return parsed.error;
 
-  if (result.data.sessionId) {
-    const session = getJournalSession(result.data.sessionId);
+  if (parsed.data.sessionId) {
+    const session = getJournalSession(parsed.data.sessionId);
     if (!session || (role !== "dm" && session.archived)) {
       return NextResponse.json({ error: "Journal session not found." }, { status: 404 });
     }
@@ -51,13 +49,13 @@ export async function POST(req: Request) {
   // Never trust a client-supplied audience for a player — force "party"
   // regardless of what was sent. A DM defaults to "dm" when omitted, which
   // is exactly Quick Note's request shape (it never sends `audience`).
-  const audience: JournalEntryAudience = role === "player" ? "party" : result.data.audience === "party" ? "party" : "dm";
+  const audience: JournalEntryAudience = role === "player" ? "party" : parsed.data.audience === "party" ? "party" : "dm";
 
   const entry = createJournalEntry({
-    campaignId: result.data.campaignId,
-    sessionId: result.data.sessionId,
+    campaignId: parsed.data.campaignId,
+    sessionId: parsed.data.sessionId,
     dateKeyForAutoSession,
-    text: result.data.text,
+    text: parsed.data.text,
     audience,
     authorRole: role,
   });
