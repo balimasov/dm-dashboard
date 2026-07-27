@@ -6,6 +6,7 @@ import { abilityModifier } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
+import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { InfoTooltip } from "./InfoTooltip";
@@ -27,11 +28,12 @@ const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
   other: "",
 };
 
+/** `heal`/`other` borrow their color straight from `MECHANIC_STYLE` (the creature-edit form's mechanic palette) instead of duplicating the class strings by hand — `tempHp`/`acBonus` have no `Mechanic` equivalent (the edit form's "Effect" mechanic covers both under one color), so this read view keeps its own colors for those two. */
 const EFFECT_KIND_COLOR: Record<CreatureEffectKind, string> = {
-  heal: "border-emerald-700 bg-emerald-950/30 text-emerald-300",
+  heal: MECHANIC_STYLE.heal.badge,
   tempHp: "border-cyan-700 bg-cyan-950/30 text-cyan-300",
   acBonus: "border-violet-700 bg-violet-950/30 text-violet-300",
-  other: "border-amber-700 bg-amber-950/30 text-amber-300",
+  other: MECHANIC_STYLE.custom.badge,
 };
 
 const AOE_SHAPE_LABELS: Record<CreatureAoeShape, string> = {
