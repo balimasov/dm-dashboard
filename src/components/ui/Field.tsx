@@ -2,20 +2,23 @@ import { ReactNode, TextareaHTMLAttributes, InputHTMLAttributes } from "react";
 import { HINT_TEXT_CLS } from "./typography";
 
 /**
- * Canonical input look, per a UI-kit audit: `creatureForm/shared.tsx` and
- * `EditCharacterModal.tsx` share a byte-identical, smaller `inputCls`
- * (`rounded-md ... px-2 py-1.5`), while `CampaignFormModal.tsx`,
- * `CampaignRosterEditor.tsx`, and `CreatureRosterEditor.tsx` each inline a
- * third, larger variant (`rounded-lg ... px-3 py-2` +
- * `placeholder:text-slate-600`). This kit picks the 3-file majority as the
- * canonical size — not a migration, existing call sites keep their own
- * strings until a future wiring decision.
+ * Canonical input look. An earlier version of this kit picked the larger
+ * `rounded-lg ... px-3 py-2` size as canonical, counting by file (3 files
+ * used it vs. 2) — but counting by actual `<input>`/`<textarea>` elements
+ * flips the majority hard: the smaller size below covers ~86 fields across
+ * `EditCharacterModal.tsx` and the creature form
+ * (`creatureForm/shared.tsx`/`CreatureFormFields.tsx`/
+ * `TraitMechanicsEditor.tsx`), the two densest, most-field-heavy forms in
+ * the app, against ~9 fields in the simpler `CampaignFormModal.tsx`/
+ * `CampaignRosterEditor.tsx`/`CreatureRosterEditor.tsx`. Wired into all of
+ * them now — the 3 simpler forms get slightly smaller fields, not the two
+ * big ones getting bigger.
  */
 export const inputCls =
-  "rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
+  "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
 /** Same look as `inputCls` minus the border — for fields inside a colored/tinted group container that already separates it from its neighbors. */
 export const groupInputCls =
-  "rounded-lg bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
+  "rounded-md bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
 
 export function Field({
   label,

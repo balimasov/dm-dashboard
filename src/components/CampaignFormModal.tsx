@@ -29,6 +29,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "@/components/ui/typography";
 
@@ -94,7 +95,7 @@ function QuickLinkRow({
             if (label !== link.label) onSave({ label });
           }}
           placeholder="Label"
-          className="w-20 shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56"
+          className={`w-20 shrink-0 sm:w-56 ${inputCls}`}
         />
         <input
           type="text"
@@ -104,7 +105,7 @@ function QuickLinkRow({
             if (url !== link.url) onSave({ url });
           }}
           placeholder="https://..."
-          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={`min-w-0 flex-1 ${inputCls}`}
         />
       </div>
     </RosterRow>
@@ -314,7 +315,7 @@ export function CampaignFormModal({
                           if (isEditing && trimmed && trimmed !== current.name) saveField({ name: trimmed });
                         }}
                         placeholder="Campaign name"
-                        className="w-full min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                        className={`w-full min-w-0 ${inputCls}`}
                       />
                     </div>
                   </div>

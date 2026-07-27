@@ -23,6 +23,7 @@ import { Character } from "@/lib/types";
 import { EditCharacterModal } from "@/components/EditCharacterModal";
 import { SortableCharacterRow } from "@/components/SortableCharacterRow";
 import { Button } from "@/components/ui/Button";
+import { inputCls } from "@/components/ui/Field";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
   EMPTY_STATE_CLS,
@@ -138,7 +139,7 @@ export function CampaignRosterEditor({
             setError(null);
           }}
           placeholder="https://www.dndbeyond.com/characters/27964361"
-          className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={`flex-1 ${inputCls}`}
         />
         <Button type="submit" disabled={!canSubmit}>
           {adding ? "Adding..." : "Add"}
@@ -155,7 +156,7 @@ export function CampaignRosterEditor({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name..."
-          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={`min-w-0 flex-1 ${inputCls}`}
         />
         <SegmentedControl
           value={visibility}

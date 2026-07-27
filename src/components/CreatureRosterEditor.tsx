@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import {
@@ -155,7 +156,7 @@ function AddCreaturePanel({
     <div className="space-y-3">
       <div className="flex gap-2">
         <input
-          className="flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={`flex-1 ${inputCls}`}
           placeholder="Unicorn, Wolf, Imp..."
           value={query}
           onChange={(e) => {
@@ -570,7 +571,7 @@ export function CreatureRosterEditor({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name..."
-          className="min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600"
+          className={`min-w-0 flex-1 ${inputCls}`}
         />
         <SegmentedControl
           value={visibility}

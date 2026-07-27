@@ -27,7 +27,7 @@ import { NotesEditor } from "./NotesEditor";
 import { NumberInput } from "./NumberInput";
 import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
-import { Field } from "./ui/Field";
+import { Field, inputCls } from "./ui/Field";
 import { IconButton } from "./ui/IconButton";
 import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
@@ -768,6 +768,4 @@ export function EditCharacterModal({
   );
 }
 
-const inputCls =
-  "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 const addBtnCls = "text-xs text-sky-400 hover:underline";
