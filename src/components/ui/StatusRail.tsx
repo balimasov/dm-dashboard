@@ -4,26 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
 import { CONDITION_INFO, getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
-
-function ExhaustionIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <rect x="2" y="7" width="16" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 10.5v3" strokeLinecap="round" />
-      <path d="M6 12h4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** Placeholder icon for the Concentration status badge — a bullseye, standing in until custom art is added. */
-function ConcentrationIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
+import { ExhaustionIcon, ConcentrationIcon } from "./icons";
 
 function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);

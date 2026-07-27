@@ -177,3 +177,64 @@ export function TrashIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** A single-path, less-detailed wastebasket than `TrashIcon` above (no interior lines) — visually distinct, not a true duplicate, so kept as its own icon rather than merged into `TrashIcon`. */
+export function TrashOutlineIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path
+        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** "Bloodied" is blood, not health — a drop, not a heart. */
+export function BloodDropIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2.5c-.4.6-1.6 2.3-2.8 4.4C7.4 10.2 6 13 6 15.2 6 18.9 8.7 22 12 22s6-3.1 6-6.8c0-2.2-1.4-5-3.2-8.3-1.2-2.1-2.4-3.8-2.8-4.4Z" />
+    </svg>
+  );
+}
+
+export function FlameIcon({ className, filled }: { className?: string; filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 2.5c-2.2 3-4.5 5.5-4.5 9a4.5 4.5 0 0 0 9 0c0-1.4-.5-2.6-1.2-3.6.3 2-.8 3.3-2 3.3-1.1 0-1.8-.9-1.8-2 0-2.2 1.8-3.6.5-6.7z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ExhaustionIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <rect x="2" y="7" width="16" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 10.5v3" strokeLinecap="round" />
+      <path d="M6 12h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Placeholder icon for the Concentration status badge — a bullseye, standing in until custom art is added. */
+export function ConcentrationIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

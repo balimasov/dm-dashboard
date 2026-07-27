@@ -2,15 +2,7 @@ import { NumberInput } from "@/components/NumberInput";
 import { DotMeter } from "@/components/ResourceMeter";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { tierColorClass, tierTextClass } from "@/lib/tierColor";
-
-/** A drop, not a heart — "bloodied" is blood, not health. */
-function BloodDropIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 2.5c-.4.6-1.6 2.3-2.8 4.4C7.4 10.2 6 13 6 15.2 6 18.9 8.7 22 12 22s6-3.1 6-6.8c0-2.2-1.4-5-3.2-8.3-1.2-2.1-2.4-3.8-2.8-4.4Z" />
-    </svg>
-  );
-}
+import { BloodDropIcon } from "./icons";
 
 export function HpBar({
   hp,

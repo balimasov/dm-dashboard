@@ -3,15 +3,7 @@
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
 import { SectionDivider } from "./SectionDivider";
-import { PlusIcon } from "./icons";
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { PlusIcon, TrashOutlineIcon } from "./icons";
 
 /** A single quick note row — click the text to edit it inline, "×" removes it. Delete stays visible (not hover-only) since this card is used on touch devices too. */
 function QuickNoteRow({
@@ -70,7 +62,7 @@ function QuickNoteRow({
         aria-label="Delete note"
         className="flex shrink-0 items-center text-slate-600 hover:text-red-400"
       >
-        <TrashIcon className="h-3.5 w-3.5" />
+        <TrashOutlineIcon className="h-3.5 w-3.5" />
       </button>
     </div>
   );
