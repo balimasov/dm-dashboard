@@ -97,11 +97,6 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
           {trait.spell}
         </span>
       )}
-      {trait.aoe && (
-        <span className="rounded border border-orange-700 bg-orange-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300">
-          {formatAoe(trait.aoe)}
-        </span>
-      )}
     </span>
   );
 }
