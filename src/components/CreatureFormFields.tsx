@@ -102,6 +102,9 @@ export function emptyCreatureFormValue(): CreatureFormValue {
 
 const inputCls =
   "rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
+/** Same look as `inputCls` minus the border — for fields inside a `MechanicGroup`, whose colored left-accent and tinted background already separate it from its neighbors. */
+const groupInputCls =
+  "rounded-md bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600";
 const addBtnCls = "text-xs text-sky-400 hover:underline";
 
 const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: string }> = [
@@ -161,21 +164,113 @@ function traitMechanics(t: CreatureTrait): Set<Mechanic> {
 }
 
 /**
- * Short summary of a trait's structured fields, shown next to its row when
- * collapsed so a DM can tell at a glance which ones already have them
- * without expanding every row. Recharge isn't repeated here — unlike the
- * rest, it's now its own always-visible input right in the collapsed row,
- * so summarizing it again below would just be the same value twice.
+ * One color per mechanic, reused for its checkbox accent, its field group's
+ * left-accent border/label, and its collapsed-row summary badge — the same
+ * color shows up in all three places for a given mechanic, so "which fields
+ * belong to Effect" is answered by color alone, not by re-reading labels.
+ * `heal`/`spell`/`custom` intentionally match the emerald/fuchsia/amber
+ * already used for their equivalent read-only badges in
+ * `CreatureAbilitiesPanel` (heal/spell/"other" effect); `attack`/`save`/
+ * `effect` have no existing read-view color to match, so rose/indigo/cyan
+ * were picked simply to stay visually distinct from every other one here.
  */
-function traitStructuredSummary(trait: CreatureTrait): string | undefined {
-  const damageText = trait.attack?.damage.map((d) => (d.damageType ? `${d.dice} ${d.damageType}` : d.dice)).join(" + ");
-  const parts = [
-    trait.attack && `⚔️ ${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus} · ${damageText}`,
-    trait.save && `🛡 DC ${trait.save.dc} ${trait.save.ability.toUpperCase()}`,
-    trait.spell && `📖 ${trait.spell}`,
-    ...(trait.effects ?? []).map((e) => `✨ ${e.kind === "other" ? e.label || "Effect" : EFFECT_KIND_LABELS[e.kind]} ${e.amount}`),
-  ].filter((p): p is string => Boolean(p));
-  return parts.length > 0 ? parts.join("  ·  ") : undefined;
+const MECHANIC_STYLE: Record<Mechanic, { border: string; label: string; accent: string; badge: string }> = {
+  attack: {
+    border: "border-rose-700",
+    label: "text-rose-400",
+    accent: "accent-rose-600",
+    badge: "border-rose-700 bg-rose-950/30 text-rose-300",
+  },
+  save: {
+    border: "border-indigo-700",
+    label: "text-indigo-400",
+    accent: "accent-indigo-600",
+    badge: "border-indigo-700 bg-indigo-950/30 text-indigo-300",
+  },
+  heal: {
+    border: "border-emerald-700",
+    label: "text-emerald-400",
+    accent: "accent-emerald-600",
+    badge: "border-emerald-700 bg-emerald-950/30 text-emerald-300",
+  },
+  effect: {
+    border: "border-cyan-700",
+    label: "text-cyan-400",
+    accent: "accent-cyan-600",
+    badge: "border-cyan-700 bg-cyan-950/30 text-cyan-300",
+  },
+  spell: {
+    border: "border-fuchsia-700",
+    label: "text-fuchsia-400",
+    accent: "accent-fuchsia-600",
+    badge: "border-fuchsia-700 bg-fuchsia-950/30 text-fuchsia-300",
+  },
+  custom: {
+    border: "border-amber-700",
+    label: "text-amber-400",
+    accent: "accent-amber-600",
+    badge: "border-amber-700 bg-amber-950/30 text-amber-300",
+  },
+};
+
+/**
+ * Wraps one mechanic's field group with its color's left-accent border and
+ * an uppercase label naming the mechanic — the visual container that ties
+ * a checked checkbox to "these specific fields are the ones it added".
+ * Fields inside use `groupInputCls` (no per-field border) rather than the
+ * form's usual `inputCls`: the colored border + tinted background of the
+ * group itself is what separates one mechanic's fields from the next now,
+ * so a border on every individual input inside would just be redundant
+ * boxes-within-boxes.
+ */
+function MechanicGroup({ mechanic, children }: { mechanic: Mechanic; children: React.ReactNode }) {
+  const style = MECHANIC_STYLE[mechanic];
+  return (
+    <div className={`space-y-2 rounded-r-md border-l-2 bg-slate-950/40 py-2 pl-3 pr-2 ${style.border}`}>
+      <p className={`text-[10px] font-semibold uppercase tracking-wide ${style.label}`}>{MECHANIC_LABELS[mechanic]}</p>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Colored-badge replacement for the old plain-text summary line — same
+ * information (attack bonus/damage, save DC, heal/effect amounts, spell
+ * list), but each badge borrows its mechanic's color from `MECHANIC_STYLE`
+ * so a collapsed row reads at a glance without needing to expand it, and
+ * without repeating recharge (already its own always-visible input).
+ */
+function TraitSummaryBadges({ trait }: { trait: CreatureTrait }) {
+  const badges: Array<{ key: string; className: string; text: string }> = [];
+  if (trait.attack) {
+    const damageText = trait.attack.damage.map((d) => (d.damageType ? `${d.dice} ${d.damageType}` : d.dice)).join(" + ");
+    badges.push({
+      key: "attack",
+      className: MECHANIC_STYLE.attack.badge,
+      text: `${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus}${damageText ? ` · ${damageText}` : ""}`,
+    });
+  }
+  if (trait.save) {
+    badges.push({ key: "save", className: MECHANIC_STYLE.save.badge, text: `DC ${trait.save.dc} ${trait.save.ability.toUpperCase()}` });
+  }
+  (trait.effects ?? []).forEach((e, i) => {
+    const style = e.kind === "heal" ? MECHANIC_STYLE.heal : e.kind === "other" ? MECHANIC_STYLE.custom : MECHANIC_STYLE.effect;
+    const label = e.kind === "other" ? e.label || "Effect" : EFFECT_KIND_LABELS[e.kind];
+    badges.push({ key: `effect-${i}`, className: style.badge, text: `${label} ${e.amount}` });
+  });
+  if (trait.spell) {
+    badges.push({ key: "spell", className: MECHANIC_STYLE.spell.badge, text: trait.spell });
+  }
+  if (badges.length === 0) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5 pl-1">
+      {badges.map((b) => (
+        <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>
+          {b.text}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -709,17 +804,17 @@ export function CreatureFormFields({
           </div>
         </div>
         {autoDetectMessage && <p className="text-[11px] text-slate-500">{autoDetectMessage}</p>}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {value.traits.map((t, index) => {
             const expanded = expandedTraits.has(index);
-            const summary = traitStructuredSummary(t);
             const mechanics = traitMechanics(t);
             return (
-              <div key={index} className="rounded-md border border-slate-800 p-2">
-                {/* Top level — always visible, even collapsed: what this is (type/name/description) plus
-                    when it comes back (recharge), since a DM glancing at the list needs recharge state
-                    without expanding every row. */}
-                <div className="flex flex-wrap items-start gap-2">
+              <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+                {/* Top level, row 1 — what this is (type/name), when it comes back (recharge), and the
+                    controls to expand/remove — kept to single-line fields only so this row never wraps
+                    to a second line of its own; the description (which does need room to wrap) gets its
+                    own row below instead of competing for space here. */}
+                <div className="flex flex-wrap items-center gap-2">
                   <select
                     className={`${inputCls} shrink-0`}
                     value={t.group ?? "trait"}
@@ -731,51 +826,62 @@ export function CreatureFormFields({
                       </option>
                     ))}
                   </select>
-                  <AutoGrowTextarea
+                  <input
                     className={`${inputCls} min-w-[120px] flex-1`}
                     placeholder="Name (e.g. Charge)"
                     value={t.name}
-                    onChange={(v) => updateTrait(index, { name: v })}
+                    onChange={(e) => updateTrait(index, { name: e.target.value })}
                   />
-                  <AutoGrowTextarea
-                    className={`${inputCls} min-w-[200px] flex-[2]`}
-                    placeholder="Short description"
-                    value={t.description ?? ""}
-                    onChange={(v) => updateTrait(index, { description: v })}
-                  />
+                  {/* Widened from the original w-32 — a real recharge string ("Recharges after a Short
+                      or Long Rest") didn't fit and was silently clipped. */}
                   <input
-                    className={`${inputCls} w-32 shrink-0`}
-                    placeholder='Recharge, e.g. "5-6"'
+                    className={`${inputCls} w-56 shrink-0`}
+                    placeholder='e.g. "5-6" or "1/Day"'
                     value={t.recharge ?? ""}
                     onChange={(e) => updateTrait(index, { recharge: e.target.value || undefined })}
                   />
                   <button
                     type="button"
                     onClick={() => toggleTraitExpanded(index)}
-                    className="mt-1.5 shrink-0 text-xs text-sky-400 hover:underline"
+                    className="shrink-0 text-xs text-sky-400 hover:underline"
                   >
                     {expanded ? "▾" : "▸"} Mechanics
                   </button>
                   <button
                     type="button"
                     onClick={() => removeTrait(index)}
-                    className="mt-1.5 text-sm text-red-500/80 hover:text-red-400"
+                    className="text-sm text-red-500/80 hover:text-red-400"
                   >
                     ✕
                   </button>
                 </div>
-                {!expanded && summary && <p className="mt-1 pl-1 text-[11px] text-slate-500">{summary}</p>}
+                {/* Row 2 — description, full width and on its own line so it can wrap freely instead of
+                    fighting Name/Recharge for horizontal space. */}
+                <AutoGrowTextarea
+                  className={`${inputCls} mt-2 w-full text-slate-300`}
+                  placeholder="Short description"
+                  value={t.description ?? ""}
+                  onChange={(v) => updateTrait(index, { description: v })}
+                />
+                {!expanded && <TraitSummaryBadges trait={t} />}
                 {expanded && (
-                  <div className="mt-2 space-y-3 border-t border-slate-800 pt-2">
+                  <div className="mt-3 space-y-3 border-t border-slate-800 pt-3">
                     {/* Second level — which mechanics this action has (multi-select: an action can be an
-                        Attack *and* grant an Effect), then only the field group each checked mechanic
-                        actually needs, instead of always showing every field whether relevant or not. */}
+                        Attack *and* grant an Effect); each checkbox is tinted with its mechanic's own
+                        color, the same color that then outlines the field group it reveals below and the
+                        badge it shows when collapsed — one color per mechanic, everywhere that mechanic
+                        shows up. */}
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                       {MECHANIC_ORDER.map((m) => (
-                        <label key={m} className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-300">
+                        <label
+                          key={m}
+                          className={`flex cursor-pointer items-center gap-1.5 text-xs ${
+                            mechanics.has(m) ? MECHANIC_STYLE[m].label : "text-slate-500"
+                          }`}
+                        >
                           <input
                             type="checkbox"
-                            className="h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 accent-sky-600"
+                            className={`h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 ${MECHANIC_STYLE[m].accent}`}
                             checked={mechanics.has(m)}
                             onChange={(e) => toggleMechanic(index, m, e.target.checked)}
                           />
@@ -785,11 +891,11 @@ export function CreatureFormFields({
                     </div>
 
                     {mechanics.has("attack") && (
-                      <div className="space-y-2">
+                      <MechanicGroup mechanic="attack">
                         <div className="grid grid-cols-3 gap-2">
                           <Field label="Attack Type">
                             <select
-                              className={inputCls}
+                              className={groupInputCls}
                               value={t.attack?.attackType ?? "melee"}
                               onChange={(e) => updateTraitAttack(index, { attackType: e.target.value as "melee" | "ranged" })}
                             >
@@ -799,7 +905,7 @@ export function CreatureFormFields({
                           </Field>
                           <Field label="Attack Bonus">
                             <input
-                              className={inputCls}
+                              className={groupInputCls}
                               type="number"
                               value={t.attack?.attackBonus ?? 0}
                               onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
@@ -807,7 +913,7 @@ export function CreatureFormFields({
                           </Field>
                           <Field label="Range (ft)">
                             <input
-                              className={inputCls}
+                              className={groupInputCls}
                               placeholder="5 or 100/400"
                               value={t.attack?.range ?? ""}
                               onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
@@ -827,13 +933,13 @@ export function CreatureFormFields({
                             {(t.attack?.damage ?? []).map((roll, damageIndex) => (
                               <div key={damageIndex} className="flex items-center gap-2">
                                 <input
-                                  className={`${inputCls} min-w-[100px] flex-1`}
+                                  className={`${groupInputCls} min-w-[100px] flex-1`}
                                   placeholder='Dice, e.g. "2d6 +4"'
                                   value={roll.dice}
                                   onChange={(e) => updateTraitAttackDamage(index, damageIndex, { dice: e.target.value })}
                                 />
                                 <input
-                                  className={`${inputCls} min-w-[100px] flex-1`}
+                                  className={`${groupInputCls} min-w-[100px] flex-1`}
                                   placeholder="Damage type"
                                   value={roll.damageType ?? ""}
                                   onChange={(e) =>
@@ -854,64 +960,68 @@ export function CreatureFormFields({
                             )}
                           </div>
                         </div>
-                      </div>
+                      </MechanicGroup>
                     )}
 
                     {mechanics.has("save") && (
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        <Field label="Save Ability">
-                          <select
-                            className={inputCls}
-                            value={t.save?.ability ?? "dex"}
-                            onChange={(e) => updateTraitSave(index, { ability: e.target.value as keyof AbilityScores })}
-                          >
-                            {STAT_ORDER.map((key) => (
-                              <option key={key} value={key}>
-                                {key.toUpperCase()}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Save DC">
-                          <input
-                            className={inputCls}
-                            type="number"
-                            value={t.save?.dc ?? 0}
-                            onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
-                          />
-                        </Field>
-                      </div>
+                      <MechanicGroup mechanic="save">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          <Field label="Save Ability">
+                            <select
+                              className={groupInputCls}
+                              value={t.save?.ability ?? "dex"}
+                              onChange={(e) => updateTraitSave(index, { ability: e.target.value as keyof AbilityScores })}
+                            >
+                              {STAT_ORDER.map((key) => (
+                                <option key={key} value={key}>
+                                  {key.toUpperCase()}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <Field label="Save DC">
+                            <input
+                              className={groupInputCls}
+                              type="number"
+                              value={t.save?.dc ?? 0}
+                              onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
+                            />
+                          </Field>
+                        </div>
+                      </MechanicGroup>
                     )}
 
                     {mechanics.has("heal") &&
                       (() => {
                         const hi = healEffectIndex(t);
                         return (
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <Field label="Heal Amount">
-                              <input
-                                className={inputCls}
-                                placeholder='e.g. "2d8 +4"'
-                                value={t.effects?.[hi]?.amount ?? ""}
-                                onChange={(e) => updateTraitEffect(index, hi, { amount: e.target.value })}
-                              />
-                            </Field>
-                            <Field label="Note">
-                              <input
-                                className={inputCls}
-                                placeholder='Optional, e.g. "self only"'
-                                value={t.effects?.[hi]?.label ?? ""}
-                                onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
-                              />
-                            </Field>
-                          </div>
+                          <MechanicGroup mechanic="heal">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              <Field label="Heal Amount">
+                                <input
+                                  className={groupInputCls}
+                                  placeholder='e.g. "2d8 +4"'
+                                  value={t.effects?.[hi]?.amount ?? ""}
+                                  onChange={(e) => updateTraitEffect(index, hi, { amount: e.target.value })}
+                                />
+                              </Field>
+                              <Field label="Note">
+                                <input
+                                  className={groupInputCls}
+                                  placeholder='Optional, e.g. "self only"'
+                                  value={t.effects?.[hi]?.label ?? ""}
+                                  onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
+                                />
+                              </Field>
+                            </div>
+                          </MechanicGroup>
                         );
                       })()}
 
                     {mechanics.has("effect") && (
-                      <div>
+                      <MechanicGroup mechanic="effect">
                         <div className="mb-1 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">Effects</span>
+                          <span className="text-xs text-slate-400">Temp HP / AC Bonus</span>
                           <button type="button" onClick={() => addGenericEffect(index)} className={addBtnCls}>
                             + Add Effect
                           </button>
@@ -920,7 +1030,7 @@ export function CreatureFormFields({
                           {genericEffectEntries(t).map(({ index: ei, effect }) => (
                             <div key={ei} className="flex items-center gap-2">
                               <select
-                                className={`${inputCls} shrink-0`}
+                                className={`${groupInputCls} shrink-0`}
                                 value={effect.kind}
                                 onChange={(e) => updateTraitEffect(index, ei, { kind: e.target.value as CreatureEffectKind })}
                               >
@@ -928,13 +1038,13 @@ export function CreatureFormFields({
                                 <option value="acBonus">AC Bonus (Shield)</option>
                               </select>
                               <input
-                                className={`${inputCls} w-24 shrink-0`}
+                                className={`${groupInputCls} w-24 shrink-0`}
                                 placeholder='e.g. "10"'
                                 value={effect.amount}
                                 onChange={(e) => updateTraitEffect(index, ei, { amount: e.target.value })}
                               />
                               <input
-                                className={`${inputCls} min-w-[140px] flex-1`}
+                                className={`${groupInputCls} min-w-[140px] flex-1`}
                                 placeholder="Note (optional)"
                                 value={effect.label ?? ""}
                                 onChange={(e) => updateTraitEffect(index, ei, { label: e.target.value || undefined })}
@@ -952,42 +1062,46 @@ export function CreatureFormFields({
                             <p className="text-[11px] text-slate-600">No effects yet.</p>
                           )}
                         </div>
-                      </div>
+                      </MechanicGroup>
                     )}
 
                     {mechanics.has("spell") && (
-                      <Field label="Spell(s)">
-                        <input
-                          className={`${inputCls} w-full`}
-                          placeholder='e.g. "Fireball, Suggestion"'
-                          value={t.spell ?? ""}
-                          onChange={(e) => updateTrait(index, { spell: e.target.value })}
-                        />
-                      </Field>
+                      <MechanicGroup mechanic="spell">
+                        <Field label="Spell(s)">
+                          <input
+                            className={`${groupInputCls} w-full`}
+                            placeholder='e.g. "Fireball, Suggestion"'
+                            value={t.spell ?? ""}
+                            onChange={(e) => updateTrait(index, { spell: e.target.value })}
+                          />
+                        </Field>
+                      </MechanicGroup>
                     )}
 
                     {mechanics.has("custom") &&
                       (() => {
                         const ci = customEffectIndex(t);
                         return (
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <Field label="Name">
-                              <input
-                                className={inputCls}
-                                placeholder='e.g. "Push"'
-                                value={t.effects?.[ci]?.label ?? ""}
-                                onChange={(e) => updateTraitEffect(index, ci, { label: e.target.value })}
-                              />
-                            </Field>
-                            <Field label="Value / Note">
-                              <input
-                                className={inputCls}
-                                placeholder='e.g. "10 ft."'
-                                value={t.effects?.[ci]?.amount ?? ""}
-                                onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
-                              />
-                            </Field>
-                          </div>
+                          <MechanicGroup mechanic="custom">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              <Field label="Name">
+                                <input
+                                  className={groupInputCls}
+                                  placeholder='e.g. "Push"'
+                                  value={t.effects?.[ci]?.label ?? ""}
+                                  onChange={(e) => updateTraitEffect(index, ci, { label: e.target.value })}
+                                />
+                              </Field>
+                              <Field label="Value / Note">
+                                <input
+                                  className={groupInputCls}
+                                  placeholder='e.g. "10 ft."'
+                                  value={t.effects?.[ci]?.amount ?? ""}
+                                  onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
+                                />
+                              </Field>
+                            </div>
+                          </MechanicGroup>
                         );
                       })()}
                   </div>
