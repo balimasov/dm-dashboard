@@ -122,7 +122,7 @@ function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => v
  * into `CollapsibleSection`'s `actions` slot (a sibling of the
  * collapse-toggle button, not nested inside it, so it never conflicts with
  * the section's own expand/collapse click), landing right where a plain
- * "(N cards)" label used to sit. Opens `RosterManagerModal` straight on
+ * "N cards" label used to sit. Opens `RosterManagerModal` straight on
  * that section's own tab — add, edit, hide, remove, and reorder, not just
  * adding. `onClick` is omitted for a player viewing a section they can't
  * manage (Party/Companions stay visible to players, just without the
@@ -137,11 +137,11 @@ function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => v
  * keeps the row exactly as many elements as before this feature existed.
  * A faint background at rest marks it as a real control rather than static
  * text; hover/focus swaps to the accent tint so the state change reads
- * clearly (not just "slightly brighter grey"), and the small gear glyph
- * only appears then, as a second confirming cue.
+ * clearly (not just "slightly brighter grey") — the `title` tooltip already
+ * spells out what the button does, so no icon needs to appear on top of it.
  */
 function SectionCountButton({ count, onClick, label }: { count: number; onClick?: () => void; label: string }) {
-  const text = `(${formatCardCount(count)})`;
+  const text = formatCardCount(count);
   if (!onClick) {
     return <span className="whitespace-nowrap text-base font-normal text-slate-500">{text}</span>;
   }
@@ -151,10 +151,9 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="group inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-white/5 bg-white/5 px-2.5 py-0.5 text-base font-normal text-slate-500 transition-colors hover:border-sky-800 hover:bg-sky-950/50 hover:text-sky-300 focus-visible:border-sky-800 focus-visible:bg-sky-950/50 focus-visible:text-sky-300"
+      className="whitespace-nowrap rounded-full border border-white/5 bg-white/5 px-2.5 py-0.5 text-base font-normal text-slate-500 transition-colors hover:border-sky-800 hover:bg-sky-950/50 hover:text-sky-300 focus-visible:border-sky-800 focus-visible:bg-sky-950/50 focus-visible:text-sky-300"
     >
       {text}
-      <GearIcon className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
     </button>
   );
 }

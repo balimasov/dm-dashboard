@@ -101,9 +101,6 @@ export function RemindersPanel({
               🔥
             </span>
             Reminders
-            <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">
-              ({totalCount} reminder{totalCount === 1 ? "" : "s"})
-            </span>
           </>
         }
         storageKey={storageKey}
