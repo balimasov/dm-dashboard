@@ -29,6 +29,7 @@ import { RosterRow } from "@/components/RosterRow";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "@/components/ui/typography";
 
 const MAX_QUICK_LINKS = 15;
@@ -79,14 +80,9 @@ function QuickLinkRow({
       singleRow
       avatar={<QuickLinkIcon url={url} />}
       actions={
-        <button
-          type="button"
-          onClick={onDelete}
-          aria-label="Remove link"
-          className="shrink-0 rounded p-1 text-slate-500 hover:text-red-400"
-        >
+        <IconButton tone="danger" onClick={onDelete} aria-label="Remove link">
           ✕
-        </button>
+        </IconButton>
       }
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -287,14 +283,9 @@ export function CampaignFormModal({
       <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className={MODAL_TITLE_CLS}>{isEditing ? "Edit Campaign" : "New Campaign"}</h2>
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
-            className="rounded p-1 text-slate-500 hover:text-slate-200"
-          >
+          <IconButton onClick={close} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         <div className="scrollbar-themed overflow-y-auto px-1">

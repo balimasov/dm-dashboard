@@ -9,6 +9,8 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
+import { IconButton } from "./ui/IconButton";
+import { IconFab } from "./ui/IconFab";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
@@ -362,9 +364,9 @@ export function CampaignJournalModal({
       >
         <div className="mb-3 flex shrink-0 items-center justify-between sm:mb-4">
           <h2 className={MODAL_TITLE_CLS}>Campaign Journal</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-slate-500 hover:text-slate-200">
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Nothing below the close button renders until the session list
@@ -542,16 +544,15 @@ export function CampaignJournalModal({
                   <SegmentedControl options={modeOptions} current={mode} onChange={setMode} uppercase />
                   <div className="flex items-center gap-2">
                     <SegmentedControl options={audienceOptions} current={visibleTab} onChange={setTab} />
-                    <button
-                      type="button"
+                    <IconFab
+                      size="sm"
                       onClick={() => canExport && downloadSessionMarkdown(selectedSession!, visibleEntries!)}
                       disabled={!canExport}
                       aria-label="Export as Markdown"
                       title="Export as Markdown"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
                     >
                       <DownloadIcon className="h-3.5 w-3.5" />
-                    </button>
+                    </IconFab>
                   </div>
                 </div>
               </div>

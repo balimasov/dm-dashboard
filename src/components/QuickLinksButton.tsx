@@ -3,14 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { getLinkVisual, LinkIcon } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
-
-function PencilIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19 3 20l1-4Z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { IconButton } from "./ui/IconButton";
+import { PencilIcon } from "./ui/icons";
 
 /**
  * A `position: fixed` trigger pinned to the bottom-right corner of the
@@ -55,18 +49,17 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
           <div className="flex items-center justify-between px-3 pb-1 pt-0.5">
             <p className="text-xs uppercase tracking-wide text-slate-500">Quick Links</p>
             {onManage && (
-              <button
-                type="button"
+              <IconButton
+                tone="muted"
                 onClick={() => {
                   setOpen(false);
                   onManage();
                 }}
                 aria-label="Edit quick links"
                 title="Edit quick links"
-                className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-sky-400"
               >
                 <PencilIcon className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             )}
           </div>
           {links.map((link) => {

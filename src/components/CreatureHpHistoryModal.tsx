@@ -4,6 +4,7 @@ import { Creature, HpHistoryEntry } from "@/lib/types";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { TrashIcon } from "./ui/icons";
+import { IconButton } from "./ui/IconButton";
 import { MODAL_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 const FIELD_LABEL: Record<HpHistoryEntry["field"], string> = {
@@ -72,20 +73,15 @@ export function CreatureHpHistoryModal({
               <button
                 type="button"
                 onClick={handleClear}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-500 hover:bg-white/10 hover:text-red-400"
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-500 hover:bg-red-950/30 hover:text-red-400"
               >
                 <TrashIcon className="h-3.5 w-3.5 shrink-0" />
                 Clear
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="rounded p-1 text-slate-500 hover:text-slate-200"
-            >
+            <IconButton onClick={onClose} aria-label="Close">
               ✕
-            </button>
+            </IconButton>
           </div>
         </div>
 

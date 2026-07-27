@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { inferStructuredTraitFields } from "@/lib/creatureStructuredInfer";
 import { addBtnCls, AutoGrowTextarea, Field, groupInputCls, inputCls } from "./shared";
+import { IconButton } from "@/components/ui/IconButton";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: string }> = [
@@ -522,13 +523,9 @@ export function TraitMechanicsEditor({
                 >
                   {expanded ? "▾" : "▸"} Mechanics
                 </button>
-                <button
-                  type="button"
-                  onClick={() => removeTrait(index)}
-                  className="text-sm text-red-500/80 hover:text-red-400"
-                >
+                <IconButton tone="danger" onClick={() => removeTrait(index)} aria-label="Remove trait">
                   ✕
-                </button>
+                </IconButton>
               </div>
               {/* Row 2 — description, full width and on its own line so it can wrap freely instead of
                   fighting Name/Recharge for horizontal space. */}
@@ -629,13 +626,13 @@ export function TraitMechanicsEditor({
                                   updateTraitAttackDamage(index, damageIndex, { damageType: e.target.value || undefined })
                                 }
                               />
-                              <button
-                                type="button"
+                              <IconButton
+                                tone="danger"
                                 onClick={() => removeTraitAttackDamage(index, damageIndex)}
-                                className="text-sm text-red-500/80 hover:text-red-400"
+                                aria-label="Remove damage roll"
                               >
                                 ✕
-                              </button>
+                              </IconButton>
                             </div>
                           ))}
                           {(t.attack?.damage ?? []).length === 0 && (
@@ -701,13 +698,9 @@ export function TraitMechanicsEditor({
                               value={effect.label ?? ""}
                               onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
                             />
-                            <button
-                              type="button"
-                              onClick={() => removeTraitEffect(index, hi)}
-                              className="text-sm text-red-500/80 hover:text-red-400"
-                            >
+                            <IconButton tone="danger" onClick={() => removeTraitEffect(index, hi)} aria-label="Remove heal effect">
                               ✕
-                            </button>
+                            </IconButton>
                           </div>
                         ))}
                         {healEffectEntries(t).length === 0 && (
@@ -752,13 +745,9 @@ export function TraitMechanicsEditor({
                               value={effect.label ?? ""}
                               onChange={(e) => updateTraitEffect(index, ei, { label: e.target.value || undefined })}
                             />
-                            <button
-                              type="button"
-                              onClick={() => removeTraitEffect(index, ei)}
-                              className="text-sm text-red-500/80 hover:text-red-400"
-                            >
+                            <IconButton tone="danger" onClick={() => removeTraitEffect(index, ei)} aria-label="Remove effect">
                               ✕
-                            </button>
+                            </IconButton>
                           </div>
                         ))}
                         {genericEffectEntries(t).length === 0 && (
@@ -808,13 +797,9 @@ export function TraitMechanicsEditor({
                               value={effect.amount}
                               onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
                             />
-                            <button
-                              type="button"
-                              onClick={() => removeTraitEffect(index, ci)}
-                              className="text-sm text-red-500/80 hover:text-red-400"
-                            >
+                            <IconButton tone="danger" onClick={() => removeTraitEffect(index, ci)} aria-label="Remove custom effect">
                               ✕
-                            </button>
+                            </IconButton>
                           </div>
                         ))}
                         {customEffectEntries(t).length === 0 && (

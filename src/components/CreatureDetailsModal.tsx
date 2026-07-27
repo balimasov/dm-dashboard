@@ -9,6 +9,7 @@ import { CreatureStatBlock } from "./CreatureStatBlock";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
+import { IconButton } from "./ui/IconButton";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
@@ -81,14 +82,9 @@ export function CreatureDetailsModal({
           <div className="min-w-0 flex-1">
             <CreatureHeader creature={creature} owner={owner} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Created/edited timestamp (left) + kebab actions menu (right) share

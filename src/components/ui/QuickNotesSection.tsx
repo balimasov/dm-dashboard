@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
+import { IconButton } from "./IconButton";
 import { SectionDivider } from "./SectionDivider";
 import { PlusIcon, TrashOutlineIcon } from "./icons";
 
@@ -56,14 +57,9 @@ function QuickNoteRow({
       >
         {note.text}
       </button>
-      <button
-        type="button"
-        onClick={onDelete}
-        aria-label="Delete note"
-        className="flex shrink-0 items-center text-slate-600 hover:text-red-400"
-      >
+      <IconButton tone="danger" onClick={onDelete} aria-label="Delete note">
         <TrashOutlineIcon className="h-3.5 w-3.5" />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -115,15 +111,14 @@ export function QuickNotesSection({
       <div className="mb-1.5 flex items-center justify-between">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
         {onChange && (
-          <button
-            type="button"
+          <IconButton
+            tone="accent"
             onClick={() => setAdding((v) => !v)}
             aria-label="Add a quick note"
             title="Add a quick note"
-            className="rounded p-0.5 text-slate-500 hover:text-sky-400"
           >
             <PlusIcon className="h-4 w-4" />
-          </button>
+          </IconButton>
         )}
       </div>
       {adding && (

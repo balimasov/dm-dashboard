@@ -5,6 +5,7 @@ import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
+import { IconButton } from "./ui/IconButton";
 import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./ui/icons";
 
 export function SortableCharacterRow({
@@ -27,36 +28,28 @@ export function SortableCharacterRow({
       avatar={<CharacterAvatar character={character} />}
       actions={
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(character)}
-            title="Edit"
-            aria-label="Edit"
-            className="rounded p-1 text-slate-400 hover:text-slate-200"
-          >
+          <IconButton tone="muted" onClick={() => onEdit(character)} title="Edit" aria-label="Edit">
             <PencilIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            tone="muted"
             onClick={() => onToggleHidden(character.id)}
             title={character.hidden ? "Show" : "Hide"}
             aria-label={character.hidden ? "Show" : "Hide"}
-            className="rounded p-1 text-slate-400 hover:text-slate-200"
           >
             {character.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            tone="danger"
             onClick={() => {
               const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
               if (confirmed) onRemove(character.id);
             }}
             title="Remove"
             aria-label="Remove"
-            className="rounded p-1 text-red-500/80 hover:text-red-400"
           >
             <TrashIcon className="h-4 w-4" />
-          </button>
+          </IconButton>
         </div>
       }
     >

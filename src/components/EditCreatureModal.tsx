@@ -7,6 +7,7 @@ import { creatureToFormValue, formValueToCreatureUpdates } from "@/lib/creatureF
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { Button } from "./ui/Button";
+import { IconButton } from "./ui/IconButton";
 import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 /**
@@ -62,14 +63,9 @@ export function EditCreatureModal({
       <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <h2 className={MODAL_TITLE_CLS}>Edit Creature</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-hidden">

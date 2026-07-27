@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import {
   EMPTY_STATE_CLS,
@@ -412,45 +413,31 @@ function CreatureRow({
       }
       actions={
         <>
-          <button
-            type="button"
-            onClick={() => onEdit(creature)}
-            title="Edit"
-            aria-label="Edit"
-            className="rounded p-1 text-slate-400 hover:text-slate-200"
-          >
+          <IconButton tone="muted" onClick={() => onEdit(creature)} title="Edit" aria-label="Edit">
             <PencilIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDuplicate(creature)}
-            title="Duplicate"
-            aria-label="Duplicate"
-            className="rounded p-1 text-slate-400 hover:text-slate-200"
-          >
+          </IconButton>
+          <IconButton tone="muted" onClick={() => onDuplicate(creature)} title="Duplicate" aria-label="Duplicate">
             <CopyIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            tone="muted"
             onClick={() => onToggleHidden(creature.id)}
             title={creature.hidden ? "Show" : "Hide"}
             aria-label={creature.hidden ? "Show" : "Hide"}
-            className="rounded p-1 text-slate-400 hover:text-slate-200"
           >
             {creature.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            tone="danger"
             onClick={() => {
               const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
               if (confirmed) onRemove(creature.id);
             }}
             title="Remove"
             aria-label="Remove"
-            className="rounded p-1 text-red-500/80 hover:text-red-400"
           >
             <TrashIcon className="h-4 w-4" />
-          </button>
+          </IconButton>
         </>
       }
     >

@@ -16,6 +16,7 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { NotesEditor } from "@/components/NotesEditor";
 import { TraitMechanicsEditor } from "@/components/creatureForm/TraitMechanicsEditor";
 import { addBtnCls, AutoGrowTextarea, Field, inputCls } from "@/components/creatureForm/shared";
+import { IconButton } from "@/components/ui/IconButton";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 export interface CreatureFormValue {
@@ -454,13 +455,14 @@ export function CreatureFormFields({
                   value={group.spells}
                   onChange={(v) => updateSpellcastingGroup(index, { spells: v })}
                 />
-                <button
-                  type="button"
+                <IconButton
+                  tone="danger"
                   onClick={() => removeSpellcastingGroup(index)}
-                  className="mt-1.5 text-sm text-red-500/80 hover:text-red-400"
+                  aria-label="Remove spellcasting group"
+                  className="mt-1.5"
                 >
                   ✕
-                </button>
+                </IconButton>
               </div>
             ))}
             {value.spellcastingGroups.length === 0 && (

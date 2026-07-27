@@ -7,6 +7,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
+import { IconButton } from "@/components/ui/IconButton";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MODAL_TITLE_CLS } from "@/components/ui/typography";
 import { CREATURE_CATEGORY_EMOJI, CREATURE_CATEGORY_LABELS, CREATURE_CATEGORY_ORDER, Character, CreatureCategory } from "@/lib/types";
@@ -48,14 +49,9 @@ export function RosterManagerModal({
       <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className={MODAL_TITLE_CLS}>Characters &amp; Creatures</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded p-1 text-slate-500 hover:text-slate-200"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         <SegmentedControl

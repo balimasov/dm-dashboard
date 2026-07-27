@@ -28,6 +28,7 @@ import { NumberInput } from "./NumberInput";
 import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { Field } from "./ui/Field";
+import { IconButton } from "./ui/IconButton";
 import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
@@ -262,14 +263,9 @@ export function EditCharacterModal({
       <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <h2 className={MODAL_TITLE_CLS}>Edit Character</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-hidden">
@@ -544,13 +540,9 @@ export function EditCharacterModal({
                       onChange={(n) => updateSense(index, { range: n })}
                     />
                     <span className="text-slate-500">ft</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSense(index)}
-                      className="text-sm text-red-500/80 hover:text-red-400"
-                    >
+                    <IconButton tone="danger" onClick={() => removeSense(index)}>
                       ✕
-                    </button>
+                    </IconButton>
                   </div>
                 ))}
               </div>
@@ -596,13 +588,9 @@ export function EditCharacterModal({
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => removeResource(r.id)}
-                        className="text-sm text-red-500/80 hover:text-red-400"
-                      >
+                      <IconButton tone="danger" onClick={() => removeResource(r.id)}>
                         ✕
-                      </button>
+                      </IconButton>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <input
@@ -672,13 +660,9 @@ export function EditCharacterModal({
                         value={s.max}
                         onChange={(n) => updateSlot(s.level, { max: n })}
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeSlot(s.level)}
-                        className="text-sm text-red-500/80 hover:text-red-400"
-                      >
+                      <IconButton tone="danger" onClick={() => removeSlot(s.level)}>
                         ✕
-                      </button>
+                      </IconButton>
                     </div>
                   ))}
               </div>
@@ -730,13 +714,9 @@ export function EditCharacterModal({
                         value={item.quantity}
                         onChange={(n) => updateItem(item.id, { quantity: n })}
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="text-sm text-red-500/80 hover:text-red-400"
-                      >
+                      <IconButton tone="danger" onClick={() => removeItem(item.id)}>
                         ✕
-                      </button>
+                      </IconButton>
                     </div>
                     <input
                       className={`${inputCls} w-full`}

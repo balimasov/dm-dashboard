@@ -28,6 +28,7 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
+import { IconButton } from "./ui/IconButton";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
@@ -260,14 +261,9 @@ export function CharacterDetailsModal({
           <div className="min-w-0 flex-1">
             <CharacterHeader character={c} />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-          >
+          <IconButton onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Sync (left) + kebab actions menu (right) share one row, level with

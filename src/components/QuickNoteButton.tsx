@@ -6,6 +6,7 @@ import { plainTextToParagraphHtml } from "@/lib/journal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
+import { IconFab } from "./ui/IconFab";
 import { PencilIcon } from "./ui/icons";
 import { INLINE_ERROR_XS_CLS } from "./ui/typography";
 
@@ -76,15 +77,9 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Quick Note"
-        title="Quick Note (n)"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
-      >
+      <IconFab onClick={() => setOpen((o) => !o)} aria-label="Quick Note" title="Quick Note (n)">
         <PencilIcon className="h-4 w-4" />
-      </button>
+      </IconFab>
       {open && (
         // `fixed` + `inset-x-3` on mobile — anchoring this as an `absolute
         // right-0` dropdown (still used from `sm:` up) let its fixed width
