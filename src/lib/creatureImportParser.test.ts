@@ -28,7 +28,7 @@ describe("creature import template round-trip", () => {
         ],
       },
     });
-    expect(outcome.result.input.traits).toHaveLength(5);
+    expect(outcome.result.input.traits).toHaveLength(7);
     expect(outcome.result.input.traits?.[1]).toMatchObject({
       name: "Hooves",
       attack: { attackType: "melee", attackBonus: 7, range: "5", damage: [{ dice: "2d6 +4", damageType: "bludgeoning" }] },
@@ -39,14 +39,24 @@ describe("creature import template round-trip", () => {
       save: { ability: "con", dc: 15 },
     });
     expect(outcome.result.input.traits?.[3]).toMatchObject({
+      name: "Cold Breath",
+      recharge: "Recharge 5-6",
+      save: { ability: "con", dc: 15 },
+      aoe: { shape: "cone", size: 30 },
+    });
+    expect(outcome.result.input.traits?.[4]).toMatchObject({
       name: "Frightful Presence",
       recharge: "Recharge 5-6",
       save: { ability: "wis", dc: 15 },
     });
-    expect(outcome.result.input.traits?.[4]).toMatchObject({
+    expect(outcome.result.input.traits?.[5]).toMatchObject({
       name: "Lay On Hooves",
       recharge: "1/Day",
       effects: [{ kind: "heal", amount: "6d8 +4" }],
+    });
+    expect(outcome.result.input.traits?.[6]).toMatchObject({
+      name: "Cast a Spell",
+      spell: "Suggestion",
     });
     // The template's owner-character field is intentionally left blank —
     // resolving a filled-in name to an id needs the campaign's character
@@ -365,6 +375,102 @@ traits:
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.errors).toEqual(expect.arrayContaining([expect.stringContaining("traits[0].attack.attackKind")]));
+  });
+
+  test("attackBonus is optional — an attack with only damage (no to-hit number yet) parses fine", () => {
+    const yaml = `
+templateName: "Vague Attacker"
+ac: 13
+maxHp: 30
+speed: 30
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Mystery Strike"
+    group: "action"
+    attack:
+      attackType: melee
+      damage: "2d6"
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.result.input.traits[0].attack).toEqual({
+      attackType: "melee",
+      attackKind: undefined,
+      attackBonus: undefined,
+      range: undefined,
+      damage: [{ dice: "2d6", damageType: undefined }],
+    });
+  });
+
+  test("aoe parses a shape + size (and width for a line), and rejects an unknown shape", () => {
+    const yaml = `
+templateName: "Cone Breather"
+ac: 13
+maxHp: 30
+speed: 30
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Cold Breath"
+    group: "action"
+    save:
+      ability: con
+      dc: 15
+    aoe:
+      shape: cone
+      size: 30
+  - name: "Lightning Line"
+    group: "action"
+    save:
+      ability: dex
+      dc: 15
+    aoe:
+      shape: line
+      size: 60
+      width: 5
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.result.input.traits[0].aoe).toEqual({ shape: "cone", size: 30, width: undefined });
+    expect(outcome.result.input.traits[1].aoe).toEqual({ shape: "line", size: 60, width: 5 });
+  });
+
+  test("an invalid aoe shape is reported clearly, not thrown", () => {
+    const yaml = `
+templateName: "Broken Aoe"
+ac: 13
+maxHp: 30
+speed: 30
+stats:
+  str: 8
+  dex: 12
+  con: 12
+  int: 10
+  wis: 10
+  cha: 16
+traits:
+  - name: "Weird Blast"
+    aoe:
+      shape: "triangle"
+      size: 10
+`;
+    const outcome = parseCreatureImportYaml(yaml);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.errors).toEqual(expect.arrayContaining([expect.stringContaining("traits[0].aoe.shape")]));
   });
 
   test("malformed attack/save/spellcasting shapes are reported clearly, not thrown", () => {

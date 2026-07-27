@@ -4,8 +4,10 @@ import { useLayoutEffect, useRef, useState } from "react";
 import {
   AbilityScores,
   Character,
+  CREATURE_AOE_SHAPES,
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_ORDER,
+  CreatureAoeShape,
   CreatureCategory,
   CreatureDamageRoll,
   CreatureEffect,
@@ -153,20 +155,37 @@ const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
   other: "",
 };
 
+const AOE_SHAPE_LABELS: Record<CreatureAoeShape, string> = {
+  cone: "Cone",
+  cube: "Cube",
+  cylinder: "Cylinder",
+  line: "Line",
+  sphere: "Sphere",
+};
+
+/** e.g. "20-ft. Sphere" or, for a line's two dimensions, "60 ft. × 5 ft. Line". */
+function formatAoe(aoe: NonNullable<CreatureTrait["aoe"]>): string {
+  if (aoe.shape === "line" && aoe.width) return `${aoe.size} ft. × ${aoe.width} ft. Line`;
+  return `${aoe.size}-ft. ${AOE_SHAPE_LABELS[aoe.shape]}`;
+}
+
 /**
- * The six "what kind of thing does this action do" mechanics a DM picks
+ * The seven "what kind of thing does this action do" mechanics a DM picks
  * from — deliberately a fixed checklist (multi-select: an action can be an
  * Attack *and* grant an Effect, e.g. a bite that also knocks prone) rather
  * than a free-form list, since real stat blocks describe an action's
  * mechanics as a small closed set, not an arbitrary pile of line items.
  * `heal`/`effect`/`custom` all key off `CreatureTrait.effects[].kind`
  * (`"heal"`, `"tempHp"`/`"acBonus"`, `"other"` respectively) since they
- * share that one array under the hood — only `attack`/`save`/`spell` get
- * their own dedicated trait field.
+ * share that one array under the hood — only `attack`/`save`/`spell`/`aoe`
+ * get their own dedicated trait field. `aoe` is a bit different from the
+ * other six — it's a targeting shape, not a "what happens", so it can (and
+ * often does, e.g. Ice Knife) apply on top of whichever of the other six are
+ * also checked, rather than being an alternative to them.
  */
-type Mechanic = "attack" | "save" | "heal" | "effect" | "spell" | "custom";
+type Mechanic = "attack" | "save" | "heal" | "effect" | "spell" | "custom" | "aoe";
 
-const MECHANIC_ORDER: Mechanic[] = ["attack", "save", "heal", "effect", "spell", "custom"];
+const MECHANIC_ORDER: Mechanic[] = ["attack", "save", "heal", "effect", "spell", "custom", "aoe"];
 
 const MECHANIC_LABELS: Record<Mechanic, string> = {
   attack: "Attack",
@@ -175,6 +194,7 @@ const MECHANIC_LABELS: Record<Mechanic, string> = {
   effect: "Effect",
   spell: "Spell",
   custom: "Custom",
+  aoe: "Area of Effect",
 };
 
 /**
@@ -191,6 +211,7 @@ function traitMechanics(t: CreatureTrait): Set<Mechanic> {
   if (effects.some((e) => e.kind === "tempHp" || e.kind === "acBonus")) mechanics.add("effect");
   if (t.spell !== undefined) mechanics.add("spell");
   if (effects.some((e) => e.kind === "other")) mechanics.add("custom");
+  if (t.aoe) mechanics.add("aoe");
   return mechanics;
 }
 
@@ -242,6 +263,12 @@ const MECHANIC_STYLE: Record<Mechanic, { border: string; label: string; accent: 
     accent: "accent-amber-600",
     badge: "border-amber-700 bg-amber-950/30 text-amber-300",
   },
+  aoe: {
+    border: "border-orange-700",
+    label: "text-orange-400",
+    accent: "accent-orange-600",
+    badge: "border-orange-700 bg-orange-950/30 text-orange-300",
+  },
 };
 
 /**
@@ -275,11 +302,12 @@ function TraitSummaryBadges({ trait }: { trait: CreatureTrait }) {
   const badges: Array<{ key: string; className: string; text: string }> = [];
   if (trait.attack) {
     const damageText = trait.attack.damage.map((d) => (d.damageType ? `${d.dice} ${d.damageType}` : d.dice)).join(" + ");
-    badges.push({
-      key: "attack",
-      className: MECHANIC_STYLE.attack.badge,
-      text: `${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus}${damageText ? ` · ${damageText}` : ""}`,
-    });
+    const bonusText =
+      trait.attack.attackBonus !== undefined
+        ? `${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus}`
+        : undefined;
+    const text = [bonusText, damageText].filter(Boolean).join(" · ");
+    if (text) badges.push({ key: "attack", className: MECHANIC_STYLE.attack.badge, text });
   }
   if (trait.save) {
     badges.push({ key: "save", className: MECHANIC_STYLE.save.badge, text: `DC ${trait.save.dc} ${trait.save.ability.toUpperCase()}` });
@@ -291,6 +319,9 @@ function TraitSummaryBadges({ trait }: { trait: CreatureTrait }) {
   });
   if (trait.spell) {
     badges.push({ key: "spell", className: MECHANIC_STYLE.spell.badge, text: trait.spell });
+  }
+  if (trait.aoe) {
+    badges.push({ key: "aoe", className: MECHANIC_STYLE.aoe.badge, text: formatAoe(trait.aoe) });
   }
   if (badges.length === 0) return null;
   return (
@@ -388,7 +419,9 @@ export function CreatureFormFields({
     () =>
       new Set(
         value.traits
-          .map((t, i) => (t.attack || t.save || t.spell !== undefined || (t.effects && t.effects.length > 0) ? i : -1))
+          .map((t, i) =>
+            t.attack || t.save || t.spell !== undefined || t.aoe || (t.effects && t.effects.length > 0) ? i : -1
+          )
           .filter((i) => i !== -1)
       )
   );
@@ -405,7 +438,7 @@ export function CreatureFormFields({
       return;
     }
     const current = value.traits[index].attack;
-    updateTrait(index, { attack: { attackType: "melee", attackBonus: 0, damage: [], ...current, ...patch } });
+    updateTrait(index, { attack: { attackType: "melee", damage: [], ...current, ...patch } });
   }
 
   function addTraitAttackDamage(index: number) {
@@ -470,6 +503,16 @@ export function CreatureFormFields({
     updateTrait(index, { effects: [...current, { kind: "tempHp", amount: "" }] });
   }
 
+  /** Same "null clears, otherwise merge with defaults" convention as `updateTraitAttack`/`updateTraitSave`. */
+  function updateTraitAoe(index: number, patch: Partial<CreatureTrait["aoe"]> | null) {
+    if (patch === null) {
+      updateTrait(index, { aoe: undefined });
+      return;
+    }
+    const current = value.traits[index].aoe;
+    updateTrait(index, { aoe: { shape: "sphere", size: 20, ...current, ...patch } });
+  }
+
   /**
    * Checking a Mechanic seeds its field(s) with sensible defaults (mirroring
    * `updateTraitAttack`/`updateTraitSave`'s own "create with defaults on
@@ -488,6 +531,10 @@ export function CreatureFormFields({
     }
     if (mechanic === "spell") {
       updateTrait(index, { spell: enabled ? "" : undefined });
+      return;
+    }
+    if (mechanic === "aoe") {
+      updateTraitAoe(index, enabled ? {} : null);
       return;
     }
     const current = value.traits[index].effects ?? [];
@@ -937,12 +984,17 @@ export function CreatureFormFields({
                               ))}
                             </select>
                           </Field>
-                          <Field label="Attack Bonus">
+                          <Field label="Attack Bonus" hint="Optional — blank hides it instead of showing +0.">
                             <input
                               className={groupInputCls}
                               type="number"
-                              value={t.attack?.attackBonus ?? 0}
-                              onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
+                              placeholder="e.g. 7"
+                              value={t.attack?.attackBonus ?? ""}
+                              onChange={(e) =>
+                                updateTraitAttack(index, {
+                                  attackBonus: e.target.value === "" ? undefined : Number(e.target.value),
+                                })
+                              }
                             />
                           </Field>
                           <Field label="Range (ft)">
@@ -1138,6 +1190,47 @@ export function CreatureFormFields({
                           </MechanicGroup>
                         );
                       })()}
+
+                    {mechanics.has("aoe") && (
+                      <MechanicGroup mechanic="aoe">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          <Field label="Shape">
+                            <select
+                              className={groupInputCls}
+                              value={t.aoe?.shape ?? "sphere"}
+                              onChange={(e) => updateTraitAoe(index, { shape: e.target.value as CreatureAoeShape })}
+                            >
+                              {CREATURE_AOE_SHAPES.map((shape) => (
+                                <option key={shape} value={shape}>
+                                  {AOE_SHAPE_LABELS[shape]}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                          <Field label={t.aoe?.shape === "cube" ? "Edge (ft)" : "Size (ft)"}>
+                            <input
+                              className={groupInputCls}
+                              type="number"
+                              value={t.aoe?.size ?? 20}
+                              onChange={(e) => updateTraitAoe(index, { size: Number(e.target.value) })}
+                            />
+                          </Field>
+                          {t.aoe?.shape === "line" && (
+                            <Field label="Width (ft)">
+                              <input
+                                className={groupInputCls}
+                                type="number"
+                                placeholder="e.g. 5"
+                                value={t.aoe?.width ?? ""}
+                                onChange={(e) =>
+                                  updateTraitAoe(index, { width: e.target.value === "" ? undefined : Number(e.target.value) })
+                                }
+                              />
+                            </Field>
+                          )}
+                        </div>
+                      </MechanicGroup>
+                    )}
                   </div>
                 )}
               </div>

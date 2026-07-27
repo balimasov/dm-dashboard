@@ -538,11 +538,38 @@ export interface CreatureAttack {
    * `attack` written before this field existed still displays correctly.
    */
   attackKind?: "weapon" | "spell";
-  /** To-hit modifier, proficiency (if any) already folded in — same convention as `Attack.attackBonus`. */
-  attackBonus: number;
+  /**
+   * To-hit modifier, proficiency (if any) already folded in — same
+   * convention as `Attack.attackBonus`. Optional: some spell attacks are
+   * recorded before the DM knows (or cares about) the exact to-hit number,
+   * and a `0` would misleadingly render as "+0" right alongside real
+   * bonuses — absent means "not shown", not "zero".
+   */
+  attackBonus?: number;
   /** Just the distance number(s), e.g. "5" or "80/320" — no "ft." suffix; that unit is added automatically wherever this is displayed, so it's never hand-typed. */
   range?: string;
   damage: CreatureDamageRoll[];
+}
+
+export type CreatureAoeShape = "cone" | "cube" | "cylinder" | "line" | "sphere";
+
+export const CREATURE_AOE_SHAPES: CreatureAoeShape[] = ["cone", "cube", "cylinder", "line", "sphere"];
+
+/**
+ * The area a trait/action affects — one of 5e's five official area-of-effect
+ * shapes (PHB "Areas of Effect"): cone, cube, cylinder, line, sphere. Kept on
+ * `CreatureTrait` itself rather than nested under `attack`, since the area is
+ * often independent of (or applies to only part of) a trait's attack roll —
+ * e.g. Ice Knife's blast radius affects everyone near the target regardless
+ * of whether the initial ranged spell attack hit, and Fireball/Web have no
+ * attack roll at all, just a save inside an area.
+ */
+export interface CreatureAoe {
+  shape: CreatureAoeShape;
+  /** Feet — the shape's defining size: radius for cylinder/sphere, length of the edge for cube, length for cone/line. */
+  size: number;
+  /** Feet — a line's width, since a line is the one shape needing two numbers (length + width) instead of one. Meaningless for the other four shapes. */
+  width?: number;
 }
 
 /** A trait/action's structured saving-throw DC — e.g. a breath weapon or Frightful Presence. */
@@ -593,6 +620,8 @@ export interface CreatureTrait {
   effects?: CreatureEffect[];
   /** Which spell(s) this trait/action casts, e.g. "Fireball" or "Charm Person, Suggestion" — for a spell-like ability that isn't part of the creature's main `spellcasting` block (a Legendary Action that just casts a known spell, an innate one-off). Plain text rather than a link into `spellcasting.spellGroups`, since this ability may not even require the creature to have spellcasting at all. */
   spell?: string;
+  /** The area this trait/action affects, if any — see `CreatureAoe`'s own doc comment for why this sits here rather than under `attack`. */
+  aoe?: CreatureAoe;
 }
 
 /**

@@ -202,7 +202,7 @@ const creatureDamageRollSchema = z.object({
 const creatureAttackSchema = z.object({
   attackType: z.enum(["melee", "ranged"]),
   attackKind: z.enum(["weapon", "spell"]).optional(),
-  attackBonus: z.number(),
+  attackBonus: z.number().optional(),
   range: z.string().optional(),
   damage: z.array(creatureDamageRollSchema),
 });
@@ -210,6 +210,12 @@ const creatureAttackSchema = z.object({
 const creatureSaveSchema = z.object({
   ability: z.enum(["str", "dex", "con", "int", "wis", "cha"]),
   dc: z.number(),
+});
+
+const creatureAoeSchema = z.object({
+  shape: z.enum(["cone", "cube", "cylinder", "line", "sphere"]),
+  size: z.number(),
+  width: z.number().optional(),
 });
 
 const creatureEffectSchema = z.object({
@@ -239,6 +245,7 @@ const creatureTraitSchema = z.object({
   save: creatureSaveSchema.optional(),
   effects: z.array(creatureEffectSchema).optional(),
   spell: z.string().optional(),
+  aoe: creatureAoeSchema.optional(),
 });
 
 const creatureCategorySchema = z.enum(["companion", "enemy", "npc"]);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AbilityScores, Creature, CreatureEffect, CreatureEffectKind, CreatureTrait } from "@/lib/types";
+import { AbilityScores, Creature, CreatureAoeShape, CreatureEffect, CreatureEffectKind, CreatureTrait } from "@/lib/types";
 import { abilityModifier } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
@@ -34,6 +34,20 @@ const EFFECT_KIND_COLOR: Record<CreatureEffectKind, string> = {
   other: "border-amber-700 bg-amber-950/30 text-amber-300",
 };
 
+const AOE_SHAPE_LABELS: Record<CreatureAoeShape, string> = {
+  cone: "Cone",
+  cube: "Cube",
+  cylinder: "Cylinder",
+  line: "Line",
+  sphere: "Sphere",
+};
+
+/** e.g. "20-ft. Sphere" or, for a line's two dimensions, "60 ft. × 5 ft. Line". */
+function formatAoe(aoe: NonNullable<CreatureTrait["aoe"]>): string {
+  if (aoe.shape === "line" && aoe.width) return `${aoe.size} ft. × ${aoe.width} ft. Line`;
+  return `${aoe.size}-ft. ${AOE_SHAPE_LABELS[aoe.shape]}`;
+}
+
 /** A single non-damage effect badge (heal/temp HP/AC bonus/other) — same visual weight as the recharge badge, colored per kind so a DM can tell them apart at a glance in a row that mixes several. */
 function EffectBadge({ effect }: { effect: CreatureEffect }) {
   const label = effect.kind === "other" ? effect.label || "Effect" : EFFECT_KIND_LABELS[effect.kind];
@@ -50,8 +64,12 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
     <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-xs">
       {trait.attack && trait.attack.damage.length > 0 && (
         <span className="flex items-center gap-1">
-          <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
-          <span className="text-sm font-bold leading-none text-slate-500">·</span>
+          {trait.attack.attackBonus !== undefined && (
+            <>
+              <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
+              <span className="text-sm font-bold leading-none text-slate-500">·</span>
+            </>
+          )}
           {trait.attack.damage.map((roll, i) => (
             <span key={i} className="flex items-baseline gap-1">
               {i > 0 && <span className="text-slate-500">+</span>}
@@ -77,6 +95,11 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
       {trait.spell && (
         <span className="rounded border border-fuchsia-700 bg-fuchsia-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-fuchsia-300">
           {trait.spell}
+        </span>
+      )}
+      {trait.aoe && (
+        <span className="rounded border border-orange-700 bg-orange-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300">
+          {formatAoe(trait.aoe)}
         </span>
       )}
     </span>
@@ -124,7 +147,7 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
     const kind = trait.attack.attackKind === "spell" ? "Spell" : "Weapon";
     metaLines.push(`${type} ${kind}${range ? ` · ${range}` : ""}`);
   }
-  const hasStatus = trait.attack || trait.save || trait.spell || (trait.effects ?? []).length > 0;
+  const hasStatus = trait.attack || trait.save || trait.spell || trait.aoe || (trait.effects ?? []).length > 0;
   return (
     <AbilityHintPanel
       name={trait.name}
@@ -134,9 +157,13 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
           <span className="block space-y-0.5">
             {trait.attack && trait.attack.damage.length > 0 && (
               <span className="block">
-                <span className="text-slate-500">To Hit</span>{" "}
-                <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
-                {" · "}
+                {trait.attack.attackBonus !== undefined && (
+                  <>
+                    <span className="text-slate-500">To Hit</span>{" "}
+                    <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
+                    {" · "}
+                  </>
+                )}
                 <span className="text-slate-500">Damage</span>{" "}
                 <span className="font-semibold text-slate-100">
                   {trait.attack.damage
@@ -162,6 +189,11 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
             {trait.spell && (
               <span className="block">
                 <span className="font-semibold text-slate-100">Casts:</span> {trait.spell}
+              </span>
+            )}
+            {trait.aoe && (
+              <span className="block">
+                <span className="font-semibold text-slate-100">Area:</span> {formatAoe(trait.aoe)}
               </span>
             )}
           </span>

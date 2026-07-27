@@ -1,5 +1,14 @@
 import { load as loadYaml } from "js-yaml";
-import { AbilityScores, CreatureCategory, CreatureEffect, CreatureSpellcasting, CreatureSpellGroup, CreatureTrait } from "./types";
+import {
+  AbilityScores,
+  CREATURE_AOE_SHAPES,
+  CreatureAoeShape,
+  CreatureCategory,
+  CreatureEffect,
+  CreatureSpellcasting,
+  CreatureSpellGroup,
+  CreatureTrait,
+} from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CREATURE_IMPORT_FIELDS, CREATURE_STAT_KEYS } from "./creatureImportSchema";
 
@@ -7,6 +16,7 @@ const TRAIT_GROUPS = new Set(["trait", "action", "bonusAction", "reaction", "leg
 const CREATURE_CATEGORIES = new Set(["companion", "enemy", "npc"]);
 const ATTACK_TYPES = new Set(["melee", "ranged"]);
 const ATTACK_KINDS = new Set(["weapon", "spell"]);
+const AOE_SHAPES = new Set<string>(CREATURE_AOE_SHAPES);
 const EFFECT_KINDS = new Set(["heal", "tempHp", "acBonus", "other"]);
 const STAT_KEY_SET = new Set<string>(CREATURE_STAT_KEYS);
 
@@ -123,10 +133,15 @@ function readTraitAttack(raw: unknown, index: number, errors: string[]): Creatur
     return undefined;
   }
   const attackKind = isBlank(raw.attackKind) ? undefined : (String(raw.attackKind) as "weapon" | "spell");
-  const attackBonus = Number(raw.attackBonus);
-  if (raw.attackBonus === undefined || !Number.isFinite(attackBonus)) {
-    errors.push(`traits[${index}].attack.attackBonus має бути числом.`);
-    return undefined;
+  // Optional — some spell attacks are recorded before the DM knows/cares about the exact
+  // to-hit number; absent means "not shown", same convention as `attackKind` above.
+  let attackBonus: number | undefined;
+  if (!isBlank(raw.attackBonus)) {
+    attackBonus = Number(raw.attackBonus);
+    if (!Number.isFinite(attackBonus)) {
+      errors.push(`traits[${index}].attack.attackBonus має бути числом.`);
+      return undefined;
+    }
   }
   const damage = readTraitDamage(raw.damage, index, errors);
   if (damage.length === 0) return undefined;
@@ -205,6 +220,31 @@ function readTraitSave(raw: unknown, index: number, errors: string[]): CreatureT
   return { ability: ability as keyof AbilityScores, dc };
 }
 
+/** `traits[index].aoe` — same "collect everything" style as `readTraitAttack`/`readTraitSave`. `width` is only meaningful for shape "line" but isn't rejected on the other four — a stray extra number does no harm. */
+function readTraitAoe(raw: unknown, index: number, errors: string[]): CreatureTrait["aoe"] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isPlainObject(raw)) {
+    errors.push(`traits[${index}].aoe має бути об'єктом з полями shape/size.`);
+    return undefined;
+  }
+  const shape = raw.shape;
+  if (!AOE_SHAPES.has(String(shape))) {
+    errors.push(`traits[${index}].aoe.shape має бути одним з: ${CREATURE_AOE_SHAPES.join(", ")} (отримано "${String(shape)}").`);
+    return undefined;
+  }
+  const size = Number(raw.size);
+  if (raw.size === undefined || !Number.isFinite(size)) {
+    errors.push(`traits[${index}].aoe.size має бути числом (футів).`);
+    return undefined;
+  }
+  const width = isBlank(raw.width) ? undefined : Number(raw.width);
+  if (width !== undefined && !Number.isFinite(width)) {
+    errors.push(`traits[${index}].aoe.width має бути числом (футів).`);
+    return undefined;
+  }
+  return { shape: shape as CreatureAoeShape, size, width };
+}
+
 function readTraits(raw: unknown, errors: string[]): CreatureTrait[] {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) {
@@ -236,6 +276,8 @@ function readTraits(raw: unknown, errors: string[]): CreatureTrait[] {
       attack: readTraitAttack(entry.attack, index, errors),
       save: readTraitSave(entry.save, index, errors),
       effects: readTraitEffects(entry.effects, index, errors),
+      spell: isBlank(entry.spell) ? undefined : readString(entry.spell),
+      aoe: readTraitAoe(entry.aoe, index, errors),
     });
   });
   return traits;

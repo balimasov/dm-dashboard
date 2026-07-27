@@ -197,16 +197,17 @@ function mapActionDamage(attack: Record<string, unknown>): CreatureDamageRoll[] 
  * vs ranged is inferred from `reach`/`range` presence (Open5e's own
  * `attack_type` on this object is a different axis, SPELL vs WEAPON, mapped
  * separately below into `attackKind`). Returns `undefined` for an action
- * with no `attacks` (most traits/legendary actions), one missing the to-hit
- * number, or one with no damage dice at all.
+ * with no `attacks` at all (most traits/legendary actions) or one with no
+ * damage dice; a missing to-hit number just leaves `attackBonus` unset
+ * rather than dropping the whole attack — `attackBonus` is optional.
  */
 function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined {
   const attacksRaw = Array.isArray(a.attacks) ? a.attacks : [];
   const attack = attacksRaw.find((x): x is Record<string, unknown> => typeof x === "object" && x !== null);
   if (!attack) return undefined;
 
-  const attackBonus = firstNumber(attack, ["to_hit_mod"], NaN);
-  if (!Number.isFinite(attackBonus)) return undefined;
+  const attackBonusRaw = firstNumber(attack, ["to_hit_mod"], NaN);
+  const attackBonus = Number.isFinite(attackBonusRaw) ? attackBonusRaw : undefined;
 
   const damage = mapActionDamage(attack);
   if (damage.length === 0) return undefined;

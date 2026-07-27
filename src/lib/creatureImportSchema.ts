@@ -292,7 +292,7 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     kind: "traits",
     required: false,
     doc:
-      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackKind — необов\'язково, weapon/spell, типово "weapon" якщо не вказано — чи це "Weapon Attack" чи "Spell Attack" (одна й та сама структура для обох — просто інший підпис у стат-блоці), attackBonus — число, range — лише число/числа без "ft." (напр. "5" чи "80/320"), damage — список {dice, damageType} для кожного джерела шкоди, якщо атака завдає кількох типів одразу), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число; можна поєднати з attack на тому самому запису, якщо влучання водночас вимагає рятівний кидок), effects (необов\'язково, список нешкодних ефектів — {kind: "heal"/"tempHp"/"acBonus"/"other", amount — рядок з кидком чи числом, label — необов\'язковий короткий підпис, обов\'язковий для "other"}). Залиш порожнім списком [], якщо рис немає.',
+      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackKind — необов\'язково, weapon/spell, типово "weapon" якщо не вказано — чи це "Weapon Attack" чи "Spell Attack" (одна й та сама структура для обох — просто інший підпис у стат-блоці), attackBonus — число, необов\'язково (пропусти, якщо ще не визначено — тоді ніде не показуватиметься "+0"), range — лише число/числа без "ft." (напр. "5" чи "80/320"), damage — список {dice, damageType} для кожного джерела шкоди, якщо атака завдає кількох типів одразу), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число; можна поєднати з attack на тому самому запису, якщо влучання водночас вимагає рятівний кидок), effects (необов\'язково, список нешкодних ефектів — {kind: "heal"/"tempHp"/"acBonus"/"other", amount — рядок з кидком чи числом, label — необов\'язковий короткий підпис, обов\'язковий для "other"}), spell (необов\'язково, рядок — які заклинання ця риса кастує, напр. "Suggestion" чи "Charm Person, Invisibility" — для здібності, що просто кастує відоме закляття, без власних числових атаки/шкоди), aoe (необов\'язково, площа дії: shape — одне з cone/cube/cylinder/line/sphere, size — число футів (радіус для cylinder/sphere, довжина ребра для cube, довжина для cone/line), width — лише для shape "line", число футів). Залиш порожнім списком [], якщо рис немає.',
     example: [
       { name: "Charge", group: "trait", description: "If the unicorn moves at least 20 feet straight toward a target..." },
       {
@@ -321,6 +321,16 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
         save: { ability: "con", dc: 15 },
       },
       {
+        name: "Cold Breath",
+        group: "action",
+        recharge: "Recharge 5-6",
+        description:
+          "Each creature in a 30-foot cone must make a DC 15 Constitution saving throw, taking 10d8 cold damage on a failed save, or half as much on a successful one.",
+        save: { ability: "con", dc: 15 },
+        effects: [{ kind: "other", amount: "10d8", label: "Cold, half on a successful save" }],
+        aoe: { shape: "cone", size: 30 },
+      },
+      {
         name: "Frightful Presence",
         group: "action",
         recharge: "Recharge 5-6",
@@ -333,6 +343,12 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
         recharge: "1/Day",
         effects: [{ kind: "heal", amount: "6d8 +4" }],
         description: "The unicorn touches another creature. That creature magically regains hit points.",
+      },
+      {
+        name: "Cast a Spell",
+        group: "legendary",
+        spell: "Suggestion",
+        description: "The lich casts a spell, requiring no material components.",
       },
     ],
     includeInTemplate: true,
