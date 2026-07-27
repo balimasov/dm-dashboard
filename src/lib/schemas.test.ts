@@ -107,6 +107,7 @@ describe("creatureUpdateSchema", () => {
         },
         save: { ability: "wis", dc: 15 },
         effects: [{ kind: "heal", amount: "2d6", label: "the rider only" }],
+        spell: "Fireball",
       },
     ],
     spellcasting: {

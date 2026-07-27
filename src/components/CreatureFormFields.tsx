@@ -119,48 +119,60 @@ const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
   other: "",
 };
 
-type OutcomeKind = "damage" | CreatureEffectKind;
+/**
+ * The six "what kind of thing does this action do" mechanics a DM picks
+ * from — deliberately a fixed checklist (multi-select: an action can be an
+ * Attack *and* grant an Effect, e.g. a bite that also knocks prone) rather
+ * than a free-form list, since real stat blocks describe an action's
+ * mechanics as a small closed set, not an arbitrary pile of line items.
+ * `heal`/`effect`/`custom` all key off `CreatureTrait.effects[].kind`
+ * (`"heal"`, `"tempHp"`/`"acBonus"`, `"other"` respectively) since they
+ * share that one array under the hood — only `attack`/`save`/`spell` get
+ * their own dedicated trait field.
+ */
+type Mechanic = "attack" | "save" | "heal" | "effect" | "spell" | "custom";
 
-interface OutcomeRow {
-  /** `"damage-<i>"` or `"effect-<i>"` — which underlying array (and index within it) this row reads from, so an edit/kind-change/remove routes back to the right one. */
-  key: string;
-  kind: OutcomeKind;
-  primary: string;
-  secondary?: string;
+const MECHANIC_ORDER: Mechanic[] = ["attack", "save", "heal", "effect", "spell", "custom"];
+
+const MECHANIC_LABELS: Record<Mechanic, string> = {
+  attack: "Attack",
+  save: "Saving Throw",
+  heal: "Healing",
+  effect: "Effect",
+  spell: "Spell",
+  custom: "Custom",
+};
+
+/**
+ * Which mechanics a trait currently has data for — derived straight from its
+ * fields rather than tracked as separate state, so the checkboxes can never
+ * drift out of sync with what the trait actually holds.
+ */
+function traitMechanics(t: CreatureTrait): Set<Mechanic> {
+  const effects = t.effects ?? [];
+  const mechanics = new Set<Mechanic>();
+  if (t.attack) mechanics.add("attack");
+  if (t.save) mechanics.add("save");
+  if (effects.some((e) => e.kind === "heal")) mechanics.add("heal");
+  if (effects.some((e) => e.kind === "tempHp" || e.kind === "acBonus")) mechanics.add("effect");
+  if (t.spell !== undefined) mechanics.add("spell");
+  if (effects.some((e) => e.kind === "other")) mechanics.add("custom");
+  return mechanics;
 }
 
 /**
- * One combined "Damage & Effects" list for the trait editor — a trait's
- * `attack.damage` rolls and its `effects` are two separate arrays under the
- * hood (an attack's damage vs. a standalone heal/temp HP/AC bonus/other
- * effect are genuinely different data shapes), but a DM picking what an
- * action *does* doesn't think in those terms — this flattens both into one
- * list with a per-row kind dropdown, closer to how a stat block actually
- * reads and without two separately-headed sub-lists to scan.
+ * Short summary of a trait's structured fields, shown next to its row when
+ * collapsed so a DM can tell at a glance which ones already have them
+ * without expanding every row. Recharge isn't repeated here — unlike the
+ * rest, it's now its own always-visible input right in the collapsed row,
+ * so summarizing it again below would just be the same value twice.
  */
-function outcomeRows(t: CreatureTrait): OutcomeRow[] {
-  const damageRows = (t.attack?.damage ?? []).map((d, i) => ({
-    key: `damage-${i}`,
-    kind: "damage" as const,
-    primary: d.dice,
-    secondary: d.damageType,
-  }));
-  const effectRows = (t.effects ?? []).map((e, i) => ({
-    key: `effect-${i}`,
-    kind: e.kind,
-    primary: e.amount,
-    secondary: e.label,
-  }));
-  return [...damageRows, ...effectRows];
-}
-
-/** Short summary of a trait's structured fields, shown next to its row when collapsed so a DM can tell at a glance which ones already have them without expanding every row. */
 function traitStructuredSummary(trait: CreatureTrait): string | undefined {
   const damageText = trait.attack?.damage.map((d) => (d.damageType ? `${d.dice} ${d.damageType}` : d.dice)).join(" + ");
   const parts = [
     trait.attack && `⚔️ ${trait.attack.attackBonus >= 0 ? "+" : ""}${trait.attack.attackBonus} · ${damageText}`,
     trait.save && `🛡 DC ${trait.save.dc} ${trait.save.ability.toUpperCase()}`,
-    trait.recharge && `🔄 ${trait.recharge}`,
+    trait.spell && `📖 ${trait.spell}`,
     ...(trait.effects ?? []).map((e) => `✨ ${e.kind === "other" ? e.label || "Effect" : EFFECT_KIND_LABELS[e.kind]} ${e.amount}`),
   ].filter((p): p is string => Boolean(p));
   return parts.length > 0 ? parts.join("  ·  ") : undefined;
@@ -250,7 +262,7 @@ export function CreatureFormFields({
     () =>
       new Set(
         value.traits
-          .map((t, i) => (t.attack || t.save || t.recharge || (t.effects && t.effects.length > 0) ? i : -1))
+          .map((t, i) => (t.attack || t.save || t.spell !== undefined || (t.effects && t.effects.length > 0) ? i : -1))
           .filter((i) => i !== -1)
       )
   );
@@ -300,11 +312,6 @@ export function CreatureFormFields({
     updateTrait(index, { save: { ability: "dex", dc: 10, ...current, ...patch } });
   }
 
-  function addTraitEffect(index: number) {
-    const current = value.traits[index].effects ?? [];
-    updateTrait(index, { effects: [...current, { kind: "heal", amount: "" }] });
-  }
-
   function updateTraitEffect(index: number, effectIndex: number, patch: Partial<CreatureEffect>) {
     const current = value.traits[index].effects ?? [];
     updateTrait(index, { effects: current.map((e, i) => (i === effectIndex ? { ...e, ...patch } : e)) });
@@ -315,57 +322,62 @@ export function CreatureFormFields({
     updateTrait(index, { effects: current.filter((_, i) => i !== effectIndex) });
   }
 
-  /** New row defaults to whichever kind fits the trait as it stands — a "Damage" row if it already has an attack to attach to, otherwise a blank effect (the "Damage" option itself stays disabled in that row's own dropdown until an Attack Type is set above). */
-  function addOutcomeRow(index: number) {
-    if (value.traits[index].attack) addTraitAttackDamage(index);
-    else addTraitEffect(index);
+  /** The Healing mechanic is a single dedicated effect entry — its own index within `effects`, found by kind rather than tracked separately. */
+  function healEffectIndex(t: CreatureTrait): number {
+    return (t.effects ?? []).findIndex((e) => e.kind === "heal");
   }
 
-  function updateOutcomePrimary(index: number, row: OutcomeRow, text: string) {
-    const rowIndex = Number(row.key.split("-")[1]);
-    if (row.kind === "damage") updateTraitAttackDamage(index, rowIndex, { dice: text });
-    else updateTraitEffect(index, rowIndex, { amount: text });
+  /** Same idea as `healEffectIndex`, for the Custom mechanic's single entry (`kind: "other"`). */
+  function customEffectIndex(t: CreatureTrait): number {
+    return (t.effects ?? []).findIndex((e) => e.kind === "other");
   }
 
-  function updateOutcomeSecondary(index: number, row: OutcomeRow, text: string) {
-    const rowIndex = Number(row.key.split("-")[1]);
-    if (row.kind === "damage") updateTraitAttackDamage(index, rowIndex, { damageType: text || undefined });
-    else updateTraitEffect(index, rowIndex, { label: text || undefined });
+  /** The Effect mechanic's own repeatable list (temp HP / AC bonus) — paired with each entry's real index in the full `effects` array, since `updateTraitEffect`/`removeTraitEffect` address by position there, not within this filtered view. */
+  function genericEffectEntries(t: CreatureTrait): Array<{ index: number; effect: CreatureEffect }> {
+    return (t.effects ?? [])
+      .map((effect, index) => ({ index, effect }))
+      .filter(({ effect }) => effect.kind === "tempHp" || effect.kind === "acBonus");
   }
 
-  function removeOutcomeRow(index: number, row: OutcomeRow) {
-    const rowIndex = Number(row.key.split("-")[1]);
-    if (row.kind === "damage") removeTraitAttackDamage(index, rowIndex);
-    else removeTraitEffect(index, rowIndex);
+  function addGenericEffect(index: number) {
+    const current = value.traits[index].effects ?? [];
+    updateTrait(index, { effects: [...current, { kind: "tempHp", amount: "" }] });
   }
 
   /**
-   * Moving a row between "Damage" and an effect kind means moving its value
-   * between the trait's two separate arrays in one `updateTrait` call — two
-   * sequential calls to the existing per-array helpers would each compute
-   * from the same not-yet-re-rendered `value.traits[index]` and clobber each
-   * other, since neither has seen the other's change yet. Preserves the
-   * row's first value (`dice`/`amount` are the same "how much" slot); the
-   * second field (`damageType`/`label`) means something different in each
-   * kind, so it resets rather than carrying over nonsense.
+   * Checking a Mechanic seeds its field(s) with sensible defaults (mirroring
+   * `updateTraitAttack`/`updateTraitSave`'s own "create with defaults on
+   * first touch" convention); unchecking clears them. Healing/Effect/Custom
+   * all share the trait's one `effects` array, partitioned by `kind` — so
+   * "on" appends an entry of that kind and "off" strips every entry of it.
    */
-  function convertOutcomeKind(index: number, row: OutcomeRow, newKind: OutcomeKind) {
-    if (row.kind === newKind) return;
-    const t = value.traits[index];
-    if (newKind === "damage" && !t.attack) return; // the "Damage" option is disabled in the UI unless an attack exists
-    const rowIndex = Number(row.key.split("-")[1]);
-    const preserved = row.primary;
-    const damage = row.kind === "damage" ? (t.attack?.damage ?? []).filter((_, i) => i !== rowIndex) : t.attack?.damage ?? [];
-    const effects = row.kind === "damage" ? (t.effects ?? []) : (t.effects ?? []).filter((_, i) => i !== rowIndex);
-    if (newKind === "damage") {
+  function toggleMechanic(index: number, mechanic: Mechanic, enabled: boolean) {
+    if (mechanic === "attack") {
+      updateTraitAttack(index, enabled ? {} : null);
+      return;
+    }
+    if (mechanic === "save") {
+      updateTraitSave(index, enabled ? {} : null);
+      return;
+    }
+    if (mechanic === "spell") {
+      updateTrait(index, { spell: enabled ? "" : undefined });
+      return;
+    }
+    const current = value.traits[index].effects ?? [];
+    if (mechanic === "heal") {
       updateTrait(index, {
-        attack: t.attack ? { ...t.attack, damage: [...damage, { dice: preserved, damageType: undefined }] } : t.attack,
-        effects,
+        effects: enabled ? [...current, { kind: "heal", amount: "" }] : current.filter((e) => e.kind !== "heal"),
+      });
+    } else if (mechanic === "custom") {
+      updateTrait(index, {
+        effects: enabled ? [...current, { kind: "other", amount: "", label: "" }] : current.filter((e) => e.kind !== "other"),
       });
     } else {
       updateTrait(index, {
-        attack: t.attack ? { ...t.attack, damage } : t.attack,
-        effects: [...effects, { kind: newKind, amount: preserved, label: undefined }],
+        effects: enabled
+          ? [...current, { kind: "tempHp", amount: "" }]
+          : current.filter((e) => e.kind !== "tempHp" && e.kind !== "acBonus"),
       });
     }
   }
@@ -701,8 +713,12 @@ export function CreatureFormFields({
           {value.traits.map((t, index) => {
             const expanded = expandedTraits.has(index);
             const summary = traitStructuredSummary(t);
+            const mechanics = traitMechanics(t);
             return (
               <div key={index} className="rounded-md border border-slate-800 p-2">
+                {/* Top level — always visible, even collapsed: what this is (type/name/description) plus
+                    when it comes back (recharge), since a DM glancing at the list needs recharge state
+                    without expanding every row. */}
                 <div className="flex flex-wrap items-start gap-2">
                   <select
                     className={`${inputCls} shrink-0`}
@@ -727,12 +743,18 @@ export function CreatureFormFields({
                     value={t.description ?? ""}
                     onChange={(v) => updateTrait(index, { description: v })}
                   />
+                  <input
+                    className={`${inputCls} w-32 shrink-0`}
+                    placeholder='Recharge, e.g. "5-6"'
+                    value={t.recharge ?? ""}
+                    onChange={(e) => updateTrait(index, { recharge: e.target.value || undefined })}
+                  />
                   <button
                     type="button"
                     onClick={() => toggleTraitExpanded(index)}
                     className="mt-1.5 shrink-0 text-xs text-sky-400 hover:underline"
                   >
-                    {expanded ? "▾" : "▸"} Attack/Save/Effects
+                    {expanded ? "▾" : "▸"} Mechanics
                   </button>
                   <button
                     type="button"
@@ -745,132 +767,229 @@ export function CreatureFormFields({
                 {!expanded && summary && <p className="mt-1 pl-1 text-[11px] text-slate-500">{summary}</p>}
                 {expanded && (
                   <div className="mt-2 space-y-3 border-t border-slate-800 pt-2">
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                      <Field label="Recharge">
-                        <input
-                          className={inputCls}
-                          placeholder='e.g. "3/Day" or "Recharge 5-6"'
-                          value={t.recharge ?? ""}
-                          onChange={(e) => updateTrait(index, { recharge: e.target.value || undefined })}
-                        />
-                      </Field>
-                      <Field label="Attack Type">
-                        <select
-                          className={inputCls}
-                          value={t.attack?.attackType ?? ""}
-                          onChange={(e) =>
-                            updateTraitAttack(index, e.target.value ? { attackType: e.target.value as "melee" | "ranged" } : null)
-                          }
-                        >
-                          <option value="">— None —</option>
-                          <option value="melee">Melee</option>
-                          <option value="ranged">Ranged</option>
-                        </select>
-                      </Field>
-                      <Field label="Attack Bonus">
-                        <input
-                          className={inputCls}
-                          type="number"
-                          disabled={!t.attack}
-                          value={t.attack?.attackBonus ?? ""}
-                          onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
-                        />
-                      </Field>
-                      <Field label="Range (ft)">
-                        <input
-                          className={inputCls}
-                          placeholder="5 or 100/400"
-                          disabled={!t.attack}
-                          value={t.attack?.range ?? ""}
-                          onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
-                        />
-                      </Field>
-                      <Field label="Save Ability">
-                        <select
-                          className={inputCls}
-                          value={t.save?.ability ?? ""}
-                          onChange={(e) =>
-                            updateTraitSave(index, e.target.value ? { ability: e.target.value as keyof AbilityScores } : null)
-                          }
-                        >
-                          <option value="">— None —</option>
-                          {STAT_ORDER.map((key) => (
-                            <option key={key} value={key}>
-                              {key.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Save DC">
-                        <input
-                          className={inputCls}
-                          type="number"
-                          disabled={!t.save}
-                          value={t.save?.dc ?? ""}
-                          onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
-                        />
-                      </Field>
+                    {/* Second level — which mechanics this action has (multi-select: an action can be an
+                        Attack *and* grant an Effect), then only the field group each checked mechanic
+                        actually needs, instead of always showing every field whether relevant or not. */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                      {MECHANIC_ORDER.map((m) => (
+                        <label key={m} className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 accent-sky-600"
+                            checked={mechanics.has(m)}
+                            onChange={(e) => toggleMechanic(index, m, e.target.checked)}
+                          />
+                          {MECHANIC_LABELS[m]}
+                        </label>
+                      ))}
                     </div>
 
-                    {/* Damage & Effects — one combined list instead of two separately-headed ones: a row's
-                        kind dropdown picks whether it's a damage roll or a heal/temp HP/AC bonus/other effect,
-                        so a DM composing a multi-part action (e.g. damage + a knockback effect) adds both as
-                        plain rows in the same place rather than hunting between two lists. */}
-                    <div>
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="text-xs text-slate-400">Damage &amp; Effects</span>
-                        <button type="button" onClick={() => addOutcomeRow(index)} className={addBtnCls}>
-                          + Add
-                        </button>
-                      </div>
-                      <div className="space-y-1.5">
-                        {outcomeRows(t).map((row) => (
-                          <div key={row.key} className="flex items-center gap-2">
+                    {mechanics.has("attack") && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <Field label="Attack Type">
                             <select
-                              className={`${inputCls} w-32 shrink-0`}
-                              value={row.kind}
-                              onChange={(e) => convertOutcomeKind(index, row, e.target.value as OutcomeKind)}
+                              className={inputCls}
+                              value={t.attack?.attackType ?? "melee"}
+                              onChange={(e) => updateTraitAttack(index, { attackType: e.target.value as "melee" | "ranged" })}
                             >
-                              <option value="damage" disabled={!t.attack}>
-                                Damage
-                              </option>
-                              <option value="heal">Heal</option>
-                              <option value="tempHp">Temp HP</option>
-                              <option value="acBonus">AC Bonus (Shield)</option>
-                              <option value="other">Other</option>
+                              <option value="melee">Melee</option>
+                              <option value="ranged">Ranged</option>
                             </select>
+                          </Field>
+                          <Field label="Attack Bonus">
                             <input
-                              className={`${inputCls} ${row.kind === "damage" ? "min-w-[90px] flex-1" : "w-24 shrink-0"}`}
-                              placeholder={row.kind === "damage" ? 'Dice, e.g. "2d6 +4"' : 'e.g. "2d8 +4"'}
-                              value={row.primary}
-                              onChange={(e) => updateOutcomePrimary(index, row, e.target.value)}
+                              className={inputCls}
+                              type="number"
+                              value={t.attack?.attackBonus ?? 0}
+                              onChange={(e) => updateTraitAttack(index, { attackBonus: Number(e.target.value) })}
                             />
+                          </Field>
+                          <Field label="Range (ft)">
                             <input
-                              className={`${inputCls} min-w-[110px] flex-1`}
-                              placeholder={
-                                row.kind === "damage"
-                                  ? "Damage type"
-                                  : row.kind === "other"
-                                    ? 'Name, e.g. "Push"'
-                                    : "Note (optional)"
-                              }
-                              value={row.secondary ?? ""}
-                              onChange={(e) => updateOutcomeSecondary(index, row, e.target.value)}
+                              className={inputCls}
+                              placeholder="5 or 100/400"
+                              value={t.attack?.range ?? ""}
+                              onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
                             />
-                            <button
-                              type="button"
-                              onClick={() => removeOutcomeRow(index, row)}
-                              className="text-sm text-red-500/80 hover:text-red-400"
-                            >
-                              ✕
+                          </Field>
+                        </div>
+                        {/* Damage — a list rather than one dice+type pair, since a single attack can deal
+                            several at once (e.g. "1d6 +3 bludgeoning plus 2d8 cold"). */}
+                        <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-xs text-slate-400">Damage</span>
+                            <button type="button" onClick={() => addTraitAttackDamage(index)} className={addBtnCls}>
+                              + Damage Roll
                             </button>
                           </div>
-                        ))}
-                        {outcomeRows(t).length === 0 && (
-                          <p className="text-[11px] text-slate-600">No damage or effects yet.</p>
-                        )}
+                          <div className="space-y-1.5">
+                            {(t.attack?.damage ?? []).map((roll, damageIndex) => (
+                              <div key={damageIndex} className="flex items-center gap-2">
+                                <input
+                                  className={`${inputCls} min-w-[100px] flex-1`}
+                                  placeholder='Dice, e.g. "2d6 +4"'
+                                  value={roll.dice}
+                                  onChange={(e) => updateTraitAttackDamage(index, damageIndex, { dice: e.target.value })}
+                                />
+                                <input
+                                  className={`${inputCls} min-w-[100px] flex-1`}
+                                  placeholder="Damage type"
+                                  value={roll.damageType ?? ""}
+                                  onChange={(e) =>
+                                    updateTraitAttackDamage(index, damageIndex, { damageType: e.target.value || undefined })
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeTraitAttackDamage(index, damageIndex)}
+                                  className="text-sm text-red-500/80 hover:text-red-400"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                            {(t.attack?.damage ?? []).length === 0 && (
+                              <p className="text-[11px] text-slate-600">No damage rolls yet.</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {mechanics.has("save") && (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <Field label="Save Ability">
+                          <select
+                            className={inputCls}
+                            value={t.save?.ability ?? "dex"}
+                            onChange={(e) => updateTraitSave(index, { ability: e.target.value as keyof AbilityScores })}
+                          >
+                            {STAT_ORDER.map((key) => (
+                              <option key={key} value={key}>
+                                {key.toUpperCase()}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field label="Save DC">
+                          <input
+                            className={inputCls}
+                            type="number"
+                            value={t.save?.dc ?? 0}
+                            onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
+                          />
+                        </Field>
+                      </div>
+                    )}
+
+                    {mechanics.has("heal") &&
+                      (() => {
+                        const hi = healEffectIndex(t);
+                        return (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            <Field label="Heal Amount">
+                              <input
+                                className={inputCls}
+                                placeholder='e.g. "2d8 +4"'
+                                value={t.effects?.[hi]?.amount ?? ""}
+                                onChange={(e) => updateTraitEffect(index, hi, { amount: e.target.value })}
+                              />
+                            </Field>
+                            <Field label="Note">
+                              <input
+                                className={inputCls}
+                                placeholder='Optional, e.g. "self only"'
+                                value={t.effects?.[hi]?.label ?? ""}
+                                onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
+                              />
+                            </Field>
+                          </div>
+                        );
+                      })()}
+
+                    {mechanics.has("effect") && (
+                      <div>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-xs text-slate-400">Effects</span>
+                          <button type="button" onClick={() => addGenericEffect(index)} className={addBtnCls}>
+                            + Add Effect
+                          </button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {genericEffectEntries(t).map(({ index: ei, effect }) => (
+                            <div key={ei} className="flex items-center gap-2">
+                              <select
+                                className={`${inputCls} shrink-0`}
+                                value={effect.kind}
+                                onChange={(e) => updateTraitEffect(index, ei, { kind: e.target.value as CreatureEffectKind })}
+                              >
+                                <option value="tempHp">Temp HP</option>
+                                <option value="acBonus">AC Bonus (Shield)</option>
+                              </select>
+                              <input
+                                className={`${inputCls} w-24 shrink-0`}
+                                placeholder='e.g. "10"'
+                                value={effect.amount}
+                                onChange={(e) => updateTraitEffect(index, ei, { amount: e.target.value })}
+                              />
+                              <input
+                                className={`${inputCls} min-w-[140px] flex-1`}
+                                placeholder="Note (optional)"
+                                value={effect.label ?? ""}
+                                onChange={(e) => updateTraitEffect(index, ei, { label: e.target.value || undefined })}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeTraitEffect(index, ei)}
+                                className="text-sm text-red-500/80 hover:text-red-400"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          {genericEffectEntries(t).length === 0 && (
+                            <p className="text-[11px] text-slate-600">No effects yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {mechanics.has("spell") && (
+                      <Field label="Spell(s)">
+                        <input
+                          className={`${inputCls} w-full`}
+                          placeholder='e.g. "Fireball, Suggestion"'
+                          value={t.spell ?? ""}
+                          onChange={(e) => updateTrait(index, { spell: e.target.value })}
+                        />
+                      </Field>
+                    )}
+
+                    {mechanics.has("custom") &&
+                      (() => {
+                        const ci = customEffectIndex(t);
+                        return (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            <Field label="Name">
+                              <input
+                                className={inputCls}
+                                placeholder='e.g. "Push"'
+                                value={t.effects?.[ci]?.label ?? ""}
+                                onChange={(e) => updateTraitEffect(index, ci, { label: e.target.value })}
+                              />
+                            </Field>
+                            <Field label="Value / Note">
+                              <input
+                                className={inputCls}
+                                placeholder='e.g. "10 ft."'
+                                value={t.effects?.[ci]?.amount ?? ""}
+                                onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
+                              />
+                            </Field>
+                          </div>
+                        );
+                      })()}
                   </div>
                 )}
               </div>

@@ -237,6 +237,7 @@ const creatureTraitSchema = z.object({
   attack: creatureAttackSchema.optional(),
   save: creatureSaveSchema.optional(),
   effects: z.array(creatureEffectSchema).optional(),
+  spell: z.string().optional(),
 });
 
 const creatureCategorySchema = z.enum(["companion", "enemy", "npc"]);

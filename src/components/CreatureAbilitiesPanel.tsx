@@ -74,6 +74,11 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
       {(trait.effects ?? []).map((effect, i) => (
         <EffectBadge key={i} effect={effect} />
       ))}
+      {trait.spell && (
+        <span className="rounded border border-fuchsia-700 bg-fuchsia-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-fuchsia-300">
+          {trait.spell}
+        </span>
+      )}
     </span>
   );
 }
@@ -116,7 +121,7 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
     const range = formatRange(trait.attack.range);
     metaLines.push(`${trait.attack.attackType === "melee" ? "Melee" : "Ranged"}${range ? ` · ${range}` : ""}`);
   }
-  const hasStatus = trait.attack || trait.save || (trait.effects ?? []).length > 0;
+  const hasStatus = trait.attack || trait.save || trait.spell || (trait.effects ?? []).length > 0;
   return (
     <AbilityHintPanel
       name={trait.name}
@@ -151,6 +156,11 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
                 {effect.kind !== "other" && effect.label && ` — ${effect.label}`}
               </span>
             ))}
+            {trait.spell && (
+              <span className="block">
+                <span className="font-semibold text-slate-100">Casts:</span> {trait.spell}
+              </span>
+            )}
           </span>
         )
       }

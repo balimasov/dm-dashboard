@@ -582,6 +582,8 @@ export interface CreatureTrait {
   attack?: CreatureAttack;
   save?: CreatureSave;
   effects?: CreatureEffect[];
+  /** Which spell(s) this trait/action casts, e.g. "Fireball" or "Charm Person, Suggestion" — for a spell-like ability that isn't part of the creature's main `spellcasting` block (a Legendary Action that just casts a known spell, an innate one-off). Plain text rather than a link into `spellcasting.spellGroups`, since this ability may not even require the creature to have spellcasting at all. */
+  spell?: string;
 }
 
 /**
