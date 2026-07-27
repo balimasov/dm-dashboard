@@ -17,6 +17,7 @@ import { NotesEditor } from "@/components/NotesEditor";
 import { TraitMechanicsEditor } from "@/components/creatureForm/TraitMechanicsEditor";
 import { addBtnCls, AutoGrowTextarea, Field, inputCls } from "@/components/creatureForm/shared";
 import { IconButton } from "@/components/ui/IconButton";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 export interface CreatureFormValue {
@@ -216,31 +217,23 @@ export function CreatureFormFields({
         <h2 className={FORM_SECTION_HEADING_CLS}>Category &amp; Ownership</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Field label="Category" hint="Which dashboard section it lives in.">
-            <select
-              className={inputCls}
+            <SelectMenu
+              className="w-full"
               value={value.category}
-              onChange={(e) => onChange({ category: e.target.value as CreatureCategory })}
-            >
-              {CREATURE_CATEGORY_ORDER.map((c) => (
-                <option key={c} value={c}>
-                  {CREATURE_CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => onChange({ category: v })}
+              options={CREATURE_CATEGORY_ORDER.map((c) => ({ value: c, label: CREATURE_CATEGORY_LABELS[c] }))}
+            />
           </Field>
           <Field label="Owner" hint="Which character summons/commands it — optional.">
-            <select
-              className={inputCls}
+            <SelectMenu
+              className="w-full"
               value={value.ownerCharacterId}
-              onChange={(e) => onChange({ ownerCharacterId: e.target.value })}
-            >
-              <option value="">— None —</option>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => onChange({ ownerCharacterId: v })}
+              options={[
+                { value: "", label: "— None —" },
+                ...characters.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
           </Field>
           <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
             <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
@@ -395,18 +388,15 @@ export function CreatureFormFields({
         <h2 className={FORM_SECTION_HEADING_CLS}>Spellcasting</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="Ability" hint="Blank = no spellcasting.">
-            <select
-              className={inputCls}
+            <SelectMenu
+              className="w-full"
               value={value.spellcastingAbility}
-              onChange={(e) => onChange({ spellcastingAbility: e.target.value as CreatureFormValue["spellcastingAbility"] })}
-            >
-              <option value="">— None —</option>
-              {STAT_ORDER.map((key) => (
-                <option key={key} value={key}>
-                  {key.toUpperCase()}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => onChange({ spellcastingAbility: v })}
+              options={[
+                { value: "", label: "— None —" },
+                ...STAT_ORDER.map((key) => ({ value: key, label: key.toUpperCase() })),
+              ]}
+            />
           </Field>
           <Field label="Save DC">
             <input

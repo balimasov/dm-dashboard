@@ -8,8 +8,6 @@ import {
   Character,
   Currency,
   InventoryItem,
-  ItemCategory,
-  ItemRarity,
   RARITY_ORDER,
   RECOVERY_LABELS,
   RecoveryType,
@@ -27,8 +25,9 @@ import { NotesEditor } from "./NotesEditor";
 import { NumberInput } from "./NumberInput";
 import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
-import { Field, inputCls } from "./ui/Field";
+import { checkboxCls, Field, inputCls } from "./ui/Field";
 import { IconButton } from "./ui/IconButton";
+import { SelectMenu } from "./ui/SelectMenu";
 import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
@@ -308,6 +307,7 @@ export function EditCharacterModal({
                 <label className="mt-6 flex items-center gap-2 text-sm text-slate-300">
                   <input
                     type="checkbox"
+                    className={checkboxCls}
                     checked={draft.heroicInspiration}
                     onChange={(e) => set("heroicInspiration", e.target.checked)}
                   />
@@ -428,6 +428,7 @@ export function EditCharacterModal({
                   <label key={key} className="flex items-center gap-1.5 text-sm text-slate-300">
                     <input
                       type="checkbox"
+                      className={checkboxCls}
                       checked={draft.savingThrowProficiencies.includes(key)}
                       onChange={(e) => toggleSavingThrow(key, e.target.checked)}
                     />
@@ -448,28 +449,24 @@ export function EditCharacterModal({
                   return (
                     <div key={name} className="flex items-center justify-between gap-2 text-sm text-slate-300">
                       <span className="min-w-0 flex-1 truncate">{SKILL_LABELS[name]}</span>
-                      <select
-                        className={inputCls}
+                      <SelectMenu
                         value={state}
-                        onChange={(e) =>
-                          setSkillProficiency(name, e.target.value as "none" | "proficient" | "expertise")
-                        }
-                      >
-                        <option value="none">—</option>
-                        <option value="proficient">Proficient</option>
-                        <option value="expertise">Expertise</option>
-                      </select>
-                      <select
-                        className={inputCls}
+                        onChange={(v) => setSkillProficiency(name, v)}
+                        options={[
+                          { value: "none", label: "—" },
+                          { value: "proficient", label: "Proficient" },
+                          { value: "expertise", label: "Expertise" },
+                        ]}
+                      />
+                      <SelectMenu
                         value={advState}
-                        onChange={(e) =>
-                          setSkillAdvantage(name, e.target.value as "none" | "advantage" | "disadvantage")
-                        }
-                      >
-                        <option value="none">—</option>
-                        <option value="advantage">Adv</option>
-                        <option value="disadvantage">Disadv</option>
-                      </select>
+                        onChange={(v) => setSkillAdvantage(name, v)}
+                        options={[
+                          { value: "none", label: "—" },
+                          { value: "advantage", label: "Adv" },
+                          { value: "disadvantage", label: "Disadv" },
+                        ]}
+                      />
                     </div>
                   );
                 })}
@@ -577,17 +574,11 @@ export function EditCharacterModal({
                         value={r.max}
                         onChange={(n) => updateResource(r.id, { max: n })}
                       />
-                      <select
-                        className={inputCls}
+                      <SelectMenu
                         value={r.recovery}
-                        onChange={(e) => updateResource(r.id, { recovery: e.target.value as RecoveryType })}
-                      >
-                        {RECOVERY_OPTIONS.map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => updateResource(r.id, { recovery: v })}
+                        options={RECOVERY_OPTIONS.map(([value, label]) => ({ value, label }))}
+                      />
                       <IconButton tone="danger" onClick={() => removeResource(r.id)}>
                         ✕
                       </IconButton>
@@ -686,28 +677,16 @@ export function EditCharacterModal({
                         value={item.name}
                         onChange={(e) => updateItem(item.id, { name: e.target.value })}
                       />
-                      <select
-                        className={inputCls}
+                      <SelectMenu
                         value={item.category}
-                        onChange={(e) => updateItem(item.id, { category: e.target.value as ItemCategory })}
-                      >
-                        {CATEGORY_ORDER.map((category) => (
-                          <option key={category} value={category}>
-                            {CATEGORY_LABELS[category]}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className={inputCls}
+                        onChange={(v) => updateItem(item.id, { category: v })}
+                        options={CATEGORY_ORDER.map((category) => ({ value: category, label: CATEGORY_LABELS[category] }))}
+                      />
+                      <SelectMenu
                         value={item.rarity}
-                        onChange={(e) => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
-                      >
-                        {RARITY_ORDER.map((rarity) => (
-                          <option key={rarity} value={rarity}>
-                            {rarity}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => updateItem(item.id, { rarity: v })}
+                        options={RARITY_ORDER.map((rarity) => ({ value: rarity, label: rarity }))}
+                      />
                       <NumberInput
                         min={1}
                         className={`${inputCls} w-20`}

@@ -20,6 +20,19 @@ export const inputCls =
 export const groupInputCls =
   "rounded-md bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
 
+/**
+ * Checkbox shape, minus its accent color — `TraitMechanicsEditor`'s
+ * mechanic checkboxes each need their own semantic color
+ * (`MECHANIC_STYLE[m].accent`), while a plain yes/no checkbox
+ * (heroic inspiration, saving-throw proficiency) just wants the app's
+ * default sky accent (`checkboxCls` below). Before this, only
+ * `TraitMechanicsEditor`'s checkboxes were themed at all — the other two
+ * checkboxes in the app rendered with zero styling, i.e. the browser's own
+ * default checkbox appearance, clashing with the dark theme.
+ */
+export const CHECKBOX_BASE_CLS = "h-3.5 w-3.5 rounded border-slate-700 bg-slate-900";
+export const checkboxCls = `${CHECKBOX_BASE_CLS} accent-sky-600`;
+
 export function Field({
   label,
   hint,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { groupInputCls, inputCls } from "./Field";
 
 export interface SelectMenuOption<T extends string> {
   value: T;
@@ -14,16 +15,23 @@ export interface SelectMenuOption<T extends string> {
  * practice it still flashed light and used the browser's own blue accent
  * for the highlighted option, clashing with this app's theme). Same
  * open/close-on-outside-click shape as `SyncAllButton`'s auto-sync menu.
+ *
+ * `variant="group"` swaps the trigger onto `groupInputCls` (no border) —
+ * for a select living inside a `MechanicGroup`-style tinted container that
+ * already separates it from its neighbors, same convention `inputCls`/
+ * `groupInputCls` themselves follow.
  */
 export function SelectMenu<T extends string>({
   value,
   options,
   onChange,
+  variant = "field",
   className,
 }: {
   value: T;
   options: SelectMenuOption<T>[];
   onChange: (value: T) => void;
+  variant?: "field" | "group";
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -45,7 +53,7 @@ export function SelectMenu<T extends string>({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-md border border-slate-800 bg-slate-900 px-2 py-1.5 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-600"
+        className={`flex items-center gap-1.5 font-semibold hover:bg-slate-800 ${variant === "group" ? groupInputCls : inputCls}`}
       >
         {current?.label}
         <span className="text-xs text-slate-500">▾</span>

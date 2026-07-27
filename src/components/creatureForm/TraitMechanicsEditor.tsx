@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  AbilityScores,
   CREATURE_AOE_SHAPES,
   CreatureAoeShape,
   CreatureDamageRoll,
@@ -14,6 +13,7 @@ import {
 import { inferStructuredTraitFields } from "@/lib/creatureStructuredInfer";
 import { addBtnCls, AutoGrowTextarea, Field, groupInputCls, inputCls } from "./shared";
 import { IconButton } from "@/components/ui/IconButton";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: string }> = [
@@ -491,17 +491,12 @@ export function TraitMechanicsEditor({
                   to a second line of its own; the description (which does need room to wrap) gets its
                   own row below instead of competing for space here. */}
               <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className={`${inputCls} shrink-0`}
+                <SelectMenu
+                  className="shrink-0"
                   value={t.group ?? "trait"}
-                  onChange={(e) => updateTrait(index, { group: e.target.value as CreatureTrait["group"] })}
-                >
-                  {TRAIT_GROUPS.map((g) => (
-                    <option key={g.value} value={g.value}>
-                      {g.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => updateTrait(index, { group: v })}
+                  options={TRAIT_GROUPS}
+                />
                 <input
                   className={`${inputCls} min-w-[120px] flex-1`}
                   placeholder="Name (e.g. Charge)"
@@ -566,17 +561,13 @@ export function TraitMechanicsEditor({
                     <MechanicGroup mechanic="attack">
                       <div className="grid grid-cols-3 gap-2">
                         <Field label="Attack Type">
-                          <select
-                            className={groupInputCls}
+                          <SelectMenu
+                            variant="group"
+                            className="w-full"
                             value={encodeAttackKindKey(t.attack?.attackType ?? "melee", t.attack?.attackKind)}
-                            onChange={(e) => updateTraitAttack(index, decodeAttackKindKey(e.target.value as AttackKindKey))}
-                          >
-                            {ATTACK_KIND_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateTraitAttack(index, decodeAttackKindKey(v))}
+                            options={ATTACK_KIND_OPTIONS}
+                          />
                         </Field>
                         <Field label="Attack Bonus" hint="Optional — blank hides it instead of showing +0.">
                           <input
@@ -647,17 +638,13 @@ export function TraitMechanicsEditor({
                     <MechanicGroup mechanic="save">
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <Field label="Save Ability">
-                          <select
-                            className={groupInputCls}
+                          <SelectMenu
+                            variant="group"
+                            className="w-full"
                             value={t.save?.ability ?? "dex"}
-                            onChange={(e) => updateTraitSave(index, { ability: e.target.value as keyof AbilityScores })}
-                          >
-                            {STAT_ORDER.map((key) => (
-                              <option key={key} value={key}>
-                                {key.toUpperCase()}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateTraitSave(index, { ability: v })}
+                            options={STAT_ORDER.map((key) => ({ value: key, label: key.toUpperCase() }))}
+                          />
                         </Field>
                         <Field label="Save DC">
                           <input
@@ -725,14 +712,15 @@ export function TraitMechanicsEditor({
                       <div className="space-y-1.5">
                         {genericEffectEntries(t).map(({ index: ei, effect }) => (
                           <div key={ei} className="flex items-center gap-2">
-                            <select
-                              className={`${groupInputCls} shrink-0`}
-                              value={effect.kind}
-                              onChange={(e) => updateTraitEffect(index, ei, { kind: e.target.value as CreatureEffectKind })}
-                            >
-                              <option value="tempHp">Temp HP</option>
-                              <option value="acBonus">AC Bonus (Shield)</option>
-                            </select>
+                            <SelectMenu
+                              variant="group"
+                              value={effect.kind as "tempHp" | "acBonus"}
+                              onChange={(v) => updateTraitEffect(index, ei, { kind: v })}
+                              options={[
+                                { value: "tempHp", label: "Temp HP" },
+                                { value: "acBonus", label: "AC Bonus (Shield)" },
+                              ]}
+                            />
                             <input
                               className={`${groupInputCls} w-24 shrink-0`}
                               placeholder='e.g. "10"'
@@ -813,17 +801,13 @@ export function TraitMechanicsEditor({
                     <MechanicGroup mechanic="aoe">
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <Field label="Shape">
-                          <select
-                            className={groupInputCls}
+                          <SelectMenu
+                            variant="group"
+                            className="w-full"
                             value={t.aoe?.shape ?? "sphere"}
-                            onChange={(e) => updateTraitAoe(index, { shape: e.target.value as CreatureAoeShape })}
-                          >
-                            {CREATURE_AOE_SHAPES.map((shape) => (
-                              <option key={shape} value={shape}>
-                                {AOE_SHAPE_LABELS[shape]}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateTraitAoe(index, { shape: v })}
+                            options={CREATURE_AOE_SHAPES.map((shape) => ({ value: shape, label: AOE_SHAPE_LABELS[shape] }))}
+                          />
                         </Field>
                         <Field label={t.aoe?.shape === "cube" ? "Edge (ft)" : "Size (ft)"}>
                           <input
