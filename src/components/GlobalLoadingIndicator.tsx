@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { getPendingRequestsSnapshot, subscribeToPendingRequests } from "@/lib/apiClient";
+import { Spinner } from "@/components/ui/Spinner";
 
 function getServerSnapshot(): boolean {
   return false;
@@ -19,7 +20,7 @@ export function GlobalLoadingIndicator() {
       }`}
     >
       <div className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-800 bg-slate-950/90 shadow-xl">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+        <Spinner />
       </div>
     </div>
   );

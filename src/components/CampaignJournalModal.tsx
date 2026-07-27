@@ -11,6 +11,7 @@ import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
+import { Spinner } from "./ui/Spinner";
 import { ArchiveIcon, DownloadIcon, PencilIcon, TrashIcon } from "./ui/icons";
 
 type JournalTab = "dm" | "party";
@@ -373,7 +374,7 @@ export function CampaignJournalModal({
             "jumping" on open. */}
         {stillLoadingInitial ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+            <Spinner />
           </div>
         ) : (
           // Column on mobile (a single-row session picker up top, entries —
@@ -584,7 +585,7 @@ export function CampaignJournalModal({
               <div className="scrollbar-themed flex-1 overflow-x-hidden overflow-y-auto px-2 pt-1">
                 {contentLoading ? (
                   <div className="flex h-full items-center justify-center">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+                    <Spinner />
                   </div>
                 ) : entriesError ? (
                   <div className="text-sm text-red-400">
