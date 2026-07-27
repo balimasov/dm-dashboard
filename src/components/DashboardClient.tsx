@@ -122,8 +122,19 @@ function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => v
   );
 }
 
-/** Small "+" quick-add trigger for a section's own header — passed into `CollapsibleSection`'s `actions` slot (a sibling of the collapse-toggle button, not nested inside it, so it never conflicts with the section's own expand/collapse click). Opens `RosterManagerModal` straight on that section's own tab, instead of a DM navigating through the kebab menu each time. */
-function SectionAddButton({ onClick, label }: { onClick: () => void; label: string }) {
+/**
+ * Small "manage" trigger for a section's own header — passed into
+ * `CollapsibleSection`'s `actions` slot (a sibling of the collapse-toggle
+ * button, not nested inside it, so it never conflicts with the section's own
+ * expand/collapse click; `CollapsibleSection` renders it right next to the
+ * title itself rather than pushed to the row's far end, so it stays visually
+ * tied to the section it belongs to and out of the way of the fixed-position
+ * section-nav rail docked at the right edge of the viewport). Opens
+ * `RosterManagerModal` straight on that section's own tab — which handles
+ * add, edit, hide, remove, and reorder, not just adding — hence a gear
+ * rather than a plus, matching the "Settings" gear elsewhere in this file.
+ */
+function SectionManageButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
       type="button"
@@ -132,7 +143,7 @@ function SectionAddButton({ onClick, label }: { onClick: () => void; label: stri
       title={label}
       className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-sky-400"
     >
-      <PlusIcon className="h-4 w-4" />
+      <GearIcon className="h-4 w-4" />
     </button>
   );
 }
@@ -216,7 +227,7 @@ function CreatureCategorySection({
       title={<SectionTitle emoji={CREATURE_CATEGORY_EMOJI[category]} label={CREATURE_CATEGORY_LABELS[category]} count={filtered.length} />}
       storageKey={storageKey}
       initialOpen={initialOpen}
-      actions={onAdd && <SectionAddButton onClick={onAdd} label={`Add ${CREATURE_CATEGORY_LABELS[category]}`} />}
+      actions={onAdd && <SectionManageButton onClick={onAdd} label={`Manage ${CREATURE_CATEGORY_LABELS[category]}`} />}
     >
       <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
       {filtered.length === 0 ? (
@@ -562,7 +573,7 @@ export function DashboardClient({
           title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
           storageKey="dm-dashboard-characters-open"
           initialOpen={initialOpen.characters}
-          actions={isDm && <SectionAddButton onClick={() => openRoster("characters")} label="Add character" />}
+          actions={isDm && <SectionManageButton onClick={() => openRoster("characters")} label="Manage characters" />}
         >
           <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
 
