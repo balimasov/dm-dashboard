@@ -36,7 +36,19 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
   );
 }
 
-/** Shared row shell for anything the DM can flag with a reminder flame (a character's features/spells, a creature's traits/actions) — kept as one component so callers never drift out of sync in how a flagged row looks. */
+/**
+ * Shared row shell for anything the DM can flag with a reminder flame (a
+ * character's features/spells, a creature's traits/actions) — kept as one
+ * component so callers never drift out of sync in how a flagged row looks.
+ *
+ * `flex-wrap` (rather than the plain nowrap row this used to be) matters
+ * once `trailing` carries several badges — an imported stat block can pack
+ * more than one effect badge onto a single trait (e.g. two or three "other"
+ * effects), and `trailing`'s own `shrink-0` refuses to give up width for
+ * them. Without wrap, the name's `flex-1 min-w-0` had nowhere left to go but
+ * zero — it silently vanished, `truncate` and all, while the badges spilled
+ * out past the panel's edge instead of just moving to their own line.
+ */
 export function FlaggableRow({
   flagged,
   onToggleFlag,
@@ -50,11 +62,11 @@ export function FlaggableRow({
 }) {
   return (
     <div
-      className={`flex items-center gap-2 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
     >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
       <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>{children}</span>
-      {trailing}
+      {trailing && <span className="basis-full sm:basis-auto">{trailing}</span>}
     </div>
   );
 }

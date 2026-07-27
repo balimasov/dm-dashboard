@@ -481,26 +481,39 @@ export function CreatureFormFields({
     updateTrait(index, { effects: current.filter((_, i) => i !== effectIndex) });
   }
 
-  /** The Healing mechanic is a single dedicated effect entry — its own index within `effects`, found by kind rather than tracked separately. */
-  function healEffectIndex(t: CreatureTrait): number {
-    return (t.effects ?? []).findIndex((e) => e.kind === "heal");
-  }
-
-  /** Same idea as `healEffectIndex`, for the Custom mechanic's single entry (`kind: "other"`). */
-  function customEffectIndex(t: CreatureTrait): number {
-    return (t.effects ?? []).findIndex((e) => e.kind === "other");
-  }
-
-  /** The Effect mechanic's own repeatable list (temp HP / AC bonus) — paired with each entry's real index in the full `effects` array, since `updateTraitEffect`/`removeTraitEffect` address by position there, not within this filtered view. */
-  function genericEffectEntries(t: CreatureTrait): Array<{ index: number; effect: CreatureEffect }> {
+  /**
+   * Every Mechanic that shares `effects` (Healing/Effect/Custom) filters this
+   * same array down to the kinds it owns, paired with each entry's real
+   * index in the full array — `updateTraitEffect`/`removeTraitEffect`
+   * address by position there, not within a filtered view. A trait can carry
+   * more than one entry of the same kind (a stat block section imported as
+   * several distinct "other" effects, e.g. two separately-triggered
+   * vulnerabilities), and the read-only card view already renders every one
+   * of them as its own badge — this list must show all of them too, not just
+   * the first, or an import round-trip silently loses the rest the moment a
+   * DM opens edit mode and saves.
+   */
+  function effectEntriesOfKinds(t: CreatureTrait, kinds: CreatureEffectKind[]): Array<{ index: number; effect: CreatureEffect }> {
     return (t.effects ?? [])
       .map((effect, index) => ({ index, effect }))
-      .filter(({ effect }) => effect.kind === "tempHp" || effect.kind === "acBonus");
+      .filter(({ effect }) => kinds.includes(effect.kind));
   }
 
-  function addGenericEffect(index: number) {
+  function healEffectEntries(t: CreatureTrait) {
+    return effectEntriesOfKinds(t, ["heal"]);
+  }
+
+  function genericEffectEntries(t: CreatureTrait) {
+    return effectEntriesOfKinds(t, ["tempHp", "acBonus"]);
+  }
+
+  function customEffectEntries(t: CreatureTrait) {
+    return effectEntriesOfKinds(t, ["other"]);
+  }
+
+  function addEffect(index: number, effect: CreatureEffect) {
     const current = value.traits[index].effects ?? [];
-    updateTrait(index, { effects: [...current, { kind: "tempHp", amount: "" }] });
+    updateTrait(index, { effects: [...current, effect] });
   }
 
   /** Same "null clears, otherwise merge with defaults" convention as `updateTraitAttack`/`updateTraitSave`. */
@@ -1077,38 +1090,58 @@ export function CreatureFormFields({
                       </MechanicGroup>
                     )}
 
-                    {mechanics.has("heal") &&
-                      (() => {
-                        const hi = healEffectIndex(t);
-                        return (
-                          <MechanicGroup mechanic="heal">
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                              <Field label="Heal Amount">
-                                <input
-                                  className={groupInputCls}
-                                  placeholder='e.g. "2d8 +4"'
-                                  value={t.effects?.[hi]?.amount ?? ""}
-                                  onChange={(e) => updateTraitEffect(index, hi, { amount: e.target.value })}
-                                />
-                              </Field>
-                              <Field label="Note">
-                                <input
-                                  className={groupInputCls}
-                                  placeholder='Optional, e.g. "self only"'
-                                  value={t.effects?.[hi]?.label ?? ""}
-                                  onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
-                                />
-                              </Field>
+                    {mechanics.has("heal") && (
+                      <MechanicGroup mechanic="heal">
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-xs text-slate-400">Healing</span>
+                          <button
+                            type="button"
+                            onClick={() => addEffect(index, { kind: "heal", amount: "" })}
+                            className={addBtnCls}
+                          >
+                            + Add Heal
+                          </button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {healEffectEntries(t).map(({ index: hi, effect }) => (
+                            <div key={hi} className="flex items-center gap-2">
+                              <input
+                                className={`${groupInputCls} w-28 shrink-0`}
+                                placeholder='e.g. "2d8 +4"'
+                                value={effect.amount}
+                                onChange={(e) => updateTraitEffect(index, hi, { amount: e.target.value })}
+                              />
+                              <input
+                                className={`${groupInputCls} min-w-[140px] flex-1`}
+                                placeholder='Note (optional), e.g. "self only"'
+                                value={effect.label ?? ""}
+                                onChange={(e) => updateTraitEffect(index, hi, { label: e.target.value || undefined })}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeTraitEffect(index, hi)}
+                                className="text-sm text-red-500/80 hover:text-red-400"
+                              >
+                                ✕
+                              </button>
                             </div>
-                          </MechanicGroup>
-                        );
-                      })()}
+                          ))}
+                          {healEffectEntries(t).length === 0 && (
+                            <p className="text-[11px] text-slate-600">No heal effects yet.</p>
+                          )}
+                        </div>
+                      </MechanicGroup>
+                    )}
 
                     {mechanics.has("effect") && (
                       <MechanicGroup mechanic="effect">
                         <div className="mb-1 flex items-center justify-between">
                           <span className="text-xs text-slate-400">Temp HP / AC Bonus</span>
-                          <button type="button" onClick={() => addGenericEffect(index)} className={addBtnCls}>
+                          <button
+                            type="button"
+                            onClick={() => addEffect(index, { kind: "tempHp", amount: "" })}
+                            className={addBtnCls}
+                          >
                             + Add Effect
                           </button>
                         </div>
@@ -1164,32 +1197,48 @@ export function CreatureFormFields({
                       </MechanicGroup>
                     )}
 
-                    {mechanics.has("custom") &&
-                      (() => {
-                        const ci = customEffectIndex(t);
-                        return (
-                          <MechanicGroup mechanic="custom">
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                              <Field label="Name">
-                                <input
-                                  className={groupInputCls}
-                                  placeholder='e.g. "Push"'
-                                  value={t.effects?.[ci]?.label ?? ""}
-                                  onChange={(e) => updateTraitEffect(index, ci, { label: e.target.value })}
-                                />
-                              </Field>
-                              <Field label="Value / Note">
-                                <input
-                                  className={groupInputCls}
-                                  placeholder='e.g. "10 ft."'
-                                  value={t.effects?.[ci]?.amount ?? ""}
-                                  onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
-                                />
-                              </Field>
+                    {mechanics.has("custom") && (
+                      <MechanicGroup mechanic="custom">
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-xs text-slate-400">Custom Effects</span>
+                          <button
+                            type="button"
+                            onClick={() => addEffect(index, { kind: "other", amount: "", label: "" })}
+                            className={addBtnCls}
+                          >
+                            + Add Custom
+                          </button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {customEffectEntries(t).map(({ index: ci, effect }) => (
+                            <div key={ci} className="flex items-center gap-2">
+                              <input
+                                className={`${groupInputCls} min-w-[110px] flex-1`}
+                                placeholder='Name, e.g. "Push"'
+                                value={effect.label ?? ""}
+                                onChange={(e) => updateTraitEffect(index, ci, { label: e.target.value })}
+                              />
+                              <input
+                                className={`${groupInputCls} min-w-[110px] flex-1`}
+                                placeholder='Value/Note, e.g. "10 ft."'
+                                value={effect.amount}
+                                onChange={(e) => updateTraitEffect(index, ci, { amount: e.target.value })}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeTraitEffect(index, ci)}
+                                className="text-sm text-red-500/80 hover:text-red-400"
+                              >
+                                ✕
+                              </button>
                             </div>
-                          </MechanicGroup>
-                        );
-                      })()}
+                          ))}
+                          {customEffectEntries(t).length === 0 && (
+                            <p className="text-[11px] text-slate-600">No custom effects yet.</p>
+                          )}
+                        </div>
+                      </MechanicGroup>
+                    )}
 
                     {mechanics.has("aoe") && (
                       <MechanicGroup mechanic="aoe">

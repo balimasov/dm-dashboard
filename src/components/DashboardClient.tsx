@@ -133,6 +133,16 @@ function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => v
  * `RosterManagerModal` straight on that section's own tab — which handles
  * add, edit, hide, remove, and reorder, not just adding — hence a gear
  * rather than a plus, matching the "Settings" gear elsewhere in this file.
+ *
+ * Visibility is split by hover capability rather than screen width, since
+ * that's what actually determines whether "reveal on hover" is discoverable
+ * at all: on a mouse-driven desktop the icon stays fully hidden until the
+ * whole header row (`group/section`, set by `CollapsibleSection`) is
+ * hovered or the button itself gets keyboard focus, so the row reads as
+ * just chevron/emoji/title/count until a DM actually reaches for it; on a
+ * touch device — which has no hover to reveal it with — it instead stays
+ * always visible at a dim, out-of-the-way opacity, the same treatment this
+ * button used everywhere before this change.
  */
 function SectionManageButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
@@ -141,7 +151,7 @@ function SectionManageButton({ onClick, label }: { onClick: () => void; label: s
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-sky-400"
+      className="rounded p-1 text-slate-500 opacity-45 transition-opacity hover:bg-white/10 hover:text-sky-400 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover/section:opacity-100"
     >
       <GearIcon className="h-4 w-4" />
     </button>

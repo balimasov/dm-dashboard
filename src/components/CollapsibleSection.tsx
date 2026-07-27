@@ -40,7 +40,7 @@ export function CollapsibleSection({
 
   return (
     <section className="mb-8">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="group/section mb-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={toggle} className="group flex items-start gap-2 text-left">
           <span
             className={`mt-1 shrink-0 text-slate-500 transition-transform group-hover:text-slate-300 ${open ? "rotate-90" : ""}`}
