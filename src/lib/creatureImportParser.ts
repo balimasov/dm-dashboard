@@ -6,6 +6,7 @@ import { CREATURE_IMPORT_FIELDS, CREATURE_STAT_KEYS } from "./creatureImportSche
 const TRAIT_GROUPS = new Set(["trait", "action", "bonusAction", "reaction", "legendary"]);
 const CREATURE_CATEGORIES = new Set(["companion", "enemy", "npc"]);
 const ATTACK_TYPES = new Set(["melee", "ranged"]);
+const ATTACK_KINDS = new Set(["weapon", "spell"]);
 const EFFECT_KINDS = new Set(["heal", "tempHp", "acBonus", "other"]);
 const STAT_KEY_SET = new Set<string>(CREATURE_STAT_KEYS);
 
@@ -116,6 +117,12 @@ function readTraitAttack(raw: unknown, index: number, errors: string[]): Creatur
     errors.push(`traits[${index}].attack.attackType має бути "melee" або "ranged" (отримано "${String(attackType)}").`);
     return undefined;
   }
+  // Optional, defaults to "weapon" when absent — a YAML saved before this field existed still imports unchanged.
+  if (!isBlank(raw.attackKind) && !ATTACK_KINDS.has(String(raw.attackKind))) {
+    errors.push(`traits[${index}].attack.attackKind має бути "weapon" або "spell" (отримано "${String(raw.attackKind)}").`);
+    return undefined;
+  }
+  const attackKind = isBlank(raw.attackKind) ? undefined : (String(raw.attackKind) as "weapon" | "spell");
   const attackBonus = Number(raw.attackBonus);
   if (raw.attackBonus === undefined || !Number.isFinite(attackBonus)) {
     errors.push(`traits[${index}].attack.attackBonus має бути числом.`);
@@ -136,6 +143,7 @@ function readTraitAttack(raw: unknown, index: number, errors: string[]): Creatur
   const range = isBlank(raw.range) ? undefined : readString(raw.range).replace(/\s*ft\.?\s*$/i, "").trim() || undefined;
   return {
     attackType: attackType as "melee" | "ranged",
+    attackKind,
     attackBonus,
     damage,
     range,

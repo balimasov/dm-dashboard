@@ -201,6 +201,7 @@ const creatureDamageRollSchema = z.object({
 
 const creatureAttackSchema = z.object({
   attackType: z.enum(["melee", "ranged"]),
+  attackKind: z.enum(["weapon", "spell"]).optional(),
   attackBonus: z.number(),
   range: z.string().optional(),
   damage: z.array(creatureDamageRollSchema),

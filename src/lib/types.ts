@@ -529,6 +529,15 @@ export interface CreatureDamageRoll {
 /** A trait/action's structured to-hit + damage — e.g. a Bite or Claw attack. Melee/ranged is an explicit choice here rather than derived, since some attacks (thrown weapons) are one or the other depending on how they're used. */
 export interface CreatureAttack {
   attackType: "melee" | "ranged";
+  /**
+   * Whether the stat block calls this a "... Weapon Attack" or "... Spell
+   * Attack" (e.g. a lich's necrotic touch, a hag's baleful gaze) — same
+   * shape either way (bonus + damage), just a different label, so this is
+   * the only thing that distinguishes them rather than a parallel
+   * structure. Optional and defaults to "weapon" wherever read, so every
+   * `attack` written before this field existed still displays correctly.
+   */
+  attackKind?: "weapon" | "spell";
   /** To-hit modifier, proficiency (if any) already folded in — same convention as `Attack.attackBonus`. */
   attackBonus: number;
   /** Just the distance number(s), e.g. "5" or "80/320" — no "ft." suffix; that unit is added automatically wherever this is displayed, so it's never hand-typed. */

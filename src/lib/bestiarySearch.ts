@@ -194,10 +194,11 @@ function mapActionDamage(attack: Record<string, unknown>): CreatureDamageRoll[] 
 /**
  * Maps the first entry of an action's `attacks[]` (confirmed real field
  * shape from `api_v2/models/creature.py`'s `CreatureActionAttack`) — melee
- * vs ranged is inferred from `reach`/`range` presence, since Open5e's own
- * `attack_type` on this object distinguishes SPELL/WEAPON, not melee/ranged.
- * Returns `undefined` for an action with no `attacks` (most traits/legendary
- * actions), one missing the to-hit number, or one with no damage dice at all.
+ * vs ranged is inferred from `reach`/`range` presence (Open5e's own
+ * `attack_type` on this object is a different axis, SPELL vs WEAPON, mapped
+ * separately below into `attackKind`). Returns `undefined` for an action
+ * with no `attacks` (most traits/legendary actions), one missing the to-hit
+ * number, or one with no damage dice at all.
  */
 function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined {
   const attacksRaw = Array.isArray(a.attacks) ? a.attacks : [];
@@ -212,9 +213,11 @@ function mapActionAttack(a: Record<string, unknown>): CreatureAttack | undefined
 
   const reach = firstNumber(attack, ["reach"], NaN);
   const attackType: "melee" | "ranged" = Number.isFinite(reach) && reach > 0 ? "melee" : "ranged";
+  const attackKind: "weapon" | "spell" = firstString(attack, ["attack_type"])?.toUpperCase() === "SPELL" ? "spell" : "weapon";
 
   return {
     attackType,
+    attackKind,
     attackBonus,
     damage,
     range: formatAttackRange(attack, attackType),

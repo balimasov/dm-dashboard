@@ -292,7 +292,7 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     kind: "traits",
     required: false,
     doc:
-      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackBonus — число, range — лише число/числа без "ft." (напр. "5" чи "80/320"), damage — список {dice, damageType} для кожного джерела шкоди, якщо атака завдає кількох типів одразу), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число), effects (необов\'язково, список нешкодних ефектів — {kind: "heal"/"tempHp"/"acBonus"/"other", amount — рядок з кидком чи числом, label — необов\'язковий короткий підпис, обов\'язковий для "other"}). Залиш порожнім списком [], якщо рис немає.',
+      'Список рис/дій. Кожен запис: name (обов\'язково), group (одне з "trait" — риса, "action" — дія, "bonusAction" — бонусна дія, "reaction" — реакція, "legendary" — легендарна дія; типово "trait", якщо не вказано), description (необов\'язково), recharge (необов\'язково, вільний текст на кшталт "3/Day" або "Recharge 5-6"), attack (необов\'язково, структурована атака: attackType — melee/ranged, attackKind — необов\'язково, weapon/spell, типово "weapon" якщо не вказано — чи це "Weapon Attack" чи "Spell Attack" (одна й та сама структура для обох — просто інший підпис у стат-блоці), attackBonus — число, range — лише число/числа без "ft." (напр. "5" чи "80/320"), damage — список {dice, damageType} для кожного джерела шкоди, якщо атака завдає кількох типів одразу), save (необов\'язково, структурований рятівний кидок: ability — одна з str/dex/con/int/wis/cha, dc — число; можна поєднати з attack на тому самому запису, якщо влучання водночас вимагає рятівний кидок), effects (необов\'язково, список нешкодних ефектів — {kind: "heal"/"tempHp"/"acBonus"/"other", amount — рядок з кидком чи числом, label — необов\'язковий короткий підпис, обов\'язковий для "other"}). Залиш порожнім списком [], якщо рис немає.',
     example: [
       { name: "Charge", group: "trait", description: "If the unicorn moves at least 20 feet straight toward a target..." },
       {
@@ -305,6 +305,20 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
           range: "5",
           damage: [{ dice: "2d6 +4", damageType: "bludgeoning" }],
         },
+      },
+      {
+        name: "Frost Touch",
+        group: "action",
+        description:
+          "Melee Spell Attack: +7 to hit, reach 5 ft., one creature. Hit: 14 (3d6 +4) necrotic damage. The target must succeed on a DC 15 Constitution saving throw or its speed is reduced by 10 ft. until the end of its next turn.",
+        attack: {
+          attackType: "melee",
+          attackKind: "spell",
+          attackBonus: 7,
+          range: "5",
+          damage: [{ dice: "3d6 +4", damageType: "necrotic" }],
+        },
+        save: { ability: "con", dc: 15 },
       },
       {
         name: "Frightful Presence",

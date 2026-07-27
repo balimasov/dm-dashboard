@@ -10,6 +10,7 @@ describe("inferStructuredTraitFields", () => {
     });
     expect(result.attack).toEqual({
       attackType: "melee",
+      attackKind: "weapon",
       attackBonus: 7,
       range: "5",
       damage: [{ dice: "2d10 + 6", damageType: "piercing" }],
@@ -26,6 +27,17 @@ describe("inferStructuredTraitFields", () => {
     });
     expect(result.attack?.attackType).toBe("ranged");
     expect(result.attack?.range).toBe("150/600");
+  });
+
+  test("infers a melee spell attack, tagging attackKind as spell", () => {
+    const result = inferStructuredTraitFields({
+      name: "Frost Touch",
+      group: "action",
+      description:
+        "Melee Spell Attack: +7 to hit, reach 5 ft., one creature. Hit: 14 (3d6 + 4) necrotic damage.",
+    });
+    expect(result.attack?.attackType).toBe("melee");
+    expect(result.attack?.attackKind).toBe("spell");
   });
 
   test("infers a second damage roll from a 'plus' clause", () => {

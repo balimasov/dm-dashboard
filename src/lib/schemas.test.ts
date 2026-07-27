@@ -98,6 +98,7 @@ describe("creatureUpdateSchema", () => {
         recharge: "Recharge 5-6",
         attack: {
           attackType: "melee",
+          attackKind: "spell",
           attackBonus: 7,
           range: "5",
           damage: [

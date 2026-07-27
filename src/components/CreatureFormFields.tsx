@@ -115,6 +115,37 @@ const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: s
   { value: "legendary", label: "Legendary Action" },
 ];
 
+/**
+ * `attackType` ("melee"/"ranged") and `attackKind` ("weapon"/"spell") are two
+ * independent axes on `CreatureAttack`, but a stat block always names them
+ * together ("Melee Weapon Attack", "Ranged Spell Attack") and there's no
+ * value in editing them as two separate dropdowns — so the form combines
+ * them into one 4-option select, encoding/decoding both fields from the one
+ * choice. `decodeAttackKindKey`'s fallback to "meleeWeapon" mirrors
+ * `attackKind`'s own "defaults to weapon" convention for attacks written
+ * before this field existed.
+ */
+type AttackKindKey = "meleeWeapon" | "rangedWeapon" | "meleeSpell" | "rangedSpell";
+
+const ATTACK_KIND_OPTIONS: Array<{ value: AttackKindKey; label: string }> = [
+  { value: "meleeWeapon", label: "Melee Weapon Attack" },
+  { value: "rangedWeapon", label: "Ranged Weapon Attack" },
+  { value: "meleeSpell", label: "Melee Spell Attack" },
+  { value: "rangedSpell", label: "Ranged Spell Attack" },
+];
+
+function encodeAttackKindKey(attackType: "melee" | "ranged", attackKind: "weapon" | "spell" | undefined): AttackKindKey {
+  const kind = attackKind ?? "weapon";
+  return `${attackType}${kind === "spell" ? "Spell" : "Weapon"}` as AttackKindKey;
+}
+
+function decodeAttackKindKey(key: AttackKindKey): { attackType: "melee" | "ranged"; attackKind: "weapon" | "spell" } {
+  return {
+    attackType: key.startsWith("melee") ? "melee" : "ranged",
+    attackKind: key.endsWith("Spell") ? "spell" : "weapon",
+  };
+}
+
 const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
   heal: "Heal",
   tempHp: "Temp HP",
@@ -896,11 +927,14 @@ export function CreatureFormFields({
                           <Field label="Attack Type">
                             <select
                               className={groupInputCls}
-                              value={t.attack?.attackType ?? "melee"}
-                              onChange={(e) => updateTraitAttack(index, { attackType: e.target.value as "melee" | "ranged" })}
+                              value={encodeAttackKindKey(t.attack?.attackType ?? "melee", t.attack?.attackKind)}
+                              onChange={(e) => updateTraitAttack(index, decodeAttackKindKey(e.target.value as AttackKindKey))}
                             >
-                              <option value="melee">Melee</option>
-                              <option value="ranged">Ranged</option>
+                              {ATTACK_KIND_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
                             </select>
                           </Field>
                           <Field label="Attack Bonus">

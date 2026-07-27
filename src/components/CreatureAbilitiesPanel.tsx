@@ -107,8 +107,9 @@ const ABILITY_FULL_NAMES: Record<keyof AbilityScores, string> = {
  * doesn't), so a trait's hint was missing its own type in the one place a
  * DM has no other cue for it. Two fields are editable (via
  * `EditCreatureModal`) but had nowhere to show at all before this —
- * `attack.attackType` (melee/ranged) and `attack.range` — both surface here
- * as a meta line, same "Melee · 5 ft." convention `AttackHintPanel` uses.
+ * `attack.attackType`/`attack.attackKind` (e.g. "Melee Weapon"/"Ranged
+ * Spell") and `attack.range` — both surface here as a meta line, same
+ * "Melee Weapon · 5 ft." convention `AttackHintPanel` uses.
  * `save.ability` also gets spelled out in full ("Wisdom saving throw")
  * here, since the row itself only has room for the three-letter
  * abbreviation. Any non-damage `effects` (heal/temp HP/AC bonus/other) get
@@ -119,7 +120,9 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
   const metaLines: Array<string | undefined> = [GROUP_LABELS[trait.group ?? "trait"]];
   if (trait.attack) {
     const range = formatRange(trait.attack.range);
-    metaLines.push(`${trait.attack.attackType === "melee" ? "Melee" : "Ranged"}${range ? ` · ${range}` : ""}`);
+    const type = trait.attack.attackType === "melee" ? "Melee" : "Ranged";
+    const kind = trait.attack.attackKind === "spell" ? "Spell" : "Weapon";
+    metaLines.push(`${type} ${kind}${range ? ` · ${range}` : ""}`);
   }
   const hasStatus = trait.attack || trait.save || trait.spell || (trait.effects ?? []).length > 0;
   return (
