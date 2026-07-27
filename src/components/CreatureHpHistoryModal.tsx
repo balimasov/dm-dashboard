@@ -62,11 +62,8 @@ export function CreatureHpHistoryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="min-w-0 truncate text-lg font-bold text-slate-50">HP History — {creature.name}</h2>
           <div className="flex shrink-0 items-center gap-1">

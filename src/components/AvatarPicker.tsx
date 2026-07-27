@@ -123,14 +123,8 @@ export function AvatarPicker({
       </div>
 
       {pendingImage && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setPendingImage(null)}
-        >
-          <div
-            className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+          <div className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
             <div className="relative h-64 w-full overflow-hidden rounded-md bg-slate-950">
               <Cropper
                 image={pendingImage}

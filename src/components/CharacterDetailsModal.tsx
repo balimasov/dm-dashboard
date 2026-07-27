@@ -240,7 +240,6 @@ export function CharacterDetailsModal({
       // scrollTop 0, at the cost of short modals sitting near the top
       // instead of dead center.
       className="scrollbar-themed fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
-      onClick={onClose}
     >
       <div
         className={`relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${
@@ -248,7 +247,6 @@ export function CharacterDetailsModal({
             ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
             : "border-slate-800 bg-slate-950"
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         <StatusRail
           conditions={c.combat.conditions}

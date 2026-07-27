@@ -256,11 +256,8 @@ export function EditCharacterModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div
-        className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <h2 className="text-lg font-bold text-slate-50">Edit Character</h2>
           <button

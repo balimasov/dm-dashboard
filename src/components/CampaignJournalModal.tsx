@@ -348,7 +348,7 @@ export function CampaignJournalModal({
     })) ?? [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div
         // Fixed height (not `max-h-*`) on purpose — with only a max-height,
         // the box hugged whatever little content "Loading sessions..."/
@@ -357,7 +357,6 @@ export function CampaignJournalModal({
         // paint means loading only ever changes what scrolls *inside* the
         // box, never the box itself.
         className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-5"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex shrink-0 items-center justify-between sm:mb-4">
           <h2 className="text-lg font-bold text-slate-50">Campaign Journal</h2>
