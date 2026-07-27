@@ -13,13 +13,30 @@ import { MODAL_TITLE_CLS } from "./typography";
  * Neither existing modal has `role="dialog"`/`aria-modal` anywhere in the
  * app; both are added here.
  *
- * Only the overlay/panel shell is standardized — `panelClassName` covers
- * the size/padding/shadow differences between call sites (a compact form
- * vs. a wide roster editor vs. a tall read-view card), and the actual
- * content stays fully custom via `children`. A caller with its own
- * non-generic panel styling (e.g. `CharacterDetailsModal`'s violet
- * concentration ring) isn't a fit for this and can keep hand-rolling its
- * wrapper — this primitive isn't wired into any existing modal yet.
+ * `panelClassName`'s default (`w-full max-w-lg gap-4 border-slate-800
+ * bg-slate-950 p-4`) is a real, fully-replaceable default rather than
+ * always-on classes with extras appended after — a caller passing its own
+ * `panelClassName` REPLACES all of size/spacing/border-color/background/
+ * padding, not just adds to them. This matters because two Tailwind
+ * utilities for the same CSS property (e.g. the shell's own `p-4` and a
+ * caller's `p-5`, or `border-slate-800` vs. a caller's `border-violet-500`)
+ * both being present in the class string is a real bug, not a style
+ * preference: which one wins depends on Tailwind's generated stylesheet
+ * order, not on the className string's runtime order, so silently
+ * "layering" a caller's classes on top used to be unreliable. `gap-4` is
+ * part of the default rather than fixed too — `EditCharacterModal`/
+ * `EditCreatureModal`'s header sits flush against a `border-b` divider
+ * with no gap at all (the line itself is the separator), so a genuinely
+ * fixed `gap-4` would add unwanted space there. Only `flex flex-col
+ * rounded-xl border` (shape + the border's *width*, not its color) stays
+ * truly fixed, since every modal in the app wants that.
+ *
+ * `title` covers the common case — a plain heading plus the standard close
+ * button. `header` is an escape hatch for a call site with its own header
+ * content the standard shape can't express (an extra action button next to
+ * close, a full custom component instead of a `<h2>`, a `border-b`
+ * divider) — the caller owns the whole row, including its own close
+ * button, when using it.
  */
 export type ModalVariant = "centered" | "scrollable";
 
@@ -33,13 +50,16 @@ export function Modal({
   variant = "centered",
   onClose,
   title,
-  panelClassName = "w-full max-w-lg",
+  header,
+  panelClassName = "w-full max-w-lg gap-4 border-slate-800 bg-slate-950 p-4",
   children,
 }: {
   variant?: ModalVariant;
   onClose: () => void;
   title?: ReactNode;
-  /** Extends/overrides the panel's size (`max-w-*`), spacing, and `my-*` for the `scrollable` variant — the shell's own `rounded-xl border border-slate-800 bg-slate-950` stays fixed. */
+  /** Full custom header row — replaces the `title` + auto close-button row entirely. The caller is responsible for its own close button when using this. */
+  header?: ReactNode;
+  /** Replaces the panel's size (`max-w-*`), spacing (`gap-*`), border color, background, and padding entirely — see the doc comment above for why this is a full replacement rather than additive classes. */
   panelClassName?: string;
   children: ReactNode;
 }) {
@@ -50,18 +70,19 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className={`flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-950 p-4 ${panelClassName}`}
+        className={`flex flex-col rounded-xl border ${panelClassName}`}
       >
-        {title && (
-          <div className="flex items-center justify-between gap-3">
-            <h2 id={titleId} className={MODAL_TITLE_CLS}>
-              {title}
-            </h2>
-            <IconButton onClick={onClose} aria-label="Close">
-              ✕
-            </IconButton>
-          </div>
-        )}
+        {header ??
+          (title && (
+            <div className="flex items-center justify-between gap-3">
+              <h2 id={titleId} className={MODAL_TITLE_CLS}>
+                {title}
+              </h2>
+              <IconButton onClick={onClose} aria-label="Close">
+                ✕
+              </IconButton>
+            </div>
+          ))}
         {children}
       </div>
     </div>

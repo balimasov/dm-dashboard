@@ -8,6 +8,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { Button } from "./ui/Button";
 import { IconButton } from "./ui/IconButton";
+import { Modal } from "./ui/Modal";
 import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
 /**
@@ -59,15 +60,18 @@ export function EditCreatureModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
+    <Modal
+      onClose={onClose}
+      header={
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <h2 className={MODAL_TITLE_CLS}>Edit Creature</h2>
           <IconButton onClick={onClose} aria-label="Close">
             ✕
           </IconButton>
         </div>
-
+      }
+      panelClassName="h-[85vh] w-full max-w-7xl border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+    >
         <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-hidden">
           <div className="scrollbar-themed flex-1 overflow-y-auto px-5 py-4">
             <CreatureFormFields value={draft} onChange={(u) => setDraft((d) => ({ ...d, ...u }))} characters={characters} />
@@ -83,7 +87,6 @@ export function EditCreatureModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -7,9 +7,8 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { CampaignRosterEditor } from "@/components/CampaignRosterEditor";
 import { CreatureRosterEditor } from "@/components/CreatureRosterEditor";
-import { IconButton } from "@/components/ui/IconButton";
+import { Modal } from "@/components/ui/Modal";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { MODAL_TITLE_CLS } from "@/components/ui/typography";
 import { CREATURE_CATEGORY_EMOJI, CREATURE_CATEGORY_LABELS, CREATURE_CATEGORY_ORDER, Character, CreatureCategory } from "@/lib/types";
 
 export type RosterTab = "characters" | CreatureCategory;
@@ -45,36 +44,27 @@ export function RosterManagerModal({
   useEscapeToClose(onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className={MODAL_TITLE_CLS}>Characters &amp; Creatures</h2>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
+    <Modal onClose={onClose} title="Characters & Creatures" panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5">
+      <SegmentedControl
+        value={tab}
+        onChange={setTab}
+        scrollable
+        options={[
+          { value: "characters", label: "🛡️ Characters" },
+          ...CREATURE_CATEGORY_ORDER.map((c) => ({
+            value: c,
+            label: `${CREATURE_CATEGORY_EMOJI[c]} ${CREATURE_CATEGORY_LABELS[c]}`,
+          })),
+        ]}
+      />
 
-        <SegmentedControl
-          value={tab}
-          onChange={setTab}
-          scrollable
-          options={[
-            { value: "characters", label: "🛡️ Characters" },
-            ...CREATURE_CATEGORY_ORDER.map((c) => ({
-              value: c,
-              label: `${CREATURE_CATEGORY_EMOJI[c]} ${CREATURE_CATEGORY_LABELS[c]}`,
-            })),
-          ]}
-        />
-
-        <div className="scrollbar-themed mt-4 flex-1 overflow-y-auto px-1 pt-1">
-          {tab === "characters" ? (
-            <CampaignRosterEditor campaignId={campaignId} charactersState={charactersState} />
-          ) : (
-            <CreatureRosterEditor category={tab} creaturesState={creaturesState} characters={characters} />
-          )}
-        </div>
+      <div className="scrollbar-themed flex-1 overflow-y-auto px-1 pt-1">
+        {tab === "characters" ? (
+          <CampaignRosterEditor campaignId={campaignId} charactersState={charactersState} />
+        ) : (
+          <CreatureRosterEditor category={tab} creaturesState={creaturesState} characters={characters} />
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }

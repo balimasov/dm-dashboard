@@ -10,6 +10,7 @@ import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { IconButton } from "./ui/IconButton";
+import { Modal } from "./ui/Modal";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { StatusRail } from "./ui/StatusRail";
@@ -55,38 +56,41 @@ export function CreatureDetailsModal({
   useScrollLock();
 
   return (
-    <div
+    <>
+    <Modal
+      variant="scrollable"
+      onClose={onClose}
       // Deliberately not `items-center` — see the same note in
       // `CharacterDetailsModal`: a long stat block (many traits/legendary
       // actions) would otherwise clip its top above the viewport with no way
       // to scroll back up to it.
-      className="scrollbar-themed fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
-    >
-      <div
-        className={`relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${
-          creature.concentrating
-            ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
-            : "border-slate-800 bg-slate-950"
-        }`}
-      >
-        <StatusRail
-          conditions={creature.conditions}
-          exhaustion={creature.exhaustion}
-          concentrating={Boolean(creature.concentrating)}
-          onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
-          onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
-          onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
-        />
+      header={
+        <>
+          <StatusRail
+            conditions={creature.conditions}
+            exhaustion={creature.exhaustion}
+            concentrating={Boolean(creature.concentrating)}
+            onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
+            onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
+            onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
+          />
 
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <CreatureHeader creature={creature} owner={owner} />
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <CreatureHeader creature={creature} owner={owner} />
+            </div>
+            <IconButton onClick={onClose} aria-label="Close">
+              ✕
+            </IconButton>
           </div>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
-
+        </>
+      }
+      panelClassName={`relative my-4 w-full max-w-lg gap-4 p-4 shadow-2xl shadow-black/40 ${
+        creature.concentrating
+          ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
+          : "border-slate-800 bg-slate-950"
+      }`}
+    >
         {/* Created/edited timestamp (left) + kebab actions menu (right) share
             one row — same placement as `CharacterDetailsModal`'s own
             sync+actions row, just with a last-edited stamp standing in for
@@ -117,24 +121,24 @@ export function CreatureDetailsModal({
           notes={creature.quickNotes ?? []}
           onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
         />
-      </div>
+    </Modal>
 
-      {hpHistoryOpen && (
-        <CreatureHpHistoryModal
-          creature={creature}
-          onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
-          onClose={() => setHpHistoryOpen(false)}
-        />
-      )}
+    {hpHistoryOpen && (
+      <CreatureHpHistoryModal
+        creature={creature}
+        onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
+        onClose={() => setHpHistoryOpen(false)}
+      />
+    )}
 
-      {editOpen && onUpdate && (
-        <EditCreatureModal
-          creature={creature}
-          characters={characters}
-          onClose={() => setEditOpen(false)}
-          onUpdate={onUpdate}
-        />
-      )}
-    </div>
+    {editOpen && onUpdate && (
+      <EditCreatureModal
+        creature={creature}
+        characters={characters}
+        onClose={() => setEditOpen(false)}
+        onUpdate={onUpdate}
+      />
+    )}
+    </>
   );
 }

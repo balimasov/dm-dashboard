@@ -27,6 +27,7 @@ import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { checkboxCls, Field, inputCls } from "./ui/Field";
 import { IconButton } from "./ui/IconButton";
+import { Modal } from "./ui/Modal";
 import { SelectMenu } from "./ui/SelectMenu";
 import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
 
@@ -258,15 +259,18 @@ export function EditCharacterModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="flex h-[85vh] w-full max-w-7xl flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
+    <Modal
+      onClose={onClose}
+      header={
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <h2 className={MODAL_TITLE_CLS}>Edit Character</h2>
           <IconButton onClick={onClose} aria-label="Close">
             ✕
           </IconButton>
         </div>
-
+      }
+      panelClassName="h-[85vh] w-full max-w-7xl border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+    >
         <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-hidden">
           <div className="scrollbar-themed flex-1 space-y-8 overflow-y-auto px-5 py-4">
             <DdbSyncStatus
@@ -742,8 +746,7 @@ export function EditCharacterModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

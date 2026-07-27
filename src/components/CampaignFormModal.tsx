@@ -31,7 +31,8 @@ import { Campaign, CampaignSummary, Character, Creature, QuickLink } from "@/lib
 import { Button } from "@/components/ui/Button";
 import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
-import { INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "@/components/ui/typography";
+import { Modal } from "@/components/ui/Modal";
+import { INLINE_ERROR_CLS } from "@/components/ui/typography";
 
 const MAX_QUICK_LINKS = 15;
 
@@ -280,15 +281,7 @@ export function CampaignFormModal({
 
   return (
     <>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className={MODAL_TITLE_CLS}>{isEditing ? "Edit Campaign" : "New Campaign"}</h2>
-          <IconButton onClick={close} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
-
+    <Modal onClose={close} title={isEditing ? "Edit Campaign" : "New Campaign"} panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5">
         <div className="scrollbar-themed overflow-y-auto px-1">
               <form onSubmit={handleCreate}>
                 <Section title="Details">
@@ -356,14 +349,13 @@ export function CampaignFormModal({
         </div>
 
         {isEditing && (
-          <div className="mt-4 flex justify-end">
+          <div className="flex justify-end">
             <Button type="button" onClick={close}>
               Done
             </Button>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
 
     {rosterOpen && current && (
       <RosterManagerModal

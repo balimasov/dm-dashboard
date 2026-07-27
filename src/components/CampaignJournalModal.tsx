@@ -9,13 +9,13 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
-import { IconButton } from "./ui/IconButton";
 import { IconFab } from "./ui/IconFab";
+import { Modal } from "./ui/Modal";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
 import { ArchiveIcon, DownloadIcon, PencilIcon, TrashIcon } from "./ui/icons";
-import { INLINE_ERROR_CLS, LIST_ROW_TITLE_CLS, MODAL_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
+import { INLINE_ERROR_CLS, LIST_ROW_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 type JournalTab = "dm" | "party";
 type JournalMode = "view" | "edit";
@@ -352,23 +352,13 @@ export function CampaignJournalModal({
     })) ?? [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div
-        // Fixed height (not `max-h-*`) on purpose — with only a max-height,
-        // the box hugged whatever little content "Loading sessions..."/
-        // "Loading entries..." took up, then visibly grew the moment the
-        // real lists arrived a beat later. A stable height from the first
-        // paint means loading only ever changes what scrolls *inside* the
-        // box, never the box itself.
-        className="flex h-[85vh] w-full max-w-4xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-5"
-      >
-        <div className="mb-3 flex shrink-0 items-center justify-between sm:mb-4">
-          <h2 className={MODAL_TITLE_CLS}>Campaign Journal</h2>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
-
+    // Fixed height (not `max-h-*`) on purpose — with only a max-height,
+    // the box hugged whatever little content "Loading sessions..."/
+    // "Loading entries..." took up, then visibly grew the moment the
+    // real lists arrived a beat later. A stable height from the first
+    // paint means loading only ever changes what scrolls *inside* the
+    // box, never the box itself.
+    <Modal onClose={onClose} title="Campaign Journal" panelClassName="h-[85vh] w-full max-w-4xl gap-3 border-slate-800 bg-slate-950 p-3 sm:gap-4 sm:p-5">
         {/* Nothing below the close button renders until the session list
             *and* the initially-selected session's entries have both
             loaded — see `stillLoadingInitial`'s doc comment above. This is
@@ -639,7 +629,6 @@ export function CampaignJournalModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

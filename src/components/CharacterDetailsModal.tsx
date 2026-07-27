@@ -38,6 +38,7 @@ import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
+import { Modal } from "./ui/Modal";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { SubHeading } from "./ui/SubHeading";
@@ -232,40 +233,43 @@ export function CharacterDetailsModal({
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
 
   return (
-    <div
-      // Deliberately not `items-center`: a flex container that centers an
-      // overflowing child clips the excess at the *start* with no way to
-      // scroll to it (scrollTop can't go negative) — confirmed on a real
-      // Sorcerer with 22 spells/18 features, where this hid the header and
-      // close button above the viewport with no way to reach them. Top
-      // alignment always keeps the start of the content reachable at
-      // scrollTop 0, at the cost of short modals sitting near the top
-      // instead of dead center.
-      className="scrollbar-themed fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
-    >
-      <div
-        className={`relative my-4 flex w-full max-w-lg flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${
-          c.concentrating
-            ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
-            : "border-slate-800 bg-slate-950"
-        }`}
-      >
-        <StatusRail
-          conditions={c.combat.conditions}
-          exhaustion={c.combat.exhaustion}
-          concentrating={Boolean(c.concentrating)}
-          onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
-        />
+    <>
+    {/* Deliberately not `items-center`: a flex container that centers an
+        overflowing child clips the excess at the *start* with no way to
+        scroll to it (scrollTop can't go negative) — confirmed on a real
+        Sorcerer with 22 spells/18 features, where this hid the header and
+        close button above the viewport with no way to reach them. Top
+        alignment always keeps the start of the content reachable at
+        scrollTop 0, at the cost of short modals sitting near the top
+        instead of dead center. */}
+    <Modal
+      variant="scrollable"
+      onClose={onClose}
+      header={
+        <>
+          <StatusRail
+            conditions={c.combat.conditions}
+            exhaustion={c.combat.exhaustion}
+            concentrating={Boolean(c.concentrating)}
+            onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
+          />
 
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <CharacterHeader character={c} />
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <CharacterHeader character={c} />
+            </div>
+            <IconButton onClick={onClose} aria-label="Close">
+              ✕
+            </IconButton>
           </div>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
-
+        </>
+      }
+      panelClassName={`relative my-4 w-full max-w-lg gap-4 p-4 shadow-2xl shadow-black/40 ${
+        c.concentrating
+          ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
+          : "border-slate-800 bg-slate-950"
+      }`}
+    >
         {/* Sync (left) + kebab actions menu (right) share one row, level with
             each other — keeps the menu off the header row above, where it
             would crowd the Heroic Inspiration star at that row's right
@@ -612,11 +616,11 @@ export function CharacterDetailsModal({
           notes={c.quickNotes ?? []}
           onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
         />
-      </div>
+    </Modal>
 
-      {editOpen && onUpdate && (
-        <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
-      )}
-    </div>
+    {editOpen && onUpdate && (
+      <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
+    )}
+    </>
   );
 }

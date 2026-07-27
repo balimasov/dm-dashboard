@@ -5,6 +5,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { TrashIcon } from "./ui/icons";
 import { IconButton } from "./ui/IconButton";
+import { Modal } from "./ui/Modal";
 import { MODAL_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 const FIELD_LABEL: Record<HpHistoryEntry["field"], string> = {
@@ -64,9 +65,10 @@ export function CreatureHpHistoryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
+    <Modal
+      onClose={onClose}
+      header={
+        <div className="flex items-center justify-between gap-3">
           <h2 className={`min-w-0 truncate ${MODAL_TITLE_CLS}`}>HP History — {creature.name}</h2>
           <div className="flex shrink-0 items-center gap-1">
             {onClear && entries.length > 0 && (
@@ -84,7 +86,9 @@ export function CreatureHpHistoryModal({
             </IconButton>
           </div>
         </div>
-
+      }
+      panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 border-slate-800 bg-slate-950 p-5"
+    >
         {entries.length === 0 ? (
           <p className={`py-8 text-center ${MUTED_BODY_CLS}`}>No HP changes recorded yet.</p>
         ) : (
@@ -119,7 +123,6 @@ export function CreatureHpHistoryModal({
             </table>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
