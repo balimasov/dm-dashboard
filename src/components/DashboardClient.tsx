@@ -25,6 +25,7 @@ import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
+import { IconFab } from "@/components/ui/IconFab";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS } from "@/components/ui/typography";
@@ -466,15 +467,9 @@ export function DashboardClient({
               lands in the shared Party journal, and the full Journal modal
               shows each role only the tab(s) it's allowed to see. */}
           <QuickNoteButton campaignId={campaign.id} />
-          <button
-            type="button"
-            onClick={() => setJournalOpen(true)}
-            aria-label="Campaign Journal"
-            title="Campaign Journal (j)"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
-          >
+          <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
             <NoteIcon className="h-4 w-4" />
-          </button>
+          </IconFab>
           {/* A player has nothing in this menu — Export dumps the whole
               campaign (including the enemies/NPCs/notes this role otherwise
               never sees), and Settings has no reduced view of its own — so
