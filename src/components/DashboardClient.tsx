@@ -85,12 +85,10 @@ function formatCardCount(n: number): string {
 function SectionTitle({
   emoji,
   label,
-  count,
   inProgress,
 }: {
   emoji: string;
   label: React.ReactNode;
-  count?: number;
   /** Small muted "(in progress)" suffix for a section still being built out across iterations — remove once it's done. */
   inProgress?: boolean;
 }) {
@@ -101,9 +99,6 @@ function SectionTitle({
       </span>
       {label}
       {inProgress && <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">(in progress)</span>}
-      {count !== undefined && (
-        <span className="ml-2 whitespace-nowrap text-base font-normal text-slate-500">({formatCardCount(count)})</span>
-      )}
     </>
   );
 }
@@ -123,37 +118,43 @@ function EmptyRosterState({ message, onAdd }: { message: string; onAdd?: () => v
 }
 
 /**
- * Small "manage" trigger for a section's own header — passed into
- * `CollapsibleSection`'s `actions` slot (a sibling of the collapse-toggle
- * button, not nested inside it, so it never conflicts with the section's own
- * expand/collapse click; `CollapsibleSection` renders it right next to the
- * title itself rather than pushed to the row's far end, so it stays visually
- * tied to the section it belongs to and out of the way of the fixed-position
- * section-nav rail docked at the right edge of the viewport). Opens
- * `RosterManagerModal` straight on that section's own tab — which handles
- * add, edit, hide, remove, and reorder, not just adding — hence a gear
- * rather than a plus, matching the "Settings" gear elsewhere in this file.
+ * The card-count pill doubles as the section's "manage" trigger — passed
+ * into `CollapsibleSection`'s `actions` slot (a sibling of the
+ * collapse-toggle button, not nested inside it, so it never conflicts with
+ * the section's own expand/collapse click), landing right where a plain
+ * "(N cards)" label used to sit. Opens `RosterManagerModal` straight on
+ * that section's own tab — add, edit, hide, remove, and reorder, not just
+ * adding. `onClick` is omitted for a player viewing a section they can't
+ * manage (Party/Companions stay visible to players, just without the
+ * button) — the count then renders as plain muted text, same as before
+ * this became a button at all, rather than a control that looks
+ * interactive but does nothing.
  *
- * Visibility is split by hover capability rather than screen width, since
- * that's what actually determines whether "reveal on hover" is discoverable
- * at all: on a mouse-driven desktop the icon stays fully hidden until the
- * whole header row (`group/section`, set by `CollapsibleSection`) is
- * hovered or the button itself gets keyboard focus, so the row reads as
- * just chevron/emoji/title/count until a DM actually reaches for it; on a
- * touch device — which has no hover to reveal it with — it instead stays
- * always visible at a dim, out-of-the-way opacity, the same treatment this
- * button used everywhere before this change.
+ * No separate icon button sitting elsewhere in the row: a dedicated gear
+ * either stayed always-visible (cluttering a row that already has a
+ * chevron/emoji/title) or hid until hover (undiscoverable on touch, and one
+ * more thing to visually track). Folding the trigger into the count itself
+ * keeps the row exactly as many elements as before this feature existed.
+ * A faint background at rest marks it as a real control rather than static
+ * text; hover/focus swaps to the accent tint so the state change reads
+ * clearly (not just "slightly brighter grey"), and the small gear glyph
+ * only appears then, as a second confirming cue.
  */
-function SectionManageButton({ onClick, label }: { onClick: () => void; label: string }) {
+function SectionCountButton({ count, onClick, label }: { count: number; onClick?: () => void; label: string }) {
+  const text = `(${formatCardCount(count)})`;
+  if (!onClick) {
+    return <span className="whitespace-nowrap text-base font-normal text-slate-500">{text}</span>;
+  }
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="rounded p-1 text-slate-500 opacity-45 transition-opacity hover:bg-white/10 hover:text-sky-400 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover/section:opacity-100"
+      className="group inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-white/5 bg-white/5 px-2.5 py-0.5 text-base font-normal text-slate-500 transition-colors hover:border-sky-800 hover:bg-sky-950/50 hover:text-sky-300 focus-visible:border-sky-800 focus-visible:bg-sky-950/50 focus-visible:text-sky-300"
     >
-      <GearIcon className="h-4 w-4" />
+      {text}
+      <GearIcon className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
     </button>
   );
 }
@@ -234,10 +235,12 @@ function CreatureCategorySection({
 
   return (
     <CollapsibleSection
-      title={<SectionTitle emoji={CREATURE_CATEGORY_EMOJI[category]} label={CREATURE_CATEGORY_LABELS[category]} count={filtered.length} />}
+      title={<SectionTitle emoji={CREATURE_CATEGORY_EMOJI[category]} label={CREATURE_CATEGORY_LABELS[category]} />}
       storageKey={storageKey}
       initialOpen={initialOpen}
-      actions={onAdd && <SectionManageButton onClick={onAdd} label={`Manage ${CREATURE_CATEGORY_LABELS[category]}`} />}
+      actions={
+        <SectionCountButton count={filtered.length} onClick={onAdd} label={`Manage ${CREATURE_CATEGORY_LABELS[category]}`} />
+      }
     >
       <p className="mb-4 px-3 text-sm text-slate-500">{CREATURE_SECTION_DESCRIPTION[category]}</p>
       {filtered.length === 0 ? (
@@ -580,10 +583,16 @@ export function DashboardClient({
 
       <div id="section-party" className="scroll-mt-[130px]">
         <CollapsibleSection
-          title={<SectionTitle emoji="🛡️" label="Party" count={visibleCharacters.length} />}
+          title={<SectionTitle emoji="🛡️" label="Party" />}
           storageKey="dm-dashboard-characters-open"
           initialOpen={initialOpen.characters}
-          actions={isDm && <SectionManageButton onClick={() => openRoster("characters")} label="Manage characters" />}
+          actions={
+            <SectionCountButton
+              count={visibleCharacters.length}
+              onClick={isDm ? () => openRoster("characters") : undefined}
+              label="Manage characters"
+            />
+          }
         >
           <p className="mb-4 px-3 text-sm text-slate-500">Combat stats, resources, and notes for each character.</p>
 
