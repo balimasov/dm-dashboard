@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
@@ -73,8 +74,7 @@ export function EntityActionsMenu({
           type="button"
           className={`${MORE_MENU_ITEM_CLASS} text-red-400 hover:text-red-300`}
           onClick={() => {
-            const confirmed = window.confirm(`Remove "${name}" from this campaign? This can't be undone.`);
-            if (confirmed) onRemove();
+            if (confirmRemoveFromCampaign(name)) onRemove();
           }}
         >
           <TrashIcon className="h-4 w-4 shrink-0" />

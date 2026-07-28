@@ -15,6 +15,7 @@ import { addBtnCls, AutoGrowTextarea, CHECKBOX_BASE_CLS, Field, groupInputCls, i
 import { MetaBadge } from "@/components/ui/MetaBadge";
 import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
+import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
 
 const TRAIT_GROUPS: Array<{ value: NonNullable<CreatureTrait["group"]>; label: string }> = [
@@ -484,7 +485,7 @@ export function TraitMechanicsEditor({
           const expanded = expandedTraits.has(index);
           const mechanics = traitMechanics(t);
           return (
-            <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+            <div key={index} className={`p-3 ${DIM_ROW_CARD_CLS}`}>
               {/* Top level, row 1 — what this is (type/name), when it comes back (recharge), and the
                   controls to expand/remove — kept to single-line fields only so this row never wraps
                   to a second line of its own; the description (which does need room to wrap) gets its

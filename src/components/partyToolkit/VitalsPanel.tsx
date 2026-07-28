@@ -6,7 +6,7 @@ import { DotMeter } from "../ResourceMeter";
 import { CharacterChip } from "../ui/CharacterChip";
 import { ConditionHintPanel } from "../ui/conditionHints";
 import { ShieldIcon } from "../ui/icons";
-import { CONDITION_HUES } from "../ui/StatusRail";
+import { CONCENTRATION_HINT_TEXT, CONDITION_HUES } from "../ui/StatusRail";
 import { ToolkitCard } from "../ui/ToolkitCard";
 import { MICRO_LABEL_STRONG_CLS } from "../ui/typography";
 
@@ -201,7 +201,7 @@ function StatusDots({ entry, separated }: { entry: PartyHpCharacterEntry; separa
       }`}
     >
       {entry.concentrating && (
-        <InfoTooltip hoverOnly panel={<p>Concentrating</p>}>
+        <InfoTooltip hoverOnly panel={CONCENTRATION_HINT_TEXT}>
           <span className={`${STATUS_DOT_CLASS} bg-violet-400`} />
         </InfoTooltip>
       )}

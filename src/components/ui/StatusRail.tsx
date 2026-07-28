@@ -78,6 +78,19 @@ function ExhaustionBadge({ level }: { level: number }) {
   );
 }
 
+/**
+ * Rules blurb shared with `VitalsPanel.tsx`'s own read-only Concentration
+ * dot (`CONDITION_HUES` above is the same cross-file-constant convention) —
+ * bolded term + what it actually does, not just a restatement of the UI's
+ * own on/off state, which is all either hint used to say.
+ */
+export const CONCENTRATION_HINT_TEXT = (
+  <p>
+    <span className="font-semibold text-violet-300">Concentration</span> — required to keep certain spells active;
+    taking damage forces a Constitution save or the spell ends.
+  </p>
+);
+
 function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
   const sizeCls = active ? "h-9 w-9" : "h-6 w-6";
   return (
@@ -93,7 +106,18 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
           : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
       }`}
     >
-      <InfoTooltip hoverOnly disableTap panel={<p>Toggle Concentration — currently {active ? "on" : "off"}.</p>}>
+      <InfoTooltip
+        hoverOnly
+        disableTap
+        panel={
+          <div className="space-y-2">
+            {CONCENTRATION_HINT_TEXT}
+            <p className="border-t border-slate-700 pt-2 text-slate-400">
+              Currently {active ? "on" : "off"} — click to toggle.
+            </p>
+          </div>
+        }
+      >
         <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
       </InfoTooltip>
     </button>

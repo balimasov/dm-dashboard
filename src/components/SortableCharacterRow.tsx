@@ -1,6 +1,7 @@
 "use client";
 
 import { Character } from "@/lib/types";
+import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
@@ -42,8 +43,7 @@ export function SortableCharacterRow({
           <IconButton
             tone="danger"
             onClick={() => {
-              const confirmed = window.confirm(`Remove "${character.name}" from this campaign? This can't be undone.`);
-              if (confirmed) onRemove(character.id);
+              if (confirmRemoveFromCampaign(character.name)) onRemove(character.id);
             }}
             title="Remove"
             aria-label="Remove"

@@ -1,6 +1,7 @@
 import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 
 /**
@@ -28,14 +29,24 @@ export function CharacterHeader({
         </p>
         <p className={MUTED_LABEL_CLS}>Lvl {c.level}</p>
       </div>
-      <span
-        title={c.heroicInspiration ? "Heroic Inspiration: available" : "Heroic Inspiration: none"}
-        className={`shrink-0 text-3xl leading-none ${
-          c.heroicInspiration ? "inspiration-star text-amber-400" : "text-slate-700"
-        }`}
+      <InfoTooltip
+        hoverOnly
+        disableTap
+        panel={
+          <p>
+            <span className="font-semibold text-amber-400">Heroic Inspiration</span> — lets you reroll one d20 roll,
+            keeping the better result. Currently {c.heroicInspiration ? "available" : "not available"}.
+          </p>
+        }
       >
-        ★
-      </span>
+        <span
+          className={`shrink-0 text-3xl leading-none ${
+            c.heroicInspiration ? "inspiration-star text-amber-400" : "text-slate-700"
+          }`}
+        >
+          ★
+        </span>
+      </InfoTooltip>
     </>
   );
 

@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
+import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import {
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_SINGULAR_LABELS,
@@ -433,8 +434,7 @@ function CreatureRow({
           <IconButton
             tone="danger"
             onClick={() => {
-              const confirmed = window.confirm(`Remove "${creature.name}" from this campaign? This can't be undone.`);
-              if (confirmed) onRemove(creature.id);
+              if (confirmRemoveFromCampaign(creature.name)) onRemove(creature.id);
             }}
             title="Remove"
             aria-label="Remove"

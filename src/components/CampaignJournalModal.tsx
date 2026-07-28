@@ -10,6 +10,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
 import { Button } from "./ui/Button";
+import { DIM_ROW_CARD_CLS } from "./ui/containerStyles";
 import { IconFab } from "./ui/IconFab";
 import { Modal } from "./ui/Modal";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
@@ -413,13 +414,9 @@ export function CampaignJournalModal({
                 {sessionsError ? (
                   <div className={`flex min-w-0 flex-1 items-center gap-2 ${INLINE_ERROR_CLS}`}>
                     <p className="min-w-0 flex-1 truncate">{sessionsError}</p>
-                    <button
-                      type="button"
-                      onClick={() => void loadSessions()}
-                      className="shrink-0 rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
-                    >
+                    <Button type="button" variant="outline" onClick={() => void loadSessions()} className="shrink-0 px-2 py-1 text-sm">
                       Retry
-                    </button>
+                    </Button>
                   </div>
                 ) : sessions && sessions.length === 0 ? (
                   <p className={`min-w-0 flex-1 truncate ${MUTED_BODY_CLS}`}>No sessions yet — write a note to start one.</p>
@@ -457,9 +454,9 @@ export function CampaignJournalModal({
                 {sessionsError && (
                   <div className={`shrink-0 ${INLINE_ERROR_CLS}`}>
                     <p className="mb-2">{sessionsError}</p>
-                    <button type="button" onClick={() => void loadSessions()} className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800">
+                    <Button type="button" variant="outline" onClick={() => void loadSessions()} className="px-2 py-1 text-sm">
                       Retry
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {visibleSessions?.length === 0 && (
@@ -530,7 +527,7 @@ export function CampaignJournalModal({
                   invisible-but-present button still read as "popping in and
                   out" on every mode switch; a plain disabled state is the
                   one users already expect not to blink. */}
-              <div className="mb-3 shrink-0 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+              <div className={`mb-3 shrink-0 p-3 ${DIM_ROW_CARD_CLS}`}>
                 <h3 className={`mb-2 truncate ${LIST_ROW_TITLE_CLS}`}>{selectedSession?.title}</h3>
                 {/* View/Edit anchored left, DM/Party + Export grouped on the
                     right — was two separate rows (title+export on one, the
@@ -590,13 +587,9 @@ export function CampaignJournalModal({
                 ) : entriesError ? (
                   <div className={INLINE_ERROR_CLS}>
                     <p className="mb-2">{entriesError}</p>
-                    <button
-                      type="button"
-                      onClick={() => selectSession(selectedSessionId!)}
-                      className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
-                    >
+                    <Button type="button" variant="outline" onClick={() => selectSession(selectedSessionId!)} className="px-2 py-1 text-sm">
                       Retry
-                    </button>
+                    </Button>
                   </div>
                 ) : !selectedSessionId ? (
                   <p className={MUTED_BODY_CLS}>Select a session to see its notes.</p>

@@ -10,11 +10,18 @@
  * `CreatureRosterEditor.tsx`, `RemindersPanel.tsx`, `RemindersFab.tsx`,
  * `CampaignsClient.tsx` — each still layers its own padding/layout classes
  * on top. Deliberately does NOT cover `TraitMechanicsEditor.tsx`'s per-trait
- * row or `partyToolkit/shared.tsx`'s `ChartBox` — both use `bg-slate-900/40`
- * or `bg-slate-950/40` instead of `bg-slate-900/60`, a different (dimmer)
- * fill that turned out to be its own convention, not a near-miss of this one.
+ * row or `CampaignJournalModal.tsx`'s selected-session header — those use
+ * the dimmer `DIM_ROW_CARD_CLS` below instead.
  */
 export const ROW_CARD_CLS = "rounded-lg border border-slate-800 bg-slate-900/60";
+
+/**
+ * Dimmer sibling of `ROW_CARD_CLS` (`bg-slate-900/40` instead of `/60`) — a
+ * separate, real convention rather than a near-miss of the row card above.
+ * Exact match across `TraitMechanicsEditor.tsx`'s per-trait row and
+ * `CampaignJournalModal.tsx`'s selected-session header panel.
+ */
+export const DIM_ROW_CARD_CLS = "rounded-lg border border-slate-800 bg-slate-900/40";
 
 /**
  * Base recipe shared by `ToolkitCard`'s own shell and `CharacterCard`/
