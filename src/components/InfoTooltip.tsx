@@ -225,7 +225,7 @@ export function InfoTooltip({
             // other floating layer, mount order alone decided which one
             // painted on top — and the hint, being the deeper-nested
             // portal, didn't reliably mount after its host popover.
-            className="pointer-events-none fixed z-[70] w-64 max-w-[80vw] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+            className="pointer-events-none fixed z-[70] w-max max-w-[min(16rem,80vw)] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
             // No-ops while the panel is `pointer-events: none` (the common
             // case — the browser never dispatches mouse events to it then),
             // and only actually fire once `computePosition` switches it to
