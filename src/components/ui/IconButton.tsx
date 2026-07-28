@@ -5,12 +5,7 @@ import { ButtonHTMLAttributes } from "react";
  * across the app each hand-rolled slightly differently before a full audit
  * (2026-07-27) catalogued every variant by role rather than by which icon
  * glyph happened to be inside. Four tones, one per role, each a deliberate
- * canonical pick rather than "whichever existing variant was most common" —
- * for `danger` in particular, no real call site actually used
- * `hover:bg-red-950/30` before this (it was extrapolated from
- * `designTokens.ts` but never wired anywhere), so applying it to the 10+
- * delete affordances that used to be plain hover-color-only text links is a
- * deliberate visual unification, not a no-op formalization:
+ * canonical pick rather than "whichever existing variant was most common":
  * - `neutral` — dismiss/close (a modal's ✕).
  * - `muted` — a lower-emphasis row action (edit/duplicate/show-hide) that
  *   shouldn't compete visually with `neutral`'s close button — no
@@ -25,13 +20,11 @@ import { ButtonHTMLAttributes } from "react";
  * their own border/background) are a genuinely different, separate shape —
  * see `IconFab.tsx`, not this component.
  *
- * The tone classes below are written as full static strings rather than
- * built from `designTokens.ts` at runtime (e.g. `` `hover:${DESIGN_TOKENS.danger.text}` ``)
- * — Tailwind's class scanner only picks up class names that appear as
- * literal text in a source file, so a runtime-concatenated `hover:` variant
- * would silently produce no CSS. `danger`'s colors are still the same
- * `DESIGN_TOKENS.danger.bg`/`.text` values, just spelled out so Tailwind can
- * see them.
+ * The tone classes are full static strings rather than built at runtime
+ * from a shared token object (e.g. `` `hover:${role.text}` ``) — Tailwind's
+ * class scanner only picks up class names that appear as literal text in a
+ * source file, so a runtime-concatenated `hover:` variant would silently
+ * produce no CSS.
  *
  * `focus-visible:ring-2` (not plain `focus:`) — see `Button`'s own doc
  * comment for why icon-only buttons in particular want the keyboard-only
