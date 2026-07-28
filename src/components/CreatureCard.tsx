@@ -8,6 +8,7 @@ import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
@@ -59,7 +60,7 @@ export function CreatureCard({
 
   return (
     <div
-      className={`relative flex flex-col gap-4 rounded-xl border p-4 shadow-lg shadow-black/20 ${
+      className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
         creature.concentrating
           ? "concentrating-ring border-violet-500 bg-violet-950/10"
           : "border-slate-800 bg-slate-900/60"

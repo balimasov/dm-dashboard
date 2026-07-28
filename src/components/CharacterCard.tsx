@@ -13,6 +13,7 @@ import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { ShieldIcon, SpeedIcon, InitiativeIcon, ProficiencyIcon } from "./ui/icons";
 import { AC_HINT_PANEL, INITIATIVE_HINT_PANEL, PROFICIENCY_HINT_PANEL, SPEED_HINT_PANEL } from "./ui/combatStatHints";
+import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -46,7 +47,7 @@ export function CharacterCard({
 
   return (
     <div
-      className={`relative rounded-xl border p-4 shadow-lg shadow-black/20 flex flex-col gap-4 ${
+      className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
         c.concentrating
           ? "concentrating-ring border-violet-500 bg-violet-950/10"
           : "border-slate-800 bg-slate-900/60"

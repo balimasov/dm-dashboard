@@ -1,10 +1,10 @@
 import { Character } from "@/lib/types";
 import { tierTextClass } from "@/lib/tierColor";
-import { getConditionInfo } from "@/lib/conditionInfo";
 import { PartyHpCharacterEntry, PartyHpSummary, computePartyHpSummary } from "@/lib/partyToolkit";
 import { InfoTooltip } from "../InfoTooltip";
 import { DotMeter } from "../ResourceMeter";
 import { CharacterChip } from "../ui/CharacterChip";
+import { ConditionHintPanel } from "../ui/conditionHints";
 import { ShieldIcon } from "../ui/icons";
 import { CONDITION_HUES } from "../ui/StatusRail";
 import { ToolkitCard } from "../ui/ToolkitCard";
@@ -159,17 +159,8 @@ function DeathSavesRow({ deathSaves }: { deathSaves?: { successes: number; failu
 /** Same hue-by-position convention `StatusRail`'s own condition badges use (`CONDITION_HUES`), and the same 2-letter abbreviation those badges show — a DM who's learned that language on the character cards doesn't have to learn a second one here. Outlined (not filled) so it reads as a distinct shape from `ExhaustionDot`'s solid number badge even at a glance, not just a different color. */
 function ConditionDot({ condition, index }: { condition: string; index: number }) {
   const hue = CONDITION_HUES[index % CONDITION_HUES.length];
-  const info = getConditionInfo(condition);
   return (
-    <InfoTooltip
-      hoverOnly
-      panel={
-        <p>
-          <span className="font-semibold capitalize">{condition}</span>
-          {info ? `: ${info}` : ""}
-        </p>
-      }
-    >
+    <InfoTooltip hoverOnly panel={<ConditionHintPanel condition={condition} />}>
       <span
         className={`${STATUS_BADGE_CLASS} border uppercase`}
         style={{ borderColor: `hsl(${hue}, 75%, 55%)`, color: `hsl(${hue}, 85%, 78%)` }}

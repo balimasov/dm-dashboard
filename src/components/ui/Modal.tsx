@@ -40,10 +40,11 @@ import { MODAL_TITLE_CLS } from "./typography";
  */
 export type ModalVariant = "centered" | "scrollable";
 
+/** z-index kept separate from the rest of the overlay recipe — a modal opened from inside an already-open modal (`AvatarPicker`'s crop dialog, launched from `CampaignFormModal`/the creature edit form) needs to stack above that parent's own `z-50`, the same `z-[60]` convention `Toast.tsx` already uses for the same reason. */
 const OVERLAY_CLASSES: Record<ModalVariant, string> = {
-  centered: "fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4",
+  centered: "fixed inset-0 flex items-center justify-center bg-black/70 p-4",
   scrollable:
-    "scrollbar-themed fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]",
+    "scrollbar-themed fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]",
 };
 
 export function Modal({
@@ -52,6 +53,7 @@ export function Modal({
   title,
   header,
   panelClassName = "w-full max-w-lg gap-4 border-slate-800 bg-slate-950 p-4",
+  zIndexClassName = "z-50",
   children,
 }: {
   variant?: ModalVariant;
@@ -61,11 +63,13 @@ export function Modal({
   header?: ReactNode;
   /** Replaces the panel's size (`max-w-*`), spacing (`gap-*`), border color, background, and padding entirely — see the doc comment above for why this is a full replacement rather than additive classes. */
   panelClassName?: string;
+  /** Overrides the overlay's stacking order — every modal defaults to `z-50`; a modal nested inside another one needs something higher (`z-[60]`, matching `Toast.tsx`'s own convention) so it renders above its parent's overlay instead of behind it. */
+  zIndexClassName?: string;
   children: ReactNode;
 }) {
   const titleId = useId();
   return (
-    <div className={OVERLAY_CLASSES[variant]}>
+    <div className={`${OVERLAY_CLASSES[variant]} ${zIndexClassName}`}>
       <div
         role="dialog"
         aria-modal="true"

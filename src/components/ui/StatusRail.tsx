@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
-import { CONDITION_INFO, getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
+import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
+import { ConditionHintPanel, ConditionsListHintPanel } from "./conditionHints";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { ExhaustionIcon, ConcentrationIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
@@ -18,22 +19,6 @@ function ExhaustionPanel({ level }: { level: number }) {
           Right now (level {level}): −{effect.d20Penalty} to d20 rolls, speed −{effect.speedPenalty} ft.
         </p>
       )}
-    </div>
-  );
-}
-
-function ConditionsPanel({ conditions }: { conditions: string[] }) {
-  return (
-    <div className="space-y-1.5">
-      {conditions.map((condition) => {
-        const info = getConditionInfo(condition);
-        return (
-          <div key={condition}>
-            <p className="font-semibold text-slate-100">{condition}</p>
-            {info && <p>{info}</p>}
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -73,7 +58,7 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
         } as React.CSSProperties
       }
     >
-      <InfoTooltip panel={<ConditionsPanel conditions={[condition]} />}>
+      <InfoTooltip panel={<ConditionHintPanel condition={condition} />}>
         {condition.trim().slice(0, 2).toUpperCase()}
       </InfoTooltip>
     </span>
@@ -119,7 +104,7 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
 function OverflowBadge({ conditions }: { conditions: string[] }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
-      <InfoTooltip panel={<ConditionsPanel conditions={conditions} />}>•••</InfoTooltip>
+      <InfoTooltip panel={<ConditionsListHintPanel conditions={conditions} />}>•••</InfoTooltip>
     </span>
   );
 }

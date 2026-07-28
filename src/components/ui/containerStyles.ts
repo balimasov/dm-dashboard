@@ -17,6 +17,20 @@
 export const ROW_CARD_CLS = "rounded-lg border border-slate-800 bg-slate-900/60";
 
 /**
+ * Base recipe shared by `ToolkitCard`'s own shell and `CharacterCard`/
+ * `CreatureCard`'s outer card — border weight/rounding/padding/shadow are
+ * identical, but each still renders its own JSX rather than one calling the
+ * other: `ToolkitCard` has 10 existing consumers needing none of
+ * `CharacterCard`/`CreatureCard`'s extra needs (`relative` positioning for
+ * `StatusRail`'s badge rail, a forced `flex flex-col gap-4` layout, a
+ * conditional concentration-ring border/bg swap), and adding those as
+ * opt-in props to an already-widely-used component for the sake of one new
+ * caller risked destabilizing it. Naming just the shared literal avoids
+ * that risk while still keeping "one recipe, one name".
+ */
+export const ENTITY_CARD_BASE_CLS = "rounded-xl border p-4 shadow-lg shadow-black/20";
+
+/**
  * "Popover-shell" — a floating dropdown/menu panel anchored off a trigger
  * button. Exact match across `SyncAllButton.tsx`, `QuickNoteButton.tsx`,
  * `QuickLinksButton.tsx`, `ui/SelectMenu.tsx`, `ui/MoreMenu.tsx` (both

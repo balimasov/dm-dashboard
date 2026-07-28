@@ -5,6 +5,7 @@ import Cropper, { Area } from "react-easy-crop";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Avatar } from "./Avatar";
 import { Button } from "./ui/Button";
+import { Modal } from "./ui/Modal";
 
 const OUTPUT_SIZE = 200;
 
@@ -123,39 +124,41 @@ export function AvatarPicker({
       </div>
 
       {pendingImage && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-          <div className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
-            <div className="relative h-64 w-full overflow-hidden rounded-md bg-slate-950">
-              <Cropper
-                image={pendingImage}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={handleCropComplete}
-              />
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.01}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              aria-label="Zoom"
-              className="w-full"
+        <Modal
+          onClose={() => setPendingImage(null)}
+          zIndexClassName="z-[60]"
+          panelClassName="w-full max-w-sm gap-3 border-slate-800 bg-slate-950 p-4"
+        >
+          <div className="relative h-64 w-full overflow-hidden rounded-md bg-slate-950">
+            <Cropper
+              image={pendingImage}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={handleCropComplete}
             />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setPendingImage(null)} className="px-4 py-2 text-sm">
-                Cancel
-              </Button>
-              <Button type="button" onClick={applyCrop}>
-                Apply
-              </Button>
-            </div>
           </div>
-        </div>
+          <input
+            type="range"
+            min={1}
+            max={3}
+            step={0.01}
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            aria-label="Zoom"
+            className="w-full"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setPendingImage(null)} className="px-4 py-2 text-sm">
+              Cancel
+            </Button>
+            <Button type="button" onClick={applyCrop}>
+              Apply
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
   );

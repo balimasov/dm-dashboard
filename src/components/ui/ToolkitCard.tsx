@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { ENTITY_CARD_BASE_CLS } from "./containerStyles";
 
 /** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coins' party total). `title` is optional: a card that already sits under its own section heading (e.g. `InventoryOverview`'s item grid, directly below the "Inventory" `CollapsibleSection`) can skip the header row entirely rather than showing a redundant second label. `collapsible` is opt-in per caller (controlled, not internal state — the caller owns open/closed so it can persist it, same as `CollapsibleSection` does for whole dashboard sections); a card without it always renders its content, unchanged from before this prop existed. */
 export function ToolkitCard({
@@ -13,7 +14,7 @@ export function ToolkitCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div className={`${ENTITY_CARD_BASE_CLS} border-slate-800 bg-slate-900/60`}>
       {title != null && (
         <div className="mb-2 flex items-center justify-between gap-3">
           {collapsible ? (
