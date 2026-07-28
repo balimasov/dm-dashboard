@@ -9,6 +9,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { JournalEntryRow } from "./JournalEntryRow";
 import { NotesEditor } from "./NotesEditor";
+import { Button } from "./ui/Button";
 import { IconFab } from "./ui/IconFab";
 import { Modal } from "./ui/Modal";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
@@ -81,14 +82,15 @@ function Composer({ onSubmit }: { onSubmit: (html: string) => Promise<void> }) {
         >
           Cancel
         </button>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => void handleAdd()}
           disabled={isEmpty || saving}
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:text-slate-600"
+          className="px-3 py-1.5 text-sm"
         >
           Add note
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -384,13 +386,14 @@ export function CampaignJournalModal({
             <div className="flex shrink-0 flex-col gap-2 sm:w-64">
               {role === "dm" && (
                 <div className="hidden shrink-0 items-center justify-between gap-2 sm:flex">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => void startNewSession()}
-                    className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                    className="px-2 py-1 text-xs"
                   >
                     + New session
-                  </button>
+                  </Button>
                   <button
                     type="button"
                     onClick={() => setShowArchived((v) => !v)}
@@ -429,15 +432,16 @@ export function CampaignJournalModal({
                   />
                 )}
                 {role === "dm" && (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => void startNewSession()}
                     aria-label="New session"
                     title="New session"
-                    className="shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+                    className="shrink-0 px-2.5 py-1.5 text-sm"
                   >
                     +
-                  </button>
+                  </Button>
                 )}
                 {role === "dm" && selectedSession && (
                   <SessionManageMenu

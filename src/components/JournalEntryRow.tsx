@@ -147,13 +147,9 @@ export function JournalEntryRow({
             <Button type="button" variant="ghost" onClick={cancelEditing} className="px-3 py-1.5">
               Cancel
             </Button>
-            <button
-              type="button"
-              onClick={() => void saveAndExit()}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-800"
-            >
+            <Button type="button" variant="outline" onClick={() => void saveAndExit()} className="px-3 py-1.5 font-semibold">
               Save
-            </button>
+            </Button>
           </div>
         </>
       ) : (

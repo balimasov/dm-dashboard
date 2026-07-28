@@ -71,21 +71,25 @@ function CampaignRow({
       </div>
       {(onEdit || onRemove) && (
         <div className="relative z-10 flex shrink-0 items-center gap-3 self-end sm:self-auto">
+          {/* Same visual recipe as `Button variant="outline"` — can't actually
+              be a `<Button>`, since it's a plain download link, and `Button`
+              only renders a `<button>` (no polymorphic `as="a"`). */}
           <a
             href={`/api/campaigns/${campaign.id}/export`}
             title="Download this campaign (and its characters/creatures) as JSON"
-            className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+            className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
           >
             Export
           </a>
           {onEdit && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => onEdit(campaign)}
-              className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+              className="shrink-0 px-3 py-1.5 text-sm"
             >
               Edit
-            </button>
+            </Button>
           )}
           {onRemove && (
             <button

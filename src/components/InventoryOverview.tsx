@@ -8,23 +8,23 @@ import { InfoTooltip } from "./InfoTooltip";
 import { splitIntoColumns } from "./partyToolkit/shared";
 import { CharacterChip, CharacterChipRow } from "./ui/CharacterChip";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
+import { Pill, PillColor } from "./ui/Pill";
 import { ToolkitCard } from "./ui/ToolkitCard";
 import { MUTED_BODY_CLS } from "./ui/typography";
 
 const COIN_ORDER = ["pp", "gp", "ep", "sp", "cp"] as const;
 
-// Bolder borders/fills than a plain low-opacity tint — against the warm
-// dark background introduced with the parchment/brass reskin, a faint
-// same-family warm tint (amber, orange) reads as barely-there. `sp` moves
-// off `slate` (now part of that warm reskin) to `zinc`, an untouched cool
-// neutral — actual silver reads cool/metallic, which also happens to be
-// the one coin color guaranteed to stay visible against a warm backdrop.
-const COIN_CHIP_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
-  pp: "border-violet-400 bg-violet-500/15",
-  gp: "border-amber-400 bg-amber-500/15",
-  ep: "border-teal-400 bg-teal-500/15",
-  sp: "border-zinc-300 bg-zinc-400/15",
-  cp: "border-orange-400 bg-orange-500/15",
+// `sp` maps to `zinc` rather than `slate` (now part of the warm
+// parchment/brass reskin) — actual silver reads cool/metallic, which also
+// happens to be the one coin color guaranteed to stay visible against a
+// warm backdrop. Rendered via `Pill`'s `bold` variant (see its own doc
+// comment) — a plain dim tint reads as barely-there for a coin value.
+const COIN_PILL_COLOR: Record<(typeof COIN_ORDER)[number], PillColor> = {
+  pp: "violet",
+  gp: "amber",
+  ep: "teal",
+  sp: "zinc",
+  cp: "orange",
 };
 
 const COIN_CODE_CLASS: Record<(typeof COIN_ORDER)[number], string> = {
@@ -147,25 +147,6 @@ function CurrencyConversionPanel() {
   );
 }
 
-function CoinChip({
-  code,
-  value,
-  chipClass,
-  codeClass,
-}: {
-  code: string;
-  value: number | string;
-  chipClass: string;
-  codeClass?: string;
-}) {
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${chipClass}`}>
-      <span className="text-slate-100">{value}</span>
-      <span className={codeClass ?? "text-slate-400"}>{code}</span>
-    </span>
-  );
-}
-
 /**
  * One character's coins (avatar + their coin chips) instead of "Name: chips"
  * plain text — swapping the name for an avatar chip (consistent with every
@@ -187,13 +168,9 @@ function CurrencyGroup({ character, lineStart }: { character: Character; lineSta
     >
       <CharacterChip name={character.name} avatarUrl={character.avatarUrl} />
       {COIN_ORDER.filter((k) => character.currency[k] > 0).map((k) => (
-        <CoinChip
-          key={k}
-          code={k.toUpperCase()}
-          value={character.currency[k]}
-          chipClass={COIN_CHIP_CLASS[k]}
-          codeClass={COIN_CODE_CLASS[k]}
-        />
+        <Pill key={k} color={COIN_PILL_COLOR[k]} bold>
+          <span className="text-slate-100">{character.currency[k]}</span> <span className={COIN_CODE_CLASS[k]}>{k.toUpperCase()}</span>
+        </Pill>
       ))}
     </div>
   );
@@ -304,12 +281,10 @@ export function CoinsPanel({ characters }: { characters: Character[] }) {
         charactersWithCurrency.length > 0 && (
           <span className="flex shrink-0 items-center gap-2 text-sm">
             <span className="text-slate-500">Party total</span>
-            <CoinChip
-              code="GP"
-              value={totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}
-              chipClass={COIN_CHIP_CLASS.gp}
-              codeClass={COIN_CODE_CLASS.gp}
-            />
+            <Pill color="amber" bold>
+              <span className="text-slate-100">{totalGp % 1 === 0 ? totalGp : totalGp.toFixed(2)}</span>{" "}
+              <span className={COIN_CODE_CLASS.gp}>GP</span>
+            </Pill>
           </span>
         )
       }
