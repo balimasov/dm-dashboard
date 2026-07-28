@@ -21,6 +21,22 @@ export const groupInputCls =
   "rounded-md bg-slate-900 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-600";
 
 /**
+ * Neither constant above bakes in a width — a `w-56 shrink-0`-style caller
+ * needs to layer its own width class on top, and baking `w-full` into the
+ * constant would fight that override (Tailwind utilities of equal
+ * specificity resolve by their order in the generated stylesheet, not by
+ * position in the className string, so `${inputCls} w-56` can't reliably
+ * beat a `w-full` baked into `inputCls` itself). Every call site that wants
+ * the default full-width fill must say so explicitly — `${inputCls} w-full`
+ * — rather than relying on the surrounding `Field` label's flex-column
+ * stretch to do it implicitly; the two field forms only look the same in a
+ * plain `<Field>`/grid layout, and silently diverge the moment a field ends
+ * up in a context (nested flex row, `MechanicGroup`, a future layout) where
+ * stretch doesn't reach it.
+ */
+
+
+/**
  * Checkbox shape, minus its accent color — `TraitMechanicsEditor`'s
  * mechanic checkboxes each need their own semantic color
  * (`MECHANIC_STYLE[m].accent`), while a plain yes/no checkbox
@@ -51,10 +67,12 @@ export function Field({
   );
 }
 
+/** Defaults to full width — the overwhelmingly common case for a `Field`-wrapped input; pass `className="w-56 shrink-0"` (etc.) to opt out. */
 export function TextInput({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={`${inputCls} ${className}`.trim()} {...props} />;
+  return <input className={`${inputCls} ${className || "w-full"}`.trim()} {...props} />;
 }
 
+/** Same full-width default as `TextInput`. */
 export function TextArea({ className = "", ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${inputCls} ${className}`.trim()} {...props} />;
+  return <textarea className={`${inputCls} ${className || "w-full"}`.trim()} {...props} />;
 }

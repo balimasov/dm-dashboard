@@ -157,17 +157,17 @@ export function CreatureFormFields({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="Creature (e.g. Unicorn)" hint="Used to look up and save the stat block for reuse.">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.templateName}
               onChange={(e) => onChange({ templateName: e.target.value })}
             />
           </Field>
           <Field label="Nickname" hint="Optional — defaults to the creature name.">
-            <input className={inputCls} value={value.name} onChange={(e) => onChange({ name: e.target.value })} />
+            <input className={`${inputCls} w-full`} value={value.name} onChange={(e) => onChange({ name: e.target.value })} />
           </Field>
           <Field label="Type">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               placeholder="Celestial"
               value={value.creatureType}
               onChange={(e) => onChange({ creatureType: e.target.value })}
@@ -175,7 +175,7 @@ export function CreatureFormFields({
           </Field>
           <Field label="Size">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               placeholder="Large"
               value={value.size}
               onChange={(e) => onChange({ size: e.target.value })}
@@ -185,7 +185,7 @@ export function CreatureFormFields({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Field label="Alignment">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               placeholder="Neutral"
               value={value.alignment}
               onChange={(e) => onChange({ alignment: e.target.value })}
@@ -193,7 +193,7 @@ export function CreatureFormFields({
           </Field>
           <Field label="Challenge Rating">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               placeholder="1/4"
               value={value.challengeRating}
               onChange={(e) => onChange({ challengeRating: e.target.value })}
@@ -201,7 +201,7 @@ export function CreatureFormFields({
           </Field>
           <Field label="Experience Points">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               placeholder="18000"
               value={value.experiencePoints}
               onChange={(e) => onChange({ experiencePoints: e.target.value })}
@@ -236,7 +236,7 @@ export function CreatureFormFields({
             />
           </Field>
           <Field label="Source" hint='e.g. "Find Steed", "Wild Shape"'>
-            <input className={inputCls} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
+            <input className={`${inputCls} w-full`} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
           </Field>
         </div>
       </section>
@@ -246,44 +246,44 @@ export function CreatureFormFields({
         <h2 className={FORM_SECTION_HEADING_CLS}>Combat</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Field label="AC">
-            <NumberInput className={inputCls} value={value.ac} onChange={(n) => onChange({ ac: n })} />
+            <NumberInput className={`${inputCls} w-full`} value={value.ac} onChange={(n) => onChange({ ac: n })} />
           </Field>
           <Field label="Armor Detail" hint='e.g. "natural armor"'>
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.armorDesc}
               onChange={(e) => onChange({ armorDesc: e.target.value })}
             />
           </Field>
           <Field label="HP">
-            <NumberInput className={inputCls} value={value.hp} onChange={(n) => onChange({ hp: n })} />
+            <NumberInput className={`${inputCls} w-full`} value={value.hp} onChange={(n) => onChange({ hp: n })} />
           </Field>
           <Field label="Max HP">
-            <NumberInput className={inputCls} value={value.maxHp} onChange={(n) => onChange({ maxHp: n })} />
+            <NumberInput className={`${inputCls} w-full`} value={value.maxHp} onChange={(n) => onChange({ maxHp: n })} />
           </Field>
           <Field label="Hit Dice" hint='e.g. "19d12 + 133"'>
-            <input className={inputCls} value={value.hitDice} onChange={(e) => onChange({ hitDice: e.target.value })} />
+            <input className={`${inputCls} w-full`} value={value.hitDice} onChange={(e) => onChange({ hitDice: e.target.value })} />
           </Field>
           <Field label="Speed (ft)">
-            <NumberInput className={inputCls} value={value.speed} onChange={(n) => onChange({ speed: n })} />
+            <NumberInput className={`${inputCls} w-full`} value={value.speed} onChange={(n) => onChange({ speed: n })} />
           </Field>
           <Field label="Speed Detail" hint='e.g. "40 ft., fly 80 ft."'>
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.speedDetail}
               onChange={(e) => onChange({ speedDetail: e.target.value })}
             />
           </Field>
           <Field label="Initiative Bonus">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.initiativeBonus}
               onChange={(e) => onChange({ initiativeBonus: e.target.value })}
             />
           </Field>
           <Field label="Proficiency Bonus" hint="Optional — added to attacks/saves where applicable.">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.proficiencyBonus}
               onChange={(e) => onChange({ proficiencyBonus: e.target.value })}
             />
@@ -297,7 +297,7 @@ export function CreatureFormFields({
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {(Object.keys(value.stats) as Array<keyof AbilityScores>).map((key) => (
             <Field key={key} label={key.toUpperCase()}>
-              <NumberInput className={inputCls} value={value.stats[key]} onChange={(n) => setStat(key, n)} />
+              <NumberInput className={`${inputCls} w-full`} value={value.stats[key]} onChange={(n) => setStat(key, n)} />
             </Field>
           ))}
         </div>
@@ -311,7 +311,7 @@ export function CreatureFormFields({
             <Field key={key} label={key.toUpperCase()} hint="Blank = plain modifier.">
               <input
                 type="number"
-                className={inputCls}
+                className={`${inputCls} w-full`}
                 placeholder={String(abilityModifier(value.stats[key]))}
                 value={value.savingThrows[key] ?? ""}
                 onChange={(e) => setSave(key, e.target.value)}
@@ -326,11 +326,11 @@ export function CreatureFormFields({
         <h2 className={FORM_SECTION_HEADING_CLS}>Senses &amp; Languages</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Field label="Senses" hint='e.g. "Darkvision 60 ft., passive Perception 11"'>
-            <input className={inputCls} value={value.senses} onChange={(e) => onChange({ senses: e.target.value })} />
+            <input className={`${inputCls} w-full`} value={value.senses} onChange={(e) => onChange({ senses: e.target.value })} />
           </Field>
           <Field label="Languages">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.languages}
               onChange={(e) => onChange({ languages: e.target.value })}
             />
@@ -352,28 +352,28 @@ export function CreatureFormFields({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Field label="Damage Vulnerabilities">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.damageVulnerabilities}
               onChange={(e) => onChange({ damageVulnerabilities: e.target.value })}
             />
           </Field>
           <Field label="Damage Resistances">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.damageResistances}
               onChange={(e) => onChange({ damageResistances: e.target.value })}
             />
           </Field>
           <Field label="Damage Immunities">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.damageImmunities}
               onChange={(e) => onChange({ damageImmunities: e.target.value })}
             />
           </Field>
           <Field label="Condition Immunities">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               value={value.conditionImmunities}
               onChange={(e) => onChange({ conditionImmunities: e.target.value })}
             />
@@ -400,7 +400,7 @@ export function CreatureFormFields({
           </Field>
           <Field label="Save DC">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               disabled={!value.spellcastingAbility}
               value={value.spellcastingSaveDc}
               onChange={(e) => onChange({ spellcastingSaveDc: e.target.value })}
@@ -408,7 +408,7 @@ export function CreatureFormFields({
           </Field>
           <Field label="Attack Bonus">
             <input
-              className={inputCls}
+              className={`${inputCls} w-full`}
               disabled={!value.spellcastingAbility}
               value={value.spellcastingAttackBonus}
               onChange={(e) => onChange({ spellcastingAttackBonus: e.target.value })}

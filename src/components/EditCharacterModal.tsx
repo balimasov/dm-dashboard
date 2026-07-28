@@ -284,29 +284,29 @@ export function EditCharacterModal({
               <h2 className={FORM_SECTION_HEADING_CLS}>Basic Info</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Field label="Name">
-                  <input className={inputCls} value={draft.name} onChange={(e) => set("name", e.target.value)} />
+                  <input className={`${inputCls} w-full`} value={draft.name} onChange={(e) => set("name", e.target.value)} />
                 </Field>
                 <Field label="Race">
-                  <input className={inputCls} value={draft.race} onChange={(e) => set("race", e.target.value)} />
+                  <input className={`${inputCls} w-full`} value={draft.race} onChange={(e) => set("race", e.target.value)} />
                 </Field>
                 <Field label="Class">
-                  <input className={inputCls} value={draft.className} onChange={(e) => set("className", e.target.value)} />
+                  <input className={`${inputCls} w-full`} value={draft.className} onChange={(e) => set("className", e.target.value)} />
                 </Field>
                 <Field label="Subclass">
                   <input
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.subclass ?? ""}
                     onChange={(e) => set("subclass", e.target.value)}
                   />
                 </Field>
                 <Field label="Level">
-                  <NumberInput className={inputCls} value={draft.level} onChange={(n) => set("level", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.level} onChange={(n) => set("level", n)} />
                 </Field>
                 <Field label="Initiative (bonus)">
-                  <NumberInput className={inputCls} value={draft.initiative} onChange={(n) => set("initiative", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.initiative} onChange={(n) => set("initiative", n)} />
                 </Field>
                 <Field label="Party Role">
-                  <input className={inputCls} value={draft.role} onChange={(e) => set("role", e.target.value)} />
+                  <input className={`${inputCls} w-full`} value={draft.role} onChange={(e) => set("role", e.target.value)} />
                 </Field>
                 <label className="mt-6 flex items-center gap-2 text-sm text-slate-300">
                   <input
@@ -325,37 +325,37 @@ export function EditCharacterModal({
               <h2 className={FORM_SECTION_HEADING_CLS}>Combat State</h2>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                 <Field label="HP">
-                  <NumberInput className={inputCls} value={draft.combat.hp} onChange={(n) => setCombat("hp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.combat.hp} onChange={(n) => setCombat("hp", n)} />
                 </Field>
                 <Field label="Max HP" hint="Recalculated automatically on the next sync.">
-                  <NumberInput className={inputCls} value={draft.combat.maxHp} onChange={(n) => setCombat("maxHp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.combat.maxHp} onChange={(n) => setCombat("maxHp", n)} />
                 </Field>
                 <Field label="THP">
-                  <NumberInput className={inputCls} value={draft.combat.tempHp} onChange={(n) => setCombat("tempHp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.combat.tempHp} onChange={(n) => setCombat("tempHp", n)} />
                 </Field>
                 <Field label="AC">
-                  <NumberInput className={inputCls} value={draft.combat.ac} onChange={(n) => setCombat("ac", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.combat.ac} onChange={(n) => setCombat("ac", n)} />
                 </Field>
                 <Field label="Speed">
-                  <NumberInput className={inputCls} value={draft.combat.speed} onChange={(n) => setCombat("speed", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.combat.speed} onChange={(n) => setCombat("speed", n)} />
                 </Field>
                 <Field label="Passive Perception">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.passivePerception}
                     onChange={(n) => setCombat("passivePerception", n)}
                   />
                 </Field>
                 <Field label="Passive Investigation">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.passiveInvestigation}
                     onChange={(n) => setCombat("passiveInvestigation", n)}
                   />
                 </Field>
                 <Field label="Passive Insight">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.passiveInsight}
                     onChange={(n) => setCombat("passiveInsight", n)}
                   />
@@ -364,14 +364,14 @@ export function EditCharacterModal({
                   <NumberInput
                     min={0}
                     max={6}
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.exhaustion}
                     onChange={(n) => setCombat("exhaustion", n)}
                   />
                 </Field>
                 <Field label="Conditions (comma-separated)">
                   <input
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.conditions.join(", ")}
                     onChange={(e) =>
                       setCombat(
@@ -391,7 +391,7 @@ export function EditCharacterModal({
                   <NumberInput
                     min={0}
                     max={3}
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.deathSaves?.successes ?? 0}
                     onChange={(n) =>
                       setCombat("deathSaves", { failures: draft.combat.deathSaves?.failures ?? 0, successes: n })
@@ -402,7 +402,7 @@ export function EditCharacterModal({
                   <NumberInput
                     min={0}
                     max={3}
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.combat.deathSaves?.failures ?? 0}
                     onChange={(n) =>
                       setCombat("deathSaves", { successes: draft.combat.deathSaves?.successes ?? 0, failures: n })
@@ -418,7 +418,7 @@ export function EditCharacterModal({
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                 {(Object.keys(draft.stats) as Array<keyof AbilityScores>).map((key) => (
                   <Field key={key} label={key.toUpperCase()}>
-                    <NumberInput className={inputCls} value={draft.stats[key]} onChange={(n) => setStat(key, n)} />
+                    <NumberInput className={`${inputCls} w-full`} value={draft.stats[key]} onChange={(n) => setStat(key, n)} />
                   </Field>
                 ))}
               </div>
@@ -485,21 +485,21 @@ export function EditCharacterModal({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Field label="Resistances (comma-separated)">
                   <input
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.resistances.join(", ")}
                     onChange={(e) => setDamageList("resistances", e.target.value)}
                   />
                 </Field>
                 <Field label="Immunities (comma-separated)">
                   <input
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.immunities.join(", ")}
                     onChange={(e) => setDamageList("immunities", e.target.value)}
                   />
                 </Field>
                 <Field label="Vulnerabilities (comma-separated)">
                   <input
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.vulnerabilities.join(", ")}
                     onChange={(e) => setDamageList("vulnerabilities", e.target.value)}
                   />
@@ -617,21 +617,21 @@ export function EditCharacterModal({
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Modifier">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.spellcasting?.modifier ?? 0}
                     onChange={(n) => setSpellcasting("modifier", n)}
                   />
                 </Field>
                 <Field label="Spell Attack">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.spellcasting?.attack ?? 0}
                     onChange={(n) => setSpellcasting("attack", n)}
                   />
                 </Field>
                 <Field label="Save DC">
                   <NumberInput
-                    className={inputCls}
+                    className={`${inputCls} w-full`}
                     value={draft.spellcasting?.saveDc ?? 0}
                     onChange={(n) => setSpellcasting("saveDc", n)}
                   />
@@ -712,19 +712,19 @@ export function EditCharacterModal({
               </div>
               <div className="grid grid-cols-5 gap-3">
                 <Field label="PP">
-                  <NumberInput className={inputCls} value={draft.currency.pp} onChange={(n) => setCurrency("pp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.currency.pp} onChange={(n) => setCurrency("pp", n)} />
                 </Field>
                 <Field label="GP">
-                  <NumberInput className={inputCls} value={draft.currency.gp} onChange={(n) => setCurrency("gp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.currency.gp} onChange={(n) => setCurrency("gp", n)} />
                 </Field>
                 <Field label="EP">
-                  <NumberInput className={inputCls} value={draft.currency.ep} onChange={(n) => setCurrency("ep", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.currency.ep} onChange={(n) => setCurrency("ep", n)} />
                 </Field>
                 <Field label="SP">
-                  <NumberInput className={inputCls} value={draft.currency.sp} onChange={(n) => setCurrency("sp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.currency.sp} onChange={(n) => setCurrency("sp", n)} />
                 </Field>
                 <Field label="CP">
-                  <NumberInput className={inputCls} value={draft.currency.cp} onChange={(n) => setCurrency("cp", n)} />
+                  <NumberInput className={`${inputCls} w-full`} value={draft.currency.cp} onChange={(n) => setCurrency("cp", n)} />
                 </Field>
               </div>
             </section>

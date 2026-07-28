@@ -571,7 +571,7 @@ export function TraitMechanicsEditor({
                         </Field>
                         <Field label="Attack Bonus" hint="Optional — blank hides it instead of showing +0.">
                           <input
-                            className={groupInputCls}
+                            className={`${groupInputCls} w-full`}
                             type="number"
                             placeholder="e.g. 7"
                             value={t.attack?.attackBonus ?? ""}
@@ -584,7 +584,7 @@ export function TraitMechanicsEditor({
                         </Field>
                         <Field label="Range (ft)">
                           <input
-                            className={groupInputCls}
+                            className={`${groupInputCls} w-full`}
                             placeholder="5 or 100/400"
                             value={t.attack?.range ?? ""}
                             onChange={(e) => updateTraitAttack(index, { range: e.target.value || undefined })}
@@ -648,7 +648,7 @@ export function TraitMechanicsEditor({
                         </Field>
                         <Field label="Save DC">
                           <input
-                            className={groupInputCls}
+                            className={`${groupInputCls} w-full`}
                             type="number"
                             value={t.save?.dc ?? 0}
                             onChange={(e) => updateTraitSave(index, { dc: Number(e.target.value) })}
@@ -811,7 +811,7 @@ export function TraitMechanicsEditor({
                         </Field>
                         <Field label={t.aoe?.shape === "cube" ? "Edge (ft)" : "Size (ft)"}>
                           <input
-                            className={groupInputCls}
+                            className={`${groupInputCls} w-full`}
                             type="number"
                             value={t.aoe?.size ?? 20}
                             onChange={(e) => updateTraitAoe(index, { size: Number(e.target.value) })}
@@ -820,7 +820,7 @@ export function TraitMechanicsEditor({
                         {t.aoe?.shape === "line" && (
                           <Field label="Width (ft)">
                             <input
-                              className={groupInputCls}
+                              className={`${groupInputCls} w-full`}
                               type="number"
                               placeholder="e.g. 5"
                               value={t.aoe?.width ?? ""}
