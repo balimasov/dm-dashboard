@@ -24,6 +24,7 @@ import { SyncAllButton } from "@/components/SyncAllButton";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
+import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconFab } from "@/components/ui/IconFab";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
@@ -169,13 +170,22 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
  * rendering an empty box. Reuses the exact `.notes-editor-content` rendering
  * `CampaignJournalModal`'s View mode already uses for the same underlying
  * HTML shape (bold/italic/headings/lists/links from the same editor).
+ * Wrapped in `DIM_ROW_CARD_CLS` (the same dim card recipe `TraitMechanicsEditor`/
+ * `CampaignJournalModal` use) so the text reads as its own block instead of
+ * sitting directly on the page background with nothing to visually separate
+ * it from the section around it — same treatment for the empty-state message.
  */
 function CampaignDescription({ notes }: { notes: string }) {
   const isEmpty = notes.replace(/<[^>]+>/g, "").trim().length === 0;
-  if (isEmpty) {
-    return <p className={MUTED_BODY_CLS}>No description yet — add one from Settings.</p>;
-  }
-  return <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: notes }} />;
+  return (
+    <div className={`p-3 ${DIM_ROW_CARD_CLS}`}>
+      {isEmpty ? (
+        <p className={MUTED_BODY_CLS}>No description yet — add one from Settings.</p>
+      ) : (
+        <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: notes }} />
+      )}
+    </div>
+  );
 }
 
 /** Open/closed state for each collapsible section, read from cookies on the server so the first paint already matches the user's real preference — see `CollapsibleSection`. */

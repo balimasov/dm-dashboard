@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { getLinkVisual } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { IconButton } from "./ui/IconButton";
 import { PencilIcon } from "./ui/icons";
 import { PANEL_HEADING_CLS } from "./ui/typography";
@@ -15,11 +14,14 @@ import { PANEL_HEADING_CLS } from "./ui/typography";
  * reachable at any scroll position during a session — the whole point is
  * looking something up mid-game without hunting for it. Same
  * click-outside-to-close popover pattern as `SyncAllButton`'s auto-sync menu
- * and `StatusRail`'s "+" add-status trigger. Trigger button and popover
- * header both match `RemindersFab`'s own recipe now (dark circular button
- * with an emoji glyph, `emoji + label + (count)` heading) — the two float in
- * the same corner of the screen and used to look like two different button
- * families sitting side by side.
+ * and `StatusRail`'s "+" add-status trigger. Trigger button, popover shell,
+ * and popover header all match `RemindersFab`'s own recipe now (dark
+ * circular button with an emoji glyph, `bg-slate-950` panel, `emoji + label
+ * + (count)` heading) — the two float in the same corner of the screen and
+ * used to look like two different button families sitting side by side.
+ * Deliberately not `POPOVER_SHELL_CLS` here — that shared recipe's
+ * `bg-slate-900` reads visibly lighter than `RemindersFab`'s own
+ * `bg-slate-950`, which is the darker shade this popover is meant to match.
  */
 export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onManage?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -51,7 +53,7 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
       </button>
 
       {open && (
-        <div className={`scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto py-1 ${POPOVER_SHELL_CLS}`}>
+        <div className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 py-1 shadow-xl">
           <div className="flex items-center justify-between gap-2 px-3 pb-1 pt-0.5">
             <h2 className={`flex items-center gap-2 ${PANEL_HEADING_CLS}`}>
               <span aria-hidden="true">🔗</span>
