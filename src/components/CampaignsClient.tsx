@@ -6,6 +6,7 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { Hero } from "@/components/Hero";
 import { Button } from "@/components/ui/Button";
+import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import {
   EMPTY_STATE_CLS,
   FORM_SECTION_HEADING_CLS,
@@ -45,7 +46,7 @@ function CampaignRow({
   onRemove?: (id: string) => void;
 }) {
   return (
-    <li className="relative flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-900 sm:flex-row sm:items-center">
+    <li className={`relative flex flex-col gap-3 ${ROW_CARD_CLS} px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-900 sm:flex-row sm:items-center`}>
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <CampaignLogo campaign={campaign} />
         <div className="min-w-0 flex-1">

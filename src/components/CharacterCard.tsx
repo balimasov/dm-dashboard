@@ -12,6 +12,7 @@ import { EditCharacterModal } from "./EditCharacterModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { SkillPanel } from "./SkillPanel";
 import { ShieldIcon, SpeedIcon, InitiativeIcon, ProficiencyIcon } from "./ui/icons";
+import { AC_HINT_PANEL, INITIATIVE_HINT_PANEL, PROFICIENCY_HINT_PANEL, SPEED_HINT_PANEL } from "./ui/combatStatHints";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -108,7 +109,7 @@ export function CharacterCard({
         <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
           <IconStat
             icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Armor Class — the number an attack roll must meet or beat to hit you.</p>}
+            panel={AC_HINT_PANEL}
             label="AC"
           >
             {c.combat.ac}
@@ -116,14 +117,14 @@ export function CharacterCard({
           <IconStat
             className="pl-2"
             icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Speed — how many feet you can move on your turn.</p>}
+            panel={SPEED_HINT_PANEL}
             label="Speed"
           >
             {c.combat.speed}ft
           </IconStat>
           <IconStat
             icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+            panel={INITIATIVE_HINT_PANEL}
             label="Initiative"
           >
             {formatModifier(c.initiative)}
@@ -131,9 +132,7 @@ export function CharacterCard({
           <IconStat
             className="pl-2"
             icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={
-              <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
-            }
+            panel={PROFICIENCY_HINT_PANEL}
             label="Prof"
           >
             {formatModifier(proficiencyBonus(c.level))}

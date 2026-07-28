@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { groupInputCls, inputCls } from "./Field";
 import { MUTED_LABEL_CLS } from "./typography";
 
@@ -60,7 +61,7 @@ export function SelectMenu<T extends string>({
         <span className={MUTED_LABEL_CLS}>▾</span>
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-10 mt-1 min-w-full whitespace-nowrap rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
+        <div className={`absolute left-0 top-full z-10 mt-1 min-w-full whitespace-nowrap py-1 ${POPOVER_SHELL_CLS}`}>
           {options.map((opt) => (
             <button
               key={opt.value}

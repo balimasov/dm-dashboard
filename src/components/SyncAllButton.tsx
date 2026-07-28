@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RefreshIcon } from "./ui/icons";
+import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { MICRO_LABEL_CLS } from "./ui/typography";
 
 const AUTO_SYNC_OPTIONS: Array<{ minutes: number; label: string }> = [
@@ -106,7 +107,7 @@ export function SyncAllButton({
         ▾
       </button>
       {menuOpen && (
-        <div className="absolute right-0 top-10 z-10 w-40 rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
+        <div className={`absolute right-0 top-10 z-10 w-40 py-1 ${POPOVER_SHELL_CLS}`}>
           <p className={`px-3 pb-1 pt-0.5 ${MICRO_LABEL_CLS}`}>Auto-sync</p>
           {AUTO_SYNC_OPTIONS.map((opt) => (
             <button

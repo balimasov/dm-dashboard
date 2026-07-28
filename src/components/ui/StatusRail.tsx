@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
 import { CONDITION_INFO, getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
+import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { ExhaustionIcon, ConcentrationIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
@@ -173,7 +174,7 @@ function AddStatusBadge({
         +
       </button>
       {open && (
-        <div className="absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-3 text-left shadow-lg shadow-black/40">
+        <div className={`absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
           {onExhaustionChange && (
             <div>
               <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>

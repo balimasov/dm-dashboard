@@ -7,6 +7,7 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
+import { ROW_CARD_CLS } from "./ui/containerStyles";
 import { ReminderRow } from "./ui/ReminderRow";
 import { PANEL_HEADING_CLS, REMINDER_LINK_TITLE_CLS } from "./ui/typography";
 
@@ -135,7 +136,7 @@ export function RemindersFab({
             </h2>
             <div className="space-y-3">
               {groups.map((group) => (
-                <div key={group.ownerId} className="rounded-lg border border-slate-800 bg-slate-900/60 p-2">
+                <div key={group.ownerId} className={`${ROW_CARD_CLS} p-2`}>
                   <div className="mb-1.5 flex min-w-0 items-center gap-2">
                     <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
                     <button

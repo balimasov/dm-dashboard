@@ -9,6 +9,12 @@ import { HintPanel } from "./ui/HintPanel";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import {
+  CREATURE_AC_HINT_PANEL,
+  CREATURE_PROFICIENCY_HINT_PANEL,
+  CREATURE_SPEED_HINT_PANEL,
+  INITIATIVE_HINT_PANEL,
+} from "./ui/combatStatHints";
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
@@ -101,7 +107,7 @@ export function CreatureStatBlock({
         <div className="space-y-1.5 text-sm text-slate-300">
           <IconStat
             icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Armor Class — the number an attack roll must meet or beat to hit it.</p>}
+            panel={CREATURE_AC_HINT_PANEL}
             label="AC"
           >
             {creature.ac}
@@ -109,21 +115,21 @@ export function CreatureStatBlock({
           </IconStat>
           <IconStat
             icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Speed — how many feet it can move on its turn.</p>}
+            panel={CREATURE_SPEED_HINT_PANEL}
             label="Speed"
           >
             {creature.speedDetail ?? `${creature.speed}ft`}
           </IconStat>
           <IconStat
             icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>}
+            panel={INITIATIVE_HINT_PANEL}
             label="Initiative"
           >
             {creature.initiativeBonus !== undefined ? formatModifier(creature.initiativeBonus) : "—"}
           </IconStat>
           <IconStat
             icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            panel={<p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>}
+            panel={CREATURE_PROFICIENCY_HINT_PANEL}
             label="Prof"
           >
             {creature.proficiencyBonus !== undefined ? formatModifier(creature.proficiencyBonus) : "—"}

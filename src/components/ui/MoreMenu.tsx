@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { DotsVerticalIcon } from "./icons";
 
 const EDGE_MARGIN = 8;
@@ -122,8 +123,8 @@ export function MoreMenu({
       style={portal ? { left: "-9999px", visibility: "hidden" } : undefined}
       className={
         portal
-          ? "fixed z-[60] min-w-[9rem] rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40"
-          : "absolute right-0 top-10 z-30 min-w-[9rem] rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40"
+          ? `fixed z-[60] min-w-[9rem] py-1 ${POPOVER_SHELL_CLS}`
+          : `absolute right-0 top-10 z-30 min-w-[9rem] py-1 ${POPOVER_SHELL_CLS}`
       }
     >
       {children}

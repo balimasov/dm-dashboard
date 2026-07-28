@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
+import { inputCls } from "./Field";
 import { IconButton } from "./IconButton";
 import { SectionDivider } from "./SectionDivider";
 import { PlusIcon, TrashOutlineIcon } from "./icons";
@@ -39,7 +40,7 @@ function QuickNoteRow({
           setDraft(note.text);
           setEditing(false);
         }}
-        className="w-full rounded-md border border-sky-700 bg-slate-800 px-1.5 py-0.5 text-sm text-slate-100 outline-none"
+        className={`${inputCls} w-full`}
       />
     );
   }
@@ -136,7 +137,7 @@ export function QuickNotesSection({
             }
           }}
           placeholder="Type a note, press Enter..."
-          className="mb-1.5 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-600"
+          className={`${inputCls} mb-1.5 w-full`}
         />
       )}
       {sorted.length > 0 ? (

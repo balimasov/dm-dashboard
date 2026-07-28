@@ -5,6 +5,7 @@ import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
 import { HintPanel } from "./HintPanel";
+import { MetaBadge } from "./MetaBadge";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 /**
@@ -95,19 +96,17 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
   return (
     <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
       {attack.mastery && (
-        <InfoTooltip
-          hoverOnly
+        <MetaBadge
+          label={attack.mastery}
+          uppercase={false}
+          colorClassName="border-violet-700 bg-violet-950/30 text-violet-300"
           panel={
             <p>
               <span className="font-semibold text-violet-300">{attack.mastery}</span>
               {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
             </p>
           }
-        >
-          <span className="rounded border border-violet-700 bg-violet-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-300">
-            {attack.mastery}
-          </span>
-        </InfoTooltip>
+        />
       )}
       {/* Tighter `gap-1` than the row's own `gap-2` — the separator reads as
           a seam *between* the bonus and damage specifically, not another

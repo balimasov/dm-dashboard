@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ROW_CARD_CLS } from "./ui/containerStyles";
 
 /**
  * One draggable row in a roster list — shared shape for both the character
@@ -45,7 +46,7 @@ export function RosterRow({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 ${
+      className={`flex ${ROW_CARD_CLS} px-3 py-3 ${
         singleRow
           ? "flex-row items-center gap-3"
           : "flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"

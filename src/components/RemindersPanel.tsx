@@ -7,6 +7,7 @@ import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
+import { ROW_CARD_CLS } from "./ui/containerStyles";
 import { ReminderRow } from "./ui/ReminderRow";
 import { MUTED_BODY_CLS, REMINDER_LINK_TITLE_CLS } from "./ui/typography";
 
@@ -120,7 +121,7 @@ export function RemindersPanel({
             second line still reads better here than a forced side-scroll. */}
         <div className="flex flex-wrap gap-3 px-3 pb-2">
           {groups.map((group) => (
-            <div key={group.ownerId} className="w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:w-[220px]">
+            <div key={group.ownerId} className={`w-full ${ROW_CARD_CLS} p-3 sm:w-[220px]`}>
               <div className="mb-2 flex min-w-0 items-center gap-2">
                 <Avatar src={group.avatarUrl} label={group.ownerName} size="xs" />
                 {/* Deliberately not `flex-1` — the click zone should hug the

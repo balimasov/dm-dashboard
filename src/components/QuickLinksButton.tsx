@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getLinkVisual, LinkIcon } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
+import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { IconButton } from "./ui/IconButton";
 import { PencilIcon } from "./ui/icons";
 
@@ -45,7 +46,7 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
       </button>
 
       {open && (
-        <div className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
+        <div className={`scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto py-1 ${POPOVER_SHELL_CLS}`}>
           <div className="flex items-center justify-between px-3 pb-1 pt-0.5">
             <p className="text-xs uppercase tracking-wide text-slate-500">Quick Links</p>
             {onManage && (

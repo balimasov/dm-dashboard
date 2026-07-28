@@ -9,6 +9,7 @@ import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { MetaBadge } from "./ui/MetaBadge";
 import { MICRO_ITEM_LABEL_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
 import { SectionDivider } from "./ui/SectionDivider";
@@ -54,11 +55,7 @@ function formatAoe(aoe: NonNullable<CreatureTrait["aoe"]>): string {
 /** A single non-damage effect badge (heal/temp HP/AC bonus/other) — same visual weight as the recharge badge, colored per kind so a DM can tell them apart at a glance in a row that mixes several. */
 function EffectBadge({ effect }: { effect: CreatureEffect }) {
   const label = effect.kind === "other" ? effect.label || "Effect" : EFFECT_KIND_LABELS[effect.kind];
-  return (
-    <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${EFFECT_KIND_COLOR[effect.kind]}`}>
-      {label} {effect.amount}
-    </span>
-  );
+  return <MetaBadge label={`${label} ${effect.amount}`} uppercase={false} colorClassName={EFFECT_KIND_COLOR[effect.kind]} />;
 }
 
 /** Bonus/damage (attack), DC (save), a recharge badge, and any non-damage effects — the fast-glance numbers a DM needs mid-combat without reading `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing` on the character side. */
@@ -88,17 +85,13 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
         </span>
       )}
       {trait.recharge && (
-        <span className="rounded border border-sky-700 bg-sky-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
-          {trait.recharge}
-        </span>
+        <MetaBadge label={trait.recharge} uppercase={false} colorClassName="border-sky-700 bg-sky-950/30 text-sky-300" />
       )}
       {(trait.effects ?? []).map((effect, i) => (
         <EffectBadge key={i} effect={effect} />
       ))}
       {trait.spell && (
-        <span className="rounded border border-fuchsia-700 bg-fuchsia-950/30 px-1.5 py-0.5 text-[10px] font-semibold text-fuchsia-300">
-          {trait.spell}
-        </span>
+        <MetaBadge label={trait.spell} uppercase={false} colorClassName="border-fuchsia-700 bg-fuchsia-950/30 text-fuchsia-300" />
       )}
     </span>
   );

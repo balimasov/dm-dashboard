@@ -11,7 +11,8 @@ import {
   STAT_ORDER,
 } from "@/lib/types";
 import { inferStructuredTraitFields } from "@/lib/creatureStructuredInfer";
-import { addBtnCls, AutoGrowTextarea, Field, groupInputCls, inputCls } from "./shared";
+import { addBtnCls, AutoGrowTextarea, CHECKBOX_BASE_CLS, Field, groupInputCls, inputCls } from "./shared";
+import { MetaBadge } from "@/components/ui/MetaBadge";
 import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import { FORM_SECTION_HEADING_CLS, HINT_TEXT_CLS } from "@/components/ui/typography";
@@ -236,9 +237,7 @@ function TraitSummaryBadges({ trait }: { trait: CreatureTrait }) {
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5 pl-1">
       {badges.map((b) => (
-        <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>
-          {b.text}
-        </span>
+        <MetaBadge key={b.key} label={b.text} uppercase={false} colorClassName={b.className} />
       ))}
     </div>
   );
@@ -548,7 +547,7 @@ export function TraitMechanicsEditor({
                       >
                         <input
                           type="checkbox"
-                          className={`h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 ${MECHANIC_STYLE[m].accent}`}
+                          className={`${CHECKBOX_BASE_CLS} ${MECHANIC_STYLE[m].accent}`}
                           checked={mechanics.has(m)}
                           onChange={(e) => toggleMechanic(index, m, e.target.checked)}
                         />

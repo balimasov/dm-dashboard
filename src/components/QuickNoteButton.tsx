@@ -6,6 +6,7 @@ import { plainTextToParagraphHtml } from "@/lib/journal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
+import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { IconFab } from "./ui/IconFab";
 import { PencilIcon } from "./ui/icons";
 import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
@@ -87,7 +88,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
         // button sat close enough to the right edge, clipping the panel.
         // Pinning both side edges to the viewport with a margin sidesteps
         // that regardless of where the button ends up in the header row.
-        <div className="fixed inset-x-3 top-24 z-30 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg shadow-black/40 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80">
+        <div className={`fixed inset-x-3 top-24 z-30 p-3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80 ${POPOVER_SHELL_CLS}`}>
           <textarea
             ref={textareaRef}
             value={text}

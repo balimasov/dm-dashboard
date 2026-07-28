@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
@@ -182,7 +183,7 @@ function AddCreaturePanel({
           {results.map((t) => (
             <li
               key={t.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+              className={`flex items-center justify-between gap-3 ${ROW_CARD_CLS} px-3 py-2`}
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-100">{t.name}</p>

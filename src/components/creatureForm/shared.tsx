@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 
-export { Field, inputCls, groupInputCls } from "@/components/ui/Field";
+export { Field, inputCls, groupInputCls, CHECKBOX_BASE_CLS } from "@/components/ui/Field";
 
 export const addBtnCls = "text-xs text-sky-400 hover:underline";
 
