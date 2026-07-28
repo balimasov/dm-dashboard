@@ -29,6 +29,16 @@ export function useEscapeToClose(onClose: () => void, active = true) {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
       if (stack[stack.length - 1] !== id) return;
+      // Escape is a keyboard event, so whatever element still holds focus
+      // underneath this layer (almost always the card header button that
+      // opened it — the modal itself never moved focus) re-qualifies for
+      // `:focus-visible` the instant this fires, even if the modal was
+      // originally opened with a mouse click. Blurring it here means the
+      // close leaves nothing focused, rather than surfacing a ring the user
+      // never asked to see.
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       onClose();
     }
     window.addEventListener("keydown", onKeyDown);
