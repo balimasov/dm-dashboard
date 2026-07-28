@@ -12,6 +12,10 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [1.46.1] - 2026-07-28
+### Fixed
+- **Ще два дублікати хінтів у тих самих файлах, що й AC/Speed/Initiative/Prof — знайдені під час глибшого перечитування хінтів.** `CharacterCard.tsx`/`CharacterDetailsModal.tsx`/`CreatureStatBlock.tsx` кожен незалежно набирав текст хінтів **Passive Perception/Investigation/Insight** (під Senses) і **Resist/Immune/Vulnerable** (переданих у `DamageInfoList`). Passive Investigation/Insight і всі три damage-хінти виявились побайтово однаковими в усіх трьох файлах — жодної різниці по "you"/"it", на відміну від AC/Speed. Тільки Passive Perception мала той самий займенниковий розкол, що й AC/Speed ("avoid your notice" у персонажа vs "avoid its notice" у істоти). Усі вісім винесені в `ui/combatStatHints.tsx` (той самий файл, куди раніше переїхали AC/Speed/Initiative/Prof) і підключені до всіх трьох файлів — вигляд і текст хінтів не змінились.
+
 ## [1.46.0] - 2026-07-28
 ### Added
 - **`Modal` отримав новий проп `zIndexClassName`** (типово `z-50`) — вихід для модалки, відкритої зсередини вже відкритої модалки (та сама ситуація, що вже вирішувалась вручну для `Toast`), щоб вона могла стати `z-[60]` і рендеритись поверх батьківської.

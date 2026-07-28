@@ -23,3 +23,30 @@ export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move 
 export const CREATURE_PROFICIENCY_HINT_PANEL = (
   <p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>
 );
+
+/**
+ * Same duplication, found one layer down in the same three files: the
+ * Passive Perception/Investigation/Insight hints under Senses, and the
+ * Resist/Immune/Vulnerable hints passed into `DamageInfoList`.
+ * Investigation/Insight and all three damage-type hints turned out to have
+ * no "you"/"it" wording at all — genuinely one string each, not just a
+ * near-duplicate — so only Perception needs a creature-specific variant, the
+ * same way AC/Speed/Prof did above. `CreatureStatBlock.tsx`'s own 4th damage
+ * entry, Condition Immunity, has no character equivalent (only creatures
+ * have that field) — not a duplicate to unify, just a creature-only extra.
+ */
+export const PASSIVE_PERCEPTION_HINT_PANEL = (
+  <p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>
+);
+export const PASSIVE_INVESTIGATION_HINT_PANEL = (
+  <p>Passive Investigation — used to notice details or work out clues without an active search.</p>
+);
+export const PASSIVE_INSIGHT_HINT_PANEL = <p>Passive Insight — used to sense deception or read intentions without rolling.</p>;
+
+export const CREATURE_PASSIVE_PERCEPTION_HINT_PANEL = (
+  <p>Passive Perception — the score a hidden creature or object must beat to avoid its notice; also what Stealth checks are rolled against.</p>
+);
+
+export const RESIST_HINT_PANEL = <p>Resistance — takes half damage from this damage type.</p>;
+export const IMMUNE_HINT_PANEL = <p>Immunity — takes no damage from this damage type.</p>;
+export const VULNERABLE_HINT_PANEL = <p>Vulnerability — takes double damage from this damage type.</p>;

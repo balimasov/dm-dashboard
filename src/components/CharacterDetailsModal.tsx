@@ -31,7 +31,18 @@ import { HpBar } from "./ui/HpBar";
 import { IconButton } from "./ui/IconButton";
 import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
-import { AC_HINT_PANEL, INITIATIVE_HINT_PANEL, PROFICIENCY_HINT_PANEL, SPEED_HINT_PANEL } from "./ui/combatStatHints";
+import {
+  AC_HINT_PANEL,
+  IMMUNE_HINT_PANEL,
+  INITIATIVE_HINT_PANEL,
+  PASSIVE_INSIGHT_HINT_PANEL,
+  PASSIVE_INVESTIGATION_HINT_PANEL,
+  PASSIVE_PERCEPTION_HINT_PANEL,
+  PROFICIENCY_HINT_PANEL,
+  RESIST_HINT_PANEL,
+  SPEED_HINT_PANEL,
+  VULNERABLE_HINT_PANEL,
+} from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
@@ -343,13 +354,13 @@ export function CharacterDetailsModal({
         <SectionDivider>
           <SubHeading>Senses</SubHeading>
           <div className="grid grid-cols-3 gap-1.5">
-            <Pill panel={<p>Passive Perception — the score a hidden creature or object must beat to avoid your notice; also what Stealth checks are rolled against.</p>}>
+            <Pill panel={PASSIVE_PERCEPTION_HINT_PANEL}>
               {SKILL_ABBR.perception} {c.combat.passivePerception}
             </Pill>
-            <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+            <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
               {SKILL_ABBR.investigation} {c.combat.passiveInvestigation}
             </Pill>
-            <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+            <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
               {SKILL_ABBR.insight} {c.combat.passiveInsight}
             </Pill>
           </div>
@@ -404,12 +415,12 @@ export function CharacterDetailsModal({
         {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
         <DamageInfoList
           entries={[
-            { label: "Resist", value: c.resistances.join(", "), panel: <p>Resistance — takes half damage from this damage type.</p> },
-            { label: "Immune", value: c.immunities.join(", "), panel: <p>Immunity — takes no damage from this damage type.</p> },
+            { label: "Resist", value: c.resistances.join(", "), panel: RESIST_HINT_PANEL },
+            { label: "Immune", value: c.immunities.join(", "), panel: IMMUNE_HINT_PANEL },
             {
               label: "Vulnerable",
               value: c.vulnerabilities.join(", "),
-              panel: <p>Vulnerability — takes double damage from this damage type.</p>,
+              panel: VULNERABLE_HINT_PANEL,
             },
           ]}
         />

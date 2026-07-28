@@ -11,9 +11,15 @@ import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import {
   CREATURE_AC_HINT_PANEL,
+  CREATURE_PASSIVE_PERCEPTION_HINT_PANEL,
   CREATURE_PROFICIENCY_HINT_PANEL,
   CREATURE_SPEED_HINT_PANEL,
+  IMMUNE_HINT_PANEL,
   INITIATIVE_HINT_PANEL,
+  PASSIVE_INSIGHT_HINT_PANEL,
+  PASSIVE_INVESTIGATION_HINT_PANEL,
+  RESIST_HINT_PANEL,
+  VULNERABLE_HINT_PANEL,
 } from "./ui/combatStatHints";
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
@@ -148,20 +154,13 @@ export function CreatureStatBlock({
       <SectionDivider>
         <SubHeading>Senses</SubHeading>
         <div className="grid grid-cols-3 gap-1.5">
-          <Pill
-            panel={
-              <p>
-                Passive Perception — the score a hidden creature or object must beat to avoid its notice; also what
-                Stealth checks are rolled against.
-              </p>
-            }
-          >
+          <Pill panel={CREATURE_PASSIVE_PERCEPTION_HINT_PANEL}>
             {SKILL_ABBR.perception} {passivePerception}
           </Pill>
-          <Pill panel={<p>Passive Investigation — used to notice details or work out clues without an active search.</p>}>
+          <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
             {SKILL_ABBR.investigation} {passiveInvestigation}
           </Pill>
-          <Pill panel={<p>Passive Insight — used to sense deception or read intentions without rolling.</p>}>
+          <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
             {SKILL_ABBR.insight} {passiveInsight}
           </Pill>
         </div>
@@ -199,17 +198,17 @@ export function CreatureStatBlock({
           {
             label: "Resist",
             value: creature.damageResistances,
-            panel: <p>Resistance — takes half damage from this damage type.</p>,
+            panel: RESIST_HINT_PANEL,
           },
           {
             label: "Immune",
             value: creature.damageImmunities,
-            panel: <p>Immunity — takes no damage from this damage type.</p>,
+            panel: IMMUNE_HINT_PANEL,
           },
           {
             label: "Vulnerable",
             value: creature.damageVulnerabilities,
-            panel: <p>Vulnerability — takes double damage from this damage type.</p>,
+            panel: VULNERABLE_HINT_PANEL,
           },
           {
             label: "Condition Immunities",
