@@ -54,7 +54,7 @@ export function SelectMenu<T extends string>({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 font-semibold hover:bg-slate-800 ${variant === "group" ? groupInputCls : inputCls}`}
+        className={`flex w-full items-center justify-between gap-1.5 font-semibold hover:bg-slate-800 ${variant === "group" ? groupInputCls : inputCls}`}
       >
         {current?.label}
         <span className={MUTED_LABEL_CLS}>▾</span>
