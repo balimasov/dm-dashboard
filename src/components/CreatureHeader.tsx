@@ -72,7 +72,11 @@ export function CreatureHeader({
 
   return (
     <div className="flex items-start gap-3">
-      <button type="button" onClick={onClick} className="group flex min-w-0 flex-1 items-start gap-3 text-left">
+      <button
+        type="button"
+        onClick={onClick}
+        className="group flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      >
         {content}
       </button>
       {ownerTag}

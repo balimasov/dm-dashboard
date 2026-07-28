@@ -38,6 +38,14 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
  * them. Without wrap, the name's `flex-1 min-w-0` had nowhere left to go but
  * zero — it silently vanished, `truncate` and all, while the badges spilled
  * out past the panel's edge instead of just moving to their own line.
+ *
+ * `trailing` renders as a direct flex child, not wrapped in its own
+ * `basis-full` span — an earlier version forced it onto its own line below
+ * every viewport under Tailwind's 640px `sm` breakpoint, i.e. on every phone,
+ * regardless of whether the row actually needed to wrap. Each `trailing`
+ * component already sets its own `shrink-0 whitespace-nowrap`, so the
+ * container's `flex-wrap` alone is enough: it only drops `trailing` to a new
+ * line when the row genuinely runs out of room, one-line otherwise.
  */
 export function FlaggableRow({
   flagged,
@@ -56,7 +64,7 @@ export function FlaggableRow({
     >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
       <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>{children}</span>
-      {trailing && <span className="basis-full sm:basis-auto">{trailing}</span>}
+      {trailing}
     </div>
   );
 }

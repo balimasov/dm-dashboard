@@ -44,7 +44,11 @@ export function CharacterHeader({
   }
 
   return (
-    <button type="button" onClick={onClick} className="group flex w-full items-start gap-3 text-left">
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full items-start gap-3 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+    >
       {content}
     </button>
   );
