@@ -14,7 +14,6 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { CoinsPanel, InventoryOverview } from "@/components/InventoryOverview";
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { NotesEditor } from "@/components/NotesEditor";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersFab } from "@/components/RemindersFab";
@@ -161,25 +160,22 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
 }
 
 /**
- * Local state + save-on-blur — same lightweight pattern used elsewhere in
- * this app, no dedicated save button. Reports the saved value up via
- * `onSaved` so the Settings modal (a separate notes editor instance) opens
- * with this editor's latest text instead of whatever the page loaded with.
+ * Read-only render of the campaign's saved description — editing moved to
+ * Settings' own Notes section (`CampaignFormModal`), so this dashboard block
+ * only ever displays, never diverges from what's actually saved there. Same
+ * "strip markup, only real text counts" emptiness check the Journal
+ * composer uses (`Composer`'s own `isEmpty`), so a `NotesEditor` that only
+ * ever produced an empty `<p></p>` still reads as no description rather than
+ * rendering an empty box. Reuses the exact `.notes-editor-content` rendering
+ * `CampaignJournalModal`'s View mode already uses for the same underlying
+ * HTML shape (bold/italic/headings/lists/links from the same editor).
  */
-function CampaignNotes({ campaign, onSaved }: { campaign: Campaign; onSaved: (notes: string) => void }) {
-  const [notes, setNotes] = useState(campaign.notes);
-
-  async function saveNotes() {
-    if (notes === campaign.notes) return;
-    await apiFetch(`/api/campaigns/${campaign.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
-    });
-    onSaved(notes);
+function CampaignDescription({ notes }: { notes: string }) {
+  const isEmpty = notes.replace(/<[^>]+>/g, "").trim().length === 0;
+  if (isEmpty) {
+    return <p className={MUTED_BODY_CLS}>No description yet — add one from Settings.</p>;
   }
-
-  return <NotesEditor value={notes} onChange={setNotes} onBlur={saveNotes} placeholder="Campaign notes..." />;
+  return <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: notes }} />;
 }
 
 /** Open/closed state for each collapsible section, read from cookies on the server so the first paint already matches the user's real preference — see `CollapsibleSection`. */
@@ -507,11 +503,7 @@ export function DashboardClient({
             initialOpen={initialOpen.campaign}
           >
             <div className="px-3">
-              <p className={`mb-4 ${MUTED_BODY_CLS}`}>Freeform notes and overview for the campaign.</p>
-              <CampaignNotes
-                campaign={campaignState}
-                onSaved={(notes) => setCampaignState((c) => ({ ...c, notes }))}
-              />
+              <CampaignDescription notes={campaignState.notes} />
             </div>
           </CollapsibleSection>
         </div>

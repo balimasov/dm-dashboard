@@ -78,6 +78,19 @@ html {
      sticky element just never triggers — confirmed the app's own sticky
      header silently stopped sticking once `<body>` carried this too. */
   overflow-x: hidden;
+  /* The page's own root scrollbar used to be left at the browser's thick
+     native default, only turning thin one level down (a modal's own scroll
+     area, a sidebar list, ...). Opening a modal locks body scroll
+     (`useScrollLock`, `overflow: hidden`) — which removes the native
+     scrollbar's reserved width outright — so the page visibly widened by
+     that removed width the instant any modal opened, shifting everything
+     behind it. `scrollbar-gutter: stable` keeps that width reserved
+     regardless of whether the root can currently scroll, so toggling
+     `overflow: hidden` never changes the available content width. Root and
+     nested scrollbars now also share the exact same thin/themed look (see
+     `.scrollbar-themed` below) instead of only matching once you're already
+     inside something scrollable. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -91,22 +104,31 @@ body {
    overlaid on the party row). Firefox reads scrollbar-color/-width directly;
    WebKit/Blink (Chrome, Safari, Edge) need the ::-webkit-scrollbar-* pseudo
    elements instead — both are set so the thumb is just a translucent sliver
-   that fades into the background until you actually hover it. */
+   that fades into the background until you actually hover it. Applied to
+   `html` directly (the page's own root scrollbar) as well as
+   `.scrollbar-themed` (every nested scroll container — modals, sidebars,
+   popovers) so the two never visibly differ in width/color, only in which
+   element owns them. */
+html,
 .scrollbar-themed {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
+html::-webkit-scrollbar,
 .scrollbar-themed::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+html::-webkit-scrollbar-track,
 .scrollbar-themed::-webkit-scrollbar-track {
   background: transparent;
 }
+html::-webkit-scrollbar-thumb,
 .scrollbar-themed::-webkit-scrollbar-thumb {
   background-color: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
 }
+html::-webkit-scrollbar-thumb:hover,
 .scrollbar-themed::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.55);
 }

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getLinkVisual, LinkIcon } from "@/lib/linkIcons";
+import { getLinkVisual } from "@/lib/linkIcons";
 import { QuickLink } from "@/lib/types";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { IconButton } from "./ui/IconButton";
 import { PencilIcon } from "./ui/icons";
+import { PANEL_HEADING_CLS } from "./ui/typography";
 
 /**
  * A `position: fixed` trigger pinned to the bottom-right corner of the
@@ -13,11 +15,16 @@ import { PencilIcon } from "./ui/icons";
  * reachable at any scroll position during a session — the whole point is
  * looking something up mid-game without hunting for it. Same
  * click-outside-to-close popover pattern as `SyncAllButton`'s auto-sync menu
- * and `StatusRail`'s "+" add-status trigger.
+ * and `StatusRail`'s "+" add-status trigger. Trigger button and popover
+ * header both match `RemindersFab`'s own recipe now (dark circular button
+ * with an emoji glyph, `emoji + label + (count)` heading) — the two float in
+ * the same corner of the screen and used to look like two different button
+ * families sitting side by side.
  */
 export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onManage?: () => void }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(() => setOpen(false), open);
 
   useEffect(() => {
     if (!open) return;
@@ -38,17 +45,19 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
         aria-label="Quick links"
         aria-expanded={open}
         title="Quick links"
-        className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg shadow-black/40 transition hover:scale-105 ${
-          open ? "border-sky-400 bg-sky-500 text-white" : "border-sky-600 bg-sky-600 text-white hover:bg-sky-500"
-        }`}
+        className="flex h-12 w-12 items-center justify-center rounded-full border border-sky-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
       >
-        <LinkIcon className="h-6 w-6" />
+        <span aria-hidden="true">🔗</span>
       </button>
 
       {open && (
         <div className={`scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto py-1 ${POPOVER_SHELL_CLS}`}>
-          <div className="flex items-center justify-between px-3 pb-1 pt-0.5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Quick Links</p>
+          <div className="flex items-center justify-between gap-2 px-3 pb-1 pt-0.5">
+            <h2 className={`flex items-center gap-2 ${PANEL_HEADING_CLS}`}>
+              <span aria-hidden="true">🔗</span>
+              Quick Links
+              <span className="font-normal text-slate-500">({links.length})</span>
+            </h2>
             {onManage && (
               <IconButton
                 tone="muted"
