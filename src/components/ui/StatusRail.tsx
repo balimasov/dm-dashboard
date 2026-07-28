@@ -5,6 +5,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
 import { CONDITION_INFO, getConditionInfo, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 import { ExhaustionIcon, ConcentrationIcon } from "./icons";
+import { MICRO_LABEL_CLS } from "./typography";
 
 function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);
@@ -175,13 +176,13 @@ function AddStatusBadge({
         <div className="absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-3 text-left shadow-lg shadow-black/40">
           {onExhaustionChange && (
             <div>
-              <p className="mb-1.5 text-[10px] uppercase tracking-wide text-slate-500">Exhaustion</p>
+              <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>
               <DotMeter current={exhaustion} max={6} colorClass="bg-red-500" onSetCount={onExhaustionChange} />
             </div>
           )}
           {onConditionsChange && (
             <div>
-              <p className="mb-1.5 text-[10px] uppercase tracking-wide text-slate-500">Conditions</p>
+              <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Conditions</p>
               <div className="flex flex-wrap gap-1.5">
                 {Object.keys(CONDITION_INFO).map((name) => {
                   const active = conditions.includes(name);

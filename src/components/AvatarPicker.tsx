@@ -147,13 +147,9 @@ export function AvatarPicker({
               className="w-full"
             />
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPendingImage(null)}
-                className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
-              >
+              <Button type="button" variant="ghost" onClick={() => setPendingImage(null)} className="px-4 py-2 text-sm">
                 Cancel
-              </button>
+              </Button>
               <Button type="button" onClick={applyCrop}>
                 Apply
               </Button>

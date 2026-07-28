@@ -13,6 +13,7 @@ import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { StatBox } from "./ui/StatBox";
+import { MUTED_LABEL_CLS } from "./ui/typography";
 import { SubHeading } from "./ui/SubHeading";
 
 export const GROUP_LABELS: Record<NonNullable<CreatureTrait["group"]>, string> = {
@@ -94,8 +95,8 @@ export function CreatureStatBlock({
           onTempHpChange={onUpdate ? (tempHp) => onUpdate(creature.id, { tempHp }) : undefined}
           onDeathSavesChange={onUpdate ? (next) => onUpdate(creature.id, { deathSaves: next }) : undefined}
         />
-        {creature.hitDice && <p className="text-xs text-slate-500">Hit Dice: {creature.hitDice}</p>}
-        {creature.source && <p className="text-xs text-slate-500">Source: {creature.source}</p>}
+        {creature.hitDice && <p className={MUTED_LABEL_CLS}>Hit Dice: {creature.hitDice}</p>}
+        {creature.source && <p className={MUTED_LABEL_CLS}>Source: {creature.source}</p>}
 
         <div className="space-y-1.5 text-sm text-slate-300">
           <IconStat

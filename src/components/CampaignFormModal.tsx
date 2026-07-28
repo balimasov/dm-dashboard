@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/Button";
 import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { Modal } from "@/components/ui/Modal";
-import { INLINE_ERROR_CLS } from "@/components/ui/typography";
+import { INLINE_ERROR_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 
 const MAX_QUICK_LINKS = 15;
 
@@ -193,7 +193,7 @@ function Section({
   return (
     <section className={`pt-5 first:pt-0 ${divider ? "border-t border-slate-800/80 first:border-t-0" : ""}`}>
       <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-      {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
+      {description && <p className={`mt-1 ${MUTED_LABEL_CLS}`}>{description}</p>}
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -281,7 +281,11 @@ export function CampaignFormModal({
 
   return (
     <>
-    <Modal onClose={close} title={isEditing ? "Edit Campaign" : "New Campaign"} panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5">
+    <Modal
+      onClose={close}
+      title={isEditing ? "Edit Campaign" : "New Campaign"}
+      panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
+    >
         <div className="scrollbar-themed overflow-y-auto px-1">
               <form onSubmit={handleCreate}>
                 <Section title="Details">

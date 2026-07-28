@@ -32,6 +32,11 @@ import { ButtonHTMLAttributes } from "react";
  * would silently produce no CSS. `danger`'s colors are still the same
  * `DESIGN_TOKENS.danger.bg`/`.text` values, just spelled out so Tailwind can
  * see them.
+ *
+ * `focus-visible:ring-2` (not plain `focus:`) — see `Button`'s own doc
+ * comment for why icon-only buttons in particular want the keyboard-only
+ * variant: these are clicked constantly (close/edit/duplicate on every
+ * card), so a ring on every mouse click would be near-constant visual noise.
  */
 export type IconButtonTone = "neutral" | "muted" | "danger" | "accent";
 
@@ -50,7 +55,7 @@ export function IconButton({
   return (
     <button
       type="button"
-      className={`flex shrink-0 items-center justify-center rounded p-1 ${TONE_CLASSES[tone]} ${className}`.trim()}
+      className={`flex shrink-0 items-center justify-center rounded p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${TONE_CLASSES[tone]} ${className}`.trim()}
       {...props}
     />
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { IconButton } from "./ui/IconButton";
 
 const VARIANT_TEXT_CLASS = {
   info: "text-amber-300",
@@ -31,13 +32,9 @@ export function Toast({
     // and would otherwise render invisibly behind its backdrop.
     <div className="fixed bottom-5 left-1/2 z-[60] flex max-w-[90vw] -translate-x-1/2 items-start gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm shadow-xl">
       <span className={VARIANT_TEXT_CLASS[variant]}>{message}</span>
-      <button
-        onClick={onDismiss}
-        aria-label="Close"
-        className="shrink-0 text-slate-500 hover:text-slate-300"
-      >
+      <IconButton onClick={onDismiss} aria-label="Close">
         ✕
-      </button>
+      </IconButton>
     </div>
   );
 }

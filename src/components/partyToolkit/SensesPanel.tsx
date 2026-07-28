@@ -10,6 +10,7 @@ import { InfoTooltip } from "../InfoTooltip";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { HintPanel } from "../ui/HintPanel";
 import { ToolkitCard } from "../ui/ToolkitCard";
+import { MUTED_LABEL_CLS } from "../ui/typography";
 
 /** Short rules reminder for what the sense actually lets a character do — the row itself only says "X of Y", not what that's useful for. */
 const SENSE_BLURBS: Record<string, string> = {
@@ -62,7 +63,7 @@ function SenseRow({ entry }: { entry: SenseCoverageEntry }) {
           >
             <span className="flex items-center gap-1">
               <CharacterChip name={entry.best.characterName} avatarUrl={entry.best.avatarUrl} showTitle={false} />
-              <span className="text-xs text-slate-500">{entry.best.range} ft</span>
+              <span className={MUTED_LABEL_CLS}>{entry.best.range} ft</span>
             </span>
           </InfoTooltip>
         )}

@@ -15,7 +15,7 @@ import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./ui/MoreMenu";
 import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
 import { ArchiveIcon, DownloadIcon, PencilIcon, TrashIcon } from "./ui/icons";
-import { INLINE_ERROR_CLS, LIST_ROW_TITLE_CLS, MUTED_BODY_CLS } from "./ui/typography";
+import { INLINE_ERROR_CLS, LIST_ROW_TITLE_CLS, MUTED_BODY_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
 type JournalTab = "dm" | "party";
 type JournalMode = "view" | "edit";
@@ -345,8 +345,8 @@ export function CampaignJournalModal({
       label: (
         <span className={s.archived ? "text-slate-500" : undefined}>
           {s.title}
-          {s.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
-          <span className="ml-1 text-xs text-slate-500">({s.entryCount})</span>
+          {s.archived && <span className={`ml-1 ${MUTED_LABEL_CLS}`}>(archived)</span>}
+          <span className={`ml-1 ${MUTED_LABEL_CLS}`}>({s.entryCount})</span>
         </span>
       ),
     })) ?? [];
@@ -358,7 +358,11 @@ export function CampaignJournalModal({
     // real lists arrived a beat later. A stable height from the first
     // paint means loading only ever changes what scrolls *inside* the
     // box, never the box itself.
-    <Modal onClose={onClose} title="Campaign Journal" panelClassName="h-[85vh] w-full max-w-4xl gap-3 border-slate-800 bg-slate-950 p-3 sm:gap-4 sm:p-5">
+    <Modal
+      onClose={onClose}
+      title="Campaign Journal"
+      panelClassName="h-[85vh] w-full max-w-4xl gap-3 border-slate-800 bg-slate-950 p-3 shadow-2xl shadow-black/40 sm:gap-4 sm:p-5"
+    >
         {/* Nothing below the close button renders until the session list
             *and* the initially-selected session's entries have both
             loaded — see `stillLoadingInitial`'s doc comment above. This is
@@ -472,8 +476,8 @@ export function CampaignJournalModal({
                       } ${selectedSessionId === session.id ? "text-slate-100" : "text-slate-400 hover:text-slate-200"}`}
                     >
                       {session.title}
-                      {session.archived && <span className="ml-1 text-xs text-slate-500">(archived)</span>}
-                      <span className="ml-1 text-xs text-slate-500">({session.entryCount})</span>
+                      {session.archived && <span className={`ml-1 ${MUTED_LABEL_CLS}`}>(archived)</span>}
+                      <span className={`ml-1 ${MUTED_LABEL_CLS}`}>({session.entryCount})</span>
                     </button>
                     {role === "dm" && (
                       // The row itself (not this button) carries the

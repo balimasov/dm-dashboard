@@ -31,6 +31,9 @@ export function LevelBadge({ label, panel }: { label: string; panel: ReactNode }
 
 export const CANTRIP_HINT = <p>Cantrip — cast at will, no spell slot required.</p>;
 
+/** The "Total" caption under a party-wide histogram (spell slots, consumables) — 2 identical call sites, kept local rather than promoted to `typography.ts` since its 10px+semibold+slate-600 recipe doesn't exactly match any named role there. */
+const TOTAL_LABEL_CLS = "text-[10px] font-semibold uppercase tracking-wide text-slate-600";
+
 /** Shared green/amber/red usage-danger palette (same tiers `HpBar` uses) — full or better reads plain white, half or less reads amber, empty reads red. Applied to every current/max value across the Party Toolkit panels: spell slots, Heroic Inspiration, and limited-use resources. */
 export function usageColorClass(current: number, max: number): string {
   if (max <= 0 || current <= 0) return "text-red-400";
@@ -230,7 +233,7 @@ function SpellSlotHistogram({ spellSlots }: { spellSlots: PartySpellSlotSummary 
         ))}
       </div>
       <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 @[512px]:border-l @[512px]:border-t-0 @[512px]:pl-5 @[512px]:pt-0">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+        <span className={TOTAL_LABEL_CLS}>Total</span>
         <span className={`text-sm font-semibold tabular-nums ${usageColorClass(spellSlots.totalCurrent, spellSlots.totalMax)}`}>
           {spellSlots.totalCurrent}/{spellSlots.totalMax}
         </span>
@@ -302,7 +305,7 @@ function ConsumablesHistogram({ summary }: { summary: PartyConsumablesSummary })
         ))}
       </div>
       <div className="flex shrink-0 flex-col items-center gap-1 border-t border-slate-800 pt-2 @[512px]:border-l @[512px]:border-t-0 @[512px]:pl-5 @[512px]:pt-0">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Total</span>
+        <span className={TOTAL_LABEL_CLS}>Total</span>
         <span className="text-sm font-semibold tabular-nums text-slate-100">{summary.totalQuantity}</span>
       </div>
     </div>

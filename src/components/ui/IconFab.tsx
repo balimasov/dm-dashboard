@@ -26,7 +26,7 @@ export function IconFab({
   return (
     <button
       type="button"
-      className={`flex shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30 ${SIZE_CLASSES[size]} ${className}`.trim()}
+      className={`flex shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:pointer-events-none disabled:opacity-30 ${SIZE_CLASSES[size]} ${className}`.trim()}
       {...props}
     />
   );

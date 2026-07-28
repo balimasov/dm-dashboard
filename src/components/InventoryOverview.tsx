@@ -268,7 +268,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
   const nonEmptyColumns = columns.filter((c) => c.length > 0);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <ToolkitCard>
       {nonEmptyColumns.length > 1 ? (
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
           {columns.map((col, i) => col.length > 0 && <InventoryColumn key={i} rows={col} />)}
@@ -276,7 +276,7 @@ export function InventoryOverview({ characters }: { characters: Character[] }) {
       ) : (
         <InventoryColumn rows={nonEmptyColumns[0] ?? []} />
       )}
-    </div>
+    </ToolkitCard>
   );
 }
 

@@ -47,6 +47,7 @@ import {
   EMPTY_STATE_CLS,
   FORM_SECTION_HEADING_CLS,
   LIST_ROW_TITLE_CLS,
+  MUTED_LABEL_CLS,
   WARNING_TEXT_CLS,
 } from "@/components/ui/typography";
 
@@ -185,7 +186,7 @@ function AddCreaturePanel({
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-100">{t.name}</p>
-                <p className="truncate text-xs text-slate-500">
+                <p className={`truncate ${MUTED_LABEL_CLS}`}>
                   {creatureInfoLine(t)}
                   {t.challengeRating && ` · CR ${t.challengeRating}`}
                 </p>
@@ -338,7 +339,7 @@ function ImportCreaturePanel({
           rows={7}
           className="scrollbar-themed w-full resize-none bg-transparent px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none"
         />
-        <div className="flex items-center justify-between gap-2 border-t border-slate-800 bg-slate-950/40 px-3 py-1.5 text-xs text-slate-500">
+        <div className={`flex items-center justify-between gap-2 border-t border-slate-800 bg-slate-950/40 px-3 py-1.5 ${MUTED_LABEL_CLS}`}>
           <span>Drag &amp; drop a .yaml file here</span>
           <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-sky-400 hover:underline">
             or upload...
@@ -447,7 +448,7 @@ function CreatureRow({
         {creature.hidden && <span className="ml-2 text-xs font-normal text-slate-500">(hidden)</span>}
       </p>
       {infoLine && (
-        <p title={infoLine} className="truncate text-xs text-slate-500">
+        <p title={infoLine} className={`truncate ${MUTED_LABEL_CLS}`}>
           {infoLine}
         </p>
       )}

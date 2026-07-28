@@ -5,7 +5,8 @@ import { JournalConflictError } from "@/lib/journalApi";
 import { JournalEntry } from "@/lib/types";
 import { NotesEditor } from "./NotesEditor";
 import { SyncTimestamp } from "./SyncTimestamp";
-import { INLINE_ERROR_XS_CLS } from "./ui/typography";
+import { Button } from "./ui/Button";
+import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
 /**
  * View mode reuses `NotesEditor`'s own `.notes-editor-content` class so a
@@ -143,9 +144,9 @@ export function JournalEntryRow({
           )}
           {saveError && <p className={`mt-2 ${INLINE_ERROR_XS_CLS}`}>{saveError}</p>}
           <div className="mt-2 flex justify-end gap-2 text-sm">
-            <button type="button" onClick={cancelEditing} className="rounded-lg px-3 py-1.5 text-slate-400 hover:text-slate-200">
+            <Button type="button" variant="ghost" onClick={cancelEditing} className="px-3 py-1.5">
               Cancel
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => void saveAndExit()}
@@ -158,7 +159,7 @@ export function JournalEntryRow({
       ) : (
         <>
           <div className="notes-editor-content text-sm text-slate-100" dangerouslySetInnerHTML={{ __html: entry.text }} />
-          <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500">
+          <div className={`mt-1.5 flex items-center justify-between ${MUTED_LABEL_CLS}`}>
             <span>
               {entry.authorRole === "dm" ? "DM" : "Player"} ·{" "}
               {entry.updatedAt !== entry.createdAt ? (

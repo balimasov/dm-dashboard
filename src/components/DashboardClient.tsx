@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/Button";
 import { IconFab } from "@/components/ui/IconFab";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
-import { MUTED_BODY_CLS } from "@/components/ui/typography";
+import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import {
@@ -435,7 +435,7 @@ export function DashboardClient({
           {lastSyncedAt && (
             <>
               {/* Full text on desktop, where there's room to spare... */}
-              <span className="hidden shrink-0 whitespace-nowrap text-xs text-slate-500 sm:inline">
+              <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
                 Synced <SyncTimestamp iso={lastSyncedAt} />
               </span>
               {/* ...a tap/hover-able clock icon on mobile instead of hiding this

@@ -44,7 +44,11 @@ export function RosterManagerModal({
   useEscapeToClose(onClose);
 
   return (
-    <Modal onClose={onClose} title="Characters & Creatures" panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5">
+    <Modal
+      onClose={onClose}
+      title="Characters & Creatures"
+      panelClassName="h-[85vh] w-full max-w-4xl gap-4 border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
+    >
       <SegmentedControl
         value={tab}
         onChange={setTab}

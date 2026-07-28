@@ -79,9 +79,9 @@ export function EditCreatureModal({
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-4">
             {saveError && <p className={`mr-auto ${INLINE_ERROR_CLS}`}>{saveError}</p>}
-            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200">
+            <Button type="button" variant="ghost" onClick={onClose} className="px-4 py-2 text-sm">
               Cancel
-            </button>
+            </Button>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save"}
             </Button>

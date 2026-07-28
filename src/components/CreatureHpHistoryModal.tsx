@@ -87,7 +87,7 @@ export function CreatureHpHistoryModal({
           </div>
         </div>
       }
-      panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 border-slate-800 bg-slate-950 p-5"
+      panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
     >
         {entries.length === 0 ? (
           <p className={`py-8 text-center ${MUTED_BODY_CLS}`}>No HP changes recorded yet.</p>

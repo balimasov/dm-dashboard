@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { groupInputCls, inputCls } from "./Field";
+import { MUTED_LABEL_CLS } from "./typography";
 
 export interface SelectMenuOption<T extends string> {
   value: T;
@@ -56,7 +57,7 @@ export function SelectMenu<T extends string>({
         className={`flex items-center gap-1.5 font-semibold hover:bg-slate-800 ${variant === "group" ? groupInputCls : inputCls}`}
       >
         {current?.label}
-        <span className="text-xs text-slate-500">▾</span>
+        <span className={MUTED_LABEL_CLS}>▾</span>
       </button>
       {open && (
         <div className="absolute left-0 top-full z-10 mt-1 min-w-full whitespace-nowrap rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-lg shadow-black/40">
