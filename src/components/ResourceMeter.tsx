@@ -1,10 +1,8 @@
 import { RECOVERY_LABELS, Resource, SpellSlotLevel } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import { tierBgClass, tierTextClass } from "@/lib/tierColor";
-import { useDismissiblePopover } from "@/hooks/useDismissiblePopover";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
 /** Fixed-size CSS circles instead of "●"/"○" glyphs — those render at different visual weights per font. */
@@ -70,13 +68,18 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
 }
 
 /**
- * The click-to-open breakdown for `ResourceTrackerBar` — the bar itself shows
- * only the one blended number, so this is the one place to see it split back
- * out by Limited Use vs. Spell Slots, followed by the full itemized list of
- * both (previously rendered permanently below the bar on `CharacterCard`,
- * which is exactly what made that card too tall to fit a screen without
- * scrolling — moving it in here keeps every bit of detail one click away
- * instead of always paying its full height up front).
+ * The hover/tap hint for `ResourceTrackerBar` — the bar itself shows only the
+ * one blended number, so this is the one place to see it split back out by
+ * Limited Use vs. Spell Slots, followed by the full itemized list of both
+ * (previously rendered permanently below the bar on `CharacterCard`, which is
+ * exactly what made that card too tall to fit a screen without scrolling —
+ * moving it in here keeps every bit of detail one hover/tap away instead of
+ * always paying its full height up front). Plain `InfoTooltip` content, not a
+ * hand-rolled popover — `InfoTooltip` already does hover-to-preview,
+ * click-to-pin-open, and outside-click/Escape-to-close on its own, the same
+ * as every other hint in this app; building a second, parallel "click to
+ * open a floating panel" mechanism next to it would just be the same feature
+ * twice.
  *
  * Two different color systems meet here, deliberately: Overall uses the same
  * danger-tier color as the bar (green/amber/red — "how worried should I be"),
@@ -89,7 +92,7 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
  * elsewhere, so the item-type color stays constant and only the *bar* carries
  * the tier signal.
  */
-function ResourceTrackerPopover({
+function ResourceTrackerHint({
   overallPercent,
   resourcesPercent,
   spellSlotsPercent,
@@ -105,8 +108,8 @@ function ResourceTrackerPopover({
   pactSlots?: boolean;
 }) {
   return (
-    <div className={`absolute left-0 right-0 top-full z-20 mt-1.5 w-64 p-3 text-sm ${POPOVER_SHELL_CLS}`}>
-      <div className="space-y-1 border-b border-slate-800 pb-2 text-xs">
+    <div className="w-56">
+      <div className="space-y-1">
         <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
         <p>
           <span className={tierTextClass(overallPercent)}>●</span> Overall: <span className="font-semibold text-white">{overallPercent}%</span>
@@ -124,7 +127,7 @@ function ResourceTrackerPopover({
       </div>
 
       {resources.length > 0 && (
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-2 space-y-1.5 border-t border-slate-800 pt-2">
           <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Limited Use</h4>
           {resources
             .slice()
@@ -136,7 +139,7 @@ function ResourceTrackerPopover({
       )}
 
       {spellSlots.length > 0 && (
-        <div className="mt-3">
+        <div className="mt-2 border-t border-slate-800 pt-2">
           <h4 className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-600">Spell Slots{pactSlots ? " (Pact)" : ""}</h4>
           <div className="space-y-1">
             {spellSlots
@@ -168,15 +171,16 @@ function ResourceTrackerPopover({
  * not the full itemized breakdown up front either. Limited-use resources and
  * spell slots are pooled into a single average (see `averageOverallPercent`);
  * the bar's tier color (green/amber/red) reflects that one number. The
- * per-pool-type split and the full itemized list both live one click away in
- * `ResourceTrackerPopover` instead. `null` (nothing to show a bar for at all)
- * only when neither has anything tracked.
+ * per-pool-type split and the full itemized list both live one hover/tap
+ * away in `ResourceTrackerHint` instead. `null` (nothing to show a bar for
+ * at all) only when neither has anything tracked.
  *
- * Click rather than hover — `useDismissiblePopover` is the same
- * open/outside-click/Escape mechanics `RemindersFab`/`QuickLinksButton`
- * already share, so this reads as the same kind of "tap a summary, get the
- * detail" affordance as those rather than a one-off hover tooltip a touch
- * device could never reach anyway.
+ * The bar and the percent are one single `InfoTooltip` trigger, not two —
+ * an earlier version wrapped each separately, which meant hovering the bar
+ * and hovering the number opened two independently-tracked hints instead of
+ * reading as one control. `hoverOnly` here only turns off the dotted-underline
+ * text styling (this is a progress bar, not a word), it doesn't restrict the
+ * interaction — click-to-pin still works exactly like every other hint.
  */
 export function ResourceTrackerBar({
   resources,
@@ -185,37 +189,20 @@ export function ResourceTrackerBar({
 }: {
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
-  /** Warlocks track spell slots as a single fast-recovering "Pact Magic" pool rather than the standard per-long-rest table — surfaced only in the popover's own Spell Slots heading, not on the bar itself. */
+  /** Warlocks track spell slots as a single fast-recovering "Pact Magic" pool rather than the standard per-long-rest table — surfaced only in the hint's own Spell Slots heading, not on the bar itself. */
   pactSlots?: boolean;
 }) {
   const overallPercent = averageOverallPercent(resources, spellSlots);
-  const { open, setOpen, containerRef } = useDismissiblePopover();
   if (overallPercent === null) return null;
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-label="Resource tracker details"
-        // `leading-none` here (not just on the number span below) matters: without it, the
-        // button's own inherited line-height skews ascent-heavy and visually pushes the number
-        // down relative to the bar once flex centers the taller box.
-        className="flex w-full items-center gap-2 leading-none"
-      >
-        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-          <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
-        </div>
-        {/* `relative -top-px`: digit glyphs sit ~1px low in their own box (descender space this
-            font reserves below the baseline, unused by digits) — relative positioning nudges it
-            back up since `translate`/`transform` are no-ops on a plain inline element like this. */}
-        <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
-      </button>
-      {open && (
-        <ResourceTrackerPopover
+    <InfoTooltip
+      hoverOnly
+      className="w-full"
+      panel={
+        <ResourceTrackerHint
           overallPercent={overallPercent}
           resourcesPercent={resourcesPercent}
           spellSlotsPercent={spellSlotsPercent}
@@ -223,8 +210,24 @@ export function ResourceTrackerBar({
           spellSlots={spellSlots}
           pactSlots={pactSlots}
         />
-      )}
-    </div>
+      }
+    >
+      {/* `leading-none` here (not just on the number span below) matters: InfoTooltip
+          wraps its children in its own span that doesn't reset its inherited
+          line-height, so its invisible "strut" space skews ascent-heavy and
+          visually pushes the number down relative to the bar once flex centers the
+          taller box. Resetting line-height at this level too keeps every nested
+          span's strut as tight as the number's own, so centering lines up cleanly. */}
+      <span className="flex items-center gap-2 leading-none">
+        <span className="relative block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+          <span className={`block h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
+        </span>
+        {/* `relative -top-px`: digit glyphs sit ~1px low in their own box (descender space this
+            font reserves below the baseline, unused by digits) — relative positioning nudges it
+            back up since `translate`/`transform` are no-ops on a plain inline element like this. */}
+        <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
+      </span>
+    </InfoTooltip>
   );
 }
 

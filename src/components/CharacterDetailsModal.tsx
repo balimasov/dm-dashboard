@@ -51,6 +51,7 @@ import { RecoveryBadge } from "./ui/RecoveryBadge";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { Modal } from "./ui/Modal";
+import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { SubHeading } from "./ui/SubHeading";
@@ -371,30 +372,21 @@ export function CharacterDetailsModal({
           )}
         </SectionDivider>
 
-        {/* Stats — same block as the main card. */}
+        {/* Ability Scores — same block as the main card (Stats + Saving Throws merged, see `AbilityScoreBox`'s own doc comment). */}
         <SectionDivider>
-          <SubHeading>Stats</SubHeading>
+          <SubHeading>Ability Scores</SubHeading>
           <div className="grid grid-cols-6 gap-1.5">
             {STAT_ORDER.map((key) => (
-              <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(c.stats[key]))} />
-            ))}
-          </div>
-        </SectionDivider>
-
-        {/* Saving Throws — same block as the main card. */}
-        <div>
-          <SubHeading>Saving Throws</SubHeading>
-          <div className="grid grid-cols-6 gap-1.5">
-            {STAT_ORDER.map((key) => (
-              <StatBox
+              <AbilityScoreBox
                 key={key}
                 label={key.toUpperCase()}
-                value={formatModifier(savingThrowBonus(c, key))}
+                modifier={formatModifier(abilityModifier(c.stats[key]))}
+                save={formatModifier(savingThrowBonus(c, key))}
                 highlight={c.savingThrowProficiencies.includes(key)}
               />
             ))}
           </div>
-        </div>
+        </SectionDivider>
 
         {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. */}
         {c.advantages.length > 0 && (

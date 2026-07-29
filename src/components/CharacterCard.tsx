@@ -38,36 +38,7 @@ import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SubHeading } from "./ui/SubHeading";
-
-/**
- * Merges what used to be two separate sections (Stats, Saving Throws) into
- * one six-box grid — each box now stacks the ability modifier over the save
- * bonus instead of two full grids each with their own heading/gap. Same 12
- * numbers as before, just paired per ability instead of laid out as two
- * passes over the same six letters; one of several changes aimed at getting
- * this card closer to fitting a screen without scrolling. Save bonus turns
- * amber on proficiency, matching the highlight the old standalone Saving
- * Throws `StatBox` used to carry on its whole box.
- */
-function AbilityScoreBox({
-  label,
-  modifier,
-  save,
-  proficient,
-}: {
-  label: string;
-  modifier: string;
-  save: string;
-  proficient?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-0.5 rounded-md border border-slate-800 bg-slate-800/40 py-1.5">
-      <span className="text-sm font-bold text-slate-100">{modifier}</span>
-      <span className={`text-xs font-semibold ${proficient ? "text-amber-300" : "text-slate-400"}`}>{save}</span>
-      <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
-    </div>
-  );
-}
+import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 
 export function CharacterCard({
   character,
@@ -216,7 +187,7 @@ export function CharacterCard({
               label={key.toUpperCase()}
               modifier={formatModifier(abilityModifier(c.stats[key]))}
               save={formatModifier(savingThrowBonus(c, key))}
-              proficient={c.savingThrowProficiencies.includes(key)}
+              highlight={c.savingThrowProficiencies.includes(key)}
             />
           ))}
         </div>

@@ -24,7 +24,7 @@ import {
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
-import { StatBox } from "./ui/StatBox";
+import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 import { MUTED_LABEL_CLS } from "./ui/typography";
 import { SubHeading } from "./ui/SubHeading";
 
@@ -171,27 +171,25 @@ export function CreatureStatBlock({
         )}
       </SectionDivider>
 
+      {/* Ability Scores — merged Stats + Saving Throws, same recipe as `CharacterCard`/`CharacterDetailsModal` (see `AbilityScoreBox`'s own doc comment). Highlight here means "this save differs from the raw ability modifier" rather than "has a saving-throw proficiency" — a stat block often lists non-proficient saves that still deviate (situational bonuses, legendary resistances), so anything other than the plain modifier is worth calling out. */}
       <SectionDivider>
-        <SubHeading>Stats</SubHeading>
-        <div className="grid grid-cols-6 gap-1.5">
-          {STAT_ORDER.map((key) => (
-            <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(creature.stats[key]))} />
-          ))}
-        </div>
-      </SectionDivider>
-
-      <div>
-        <SubHeading>Saving Throws</SubHeading>
+        <SubHeading>Ability Scores</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
             const plainMod = abilityModifier(creature.stats[key]);
             const save = creature.savingThrows?.[key] ?? plainMod;
             return (
-              <StatBox key={key} label={key.toUpperCase()} value={formatModifier(save)} highlight={save !== plainMod} />
+              <AbilityScoreBox
+                key={key}
+                label={key.toUpperCase()}
+                modifier={formatModifier(plainMod)}
+                save={formatModifier(save)}
+                highlight={save !== plainMod}
+              />
             );
           })}
         </div>
-      </div>
+      </SectionDivider>
 
       <DamageInfoList
         entries={[
