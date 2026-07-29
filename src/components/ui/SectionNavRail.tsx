@@ -9,7 +9,7 @@ export interface SectionNavItem {
 }
 
 /** How long the rail stays visible after the triggering scroll/hover/focus stops. */
-const HIDE_DELAY_MS = 2100;
+const HIDE_DELAY_MS = 4500;
 
 /**
  * A tiny fixed rail of emoji-only jump links, one per dashboard section — a
