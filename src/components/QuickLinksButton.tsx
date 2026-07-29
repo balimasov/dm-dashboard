@@ -26,9 +26,9 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Quick links"
+        aria-label="Quick Links"
         aria-expanded={open}
-        title="Quick links"
+        title="Quick Links"
         className="flex h-12 w-12 items-center justify-center rounded-full border border-sky-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
       >
         <span aria-hidden="true">🔗</span>

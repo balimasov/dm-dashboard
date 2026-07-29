@@ -101,8 +101,8 @@ export function RemindersFab({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          aria-label={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
-          title={`${totalCount} reminder${totalCount === 1 ? "" : "s"}`}
+          aria-label="Reminders"
+          title="Reminders"
           className="relative flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
         >
           <span aria-hidden="true">🔥</span>

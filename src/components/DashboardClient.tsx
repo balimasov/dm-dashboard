@@ -7,6 +7,7 @@ import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
+import { NotesEditor } from "@/components/NotesEditor";
 import { QuickNoteButton } from "@/components/QuickNoteButton";
 import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
 import { CharacterCard } from "@/components/CharacterCard";
@@ -25,9 +26,10 @@ import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
+import { IconButton } from "@/components/ui/IconButton";
 import { IconFab } from "@/components/ui/IconFab";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PlusIcon } from "@/components/ui/icons";
+import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PencilIcon, PlusIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
@@ -161,9 +163,8 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
 }
 
 /**
- * Read-only render of the campaign's saved description — editing moved to
- * Settings' own Notes section (`CampaignFormModal`), so this dashboard block
- * only ever displays, never diverges from what's actually saved there. Same
+ * Read-only render of the campaign's saved description, with DM-only inline
+ * editing right on the block — no trip to Settings needed anymore. Same
  * "strip markup, only real text counts" emptiness check the Journal
  * composer uses (`Composer`'s own `isEmpty`), so a `NotesEditor` that only
  * ever produced an empty `<p></p>` still reads as no description rather than
@@ -174,13 +175,67 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
  * `CampaignJournalModal` use) so the text reads as its own block instead of
  * sitting directly on the page background with nothing to visually separate
  * it from the section around it — same treatment for the empty-state message.
+ *
+ * The pencil only ever mounts for `isDm` — a player gets the exact same
+ * read-only render and nothing else, no "view only" messaging needed since
+ * there's simply nothing clickable to explain away. Reveal is hover/focus
+ * only (`opacity-0 group-hover:opacity-100 group-focus-within:opacity-100`,
+ * the same pattern `CampaignJournalModal`'s session-manage trigger uses)
+ * rather than a persistent icon, so the block reads as plain text until a DM
+ * actually goes looking for the edit affordance.
+ *
+ * Edit mode swaps in the same `NotesEditor` + explicit Save/Cancel pair
+ * `JournalEntryRow` already uses for the same kind of in-place rich-text
+ * edit, deliberately not save-on-blur (see that component's own doc comment
+ * for why) — clicking Save/Cancel is the only way out, so a stray click
+ * elsewhere on the page can never silently commit or discard a draft.
  */
-function CampaignDescription({ notes }: { notes: string }) {
+function CampaignDescription({ notes, isDm, onSave }: { notes: string; isDm: boolean; onSave: (notes: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(notes);
   const isEmpty = notes.replace(/<[^>]+>/g, "").trim().length === 0;
+
+  function startEditing() {
+    setDraft(notes);
+    setEditing(true);
+  }
+
+  function save() {
+    if (draft !== notes) onSave(draft);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className={`p-3 ${DIM_ROW_CARD_CLS}`}>
+        <NotesEditor value={draft} onChange={setDraft} placeholder="Campaign notes..." autoFocus />
+        <div className="mt-2 flex justify-end gap-2 text-sm">
+          <Button type="button" variant="ghost" onClick={() => setEditing(false)} className="px-3 py-1.5">
+            Cancel
+          </Button>
+          <Button type="button" variant="outline" onClick={save} className="px-3 py-1.5 font-semibold">
+            Save
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`p-3 ${DIM_ROW_CARD_CLS}`}>
+    <div className={`group relative p-3 ${DIM_ROW_CARD_CLS}`}>
+      {isDm && (
+        <IconButton
+          tone="muted"
+          onClick={startEditing}
+          aria-label="Edit campaign description"
+          title="Edit campaign description"
+          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          <PencilIcon className="h-3.5 w-3.5" />
+        </IconButton>
+      )}
       {isEmpty ? (
-        <p className={MUTED_BODY_CLS}>No description yet — add one from Settings.</p>
+        <p className={MUTED_BODY_CLS}>No description yet.</p>
       ) : (
         <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: notes }} />
       )}
@@ -505,19 +560,23 @@ export function DashboardClient({
         </div>
       </div>
 
-      {isDm && (
-        <div id="section-campaign" className="scroll-mt-[130px]">
-          <CollapsibleSection
-            title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
-            storageKey="dm-dashboard-campaign-open"
-            initialOpen={initialOpen.campaign}
-          >
-            <div className="px-3">
-              <CampaignDescription notes={campaignState.notes} />
-            </div>
-          </CollapsibleSection>
-        </div>
-      )}
+      <div id="section-campaign" className="scroll-mt-[130px]">
+        <CollapsibleSection
+          title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
+          storageKey="dm-dashboard-campaign-open"
+          initialOpen={initialOpen.campaign}
+        >
+          <div className="px-3">
+            <CampaignDescription
+              notes={campaignState.notes}
+              isDm={isDm}
+              onSave={(notes) => {
+                void patchCampaign(campaignState.id, { notes });
+              }}
+            />
+          </div>
+        </CollapsibleSection>
+      </div>
 
       {/* Visible to both roles. `creatures` needs no role filtering here —
           `page.tsx` already narrows it to Companions-only before it ever
