@@ -181,6 +181,12 @@ function ResourceTrackerHint({
  * reading as one control. `hoverOnly` here only turns off the dotted-underline
  * text styling (this is a progress bar, not a word), it doesn't restrict the
  * interaction — click-to-pin still works exactly like every other hint.
+ *
+ * The row also gets a faint `hover:bg-white/5` of its own, same affordance
+ * the prototype used — the tooltip already signals "hover me" once it opens,
+ * but that's a beat later; the background gives an instant on-touch cue that
+ * this row is interactive at all, same idea as `res-bar-row:hover` in the
+ * prototype this was built from.
  */
 export function ResourceTrackerBar({
   resources,
@@ -218,7 +224,7 @@ export function ResourceTrackerBar({
           visually pushes the number down relative to the bar once flex centers the
           taller box. Resetting line-height at this level too keeps every nested
           span's strut as tight as the number's own, so centering lines up cleanly. */}
-      <span className="flex items-center gap-2 leading-none">
+      <span className="-mx-1 -my-0.5 flex items-center gap-2 rounded-md px-1 py-0.5 leading-none transition-colors hover:bg-white/5">
         <span className="relative block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
           <span className={`block h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
         </span>

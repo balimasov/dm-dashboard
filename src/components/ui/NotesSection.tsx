@@ -37,7 +37,7 @@ export function NotesSection({
   const isEmpty = html.replace(/<[^>]+>/g, "").trim().length === 0;
 
   if (!onChange) {
-    if (!notes) return null;
+    if (isEmpty) return null;
     return (
       <SectionDivider>
         <SubHeading>Notes</SubHeading>
