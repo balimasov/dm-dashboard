@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface SectionNavItem {
   id: string;
   emoji: string;
   label: string;
 }
+
+/** How long the rail stays visible after the triggering scroll/hover/focus stops. */
+const HIDE_DELAY_MS = 700;
 
 /**
  * A tiny fixed rail of emoji-only jump links, one per dashboard section — a
@@ -16,6 +19,21 @@ export interface SectionNavItem {
  * circles with a native `title` tooltip for the label (no visible text) and
  * hidden below `lg`, so it never competes with the actual page content for
  * space — the whole point was a compact affordance, not a second nav bar.
+ *
+ * `right-6` (not the visually-nearby `right-5` the FAB stack below it uses)
+ * — this rail's own box is narrower (28px circle + 6px padding on each side
+ * = 40px) than a FAB's (48px), so matching the *offset* wouldn't match the
+ * *center line*; `right-6` (24px) is what puts this rail's center exactly on
+ * the FAB stack's own center (44px from the edge), which is what actually
+ * reads as "aligned" rather than the two literal offsets matching.
+ *
+ * Hidden until the page is actually scrolling (or the rail itself has
+ * hover/focus), fading in on `scroll` and back out `HIDE_DELAY_MS` after the
+ * last one — a DM idly reading a card underneath it doesn't have this
+ * sitting over part of that card the whole time, only while they're
+ * actually mid-navigation. Hover/focus keeps it up independent of scrolling
+ * so a keyboard user (or someone who paused to read the rail's own tooltips)
+ * isn't racing the timeout.
  *
  * The currently-in-view section is highlighted via `IntersectionObserver`
  * rather than `entries` array order (which doesn't reliably match page
@@ -32,6 +50,48 @@ export function SectionNavRail({ items }: { items: SectionNavItem[] }) {
   // the server sent and trip up hydration. The effect below resolves the
   // real value as soon as it runs (a synchronous DOM read, not a guess).
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
+
+  const [visible, setVisible] = useState(false);
+  // Plain refs, not state — neither needs to trigger a re-render, and the
+  // scroll listener below (added once, empty deps) needs to read/clear the
+  // latest timer without becoming stale itself.
+  const hoveringRef = useRef(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function scheduleHide() {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      // A scroll that happens to end while the pointer is still resting on
+      // the rail shouldn't hide it out from under the cursor — hovering owns
+      // visibility until it lets go, see the mouse/focus handlers below.
+      if (!hoveringRef.current) setVisible(false);
+    }, HIDE_DELAY_MS);
+  }
+
+  function handleScroll() {
+    setVisible(true);
+    scheduleHide();
+  }
+
+  function handlePointerIn() {
+    hoveringRef.current = true;
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setVisible(true);
+  }
+
+  function handlePointerOut() {
+    hoveringRef.current = false;
+    scheduleHide();
+  }
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `handleScroll` only ever touches refs and `setVisible` (both stable across renders), so it doesn't need to be in the dependency array; listing it would just tear the listener down and rebuild it every render for no behavioral difference.
+  }, []);
 
   useEffect(() => {
     // Top offset clears the sticky header + action bar; a section only
@@ -84,7 +144,13 @@ export function SectionNavRail({ items }: { items: SectionNavItem[] }) {
   return (
     <nav
       aria-label="Jump to section"
-      className="fixed right-2 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1 rounded-full border border-slate-700 bg-slate-900/90 p-1.5 shadow-lg backdrop-blur lg:flex"
+      onMouseEnter={handlePointerIn}
+      onMouseLeave={handlePointerOut}
+      onFocus={handlePointerIn}
+      onBlur={handlePointerOut}
+      className={`fixed right-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1 rounded-full border border-slate-700 bg-slate-900/90 p-1.5 shadow-lg backdrop-blur transition-opacity duration-300 lg:flex ${
+        visible ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
     >
       {items.map((item) => (
         <button
