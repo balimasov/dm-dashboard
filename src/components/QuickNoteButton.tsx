@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createJournalEntryApi } from "@/lib/journalApi";
 import { plainTextToParagraphHtml } from "@/lib/journal";
-import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useDismissiblePopover } from "@/hooks/useDismissiblePopover";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
-import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { IconFab } from "./ui/IconFab";
+import { QuickMenuPanel } from "./ui/QuickMenuPanel";
 import { PencilIcon } from "./ui/icons";
 import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
@@ -24,25 +24,14 @@ import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
  * full Journal modal later.
  */
 export function QuickNoteButton({ campaignId }: { campaignId: string }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, containerRef } = useDismissiblePopover();
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEscapeToClose(() => setOpen(false), open);
   useGlobalHotkey("n", () => setOpen(true));
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,7 +77,11 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
         // button sat close enough to the right edge, clipping the panel.
         // Pinning both side edges to the viewport with a margin sidesteps
         // that regardless of where the button ends up in the header row.
-        <div className={`fixed inset-x-3 top-24 z-30 p-3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80 ${POPOVER_SHELL_CLS}`}>
+        <QuickMenuPanel
+          icon={<PencilIcon className="h-4 w-4 text-slate-400" />}
+          title="Quick Note"
+          className="fixed inset-x-3 top-24 z-30 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80"
+        >
           <textarea
             ref={textareaRef}
             value={text}
@@ -115,7 +108,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
               Save
             </button>
           </div>
-        </div>
+        </QuickMenuPanel>
       )}
       {toast && <Toast variant="success" message={toast} onDismiss={() => setToast(null)} />}
     </div>

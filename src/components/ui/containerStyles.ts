@@ -48,3 +48,14 @@ export const ENTITY_CARD_BASE_CLS = "rounded-xl border p-4 shadow-lg shadow-blac
  * deliberately left out.
  */
 export const POPOVER_SHELL_CLS = "rounded-lg border border-slate-700 bg-slate-900 shadow-lg shadow-black/40";
+
+/**
+ * Shell for the app's floating "quick action" popovers — `RemindersFab`,
+ * `QuickLinksButton`, `QuickNoteButton`, unified into one look (and one
+ * `QuickMenuPanel` component) after those three drifted into slightly
+ * different header/background treatments. Deliberately darker
+ * (`bg-slate-950`) than `POPOVER_SHELL_CLS`'s `bg-slate-900` — that's this
+ * family's own established look (`RemindersFab`'s original recipe), not a
+ * near-miss of the more common dropdown/kebab-menu shell above.
+ */
+export const QUICK_MENU_SHELL_CLS = "rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl";

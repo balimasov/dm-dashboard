@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { ReminderGroup, characterReminders, creatureReminders } from "@/lib/reminders";
-import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useDismissiblePopover } from "@/hooks/useDismissiblePopover";
 import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { ROW_CARD_CLS } from "./ui/containerStyles";
+import { QuickMenuPanel } from "./ui/QuickMenuPanel";
 import { ReminderRow } from "./ui/ReminderRow";
-import { PANEL_HEADING_CLS, REMINDER_LINK_TITLE_CLS } from "./ui/typography";
+import { REMINDER_LINK_TITLE_CLS } from "./ui/typography";
 
 /**
  * Floating counterpart to the per-card `ReminderBadge` — where that one
@@ -45,20 +46,9 @@ export function RemindersFab({
   onUpdateCharacter: (id: string, updates: Partial<Character>) => void;
   onUpdateCreature: (id: string, updates: Partial<Creature>) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, containerRef } = useDismissiblePopover();
   const [openCharacterId, setOpenCharacterId] = useState<string | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(() => setOpen(false), open);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
 
   // Same hidden-character/creature exclusion as `RemindersPanel` — a card
   // taken off the dashboard for this session shouldn't resurface here.
@@ -128,12 +118,12 @@ export function RemindersFab({
             next scrollable ancestor by default. This list is meant to be a
             self-contained overlay, not a window into the page behind it. */}
         {open && (
-          <div className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto overscroll-contain rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl">
-            <h2 className={`mb-2 flex items-center gap-2 px-1 ${PANEL_HEADING_CLS}`}>
-              <span aria-hidden="true">🔥</span>
-              Reminders
-              <span className="font-normal text-slate-500">({totalCount})</span>
-            </h2>
+          <QuickMenuPanel
+            icon={<span aria-hidden="true">🔥</span>}
+            title="Reminders"
+            count={totalCount}
+            className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto overscroll-contain"
+          >
             <div className="space-y-3">
               {groups.map((group) => (
                 <div key={group.ownerId} className={`${ROW_CARD_CLS} p-2`}>
@@ -156,7 +146,7 @@ export function RemindersFab({
                 </div>
               ))}
             </div>
-          </div>
+          </QuickMenuPanel>
         )}
       </div>
     </>
