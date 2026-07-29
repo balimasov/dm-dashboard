@@ -14,13 +14,15 @@ import { SubHeading } from "./SubHeading";
  * read-only (and hidden entirely when empty) without an `onChange`, matching
  * how the compact card has only ever shown it. With one, this now follows
  * the same read-by-default/edit-on-demand shape `CampaignDescription`
- * (`DashboardClient.tsx`) already established for campaign notes: a
- * hover-revealed pencil switches the block into `NotesEditor` with an
- * explicit Save/Cancel pair, rather than the editor sitting open the whole
- * time with save-on-blur — one less always-editable text box mid-session,
- * and one consistent "click to edit a notes field" affordance across the
- * app instead of two slightly different ones. Stored/rendered as HTML via
- * `NotesEditor` (Tiptap), same convention as `Campaign.notes`/
+ * (`DashboardClient.tsx`) already established for campaign notes: a pencil
+ * (hover/focus-revealed above `sm`, always visible below it since a phone
+ * has no hover to reveal it with — same breakpoint convention as
+ * `CampaignDescription`'s own pencil) switches the block into `NotesEditor`
+ * with an explicit Save/Cancel pair, rather than the editor sitting open the
+ * whole time with save-on-blur — one less always-editable text box
+ * mid-session, and one consistent "click to edit a notes field" affordance
+ * across the app instead of two slightly different ones. Stored/rendered as
+ * HTML via `NotesEditor` (Tiptap), same convention as `Campaign.notes`/
  * `JournalEntry.text` — `ensureNotesHtml` promotes any pre-existing
  * plain-text notes the first time they're touched.
  */
@@ -81,7 +83,7 @@ export function NotesSection({
         onClick={startEditing}
         aria-label="Edit notes"
         title="Edit notes"
-        className="absolute right-0 top-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+        className="absolute right-0 top-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
       >
         <PencilIcon className="h-3.5 w-3.5" />
       </IconButton>

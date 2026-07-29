@@ -179,10 +179,12 @@ function SectionCountButton({ count, onClick, label }: { count: number; onClick?
  * The pencil only ever mounts for `isDm` — a player gets the exact same
  * read-only render and nothing else, no "view only" messaging needed since
  * there's simply nothing clickable to explain away. Reveal is hover/focus
- * only (`opacity-0 group-hover:opacity-100 group-focus-within:opacity-100`,
- * the same pattern `CampaignJournalModal`'s session-manage trigger uses)
- * rather than a persistent icon, so the block reads as plain text until a DM
- * actually goes looking for the edit affordance.
+ * only above the `sm` breakpoint (`sm:opacity-0 sm:group-hover:opacity-100
+ * sm:group-focus-within:opacity-100`, the same pattern `CampaignJournalModal`'s
+ * session-manage trigger uses) rather than a persistent icon, so the block
+ * reads as plain text on desktop until a DM actually goes looking for the
+ * edit affordance — below `sm` (phones) there's no hover to reveal it with,
+ * so it stays always-visible (`opacity-100` is the mobile-first base).
  *
  * Edit mode swaps in the same `NotesEditor` + explicit Save/Cancel pair
  * `JournalEntryRow` already uses for the same kind of in-place rich-text
@@ -229,7 +231,7 @@ function CampaignDescription({ notes, isDm, onSave }: { notes: string; isDm: boo
           onClick={startEditing}
           aria-label="Edit campaign description"
           title="Edit campaign description"
-          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+          className="absolute right-2 top-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
         >
           <PencilIcon className="h-3.5 w-3.5" />
         </IconButton>
