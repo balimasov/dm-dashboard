@@ -140,7 +140,7 @@ export function QuickNotesSection({
           className={`${inputCls} mb-1.5 w-full`}
         />
       )}
-      {sorted.length > 0 ? (
+      {sorted.length > 0 && (
         <div className="space-y-1">
           {sorted.map((note) => (
             <QuickNoteRow
@@ -151,8 +151,6 @@ export function QuickNotesSection({
             />
           ))}
         </div>
-      ) : (
-        !adding && <p className="text-sm italic text-slate-600">No notes yet.</p>
       )}
     </SectionDivider>
   );

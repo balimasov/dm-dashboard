@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
-import { formatModifier, ordinalLevel } from "@/lib/format";
+import { formatModifier } from "@/lib/format";
 import { characterReminders } from "@/lib/reminders";
 import { useDdbSync } from "@/hooks/useDdbSync";
-import { DotMeter, ResourceMeter, ResourceTrackerBar } from "./ResourceMeter";
+import { ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { EditCharacterModal } from "./EditCharacterModal";
 import { CharacterHeader } from "./CharacterHeader";
@@ -28,7 +28,6 @@ import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
 import { ReminderBadge } from "./ui/ReminderBadge";
-import { StatBox } from "./ui/StatBox";
 import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
 import { DamageInfoList } from "./ui/DamageInfoList";
@@ -39,6 +38,36 @@ import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SubHeading } from "./ui/SubHeading";
+
+/**
+ * Merges what used to be two separate sections (Stats, Saving Throws) into
+ * one six-box grid — each box now stacks the ability modifier over the save
+ * bonus instead of two full grids each with their own heading/gap. Same 12
+ * numbers as before, just paired per ability instead of laid out as two
+ * passes over the same six letters; one of several changes aimed at getting
+ * this card closer to fitting a screen without scrolling. Save bonus turns
+ * amber on proficiency, matching the highlight the old standalone Saving
+ * Throws `StatBox` used to carry on its whole box.
+ */
+function AbilityScoreBox({
+  label,
+  modifier,
+  save,
+  proficient,
+}: {
+  label: string;
+  modifier: string;
+  save: string;
+  proficient?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 rounded-md border border-slate-800 bg-slate-800/40 py-1.5">
+      <span className="text-sm font-bold text-slate-100">{modifier}</span>
+      <span className={`text-xs font-semibold ${proficient ? "text-amber-300" : "text-slate-400"}`}>{save}</span>
+      <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
+    </div>
+  );
+}
 
 export function CharacterCard({
   character,
@@ -177,30 +206,21 @@ export function CharacterCard({
         </div>
       </SectionDivider>
 
-      {/* Stats */}
+      {/* Ability Scores — merged Stats + Saving Throws (see `AbilityScoreBox`'s own doc comment) */}
       <SectionDivider>
-        <SubHeading>Stats</SubHeading>
+        <SubHeading>Ability Scores</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => (
-            <StatBox key={key} label={key.toUpperCase()} value={formatModifier(abilityModifier(c.stats[key]))} />
-          ))}
-        </div>
-      </SectionDivider>
-
-      {/* Saving throws */}
-      <div>
-        <SubHeading>Saving Throws</SubHeading>
-        <div className="grid grid-cols-6 gap-1.5">
-          {STAT_ORDER.map((key) => (
-            <StatBox
+            <AbilityScoreBox
               key={key}
               label={key.toUpperCase()}
-              value={formatModifier(savingThrowBonus(c, key))}
-              highlight={c.savingThrowProficiencies.includes(key)}
+              modifier={formatModifier(abilityModifier(c.stats[key]))}
+              save={formatModifier(savingThrowBonus(c, key))}
+              proficient={c.savingThrowProficiencies.includes(key)}
             />
           ))}
         </div>
-      </div>
+      </SectionDivider>
 
       {/* Resistances / Immunities / Vulnerabilities */}
       <DamageInfoList
@@ -248,44 +268,7 @@ export function CharacterCard({
       {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
         <SectionDivider>
           <SubHeading>Resources</SubHeading>
-          <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} />
-
-          {c.resources.length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Limited Use</h4>
-              {c.resources
-                .slice()
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((r) => (
-                  <ResourceMeter key={r.id} resource={r} />
-                ))}
-            </div>
-          )}
-
-          {(c.spellSlots.length > 0 || c.spellcasting) && (
-            <div className="mt-3">
-              <h4 className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-600">
-                Spell Slots{c.className.includes("Warlock") ? " (Pact)" : ""}
-              </h4>
-              <div className="space-y-1">
-                {c.spellSlots
-                  .slice()
-                  .sort((a, b) => a.level - b.level)
-                  .map((s) => (
-                    <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
-                      {s.max > 0 && s.max <= 6 ? (
-                        <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
-                      ) : (
-                        <span className="font-medium text-slate-100">
-                          {s.current}/{s.max}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
+          <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
         </SectionDivider>
       )}
 

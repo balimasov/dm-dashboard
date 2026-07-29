@@ -454,7 +454,7 @@ export function CharacterDetailsModal({
         {averageOverallPercent(c.resources, c.spellSlots) !== null && (
           <SectionDivider>
             <SubHeading>Resources</SubHeading>
-            <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} />
+            <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
           </SectionDivider>
         )}
 

@@ -1,7 +1,10 @@
 import { RECOVERY_LABELS, Resource, SpellSlotLevel } from "@/lib/types";
+import { ordinalLevel } from "@/lib/format";
 import { tierBgClass, tierTextClass } from "@/lib/tierColor";
+import { useDismissiblePopover } from "@/hooks/useDismissiblePopover";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
 
 /** Fixed-size CSS circles instead of "●"/"○" glyphs — those render at different visual weights per font. */
@@ -67,10 +70,13 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
 }
 
 /**
- * The hover/tap breakdown for `ResourceTrackerBar` — the bar itself shows only
- * the one blended number, so this is the one place to see it split back out by
- * Limited Use vs. Spell Slots (same "Limited Use" label the card's own
- * subheading uses for this resource list, right below).
+ * The click-to-open breakdown for `ResourceTrackerBar` — the bar itself shows
+ * only the one blended number, so this is the one place to see it split back
+ * out by Limited Use vs. Spell Slots, followed by the full itemized list of
+ * both (previously rendered permanently below the bar on `CharacterCard`,
+ * which is exactly what made that card too tall to fit a screen without
+ * scrolling — moving it in here keeps every bit of detail one click away
+ * instead of always paying its full height up front).
  *
  * Two different color systems meet here, deliberately: Overall uses the same
  * danger-tier color as the bar (green/amber/red — "how worried should I be"),
@@ -83,34 +89,73 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
  * elsewhere, so the item-type color stays constant and only the *bar* carries
  * the tier signal.
  */
-function ResourceTrackerHint({
+function ResourceTrackerPopover({
   overallPercent,
   resourcesPercent,
   spellSlotsPercent,
+  resources,
+  spellSlots,
+  pactSlots,
 }: {
   overallPercent: number;
   resourcesPercent: number | null;
   spellSlotsPercent: number | null;
+  resources: Resource[];
+  spellSlots: SpellSlotLevel[];
+  pactSlots?: boolean;
 }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-white">Resource Tracker</p>
-      <p className="text-slate-300">
-        Average remaining % across every tracked pool — abilities and spell slots together, one pool one equal vote
-        regardless of its size.
-      </p>
-      <p>
-        <span className={tierTextClass(overallPercent)}>●</span> Overall: <span className="font-semibold text-white">{overallPercent}%</span>
-      </p>
-      {resourcesPercent !== null && (
+    <div className={`absolute left-0 right-0 top-full z-20 mt-1.5 w-64 p-3 text-sm ${POPOVER_SHELL_CLS}`}>
+      <div className="space-y-1 border-b border-slate-800 pb-2 text-xs">
+        <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
         <p>
-          <span className="text-blue-400">●</span> Limited Use: <span className="font-semibold text-white">{resourcesPercent}%</span>
+          <span className={tierTextClass(overallPercent)}>●</span> Overall: <span className="font-semibold text-white">{overallPercent}%</span>
         </p>
+        {resourcesPercent !== null && (
+          <p>
+            <span className="text-blue-400">●</span> Limited Use: <span className="font-semibold text-white">{resourcesPercent}%</span>
+          </p>
+        )}
+        {spellSlotsPercent !== null && (
+          <p>
+            <span className="text-violet-400">●</span> Spell Slots: <span className="font-semibold text-white">{spellSlotsPercent}%</span>
+          </p>
+        )}
+      </div>
+
+      {resources.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Limited Use</h4>
+          {resources
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((r) => (
+              <ResourceMeter key={r.id} resource={r} />
+            ))}
+        </div>
       )}
-      {spellSlotsPercent !== null && (
-        <p>
-          <span className="text-violet-400">●</span> Spell Slots: <span className="font-semibold text-white">{spellSlotsPercent}%</span>
-        </p>
+
+      {spellSlots.length > 0 && (
+        <div className="mt-3">
+          <h4 className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-600">Spell Slots{pactSlots ? " (Pact)" : ""}</h4>
+          <div className="space-y-1">
+            {spellSlots
+              .slice()
+              .sort((a, b) => a.level - b.level)
+              .map((s) => (
+                <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
+                  {s.max > 0 && s.max <= 6 ? (
+                    <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
+                  ) : (
+                    <span className="font-medium text-slate-100">
+                      {s.current}/{s.max}
+                    </span>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -118,56 +163,67 @@ function ResourceTrackerHint({
 
 /**
  * One bar, one number, for both the Limited Use and Spell Slots sub-sections
- * below it — a DM glancing at a card wants "how topped-up is this
- * character" as one combined impression, not two separate bars to compare
- * in their head. Limited-use resources and spell slots are pooled into a
- * single average (see `averageOverallPercent`); the bar's tier color
- * (green/amber/red) reflects that one number. The per-pool-type split
- * (which is low, which isn't) lives one hover/tap away in the hint instead
- * of being crammed into the bar itself. `null` (nothing to show a bar for
- * at all) only when neither has anything tracked.
+ * — a DM glancing at a card wants "how topped-up is this character" as one
+ * combined impression, not two separate bars to compare in their head, and
+ * not the full itemized breakdown up front either. Limited-use resources and
+ * spell slots are pooled into a single average (see `averageOverallPercent`);
+ * the bar's tier color (green/amber/red) reflects that one number. The
+ * per-pool-type split and the full itemized list both live one click away in
+ * `ResourceTrackerPopover` instead. `null` (nothing to show a bar for at all)
+ * only when neither has anything tracked.
+ *
+ * Click rather than hover — `useDismissiblePopover` is the same
+ * open/outside-click/Escape mechanics `RemindersFab`/`QuickLinksButton`
+ * already share, so this reads as the same kind of "tap a summary, get the
+ * detail" affordance as those rather than a one-off hover tooltip a touch
+ * device could never reach anyway.
  */
-export function ResourceTrackerBar({ resources, spellSlots }: { resources: Resource[]; spellSlots: SpellSlotLevel[] }) {
+export function ResourceTrackerBar({
+  resources,
+  spellSlots,
+  pactSlots,
+}: {
+  resources: Resource[];
+  spellSlots: SpellSlotLevel[];
+  /** Warlocks track spell slots as a single fast-recovering "Pact Magic" pool rather than the standard per-long-rest table — surfaced only in the popover's own Spell Slots heading, not on the bar itself. */
+  pactSlots?: boolean;
+}) {
   const overallPercent = averageOverallPercent(resources, spellSlots);
+  const { open, setOpen, containerRef } = useDismissiblePopover();
   if (overallPercent === null) return null;
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
-  const hint = (
-    <ResourceTrackerHint overallPercent={overallPercent} resourcesPercent={resourcesPercent} spellSlotsPercent={spellSlotsPercent} />
-  );
+
   return (
-    // `leading-none` here (not just on the number span below) matters: InfoTooltip
-    // wraps its children in its own spans that don't reset their inherited
-    // line-height, so their invisible "strut" space skews ascent-heavy and
-    // visually pushes the number down relative to the bar once flex centers the
-    // taller box. Resetting line-height at this level too keeps every nested
-    // span's strut as tight as the number's own, so centering lines up cleanly.
-    <div className="flex items-center gap-2 leading-none">
-      {/* `relative` here, not on `InfoTooltip`'s own wrapper — that wrapper
-          is `inline-block` (shrink-to-fit), and this track needs `flex-1` to
-          fill whatever's left of the row's width. Nesting the *whole* bar
-          inside `InfoTooltip` (the way `RestRecoveryMeterRow` gets away with
-          for its own fixed-width bar) collapsed this one to zero width,
-          since `flex-1` only stretches as a *direct* flex child of this row
-          — the same "direct child" rule `DotMeter`'s own doc comment already
-          flags for its dots. Instead, the track stays a direct, untouched
-          flex child, and an absolutely-positioned hit target sits inside it
-          — `inset-0` resolves against *this* div regardless of the
-          `InfoTooltip` spans in between, so hovering anywhere on the bar
-          still opens the same hint the percent below does. */}
-      <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
-        <InfoTooltip hoverOnly panel={hint}>
-          <span className="absolute inset-0" />
-        </InfoTooltip>
-      </div>
-      <InfoTooltip hoverOnly panel={hint}>
-        {/* `relative -top-px`: even with the strut fixed above, digit glyphs still sit ~1px low in
-            their own box (descender space this font reserves below the baseline, unused by digits).
-            `translate`/`transform` can't nudge this — both are no-ops on a plain (non `inline-block`)
-            inline element like this span — but relative positioning applies to inline boxes fine. */}
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="Resource tracker details"
+        // `leading-none` here (not just on the number span below) matters: without it, the
+        // button's own inherited line-height skews ascent-heavy and visually pushes the number
+        // down relative to the bar once flex centers the taller box.
+        className="flex w-full items-center gap-2 leading-none"
+      >
+        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+          <div className={`h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
+        </div>
+        {/* `relative -top-px`: digit glyphs sit ~1px low in their own box (descender space this
+            font reserves below the baseline, unused by digits) — relative positioning nudges it
+            back up since `translate`/`transform` are no-ops on a plain inline element like this. */}
         <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
-      </InfoTooltip>
+      </button>
+      {open && (
+        <ResourceTrackerPopover
+          overallPercent={overallPercent}
+          resourcesPercent={resourcesPercent}
+          spellSlotsPercent={spellSlotsPercent}
+          resources={resources}
+          spellSlots={spellSlots}
+          pactSlots={pactSlots}
+        />
+      )}
     </div>
   );
 }
