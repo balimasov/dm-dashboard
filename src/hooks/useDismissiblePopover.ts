@@ -5,12 +5,15 @@ import { useEscapeToClose } from "./useEscapeToClose";
 
 /**
  * Shared open/close mechanics for a corner-pinned quick-action popover
- * (`RemindersFab`, `QuickLinksButton`, `QuickNoteButton`) — click-outside
- * closes it, Escape closes it — previously the same handful of lines
- * hand-copied into each of the three independently. `containerRef` goes on
- * the outermost wrapper that holds both the trigger button and the popover
- * itself, so a click on the trigger (which toggles `open`) isn't also
- * mistaken for an outside click that immediately closes it again.
+ * (`RemindersFab`, `QuickLinksButton`) — click-outside closes it, Escape
+ * closes it — previously the same handful of lines hand-copied into each
+ * of the two independently. `containerRef` goes on the outermost wrapper
+ * that holds both the trigger button and the popover itself, so a click on
+ * the trigger (which toggles `open`) isn't also mistaken for an outside
+ * click that immediately closes it again. Deliberately not wired into
+ * `QuickNoteButton` — its trigger/popover are a genuinely different shape
+ * (inline header toolbar icon, not a corner FAB), not just a near-miss of
+ * these two.
  */
 export function useDismissiblePopover() {
   const [open, setOpen] = useState(false);

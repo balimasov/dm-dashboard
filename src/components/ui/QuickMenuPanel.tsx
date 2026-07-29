@@ -2,15 +2,18 @@ import { QUICK_MENU_SHELL_CLS } from "./containerStyles";
 import { PANEL_HEADING_CLS } from "./typography";
 
 /**
- * Shared shell + header for the app's three corner-pinned quick-action
- * popovers (`RemindersFab`, `QuickLinksButton`, `QuickNoteButton`) — same
- * dark card, same `icon + title + (count)` header row, same hairline
- * divider under it. Only the header's own content is standardized here;
- * positioning (`absolute`/`fixed`, corner offsets, width) and scrolling
- * (`max-h`, `overflow-y-auto`, `scrollbar-themed`) stay owned by each
- * caller via `className`, since those genuinely differ per trigger — and
- * everything below the header (the reminder list, the link list, the note
- * textarea) is each caller's own content, untouched.
+ * Shared shell + header for the app's two corner-pinned quick-action FAB
+ * popovers (`RemindersFab`, `QuickLinksButton`) — same dark card, same
+ * `icon + title + (count)` header row, same hairline divider under it.
+ * Deliberately NOT used by `QuickNoteButton` — that one's trigger lives
+ * inline in the header toolbar (not a corner FAB) and its popover already
+ * carries its own distinct shape/anchoring, a genuinely different affordance
+ * rather than a near-miss of these two. Only the header's own content is
+ * standardized here; positioning (`absolute`, corner offsets, width) and
+ * scrolling (`max-h`, `overflow-y-auto`, `scrollbar-themed`) stay owned by
+ * each caller via `className`, since those genuinely differ per trigger —
+ * and everything below the header (the reminder list, the link list) is
+ * each caller's own content, untouched.
  *
  * `min-h-[1.375rem]` + `box-content` on the header row: without it, a
  * header with a trailing `manageAction` icon button (only `QuickLinksButton`
