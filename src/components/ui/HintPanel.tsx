@@ -29,6 +29,7 @@ export function HintPanel<T>({
   renderRow,
   rowClassName = "",
   emptyText,
+  footer,
 }: {
   title: ReactNode;
   description?: ReactNode;
@@ -37,6 +38,8 @@ export function HintPanel<T>({
   renderRow?: (row: T) => ReactNode;
   rowClassName?: string;
   emptyText?: string;
+  /** Rendered after everything else, outside the `description` paragraph — for a self-contained block like `AdvantageLine` that needs its own border/layout rather than living inside `description`'s plain `<p>`. */
+  footer?: ReactNode;
 }) {
   return (
     <div className="space-y-1">
@@ -53,6 +56,7 @@ export function HintPanel<T>({
       ) : (
         emptyText && <p className="text-white">{emptyText}</p>
       )}
+      {footer}
     </div>
   );
 }
