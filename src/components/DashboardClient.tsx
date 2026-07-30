@@ -351,13 +351,13 @@ function CreatureCategorySection({
           onAdd={onAdd}
         />
       ) : (
-        // Same `pt-12 -mt-8` / `px-7 -mx-4` / `pb-10 -mb-6` reservation as
+        // Same `pt-12 -mt-8` / `px-7 -mx-4` / `pb-8 -mb-6` reservation as
         // the Party row above, for the same reason — see that row's own
         // comment for the full explanation of the padding/negative-margin
         // split, on all three axes.
         <DndContext id={`creatures-${category}-dnd`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={filtered.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-            <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
+            <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-8 pt-12">
               {filtered.map((creature) => {
                 const owner = characters.find((c) => c.id === creature.ownerCharacterId);
                 return (
@@ -758,22 +758,28 @@ export function DashboardClient({
             //   4px short of the full 34px reach, but that's the very
             //   faintest, near-transparent tail of the blur, invisible in
             //   practice (confirmed via screenshot).
-            // - `pb-10 -mb-6` (bottom, concentrating border): same 34px
-            //   reach, same shape as the sides but no page-edge risk to cap
-            //   it — `-mb-6` claws back exactly `CollapsibleSection`'s own
-            //   trailing `mb-6`, no more. It used to be `-mb-8` to match
-            //   that section's *former* `mb-8`; when the block-spacing round
-            //   tightened it to `mb-6` without updating this claw-back, the
-            //   row started clawing back 8px more than the section actually
-            //   gives, so its own box (and the scrollbar rendered at its
-            //   real, un-clawed-back bottom edge) physically overlapped the
-            //   next block's header — confirmed by measuring the row's
-            //   rendered bottom edge sitting 8px past the next section's
-            //   top. Matching the claw-back to the section's real margin
-            //   fixes that; the `pb-10` reserve itself is untouched.
+            // - `pb-8 -mb-6` (bottom, concentrating border): full reach is
+            //   34px (spread 8px + blur 26px, from `.concentrating-ring`'s
+            //   peak box-shadow), but unlike the sides there's no scrollbar
+            //   sitting on the other two axes — the browser always paints
+            //   this row's own horizontal scrollbar flush against its real
+            //   bottom edge, so *whatever* this reserve is, the scrollbar
+            //   sits that far below the cards, with nothing to reposition it
+            //   closer via CSS. 40px (the full reach + margin) put the
+            //   scrollbar uncomfortably far from the cards it belongs to;
+            //   trimmed to 32px after confirming via screenshot (forcing
+            //   the ring to its peak frame, several trial values) that the
+            //   glow is still fully smooth there — 28px was the first value
+            //   with a visible flat clip at the bottom corners, so 32px is
+            //   the safe floor, not a guess. `-mb-6` claws back exactly
+            //   `CollapsibleSection`'s own trailing `mb-6`, independent of
+            //   this reserve's size — see the Party row's own history of
+            //   this exact claw-back needing to track the section's real
+            //   margin, not a stale one, or its scrollbar overlaps the next
+            //   block's header again.
             <DndContext id="party-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePartyDragEnd}>
               <SortableContext items={visibleCharacters.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-                <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
+                <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-8 pt-12">
                   {visibleCharacters.map((character) => (
                     <div key={character.id} className="w-[300px] shrink-0">
                       <CharacterCard
