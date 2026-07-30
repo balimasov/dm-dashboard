@@ -5,6 +5,7 @@ import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { characterReminders } from "@/lib/reminders";
+import { useCardSortable } from "@/hooks/useCardSortable";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { ResourceTrackerBar } from "./ResourceMeter";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
@@ -45,16 +46,20 @@ export function CharacterCard({
   character,
   onRemove,
   onUpdate,
+  dragEnabled = false,
 }: {
   character: Character;
   onRemove?: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Character>) => void;
+  /** Reordering is DM-only, matching `/api/characters/reorder` — a player still sees the same card, just without the drag affordance on its header. */
+  dragEnabled?: boolean;
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
+  const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(c.id, dragEnabled);
   // Half-proficiency-only skills (Jack of All Trades) are real proficiency
   // bonuses, but on a compact card they read as noise next to actual trained
   // skills — a DM scanning the card wants "what is this character good at,"
@@ -65,10 +70,14 @@ export function CharacterCard({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
-        c.concentrating
-          ? "concentrating-ring border-violet-500 bg-violet-950/10"
-          : "border-slate-800 bg-slate-900/60"
+        isDragging
+          ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
+          : c.concentrating
+            ? "concentrating-ring border-violet-500 bg-violet-950/10"
+            : "border-slate-800 bg-slate-900/60"
       }`}
     >
       <StatusRail
@@ -79,7 +88,7 @@ export function CharacterCard({
       />
 
       {/* Header */}
-      <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} />
+      <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
 
       {/* Sync (left) + kebab actions menu (right) share one row, same
           placement as the details modal's own sync+actions row — keeps the

@@ -12,9 +12,21 @@ import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "@/components
 export function CharacterHeader({
   character,
   onClick,
+  dragHandleProps,
 }: {
   character: Character;
   onClick?: () => void;
+  /**
+   * Spread from `useCardSortable` — press-and-hold *here* (not a separate
+   * handle button elsewhere on the card) is what starts a card drag; a
+   * quick tap still fires `onClick` as before. `active:scale-[0.985]` below
+   * is the only visual cue for either case: it's the same plain "pressed"
+   * feedback any button already gives, so a normal click never shows
+   * anything that reads as a loading state, and a hold that turns into a
+   * drag simply continues past it into the card's own lifted/dragging look
+   * (set by the caller on the outer card, not here).
+   */
+  dragHandleProps?: Record<string, unknown>;
 }) {
   const c = character;
   const content = (
@@ -59,7 +71,8 @@ export function CharacterHeader({
     <button
       type="button"
       onClick={onClick}
-      className="group -m-2 flex items-start gap-3 rounded-lg p-2 text-left transition-colors hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      {...dragHandleProps}
+      className="group -m-2 flex items-start gap-3 rounded-lg p-2 text-left transition hover:bg-slate-800/50 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
     >
       {content}
     </button>

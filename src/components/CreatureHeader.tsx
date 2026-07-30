@@ -15,10 +15,13 @@ export function CreatureHeader({
   creature,
   owner,
   onClick,
+  dragHandleProps,
 }: {
   creature: Creature;
   owner?: Character;
   onClick?: () => void;
+  /** Spread from `useCardSortable` — same convention as `CharacterHeader`'s own `dragHandleProps`, see its doc comment. */
+  dragHandleProps?: Record<string, unknown>;
 }) {
   const infoLine = [creatureInfoLine(creature), creature.alignment].filter(Boolean).join(", ");
 
@@ -75,7 +78,8 @@ export function CreatureHeader({
       <button
         type="button"
         onClick={onClick}
-        className="group -m-2 flex min-w-0 flex-1 items-start gap-3 rounded-lg p-2 text-left transition-colors hover:bg-slate-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+        {...dragHandleProps}
+        className="group -m-2 flex min-w-0 flex-1 items-start gap-3 rounded-lg p-2 text-left transition hover:bg-slate-800/50 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
       >
         {content}
       </button>

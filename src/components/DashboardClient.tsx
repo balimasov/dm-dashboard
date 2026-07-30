@@ -1,6 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
@@ -33,6 +43,7 @@ import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PencilIcon, PlusIcon } fro
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
+import { reorderSubset } from "@/lib/reorderSubset";
 import {
   CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
@@ -292,6 +303,9 @@ function CreatureCategorySection({
   onClearHpHistory,
   onRemove,
   onAdd,
+  onReorder,
+  dragEnabled,
+  sensors,
 }: {
   category: CreatureCategory;
   creatures: Creature[];
@@ -303,9 +317,18 @@ function CreatureCategorySection({
   onClearHpHistory: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd?: () => void;
+  onReorder: (orderedIds: string[]) => void;
+  dragEnabled: boolean;
+  sensors: ReturnType<typeof useSensors>;
 }) {
   const inCategory = creatures.filter((c) => c.category === category);
   const filtered = inCategory.filter((c) => !c.hidden);
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    onReorder(reorderSubset(creatures, (c) => c.category === category && !c.hidden, String(active.id), String(over.id)));
+  }
 
   return (
     <CollapsibleSection
@@ -331,24 +354,29 @@ function CreatureCategorySection({
         // same reason — CreatureCard's own StatusRail badges bleed above
         // and sideways of the card's border and get clipped by this row's
         // own overflow-x-auto without the extra room.
-        <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
-          {filtered.map((creature) => {
-            const owner = characters.find((c) => c.id === creature.ownerCharacterId);
-            return (
-              <div key={creature.id} className="w-[300px] shrink-0">
-                <CreatureCard
-                  creature={creature}
-                  owner={owner}
-                  characters={characters}
-                  onUpdate={onUpdate}
-                  onDuplicate={() => onDuplicate(creature)}
-                  onClearHpHistory={onClearHpHistory}
-                  onRemove={onRemove}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <DndContext id={`creatures-${category}-dnd`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={filtered.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+            <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+              {filtered.map((creature) => {
+                const owner = characters.find((c) => c.id === creature.ownerCharacterId);
+                return (
+                  <div key={creature.id} className="w-[300px] shrink-0">
+                    <CreatureCard
+                      creature={creature}
+                      owner={owner}
+                      characters={characters}
+                      onUpdate={onUpdate}
+                      onDuplicate={() => onDuplicate(creature)}
+                      onClearHpHistory={onClearHpHistory}
+                      onRemove={onRemove}
+                      dragEnabled={dragEnabled}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </CollapsibleSection>
   );
@@ -371,8 +399,21 @@ export function DashboardClient({
   useScrollPositionMemory(`dashboard-scroll:${campaign.id}`);
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
-  const { characters, removeCharacter, updateCharacter } = charactersState;
-  const { creatures, duplicateCreature, updateCreature, clearHpHistory, removeCreature } = creaturesState;
+  const { characters, removeCharacter, updateCharacter, reorderCharacters } = charactersState;
+  const { creatures, duplicateCreature, updateCreature, clearHpHistory, removeCreature, reorderCreatures } = creaturesState;
+  // Shared by every card row below (Party + each creature category) — one
+  // `PointerSensor` config, not four. `delay`/`tolerance` (not `distance`,
+  // which `CampaignRosterEditor`'s dedicated "⠿" handle uses) is what makes
+  // this a press-*and-hold* gesture on the card's own header instead of an
+  // instant drag: released before `delay` elapses, or moved past `tolerance`
+  // pixels first (a horizontal swipe-scroll of the row, say), and dnd-kit
+  // never activates the drag at all — the header's own `onClick` fires
+  // normally instead, same as any other tap. Values match the prototype
+  // rounds this was validated in before being wired up for real.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 260, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncSummary, setSyncSummary] = useState<string | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
@@ -426,6 +467,13 @@ export function DashboardClient({
   // whether it shows up in the Party/Companions/Enemies/NPCs rows below and
   // in `RemindersPanel`, not whether the app keeps tracking it.
   const visibleCharacters = characters.filter((c) => !c.hidden);
+
+  function handlePartyDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    reorderCharacters(reorderSubset(characters, (c) => !c.hidden, String(active.id), String(over.id)));
+  }
+
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
   const lastSyncedAt = linkedCharacters.reduce<string | undefined>((latest, c) => {
     if (!c.lastSyncedAt) return latest;
@@ -683,13 +731,22 @@ export function DashboardClient({
             // bleed into before hitting a clipping edge (confirmed clipped
             // without this) — `px-3` also matches the Campaign/Inventory
             // blocks' own inset so all three line up on the same left edge.
-            <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
-              {visibleCharacters.map((character) => (
-                <div key={character.id} className="w-[300px] shrink-0">
-                  <CharacterCard character={character} onRemove={removeCharacter} onUpdate={updateCharacter} />
+            <DndContext id="party-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePartyDragEnd}>
+              <SortableContext items={visibleCharacters.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+                <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+                  {visibleCharacters.map((character) => (
+                    <div key={character.id} className="w-[300px] shrink-0">
+                      <CharacterCard
+                        character={character}
+                        onRemove={removeCharacter}
+                        onUpdate={updateCharacter}
+                        dragEnabled={isDm}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CollapsibleSection>
       </div>
@@ -706,6 +763,9 @@ export function DashboardClient({
           onClearHpHistory={clearHpHistory}
           onRemove={removeCreature}
           onAdd={isDm ? () => openRoster("companion") : undefined}
+          onReorder={reorderCreatures}
+          dragEnabled={isDm}
+          sensors={sensors}
         />
       </div>
 
@@ -727,6 +787,9 @@ export function DashboardClient({
               onClearHpHistory={clearHpHistory}
               onRemove={removeCreature}
               onAdd={() => openRoster("enemy")}
+              onReorder={reorderCreatures}
+              dragEnabled={isDm}
+              sensors={sensors}
             />
           </div>
 
@@ -742,6 +805,9 @@ export function DashboardClient({
               onClearHpHistory={clearHpHistory}
               onRemove={removeCreature}
               onAdd={() => openRoster("npc")}
+              onReorder={reorderCreatures}
+              dragEnabled={isDm}
+              sensors={sensors}
             />
           </div>
         </>

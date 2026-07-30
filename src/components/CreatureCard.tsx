@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { creatureReminders } from "@/lib/reminders";
+import { useCardSortable } from "@/hooks/useCardSortable";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
@@ -45,6 +46,7 @@ export function CreatureCard({
   onDuplicate,
   onClearHpHistory,
   onRemove,
+  dragEnabled = false,
 }: {
   creature: Creature;
   owner?: Character;
@@ -53,17 +55,24 @@ export function CreatureCard({
   onDuplicate?: () => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
+  /** Reordering is DM-only, matching `/api/creatures/reorder` — a player still sees the same card, just without the drag affordance on its header. */
+  dragEnabled?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
+  const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(creature.id, dragEnabled);
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
-        creature.concentrating
-          ? "concentrating-ring border-violet-500 bg-violet-950/10"
-          : "border-slate-800 bg-slate-900/60"
+        isDragging
+          ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
+          : creature.concentrating
+            ? "concentrating-ring border-violet-500 bg-violet-950/10"
+            : "border-slate-800 bg-slate-900/60"
       }`}
     >
       <StatusRail
@@ -75,7 +84,7 @@ export function CreatureCard({
         onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
       />
 
-      <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} />
+      <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
 
       {/* Created/edited timestamp (left) + kebab actions menu (right) share
           one row — same placement as `CharacterCard`'s own sync+actions row,
