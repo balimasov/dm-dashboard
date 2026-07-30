@@ -18,10 +18,11 @@ function chipColorClass(name: string): string {
   return CHARACTER_CHIP_COLORS[Math.abs(hash) % CHARACTER_CHIP_COLORS.length];
 }
 
-/** `sm` (20px) is the original, default size used everywhere else; `md` (36px) exists for the rare spot that needs a bigger, still-recognizable chip — the Skill Heatmap's column-header avatars, sized to match its own data-cell height. */
+/** `sm` (20px) is the original, default size used everywhere else; `md` (36px) exists for the rare spot that needs a bigger, still-recognizable chip — the Skill Heatmap's column-header avatars, sized to match its own data-cell height; `lg` (28px) is `OwnerBadge`'s size, tuned so the chip stays legible peeking off a creature's photo avatar without overwhelming it. */
 const CHARACTER_CHIP_SIZE_CLASS = {
   sm: "h-5 w-5 text-[10px]",
   md: "h-9 w-9 text-sm",
+  lg: "h-7 w-7 text-xs",
 };
 
 /**
@@ -38,6 +39,13 @@ const CHARACTER_CHIP_SIZE_CLASS = {
  * already nested inside our own `InfoTooltip` (e.g. `StrengthChip`) — that
  * hint already states the name, so the browser's native tooltip would just
  * pop up right alongside ours, duplicating it.
+ *
+ * `borderClassName` replaces (not appends to) the default `border-slate-700`
+ * — a plain appended class can't reliably win a same-specificity Tailwind
+ * border-color fight, so callers that need a different border (`OwnerBadge`,
+ * sitting on top of unpredictable photo avatars) pass a full replacement
+ * instead. `className` appends extra utilities that don't already exist on
+ * the chip (e.g. a drop shadow) where that ambiguity doesn't apply.
  */
 export function CharacterChip({
   name,
@@ -45,12 +53,16 @@ export function CharacterChip({
   title,
   showTitle = true,
   size = "sm",
+  borderClassName = "border-slate-700",
+  className = "",
 }: {
   name: string;
   avatarUrl?: string;
   title?: string;
   showTitle?: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
+  borderClassName?: string;
+  className?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const label = showTitle ? (title ?? name) : undefined;
@@ -63,14 +75,14 @@ export function CharacterChip({
         alt=""
         title={label}
         onError={() => setFailed(true)}
-        className={`shrink-0 rounded-full border border-slate-700 object-cover ${sizeClass}`}
+        className={`shrink-0 rounded-full border object-cover ${borderClassName} ${sizeClass} ${className}`}
       />
     );
   }
   return (
     <span
       title={label}
-      className={`flex shrink-0 items-center justify-center rounded-full border font-semibold ${chipColorClass(name)} ${sizeClass}`}
+      className={`flex shrink-0 items-center justify-center rounded-full border font-semibold ${chipColorClass(name)} ${sizeClass} ${className}`}
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>

@@ -43,7 +43,7 @@ export function CreatureHeader({
             and lives inside this same clickable area instead of shrinking
             it. See `OwnerBadge`'s own doc comment for why. */}
         {owner && (
-          <div className="absolute -left-1.5 -top-1.5">
+          <div className="absolute -left-2 -top-2">
             <OwnerBadge owner={owner} />
           </div>
         )}
