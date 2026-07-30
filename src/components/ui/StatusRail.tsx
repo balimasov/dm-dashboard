@@ -109,6 +109,7 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
       <InfoTooltip
         hoverOnly
         disableTap
+        desktopOnly
         panel={
           <div className="space-y-2">
             {CONCENTRATION_HINT_TEXT}

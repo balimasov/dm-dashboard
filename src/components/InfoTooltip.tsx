@@ -48,11 +48,15 @@ const EDGE_MARGIN = 8;
  * row — like the same histogram row above — scrolls while the panel is
  * open).
  */
+/** Tailwind v4's `sm` breakpoint (`min-width: 40rem`) — matches "mobile" below it, the same viewport-width convention `NotesSection`/`CampaignDescription` already use for their own mobile-vs-desktop pencil-icon behavior, rather than a `pointer`/`hover` media feature this codebase doesn't otherwise reference. */
+const DESKTOP_MEDIA_QUERY = "(min-width: 40rem)";
+
 export function InfoTooltip({
   children,
   panel,
   hoverOnly = false,
   disableTap = false,
+  desktopOnly = false,
   inline = false,
   className,
 }: {
@@ -62,6 +66,21 @@ export function InfoTooltip({
   hoverOnly?: boolean;
   /** Skips the tap-to-toggle click handler *and* the `cursor-help` cursor — for wrapping an element that already has its own onClick (e.g. a toggle button, or a row nested inside a clickable header), so a tap there isn't hijacked into opening the tooltip instead of firing that handler, and the cursor doesn't advertise "hover for info" over what's really a button. Hover/focus still shows the panel via CSS on desktop. Without `disableTap`, touch devices have no way to open the panel at all, since neither `:hover` nor `:focus` fires from a tap. */
   disableTap?: boolean;
+  /**
+   * Below `sm`, the trigger stops listening for hover/focus/tap entirely —
+   * `children` still render exactly as passed, just with no panel ever
+   * mounting. For a trigger that's *also* a real control (Concentration's
+   * toggle button, the Heroic Inspiration star sitting inside the card's
+   * open-details button): on a touch screen the first tap on such an
+   * element often only satisfies a synthetic `:hover`/`mouseenter` (iOS'
+   * long-standing "first tap hovers, second tap clicks" behavior), which
+   * pops this panel open and requires a *second* tap just to dismiss it —
+   * a tap that can just as easily land on a neighboring control instead.
+   * Desktop mouse users never trigger that synthetic hover, so behavior
+   * there is untouched. Doesn't drop `disableTap`'s own click handler by
+   * itself — pass both when the wrapped element needs neither.
+   */
+  desktopOnly?: boolean;
   /**
    * The trigger is always `inline-block` (sits on the same line as
    * surrounding text either way) — `inline` only skips the inner span's
@@ -81,10 +100,29 @@ export function InfoTooltip({
 }) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  // Lazy initializer (not a value set from an effect) so the very first
+  // client render already has the right answer, before paint — the whole
+  // point of `desktopOnly` is dodging a *very* early synthetic hover on
+  // first touch, so a mobile viewport must never get even one frame where
+  // the trigger is briefly listening. Server-rendered as `true` (`window`
+  // doesn't exist yet); harmless, since this only gates event handlers, not
+  // anything present in the server-rendered HTML itself.
+  const [isDesktop, setIsDesktop] = useState(
+    () => !desktopOnly || typeof window === "undefined" || window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+  );
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const visible = open || hovered;
+  useLayoutEffect(() => {
+    if (!desktopOnly) return;
+    const mql = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [desktopOnly]);
+
+  const suppressed = desktopOnly && !isDesktop;
+  const visible = !suppressed && (open || hovered);
 
   // Position is written straight to the portaled panel's own DOM node via
   // the ref, not through React state — the same call the original
@@ -199,19 +237,19 @@ export function InfoTooltip({
       // reserves extra space below it for descenders in the surrounding line
       // box, which was inflating every row that used this component (most
       // visibly the Inventory item list, where it added ~5px per row).
-      className={`inline-block max-w-full align-top ${disableTap ? "" : "cursor-help"} ${className ?? ""}`}
+      className={`inline-block max-w-full align-top ${disableTap || suppressed ? "" : "cursor-help"} ${className ?? ""}`}
       onClick={
-        disableTap
+        disableTap || suppressed
           ? undefined
           : (e) => {
               e.stopPropagation();
               setOpen((v) => !v);
             }
       }
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setHovered(true)}
-      onBlurCapture={() => setHovered(false)}
+      onMouseEnter={suppressed ? undefined : () => setHovered(true)}
+      onMouseLeave={suppressed ? undefined : () => setHovered(false)}
+      onFocusCapture={suppressed ? undefined : () => setHovered(true)}
+      onBlurCapture={suppressed ? undefined : () => setHovered(false)}
     >
       <span
         className={

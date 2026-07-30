@@ -32,6 +32,7 @@ export function CharacterHeader({
       <InfoTooltip
         hoverOnly
         disableTap
+        desktopOnly
         panel={
           <p>
             <span className="font-semibold text-amber-400">Heroic Inspiration</span> — lets you reroll one d20 roll,
