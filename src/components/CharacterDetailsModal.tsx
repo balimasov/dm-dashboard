@@ -440,12 +440,12 @@ export function CharacterDetailsModal({
           </div>
         </SectionDivider>
 
-        {/* Resources tracker — same compact bar as the main card, quick-glance
+        {/* Resources tracker — same block as the main card (own "Resources"
+            label baked in, see ResourceTrackerBar's doc comment), quick-glance
             "how topped-up is this character" before diving into the
             Features/Spells tabs below (which don't otherwise show it). */}
         {averageOverallPercent(c.resources, c.spellSlots) !== null && (
           <SectionDivider>
-            <SubHeading>Resources</SubHeading>
             <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
           </SectionDivider>
         )}

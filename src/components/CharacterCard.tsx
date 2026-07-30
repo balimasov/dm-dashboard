@@ -54,6 +54,12 @@ export function CharacterCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
+  // Half-proficiency-only skills (Jack of All Trades) are real proficiency
+  // bonuses, but on a compact card they read as noise next to actual trained
+  // skills — a DM scanning the card wants "what is this character good at,"
+  // not the half-credit list too. The full picture (every skill, including
+  // these) still lives one click away in CharacterDetailsModal.
+  const cardSkills = c.skillProficiencies.filter((skill) => !skill.halfProficiency);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
 
   return (
@@ -207,18 +213,12 @@ export function CharacterCard({
       />
 
       {/* Skills */}
-      {c.skillProficiencies.length > 0 && (
+      {cardSkills.length > 0 && (
         <SectionDivider>
           <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
-            {c.skillProficiencies.map((skill) => {
-              const color = skill.expertise
-                ? "rose"
-                : skill.proficient
-                  ? "amber"
-                  : skill.halfProficiency
-                    ? "orange"
-                    : "slate";
+            {cardSkills.map((skill) => {
+              const color = skill.expertise ? "rose" : skill.proficient ? "amber" : "slate";
               return (
                 <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
                   {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
@@ -232,13 +232,13 @@ export function CharacterCard({
       )}
 
       {/* Resources — Limited Use and Spell Slots merged under one umbrella
-          with a single tracker bar summarizing both at the top (see
-          ResourceTrackerBar's own doc comment for why one shared bar
-          instead of two separate ones: a DM glancing at a card wants "how
-          topped-up is this character" as one impression). */}
+          with a single tracker bar summarizing both (see ResourceTrackerBar's
+          own doc comment for why one shared block instead of two separate
+          bars, and why it renders its own "Resources" label rather than a
+          SubHeading here — the label sits inside the same hover/click hint
+          trigger as the bar and counts below it). */}
       {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
         <SectionDivider>
-          <SubHeading>Resources</SubHeading>
           <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
         </SectionDivider>
       )}

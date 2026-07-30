@@ -26,3 +26,12 @@ export function tierTextClass(percent: number): string {
 export function tierBgClass(percent: number): string {
   return tierColorClass(percent, { high: "bg-emerald-400", mid: "bg-amber-400", low: "bg-red-400" });
 }
+
+/** Soft tinted-background pill variant of the same triad — a translucent `bg-{color}-400/15` behind the solid text color, for a badge that needs to read as its own small chip rather than plain colored text. */
+export function tierBadgeClass(percent: number): string {
+  return tierColorClass(percent, {
+    high: "bg-emerald-400/15 text-emerald-400",
+    mid: "bg-amber-400/15 text-amber-400",
+    low: "bg-red-400/15 text-red-400",
+  });
+}

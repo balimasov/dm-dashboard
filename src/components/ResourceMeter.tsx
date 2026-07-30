@@ -1,9 +1,14 @@
 import { RECOVERY_LABELS, Resource, SpellSlotLevel } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
-import { tierBgClass, tierTextClass } from "@/lib/tierColor";
+import { tierBadgeClass, tierBgClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
+
+/** Small fixed-size CSS circle for a colored bullet — same reasoning as `DotMeter`'s own doc comment: a "●" glyph renders at a different visual weight per font, a real circle doesn't. */
+function ColorDot({ className }: { className: string }) {
+  return <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${className}`} />;
+}
 
 /** Fixed-size CSS circles instead of "●"/"○" glyphs — those render at different visual weights per font. */
 export function DotMeter({
@@ -109,20 +114,26 @@ function ResourceTrackerHint({
 }) {
   return (
     <div className="w-56">
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
-        <p>
-          <span className={tierTextClass(overallPercent)}>●</span> Overall: <span className="font-semibold text-white">{overallPercent}%</span>
-        </p>
+        <div className="flex items-center gap-1.5">
+          <ColorDot className={tierBgClass(overallPercent)} />
+          <span>Overall</span>
+          <span className="ml-auto font-semibold text-white tabular-nums">{overallPercent}%</span>
+        </div>
         {resourcesPercent !== null && (
-          <p>
-            <span className="text-blue-400">●</span> Limited Use: <span className="font-semibold text-white">{resourcesPercent}%</span>
-          </p>
+          <div className="flex items-center gap-1.5">
+            <ColorDot className="bg-blue-400" />
+            <span>Limited Use</span>
+            <span className="ml-auto font-semibold text-white tabular-nums">{resourcesPercent}%</span>
+          </div>
         )}
         {spellSlotsPercent !== null && (
-          <p>
-            <span className="text-violet-400">●</span> Spell Slots: <span className="font-semibold text-white">{spellSlotsPercent}%</span>
-          </p>
+          <div className="flex items-center gap-1.5">
+            <ColorDot className="bg-violet-400" />
+            <span>Spell Slots</span>
+            <span className="ml-auto font-semibold text-white tabular-nums">{spellSlotsPercent}%</span>
+          </div>
         )}
       </div>
 
@@ -165,28 +176,34 @@ function ResourceTrackerHint({
 }
 
 /**
- * One bar, one number, for both the Limited Use and Spell Slots sub-sections
- * — a DM glancing at a card wants "how topped-up is this character" as one
- * combined impression, not two separate bars to compare in their head, and
- * not the full itemized breakdown up front either. Limited-use resources and
- * spell slots are pooled into a single average (see `averageOverallPercent`);
- * the bar's tier color (green/amber/red) reflects that one number. The
- * per-pool-type split and the full itemized list both live one hover/tap
- * away in `ResourceTrackerHint` instead. `null` (nothing to show a bar for
- * at all) only when neither has anything tracked.
+ * "Resources" section header, bar, and both category totals in one block —
+ * a DM glancing at a card used to get only one blended number, which reads
+ * fine until abilities are topped up but spell slots are nearly gone (or
+ * vice versa): the single percent hides exactly the split that matters most.
+ * Now the bar still carries the one blended tier-colored impression (green/
+ * amber/red, see `averageOverallPercent`), echoed in the badge next to the
+ * "Resources" label itself (`tierBadgeClass`, the only place color reacts to
+ * *state* rather than *category*), while a row underneath always shows both
+ * categories' own `current/max` totals up front — no hover needed to see
+ * whether it's the abilities or the slots that are running low. Those two
+ * counts use the same fixed blue/violet identity colors as the dot bullets
+ * in `ResourceTrackerHint` below (not tier colors — a category's own hue
+ * stays constant regardless of how full it is, only the badge and bar react
+ * to state), so the quick-glance row and the hover breakdown read as the
+ * same visual language. `null` (nothing to show at all) only when neither
+ * side has anything tracked.
  *
- * The bar and the percent are one single `InfoTooltip` trigger, not two —
- * an earlier version wrapped each separately, which meant hovering the bar
- * and hovering the number opened two independently-tracked hints instead of
- * reading as one control. `hoverOnly` here only turns off the dotted-underline
- * text styling (this is a progress bar, not a word), it doesn't restrict the
- * interaction — click-to-pin still works exactly like every other hint.
- *
- * The row also gets a faint `hover:bg-white/5` of its own, same affordance
- * the prototype used — the tooltip already signals "hover me" once it opens,
- * but that's a beat later; the background gives an instant on-touch cue that
- * this row is interactive at all, same idea as `res-bar-row:hover` in the
- * prototype this was built from.
+ * This whole block — label, badge, bar, and both counts — is one single
+ * `InfoTooltip` trigger, not several: an earlier version had the bar and the
+ * percent as two independently-tracked hints, which read as two controls
+ * instead of one. `hoverOnly` here only turns off the dotted-underline text
+ * styling (this is a bar/label cluster, not a word), it doesn't restrict the
+ * interaction — click-to-pin still works exactly like every other hint. The
+ * block also gets a faint `hover:bg-white/5` of its own — the tooltip
+ * already signals "hover me" once it opens, but that's a beat later; the
+ * background gives an instant on-touch cue that the whole area is
+ * interactive, same idea as `res-bar-row:hover` in the prototype this was
+ * built from.
  */
 export function ResourceTrackerBar({
   resources,
@@ -203,6 +220,11 @@ export function ResourceTrackerBar({
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
 
+  const resourcesCurrent = resources.reduce((sum, r) => sum + r.current, 0);
+  const resourcesMax = resources.reduce((sum, r) => sum + r.max, 0);
+  const spellSlotsCurrent = spellSlots.reduce((sum, s) => sum + s.current, 0);
+  const spellSlotsMax = spellSlots.reduce((sum, s) => sum + s.max, 0);
+
   return (
     <InfoTooltip
       hoverOnly
@@ -218,20 +240,30 @@ export function ResourceTrackerBar({
         />
       }
     >
-      {/* `leading-none` here (not just on the number span below) matters: InfoTooltip
-          wraps its children in its own span that doesn't reset its inherited
-          line-height, so its invisible "strut" space skews ascent-heavy and
-          visually pushes the number down relative to the bar once flex centers the
-          taller box. Resetting line-height at this level too keeps every nested
-          span's strut as tight as the number's own, so centering lines up cleanly. */}
-      <span className="-mx-1 -my-0.5 flex items-center gap-2 rounded-md px-1 py-0.5 leading-none transition-colors hover:bg-white/5">
-        <span className="relative block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+      <span className="-mx-1 -my-0.5 flex flex-col gap-1.5 rounded-md px-1 py-0.5 leading-none transition-colors hover:bg-white/5">
+        <span className="flex items-center justify-between">
+          <span className="text-xs uppercase tracking-wide text-slate-500">Resources</span>
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${tierBadgeClass(overallPercent)}`}>{overallPercent}%</span>
+        </span>
+        <span className="relative block h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
           <span className={`block h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
         </span>
-        {/* `relative -top-px`: digit glyphs sit ~1px low in their own box (descender space this
-            font reserves below the baseline, unused by digits) — relative positioning nudges it
-            back up since `translate`/`transform` are no-ops on a plain inline element like this. */}
-        <span className={`relative -top-px shrink-0 text-xs font-semibold leading-none tabular-nums ${tierTextClass(overallPercent)}`}>{overallPercent}%</span>
+        {(resourcesMax > 0 || spellSlotsMax > 0) && (
+          <span className="flex items-center justify-between text-xs text-slate-500">
+            {resourcesMax > 0 && (
+              <span className="flex items-center gap-1.5">
+                <ColorDot className="bg-blue-400" />
+                Limited Use <span className="font-semibold text-slate-200 tabular-nums">{resourcesCurrent}/{resourcesMax}</span>
+              </span>
+            )}
+            {spellSlotsMax > 0 && (
+              <span className="flex items-center gap-1.5">
+                <ColorDot className="bg-violet-400" />
+                Spell Slots <span className="font-semibold text-slate-200 tabular-nums">{spellSlotsCurrent}/{spellSlotsMax}</span>
+              </span>
+            )}
+          </span>
+        )}
       </span>
     </InfoTooltip>
   );
