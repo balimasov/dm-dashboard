@@ -41,7 +41,8 @@ export function AbilityScoreBox({
       }`}
     >
       <span className="text-sm font-bold text-slate-100">{modifier}</span>
-      <span className={`text-xs font-semibold ${highlight ? "text-amber-300" : "text-slate-400"}`}>{save}</span>
+      <span className="h-px w-3/5 bg-slate-700" />
+      <span className={`text-[11px] font-medium ${highlight ? "text-amber-300" : "text-slate-500"}`}>{save}</span>
       <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
     </div>
   );
