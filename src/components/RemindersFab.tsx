@@ -30,21 +30,31 @@ import { REMINDER_LINK_TITLE_CLS } from "./ui/typography";
  * height-plus-gap higher) rather than sharing its `bottom-5` spot — the two
  * used to sit at the exact same fixed position, so this one silently covered
  * the quick-links button any session that had at least one reminder flagged.
- * Same self-anchoring `absolute bottom-full` popover pattern as
- * `QuickLinksButton` too, so it opens upward from *this* button specifically
- * instead of a viewport-fixed offset that would need updating by hand if the
- * stack order ever changes again.
+ * That stacked position is conditional on `QuickLinksButton` actually being
+ * there to stack above, though — a campaign with zero quick links renders
+ * that button as `null` entirely (see its own early return), which used to
+ * leave this one still floating at `bottom-20` over an empty gap where the
+ * other button would have been. `hasQuickLinks` (the caller already knows
+ * whether `QuickLinksButton` will render, from the same `links` prop) drops
+ * this one down to that now-vacant `bottom-5` spot instead. Same
+ * self-anchoring `absolute bottom-full` popover pattern as `QuickLinksButton`
+ * too, so it opens upward from *this* button specifically instead of a
+ * viewport-fixed offset that would need updating by hand if the stack order
+ * ever changes again.
  */
 export function RemindersFab({
   characters,
   creatures,
   onUpdateCharacter,
   onUpdateCreature,
+  hasQuickLinks,
 }: {
   characters: Character[];
   creatures: Creature[];
   onUpdateCharacter: (id: string, updates: Partial<Character>) => void;
   onUpdateCreature: (id: string, updates: Partial<Creature>) => void;
+  /** Whether `QuickLinksButton` is also rendered this session — see this component's own doc comment for why that decides which fixed slot this one takes. */
+  hasQuickLinks: boolean;
 }) {
   const { open, setOpen, containerRef } = useDismissiblePopover();
   const [openCharacterId, setOpenCharacterId] = useState<string | null>(null);
@@ -97,7 +107,7 @@ export function RemindersFab({
         />
       )}
 
-      <div ref={containerRef} className="fixed bottom-20 right-5 z-40">
+      <div ref={containerRef} className={`fixed right-5 z-40 ${hasQuickLinks ? "bottom-20" : "bottom-5"}`}>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}

@@ -665,6 +665,7 @@ export function DashboardClient({
         creatures={creatures}
         onUpdateCharacter={updateCharacter}
         onUpdateCreature={updateCreature}
+        hasQuickLinks={(campaignState.quickLinks ?? []).length > 0}
       />
 
       <div id="section-party-toolkit" className="scroll-mt-[130px]">
