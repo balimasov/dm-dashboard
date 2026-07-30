@@ -351,13 +351,13 @@ function CreatureCategorySection({
           onAdd={onAdd}
         />
       ) : (
-        // Same `pt-12 -mt-8`/`px-10 -mx-4` reservation as the Party row
-        // above, for the same reason — see that row's own comment for the
-        // full explanation of the padding/negative-margin split, on both
-        // axes.
+        // Same `pt-12 -mt-8` / `px-7 -mx-4` / `pb-10 -mb-8` reservation as
+        // the Party row above, for the same reason — see that row's own
+        // comment for the full explanation of the padding/negative-margin
+        // split, on all three axes.
         <DndContext id={`creatures-${category}-dnd`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={filtered.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-            <div className="scrollbar-themed -mx-4 -mt-8 flex gap-4 overflow-x-auto px-10 pb-2 pt-12">
+            <div className="scrollbar-themed -mx-4 -mb-8 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
               {filtered.map((creature) => {
                 const owner = characters.find((c) => c.id === creature.ownerCharacterId);
                 return (
@@ -730,44 +730,42 @@ export function DashboardClient({
               onAdd={isDm ? () => openRoster("characters") : undefined}
             />
           ) : (
-            // Status badges straddle each card's *top* border and can bleed
-            // sideways too once there are several of them — `overflow-x-auto`
-            // here forces this row's own overflow-y to compute as non-"visible"
+            // Status badges straddle each card's *top* border, and a
+            // *concentrating* card's whole border pulses the same glow
+            // (`.concentrating-ring`, reach 34px at peak) — `overflow-x-auto`
+            // forces this row's own overflow-y to compute as non-"visible"
             // regardless of what's set (the same quirk noted on StatusRail),
-            // which clips anything that pokes out above the row's own box, and
-            // the row has no scroll room to the left/right of its first/last
-            // card either. `px-10 -mx-4` below reserves room on the sides for
-            // exactly that — see the padding/margin split comment there.
+            // which clips anything that pokes out past the row's own box on
+            // *any* side, and the row has no scroll room past its first/last
+            // card either. Same fix shape on all three sides that need it —
+            // reserve the full reach as real padding (nothing has to escape
+            // the row's own box to render), then claw the resulting extra
+            // space back with a matching negative margin so the row still
+            // sits close to its neighbors instead of visibly padded out:
             //
-            // `pt-12` reserves the *full* height a badge's glow can reach at
-            // the peak of its pulse (badge protrusion + box-shadow blur/
-            // spread, see `globals.css`'s `ring-glow` — pt-8's old 32px fell
-            // ~12px short, which is exactly the clipping this session's
-            // prototype round tracked down) — but that much padding alone
-            // would push the row visibly far from the subtitle above it.
-            // `-mt-8` claws most of that same distance back by shifting the
-            // row (padding included) up so it visually sits close to the
-            // subtitle again — the padding still exists and still protects
-            // the badges from the row's own clipping, it's just riding
-            // mostly *above* the subtitle's baseline instead of adding to
-            // the gap. Net result: badges/glow render fully intact, and the
-            // subtitle-to-card gap reads tighter than the old pt-8-only
-            // spacing did, not looser.
-            //
-            // Same reasoning sideways: a *concentrating* card's whole border
-            // gets the same pulsing-glow treatment (`.concentrating-ring`,
-            // reach 34px at peak) — the old `px-3` (12px) fell 22px short for
-            // whichever card sits at either end of the row, clipped flush
-            // against this row's own scroll edge (confirmed on the leftmost
-            // card). `px-10` (40px) reserves enough on both sides; `-mx-4`
-            // claws back exactly the outer page container's own `px-4`
-            // inset (the one safe amount to bleed into without the row
-            // poking past the page's real edge) so the row still lines up
-            // close to the Campaign/Inventory blocks' own left edge, just
-            // not pixel-identical to before.
+            // - `pt-12 -mt-8` (top, badges): full reach is 44px (protrusion +
+            //   glow, old `pt-8`'s 32px fell 12px short — the clipping this
+            //   session's prototype round tracked down); `-mt-8` claws back
+            //   into the subtitle's own `mb-4` gap above, so the subtitle-to-
+            //   card gap reads *tighter* than the old spacing, not looser.
+            // - `px-7 -mx-4` (sides, concentrating border): full reach is
+            //   34px, but the safe amount to claw back sideways is capped at
+            //   the outer page container's own `px-4` (16px) — bleeding past
+            //   that risks real page-level horizontal scroll, confirmed via
+            //   the same margin math the top fix uses. `px-7` (28px) plus
+            //   that capped `-mx-4` lands the row back at its *original*
+            //   `px-3`-equivalent left edge (confirmed via measurement) —
+            //   4px short of the full 34px reach, but that's the very
+            //   faintest, near-transparent tail of the blur, invisible in
+            //   practice (confirmed via screenshot).
+            // - `pb-10 -mb-8` (bottom, concentrating border): same 34px
+            //   reach, same shape as the sides but no page-edge risk to cap
+            //   it — `-mb-8` claws back into the section's own trailing
+            //   `mb-8` gap below, landing the row at exactly its original
+            //   bottom spacing (net zero change), not just "close to" it.
             <DndContext id="party-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePartyDragEnd}>
               <SortableContext items={visibleCharacters.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-                <div className="scrollbar-themed -mx-4 -mt-8 flex gap-4 overflow-x-auto px-10 pb-2 pt-12">
+                <div className="scrollbar-themed -mx-4 -mb-8 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
                   {visibleCharacters.map((character) => (
                     <div key={character.id} className="w-[300px] shrink-0">
                       <CharacterCard
