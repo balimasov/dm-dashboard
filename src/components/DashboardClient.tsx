@@ -351,13 +351,13 @@ function CreatureCategorySection({
           onAdd={onAdd}
         />
       ) : (
-        // Same `pt-12 -mt-8` / `px-7 -mx-4` / `pb-10 -mb-8` reservation as
+        // Same `pt-12 -mt-8` / `px-7 -mx-4` / `pb-10 -mb-6` reservation as
         // the Party row above, for the same reason — see that row's own
         // comment for the full explanation of the padding/negative-margin
         // split, on all three axes.
         <DndContext id={`creatures-${category}-dnd`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={filtered.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-            <div className="scrollbar-themed -mx-4 -mb-8 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
+            <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
               {filtered.map((creature) => {
                 const owner = characters.find((c) => c.id === creature.ownerCharacterId);
                 return (
@@ -758,14 +758,22 @@ export function DashboardClient({
             //   4px short of the full 34px reach, but that's the very
             //   faintest, near-transparent tail of the blur, invisible in
             //   practice (confirmed via screenshot).
-            // - `pb-10 -mb-8` (bottom, concentrating border): same 34px
+            // - `pb-10 -mb-6` (bottom, concentrating border): same 34px
             //   reach, same shape as the sides but no page-edge risk to cap
-            //   it — `-mb-8` claws back into the section's own trailing
-            //   `mb-8` gap below, landing the row at exactly its original
-            //   bottom spacing (net zero change), not just "close to" it.
+            //   it — `-mb-6` claws back exactly `CollapsibleSection`'s own
+            //   trailing `mb-6`, no more. It used to be `-mb-8` to match
+            //   that section's *former* `mb-8`; when the block-spacing round
+            //   tightened it to `mb-6` without updating this claw-back, the
+            //   row started clawing back 8px more than the section actually
+            //   gives, so its own box (and the scrollbar rendered at its
+            //   real, un-clawed-back bottom edge) physically overlapped the
+            //   next block's header — confirmed by measuring the row's
+            //   rendered bottom edge sitting 8px past the next section's
+            //   top. Matching the claw-back to the section's real margin
+            //   fixes that; the `pb-10` reserve itself is untouched.
             <DndContext id="party-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePartyDragEnd}>
               <SortableContext items={visibleCharacters.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-                <div className="scrollbar-themed -mx-4 -mb-8 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
+                <div className="scrollbar-themed -mx-4 -mb-6 -mt-8 flex gap-4 overflow-x-auto px-7 pb-10 pt-12">
                   {visibleCharacters.map((character) => (
                     <div key={character.id} className="w-[300px] shrink-0">
                       <CharacterCard
