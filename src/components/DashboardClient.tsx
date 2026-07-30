@@ -13,6 +13,7 @@ import {
 import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
+import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
@@ -396,6 +397,14 @@ export function DashboardClient({
   role: UserRole;
 }) {
   const isDm = role === "dm";
+  // Press-and-hold drag never reads well on a touch screen — the same
+  // `delay`/`tolerance` gesture that makes a mouse-held card unambiguous is
+  // easy to trigger by accident while scrolling the row with a finger, and
+  // offers little value on a screen where cards are typically full-width
+  // anyway. Gated off below `sm` instead of building a touch-specific
+  // affordance for a feature that's DM-desk tooling in the first place.
+  const isDesktop = useDesktopViewport();
+  const dragEnabled = isDm && isDesktop;
   useScrollPositionMemory(`dashboard-scroll:${campaign.id}`);
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
@@ -741,7 +750,7 @@ export function DashboardClient({
                         character={character}
                         onRemove={removeCharacter}
                         onUpdate={updateCharacter}
-                        dragEnabled={isDm}
+                        dragEnabled={dragEnabled}
                       />
                     </div>
                   ))}
@@ -765,7 +774,7 @@ export function DashboardClient({
           onRemove={removeCreature}
           onAdd={isDm ? () => openRoster("companion") : undefined}
           onReorder={reorderCreatures}
-          dragEnabled={isDm}
+          dragEnabled={dragEnabled}
           sensors={sensors}
         />
       </div>
@@ -789,7 +798,7 @@ export function DashboardClient({
               onRemove={removeCreature}
               onAdd={() => openRoster("enemy")}
               onReorder={reorderCreatures}
-              dragEnabled={isDm}
+              dragEnabled={dragEnabled}
               sensors={sensors}
             />
           </div>
@@ -807,7 +816,7 @@ export function DashboardClient({
               onRemove={removeCreature}
               onAdd={() => openRoster("npc")}
               onReorder={reorderCreatures}
-              dragEnabled={isDm}
+              dragEnabled={dragEnabled}
               sensors={sensors}
             />
           </div>
