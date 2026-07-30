@@ -40,7 +40,7 @@ export function CollapsibleSection({
   }
 
   return (
-    <section className="mb-8">
+    <section className="mb-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={toggle} className="group flex items-start gap-2 text-left">
           <span
