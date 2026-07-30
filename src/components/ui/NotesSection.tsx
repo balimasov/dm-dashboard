@@ -87,10 +87,18 @@ export function NotesSection({
       >
         <PencilIcon className="h-3.5 w-3.5" />
       </IconButton>
+      {/* `pr-8` on mobile reserves the pencil's own footprint out of the
+          text's line box — the button is always visible there (no hover to
+          time it around, see the class list above), so without this a line
+          wrapping to the block's right edge runs straight under it. Not
+          needed at `sm`+, where the button is invisible except mid-hover. */}
       {isEmpty ? (
-        <p className="text-sm italic text-slate-600">No notes yet.</p>
+        <p className="pr-8 text-sm italic text-slate-600 sm:pr-0">No notes yet.</p>
       ) : (
-        <div className="notes-editor-content text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: html }} />
+        <div
+          className="notes-editor-content pr-8 text-sm text-slate-400 sm:pr-0"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       )}
     </SectionDivider>
   );

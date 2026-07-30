@@ -39,6 +39,7 @@ import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SubHeading } from "./ui/SubHeading";
 import { AbilityScoreBox } from "./ui/AbilityScoreBox";
+import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 
 export function CharacterCard({
   character,
@@ -187,15 +188,30 @@ export function CharacterCard({
       <SectionDivider>
         <SubHeading>Ability Scores</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
-          {STAT_ORDER.map((key) => (
-            <AbilityScoreBox
-              key={key}
-              label={key.toUpperCase()}
-              modifier={formatModifier(abilityModifier(c.stats[key]))}
-              save={formatModifier(savingThrowBonus(c, key))}
-              highlight={c.savingThrowProficiencies.includes(key)}
-            />
-          ))}
+          {STAT_ORDER.map((key) => {
+            const mod = abilityModifier(c.stats[key]);
+            const save = savingThrowBonus(c, key);
+            const proficient = c.savingThrowProficiencies.includes(key);
+            return (
+              <AbilityScoreBox
+                key={key}
+                label={key.toUpperCase()}
+                modifier={formatModifier(mod)}
+                save={formatModifier(save)}
+                highlight={proficient}
+                panel={
+                  <AbilityScoreHintPanel
+                    abilityKey={key}
+                    score={c.stats[key]}
+                    modifier={formatModifier(mod)}
+                    save={formatModifier(save)}
+                    highlight={proficient}
+                    advantages={c.advantages}
+                  />
+                }
+              />
+            );
+          })}
         </div>
       </SectionDivider>
 

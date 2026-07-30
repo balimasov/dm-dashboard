@@ -236,10 +236,20 @@ function CampaignDescription({ notes, isDm, onSave }: { notes: string; isDm: boo
           <PencilIcon className="h-3.5 w-3.5" />
         </IconButton>
       )}
+      {/* `pr-8` reserves the pencil's own footprint out of the text's line
+          box on mobile, where the button is always visible (no hover to
+          time it around) — without this, a line that wraps all the way to
+          the block's right edge runs straight under the button instead of
+          stopping short of it. Only needed below `sm`: above it the button
+          is invisible except mid-hover, so the same brief overlap the rest
+          of the app already accepts elsewhere is fine again. */}
       {isEmpty ? (
-        <p className={MUTED_BODY_CLS}>No description yet.</p>
+        <p className={`pr-8 sm:pr-0 ${MUTED_BODY_CLS}`}>No description yet.</p>
       ) : (
-        <div className="notes-editor-content text-sm text-slate-200" dangerouslySetInnerHTML={{ __html: notes }} />
+        <div
+          className="notes-editor-content pr-8 text-sm text-slate-200 sm:pr-0"
+          dangerouslySetInnerHTML={{ __html: notes }}
+        />
       )}
     </div>
   );

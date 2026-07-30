@@ -7,13 +7,22 @@ import { ButtonHTMLAttributes } from "react";
  * glyph happened to be inside. Four tones, one per role, each a deliberate
  * canonical pick rather than "whichever existing variant was most common":
  * - `neutral` — dismiss/close (a modal's ✕).
- * - `muted` — a lower-emphasis row action (edit/duplicate/show-hide) that
- *   shouldn't compete visually with `neutral`'s close button — no
- *   background on hover, just a text-color shift.
+ * - `muted` — a lower-emphasis row action (edit/duplicate/show-hide) —
+ *   competes less for attention than `neutral` through a dimmer resting
+ *   color, not through skipping the hover square outright (an earlier
+ *   version had `muted`/`accent` shift only text color on hover, no
+ *   background — the one inconsistency callers actually noticed, since it
+ *   made those two tones feel like a different, unfinished component next
+ *   to `neutral`/`danger`'s square).
  * - `danger` — remove/delete a row.
  * - `accent` — add/create — the one "positive" icon-only action
  *   (`QuickNotesSection`'s "+"), sky-hover to match the app's link/accent
  *   color everywhere else.
+ *
+ * Every tone now gets the same `rounded p-1` square background on hover —
+ * only its color changes (neutral/muted gray, danger red-tinted, accent
+ * sky-tinted) — so the affordance ("this is clickable, here's its exact
+ * bounding box") reads identically everywhere regardless of role.
  *
  * Bordered, larger "fab"-style icon buttons (`QuickNoteButton`, the
  * kebab-menu trigger, Journal's export button — `h-9 w-9`/`h-7 w-7` with
@@ -35,9 +44,9 @@ export type IconButtonTone = "neutral" | "muted" | "danger" | "accent";
 
 const TONE_CLASSES: Record<IconButtonTone, string> = {
   neutral: "text-slate-500 hover:bg-slate-800 hover:text-slate-200",
-  muted: "text-slate-400 hover:text-slate-200",
+  muted: "text-slate-400 hover:bg-slate-800 hover:text-slate-200",
   danger: "text-slate-500 hover:bg-red-950/30 hover:text-red-400",
-  accent: "text-slate-500 hover:text-sky-400",
+  accent: "text-slate-500 hover:bg-slate-800 hover:text-sky-400",
 };
 
 export function IconButton({

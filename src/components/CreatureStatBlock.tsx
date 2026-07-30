@@ -25,6 +25,7 @@ import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { AbilityScoreBox } from "./ui/AbilityScoreBox";
+import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { MUTED_LABEL_CLS } from "./ui/typography";
 import { SubHeading } from "./ui/SubHeading";
 
@@ -178,13 +179,23 @@ export function CreatureStatBlock({
           {STAT_ORDER.map((key) => {
             const plainMod = abilityModifier(creature.stats[key]);
             const save = creature.savingThrows?.[key] ?? plainMod;
+            const highlight = save !== plainMod;
             return (
               <AbilityScoreBox
                 key={key}
                 label={key.toUpperCase()}
                 modifier={formatModifier(plainMod)}
                 save={formatModifier(save)}
-                highlight={save !== plainMod}
+                highlight={highlight}
+                panel={
+                  <AbilityScoreHintPanel
+                    abilityKey={key}
+                    score={creature.stats[key]}
+                    modifier={formatModifier(plainMod)}
+                    save={formatModifier(save)}
+                    highlight={highlight}
+                  />
+                }
               />
             );
           })}
