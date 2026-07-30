@@ -3,6 +3,7 @@ import { creatureInfoLine } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { CreatureCategoryChip } from "./ui/CreatureCategoryChip";
+import { OwnerBadge } from "./ui/OwnerBadge";
 import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
 /**
@@ -36,6 +37,16 @@ export function CreatureHeader({
         <div className="absolute inset-x-0 bottom-0 flex translate-y-1/2 justify-center">
           <CreatureCategoryChip category={creature.category} />
         </div>
+        {/* Same floating-marker idea, opposite corner — peeks from behind
+            the avatar's top-left rather than sitting as its own element off
+            to the side (the previous layout), so it costs zero header width
+            and lives inside this same clickable area instead of shrinking
+            it. See `OwnerBadge`'s own doc comment for why. */}
+        {owner && (
+          <div className="absolute -left-1.5 -top-1.5">
+            <OwnerBadge owner={owner} />
+          </div>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p title={creature.name} className={CARD_TITLE_CLS}>
@@ -58,32 +69,18 @@ export function CreatureHeader({
     </>
   );
 
-  const ownerTag = owner && (
-    <InfoTooltip hoverOnly disableTap panel={<p>Owner: {owner.name}</p>}>
-      <Avatar src={owner.avatarUrl} label={owner.name} size="xs" />
-    </InfoTooltip>
-  );
-
   if (!onClick) {
-    return (
-      <div className="flex items-start gap-3">
-        {content}
-        {ownerTag}
-      </div>
-    );
+    return <div className="flex items-start gap-3">{content}</div>;
   }
 
   return (
-    <div className="flex items-start gap-3">
-      <button
-        type="button"
-        onClick={onClick}
-        {...dragHandleProps}
-        className="group -m-2 flex min-w-0 flex-1 items-start gap-3 rounded-lg p-2 text-left transition hover:bg-slate-800/50 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
-      >
-        {content}
-      </button>
-      {ownerTag}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      {...dragHandleProps}
+      className="group -m-2 flex items-start gap-3 rounded-lg p-2 text-left transition hover:bg-slate-800/50 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+    >
+      {content}
+    </button>
   );
 }
