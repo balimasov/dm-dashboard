@@ -16,7 +16,10 @@ import { InfoTooltip } from "@/components/InfoTooltip";
  * `panel` (same optional-hover-hint convention `Pill` uses) is built by the
  * caller via `AbilityScoreHintPanel` — this box only wraps the same
  * `InfoTooltip` every other hint in the app uses when one is passed,
- * nothing hand-rolled.
+ * nothing hand-rolled. `hover:brightness-125` when a panel is present is
+ * the same instant "this is hoverable" cue `Pill` uses for the same reason
+ * (see its own doc comment) — one shared utility instead of a per-color
+ * override, so both read as the identical affordance.
  */
 export function AbilityScoreBox({
   label,
@@ -32,7 +35,11 @@ export function AbilityScoreBox({
   panel?: React.ReactNode;
 }) {
   const content = (
-    <div className="flex flex-col items-center gap-0.5 rounded-md border border-slate-800 bg-slate-800/40 py-1.5">
+    <div
+      className={`flex flex-col items-center gap-0.5 rounded-md border border-slate-800 bg-slate-800/40 py-1.5 ${
+        panel ? "transition hover:brightness-125" : ""
+      }`}
+    >
       <span className="text-sm font-bold text-slate-100">{modifier}</span>
       <span className={`text-xs font-semibold ${highlight ? "text-amber-300" : "text-slate-400"}`}>{save}</span>
       <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>

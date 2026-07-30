@@ -101,14 +101,17 @@ export function AbilityScoreHintPanel({
         </div>
       </div>
       {advantage && (
-        <p
-          className={`mt-2 flex items-start gap-1.5 border-t border-slate-800 pt-2 text-xs leading-snug ${
-            advantage.kind === "Advantage" ? "text-emerald-400" : "text-red-400"
-          }`}
-        >
-          <span className="mt-px shrink-0">{advantage.kind === "Advantage" ? "▲" : "▼"}</span>
+        <p className="mt-2 flex items-start gap-1.5 border-t border-slate-800 pt-2 text-xs leading-snug text-slate-300">
+          {/* Only the triangle carries the advantage/disadvantage color —
+              same convention `CharacterCard`'s own Skills pills use
+              (`text-emerald-400`/`text-red-400` on just the ▲/▼, never the
+              surrounding text) — not the whole line, which read as louder
+              than the rest of this hint's otherwise neutral body text. */}
+          <span className={`mt-px shrink-0 ${advantage.kind === "Advantage" ? "text-emerald-400" : "text-red-400"}`}>
+            {advantage.kind === "Advantage" ? "▲" : "▼"}
+          </span>
           <span>
-            <b>{advantage.kind}</b> on {advantage.subject}
+            <b className="text-slate-100">{advantage.kind}</b> on {advantage.subject}
             {advantage.restriction ? ` — ${advantage.restriction}` : ""}
           </span>
         </p>

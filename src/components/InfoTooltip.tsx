@@ -108,7 +108,15 @@ export function InfoTooltip({
       // was set last time.
       panelEl.style.maxHeight = "none";
       panelEl.style.overflowY = "visible";
-      panelEl.style.pointerEvents = "none";
+      // A plain hover-preview stays `pointer-events: none` (never blocks a
+      // click on whatever it happens to overlap) — but once pinned open by a
+      // click, the panel becomes a real interactive surface, the same way
+      // the always-scrolling case below already was. Without this, a nested
+      // `InfoTooltip` inside this one's `panel` content (e.g. a resource's
+      // own hint, hoverable from inside the pinned Resources hint) could
+      // never receive the mouse events it needs — pointer-events:none
+      // applies to the whole subtree, not just this element.
+      panelEl.style.pointerEvents = open ? "auto" : "none";
 
       const wrapperRect = wrapper.getBoundingClientRect();
       const panelRect = panelEl.getBoundingClientRect();
@@ -134,9 +142,8 @@ export function InfoTooltip({
         // bottom of the viewport with no way to reach the missing part, since
         // a `position: fixed` panel doesn't scroll with the page. Capped and
         // made internally scrollable instead, with real pointer events so a
-        // mouse wheel or touch drag actually reaches it (`pointer-events:
-        // none` is the default the rest of the time, so a normal-sized hint
-        // never blocks clicks on whatever it happens to overlap).
+        // mouse wheel or touch drag actually reaches it even during a plain
+        // hover preview (not just once pinned, unlike the `open` case above).
         panelEl.style.maxHeight = `${Math.max(available, 0)}px`;
         panelEl.style.overflowY = "auto";
         panelEl.style.pointerEvents = "auto";
@@ -159,12 +166,25 @@ export function InfoTooltip({
       window.removeEventListener("scroll", computePosition, { capture: true });
       window.removeEventListener("resize", computePosition);
     };
-  }, [visible]);
+    // `open` is a dependency (not just `visible`) purely so pointer-events
+    // gets recomputed the moment a hover-only preview turns into a pin —
+    // `visible` itself (`open || hovered`) doesn't necessarily change value
+    // at that instant if `hovered` was already true, so the effect wouldn't
+    // otherwise re-run to pick up the new pointer-events state.
+  }, [visible, open]);
 
   useLayoutEffect(() => {
     if (!open) return;
     function onOutside(e: PointerEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // A click inside the portaled panel itself (rows, a nested
+      // `InfoTooltip`'s own trigger, whatever `panel` content chose to
+      // render) isn't "outside" just because the panel lives outside
+      // `wrapperRef`'s DOM subtree via the portal — only a click that lands
+      // in neither the trigger nor the panel should close this.
+      if (wrapperRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("pointerdown", onOutside);
     return () => document.removeEventListener("pointerdown", onOutside);
@@ -226,12 +246,14 @@ export function InfoTooltip({
             // painted on top — and the hint, being the deeper-nested
             // portal, didn't reliably mount after its host popover.
             className="pointer-events-none fixed z-[70] w-max max-w-[min(16rem,80vw)] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
-            // No-ops while the panel is `pointer-events: none` (the common
-            // case — the browser never dispatches mouse events to it then),
-            // and only actually fire once `computePosition` switches it to
-            // `auto` for a tall, internally-scrolled panel — keeping
-            // `hovered` true while the mouse is over the panel itself, so
-            // moving off the trigger to scroll the hint doesn't close it.
+            // No-ops while the panel is `pointer-events: none` (a plain
+            // hover preview, never blocking a click on whatever it happens
+            // to overlap) — and only actually fire once `computePosition`
+            // switches it to `auto`, either because it's pinned open or
+            // because it needs its own internal scroll. Keeps `hovered`
+            // true while the mouse is over the panel itself in that case,
+            // so moving off the trigger to reach nested content (or just to
+            // scroll a tall hint) doesn't close it.
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           >

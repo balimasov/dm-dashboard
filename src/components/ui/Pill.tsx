@@ -34,10 +34,16 @@ const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
 
 /**
  * `panel` (not a native `title`) so every hoverable hint in the card shares
- * the same styled InfoTooltip affordance — the box itself can't carry
- * `truncate` (InfoTooltip's own inner span already does, and nesting it
- * under another truncating ancestor is the clipping bug this codebase hit
- * more than once), so truncation only applies in the no-panel fallback.
+ * the same styled InfoTooltip affordance — `hoverOnly` since the pill's own
+ * border/fill already reads as a distinct clickable unit, the same call
+ * `AbilityScoreBox` makes for the same reason (and the same reason this
+ * wraps the *whole* box rather than just the text inside it — an earlier
+ * version nested `InfoTooltip` around only `children`, so hovering the
+ * pill's own padding/border, not directly over the text, didn't trigger the
+ * hint; wrapping the whole box makes the entire rectangle hoverable, same
+ * target size as `AbilityScoreBox`). `truncate` lives on the box itself
+ * either way, `panel` or not, so behavior doesn't change based on whether
+ * one's passed.
  */
 export function Pill({
   panel,
@@ -53,13 +59,18 @@ export function Pill({
 }) {
   const style = COLOR_STYLES[color];
   const colorCls = (bold ? style.bold : style.dim) ?? style.bold ?? style.dim!;
-  const boxCls = `rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls}`;
-  if (!panel) {
-    return <span className={`block truncate ${boxCls}`}>{children}</span>;
-  }
+  // `hover:brightness-125` (not a `hover:bg-*` swap) so the highlight works
+  // identically across every one of `COLOR_STYLES`' hues without a
+  // per-color override — same reasoning, same utility, `AbilityScoreBox`
+  // uses for its own hover.
+  const boxCls = `block truncate rounded-md border px-2 py-1 text-center text-xs font-medium ${colorCls} ${
+    panel ? "transition hover:brightness-125" : ""
+  }`;
+  const content = <span className={boxCls}>{children}</span>;
+  if (!panel) return content;
   return (
-    <span className={`block ${boxCls}`}>
-      <InfoTooltip panel={panel}>{children}</InfoTooltip>
-    </span>
+    <InfoTooltip hoverOnly panel={panel}>
+      {content}
+    </InfoTooltip>
   );
 }
