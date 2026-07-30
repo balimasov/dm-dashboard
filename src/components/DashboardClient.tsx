@@ -351,13 +351,12 @@ function CreatureCategorySection({
           onAdd={onAdd}
         />
       ) : (
-        // Same `pt-8`/`px-3` reservation as the Party row above, for the
-        // same reason — CreatureCard's own StatusRail badges bleed above
-        // and sideways of the card's border and get clipped by this row's
-        // own overflow-x-auto without the extra room.
+        // Same `pt-12 -mt-8`/`px-3` reservation as the Party row above, for
+        // the same reason — see that row's own comment for the full
+        // explanation of the padding/negative-margin split.
         <DndContext id={`creatures-${category}-dnd`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={filtered.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-            <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+            <div className="scrollbar-themed -mt-8 flex gap-4 overflow-x-auto px-3 pb-2 pt-12">
               {filtered.map((creature) => {
                 const owner = characters.find((c) => c.id === creature.ownerCharacterId);
                 return (
@@ -736,14 +735,28 @@ export function DashboardClient({
             // regardless of what's set (the same quirk noted on StatusRail),
             // which clips anything that pokes out above the row's own box, and
             // the row has no scroll room to the left/right of its first/last
-            // card either. `pt-8`/`px-3` reserve room on every side so the
-            // leftmost, rightmost, and topmost badges always have somewhere to
-            // bleed into before hitting a clipping edge (confirmed clipped
-            // without this) — `px-3` also matches the Campaign/Inventory
-            // blocks' own inset so all three line up on the same left edge.
+            // card either. `px-3` reserves room on the sides so the leftmost/
+            // rightmost badges always have somewhere to bleed into (`px-3`
+            // also matches the Campaign/Inventory blocks' own inset so all
+            // three line up on the same left edge).
+            //
+            // `pt-12` reserves the *full* height a badge's glow can reach at
+            // the peak of its pulse (badge protrusion + box-shadow blur/
+            // spread, see `globals.css`'s `ring-glow` — pt-8's old 32px fell
+            // ~12px short, which is exactly the clipping this session's
+            // prototype round tracked down) — but that much padding alone
+            // would push the row visibly far from the subtitle above it.
+            // `-mt-8` claws most of that same distance back by shifting the
+            // row (padding included) up so it visually sits close to the
+            // subtitle again — the padding still exists and still protects
+            // the badges from the row's own clipping, it's just riding
+            // mostly *above* the subtitle's baseline instead of adding to
+            // the gap. Net result: badges/glow render fully intact, and the
+            // subtitle-to-card gap reads tighter than the old pt-8-only
+            // spacing did, not looser.
             <DndContext id="party-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePartyDragEnd}>
               <SortableContext items={visibleCharacters.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-                <div className="scrollbar-themed flex gap-4 overflow-x-auto px-3 pb-2 pt-8">
+                <div className="scrollbar-themed -mt-8 flex gap-4 overflow-x-auto px-3 pb-2 pt-12">
                   {visibleCharacters.map((character) => (
                     <div key={character.id} className="w-[300px] shrink-0">
                       <CharacterCard
