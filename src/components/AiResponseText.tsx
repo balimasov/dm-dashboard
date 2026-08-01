@@ -48,6 +48,17 @@ function universalHint(term: string) {
   return undefined;
 }
 
+/** Strips a trailing "(...)" annotation off a bolded label — e.g. "Fireball (3rd level, 1 slot available)" — so slot/charge counts the prompt asks the model to append don't break the name match against the glossary or universal terms. */
+const TRAILING_ANNOTATION_RE = /\s*\([^()]*\)\s*$/;
+
+function lookupHint(label: string, glossary: AiGlossary) {
+  const direct = glossary[label.toLowerCase()] ?? universalHint(label);
+  if (direct) return direct;
+  const bareName = label.replace(TRAILING_ANNOTATION_RE, "").trim();
+  if (bareName === label || bareName === "") return undefined;
+  return glossary[bareName.toLowerCase()] ?? universalHint(bareName);
+}
+
 type Block =
   | { type: "heading"; emoji: string; label: string }
   | { type: "bullets"; items: string[] }
@@ -127,7 +138,7 @@ function renderInline(text: string, keyPrefix: string, glossary: AiGlossary) {
     .flatMap((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         const label = part.slice(2, -2);
-        const hint = glossary[label.toLowerCase()] ?? universalHint(label);
+        const hint = lookupHint(label, glossary);
         return hint ? (
           <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
             <strong>{label}</strong>
