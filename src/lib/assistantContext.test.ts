@@ -123,6 +123,21 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[s2] Detect Magic (level 1, own charges 0/1 (recovers: Long Rest))");
   });
 
+  test("tags a spell as concentration from its own duration text, not left for the model to guess", () => {
+    const character = makeCharacter({
+      name: "Nyra",
+      knownSpells: [
+        { id: "s1", name: "Hold Person", level: 2, source: "Class", duration: "Concentration, 1 minute" },
+        { id: "s2", name: "Magic Missile", level: 1, source: "Class", duration: "Instantaneous" },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[s1] Hold Person (level 2, concentration)");
+    expect(context).toContain("[s2] Magic Missile (level 1)");
+  });
+
   test("flags an active concentration so the assistant knows a new concentration spell would end it", () => {
     const concentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: true }));
     const notConcentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: false }));

@@ -119,7 +119,16 @@ export function characterAssistantContext(character: Character): string {
     for (const s of c.knownSpells) {
       const levelLabel = s.level === 0 ? "cantrip" : `level ${s.level}`;
       const charge = s.max != null ? `, own charges ${s.current}/${s.max} (recovers: ${RECOVERY_LABELS[s.recovery!]})` : "";
-      const tags = [s.isReaction ? "reaction" : null, s.isAreaEffect ? "AOE" : null].filter(Boolean).join(", ");
+      // The prompt's LEGALITY AND RESOURCES section requires the model to use
+      // this concentration metadata rather than infer it from the spell's
+      // name or its own training knowledge — `duration` is D&D Beyond's own
+      // "Notes" column, always prefixed "Concentration, " by `formatDuration`
+      // (ddbParser/spells.ts) when the spell's `durationType` is
+      // "Concentration", so this is a real sheet fact, not a guess.
+      const isConcentration = s.duration?.toLowerCase().includes("concentration") ?? false;
+      const tags = [isConcentration ? "concentration" : null, s.isReaction ? "reaction" : null, s.isAreaEffect ? "AOE" : null]
+        .filter(Boolean)
+        .join(", ");
       const detail = [
         s.castingTime,
         s.range,
