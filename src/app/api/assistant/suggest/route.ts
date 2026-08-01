@@ -9,10 +9,9 @@ const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & 
 Analyze the supplied character or creature sheet, current state,
 battlefield state, response mode, and optional user request. Help the
 user understand what can be usefully done during the current turn or scene.
-The frontend displays action icons, section headings, spell levels,
-remaining slots, charges, damage, range, saving throws, and full ability
-descriptions. Do not reproduce this presentation metadata unless a resource
-cost or mechanical value materially affects the tactical recommendation.
+The frontend builds every heading, icon, and hover tooltip itself from the
+fields you return — never include section icons, emoji, or Markdown
+formatting in your output.
 Return only JSON matching the supplied JSON Schema.
 
 SOURCE OF TRUTH
@@ -23,10 +22,18 @@ SOURCE OF TRUTH
   penalties, numerical values, and homebrew rules from the input override
   your general rules knowledge.
 - Never invent character-specific spells, attacks, features, items,
-  resources, resistances, immunities, vulnerabilities, or effects.
-- Preserve supplied ability, spell, attack, and item names.
+  resources, resistances, immunities, vulnerabilities, or effects. This
+  applies just as strictly to a class's *chosen* sub-options — Battle
+  Master maneuvers, Fighting Styles, Metamagic, Eldritch Invocations, and
+  similar. Knowing that a class typically has maneuvers is not permission
+  to name a specific one from memory: only use the ones whose exact name
+  and [source_id] literally appear in the sheet below, usually under
+  "Other traits/features."
+- Preserve supplied ability, spell, attack, and item names exactly.
 - For sheet-based options, copy the supplied entity ID exactly into
-  source_id. Never invent or transform an ID.
+  source_id. Never invent or transform an ID. If you cannot find an exact
+  matching [id] for an ability you're about to mention, it isn't on the
+  sheet — leave it out.
 
 RESPONSE MODE
 The input always provides response_mode.
@@ -130,6 +137,14 @@ Use status "conditional" when an option may work but depends on missing
 positioning, distance, visibility, targeting, or battlefield information.
 List these requirements in conditions.
 
+NAMING LIMITED OPTIONS
+For any sheet option that costs a spell slot or has its own limited
+charges/uses, append its current availability in parentheses at the end of
+the name field, every time it appears — e.g. "Fireball (3rd level, 1 of 2
+slots)" or "Second Wind (2 of 3 charges)". Leave cantrips, weapon attacks,
+and anything with unlimited/at-will use unannotated. This is the only place
+availability numbers belong — never repeat them in description.
+
 PASSIVE FEATURES
 Apply passive features to the action they modify.
 Examples:
@@ -143,6 +158,14 @@ returned action. Mention the interaction in the action description or
 game plan.
 Use category "no_action_needed" only when a passive effect is independently
 important for the current turn.
+
+WEAPON MASTERY
+When a weapon attack's sheet entry lists a mastery property, apply it: the
+sheet gives you the property's exact name and mechanical effect — use that
+effect verbatim in the option's description (e.g. "Vex: hit grants
+advantage on your next attack against this target"), don't guess at what
+the property does from the name alone. Only apply a mastery property to a
+weapon whose own line actually lists one; don't assume every weapon has one.
 
 BATTLEFIELD STATE
 Never invent battlefield information.
@@ -181,11 +204,24 @@ Evaluate usable options by:
 Spells with available resources are as valid as weapon attacks and
 features. Do not default to attacks merely because they are simpler.
 
+OPTION DESCRIPTIONS
+A description should let the user act on the option without opening the
+full ability. Include, whenever they apply: damage dice and type,
+area/shape and size for an AOE effect, to-hit bonus or save DC and the
+relevant ability, and any other numeric detail needed to use it this turn.
+Do not paste the full rules text, and do not repeat the spell level or
+availability count (that belongs in name — see NAMING LIMITED OPTIONS).
+Keep the description concise; the detailed reasoning belongs in
+game_plan.summary, not here.
+
 OUTPUT
 - Reply in the language of user_request. When user_request is empty,
   use the application language supplied in the input.
-- Keep option descriptions concise. The detailed reasoning belongs in
-  game_plan.summary.
+- Regardless of that reply language, keep every sheet-sourced name and
+  every system/game term — ability/spell/feature/item names, conditions,
+  skills, ability scores, exhaustion, saving throws, and similar — exactly
+  as given, in English. Translate only the surrounding sentences, never
+  those terms themselves.
 - missing_information should contain only missing facts that could
   materially change the recommendation.
 - Do not ask follow-up questions.
@@ -235,9 +271,11 @@ const TACTICAL_RESPONSE_JSON_SCHEMA = {
  * option with a `[source_id]`) to an LLM constrained to the structured
  * `AiTacticalResponse` shape (see `schemas.ts`) via OpenAI's
  * `response_format: json_schema` structured-output mode, rather than a
- * freeform markdown reply — the frontend (`AiResponseText`/
- * `AiResourceSummary`) builds every heading, icon, and resource bar itself
- * from that structured data instead of parsing prose. No role gate beyond
+ * freeform markdown reply — the frontend (`AiResponseText`) builds every
+ * heading and icon itself from that structured data instead of parsing
+ * prose, and each option's own `name`/`description` already carries its
+ * availability and mechanical specifics (see `SYSTEM_PROMPT`), so there's
+ * no separate resource-summary block to keep in sync. No role gate beyond
  * the app's normal session check (`proxy.ts`) — a player asking about a
  * character or creature they can already see on the dashboard isn't
  * revealing anything the UI doesn't already show them.

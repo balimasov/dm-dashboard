@@ -182,6 +182,29 @@ describe("characterAssistantContext", () => {
 
     expect(context).toContain("[attack-0] Longsword: +5 to hit, 1d8+3 slashing");
   });
+
+  test("includes a weapon's mastery property and its mechanical effect, since the model has no other way to know it applies", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      attacks: [
+        {
+          id: "attack-0",
+          name: "Greatsword",
+          attackType: "melee",
+          attackBonus: 7,
+          damage: "2d6+4",
+          damageType: "slashing",
+          properties: [],
+          proficient: true,
+          mastery: "Graze",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Mastery (Graze): On a miss, still deal damage equal to your ability modifier.");
+  });
 });
 
 describe("creatureAssistantContext", () => {

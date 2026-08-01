@@ -109,6 +109,18 @@ const CATEGORY_ORDER: AiOption["category"][] = [
   "no_action_needed",
 ];
 
+/**
+ * These four make up the core of every turn's action economy, so they're
+ * always rendered — even with nothing in them, they still tell the user
+ * "you have no bonus action option right now" rather than silently
+ * vanishing, which reads as "the model forgot to check." Legendary Action/
+ * Lair Action/No Action Needed stay conditional: most sheets (anything
+ * that isn't a legendary monster) genuinely have zero of those, and an
+ * empty section for something that structurally doesn't exist on this
+ * entity would just be noise.
+ */
+const ALWAYS_SHOWN_CATEGORIES = new Set<AiOption["category"]>(["action", "bonus_action", "movement", "reaction"]);
+
 const PRIORITY_ORDER: Record<AiOption["priority"], number> = { best: 0, alternative: 1, available: 2 };
 
 /** Groups options by category (skipping categories with none) and sorts each group best-first — a defensive re-sort rather than trusting the model's own array order. */
@@ -169,7 +181,8 @@ export function AiResponseText({ response, glossary = {} }: { response: AiTactic
       </p>
       {CATEGORY_ORDER.map((category) => {
         const options = grouped.get(category);
-        if (!options || options.length === 0) return null;
+        const alwaysShown = ALWAYS_SHOWN_CATEGORIES.has(category);
+        if ((!options || options.length === 0) && !alwaysShown) return null;
         const meta = CATEGORY_META[category];
         return (
           <div key={category}>
@@ -177,11 +190,15 @@ export function AiResponseText({ response, glossary = {} }: { response: AiTactic
               <span>{meta.emoji}</span>
               {meta.label}
             </h4>
-            <ul className="mt-1.5 flex flex-col gap-1.5">
-              {options.map((option, i) => (
-                <OptionRow key={`${category}-${i}`} option={option} glossary={glossary} />
-              ))}
-            </ul>
+            {options && options.length > 0 ? (
+              <ul className="mt-1.5 flex flex-col gap-1.5">
+                {options.map((option, i) => (
+                  <OptionRow key={`${category}-${i}`} option={option} glossary={glossary} />
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1.5 text-sm italic text-slate-500">No relevant {meta.label.toLowerCase()} option right now.</p>
+            )}
           </div>
         );
       })}

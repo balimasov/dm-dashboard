@@ -1,5 +1,6 @@
 import { Character, Creature, RECOVERY_LABELS } from "./types";
 import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
+import { getMasteryInfo } from "./masteryInfo";
 import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
 
 /**
@@ -87,14 +88,23 @@ export function characterAssistantContext(character: Character): string {
   }
 
   // "other" isn't "unimportant" — it's everything not tied to its own Action/
-  // Bonus Action/Reaction slot, which includes passives that change what an
-  // existing action does (Extra Attack turning the Attack action into two
-  // attacks, Sneak Attack adding damage to one of them) — omitting this
-  // bucket entirely used to mean the assistant had no idea those existed.
+  // Bonus Action/Reaction slot. That covers two genuinely different things:
+  // passives that change what an existing action does (Extra Attack turning
+  // the Attack action into two attacks), AND a player's specific *chosen*
+  // sub-options (which Battle Master maneuvers, which Fighting Style, which
+  // Metamagic) — D&D Beyond's own export groups every one of these under the
+  // same generic bucket with no finer signal to split on. The wording below
+  // deliberately doesn't say "passive" outright: a chosen maneuver is a real,
+  // sheet-sourced, id-tagged option with its own trigger (usually "as part
+  // of a weapon attack"), not inert flavor text, and framing it as purely
+  // passive risked the model treating it as unusable and inventing a
+  // differently-named substitute from general D&D knowledge instead.
   const passiveFeatures = c.features.filter((f) => f.group === "other");
   if (passiveFeatures.length > 0) {
     lines.push("");
-    lines.push("Other passive traits/features (not their own action, but can change what an action does):");
+    lines.push(
+      "Other traits/features (not a standalone action of their own — either a passive that modifies another action, or a specific chosen option like a maneuver/fighting style/metamagic usable as part of one; check each description for its trigger):"
+    );
     for (const f of passiveFeatures) {
       lines.push(`- [${f.id}] ${f.name}${f.description ? `: ${f.description}` : ""}`);
     }
@@ -123,8 +133,10 @@ export function characterAssistantContext(character: Character): string {
     lines.push("");
     lines.push("Weapon attacks:");
     for (const a of c.attacks) {
+      const masteryEffect = a.mastery ? getMasteryInfo(a.mastery) : undefined;
+      const mastery = a.mastery ? ` — Mastery (${a.mastery}): ${masteryEffect ?? "effect not on file"}` : "";
       lines.push(
-        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}`
+        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${mastery}`
       );
     }
   }
