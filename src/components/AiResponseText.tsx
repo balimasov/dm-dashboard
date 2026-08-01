@@ -3,6 +3,7 @@ import { CONDITION_INFO } from "@/lib/conditionInfo";
 import { AiGlossary } from "@/lib/aiGlossary";
 import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
 import { AiOption, AiTacticalResponse } from "@/lib/schemas";
+import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
 import { HintPanel } from "./ui/HintPanel";
@@ -89,6 +90,14 @@ function renderSummary(summary: string, glossary: AiGlossary) {
   });
 }
 
+/** `game_plan.summary` is now allowed to use multiple paragraphs (see the prompt's GAME PLAN SUMMARY section) — split on blank lines so each becomes its own `<p>` instead of running together as one dense block. */
+function splitParagraphs(summary: string): string[] {
+  return summary
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+}
+
 const CATEGORY_META: Record<AiOption["category"], { label: string; emoji: string }> = {
   action: { label: "Action", emoji: "⚔️" },
   bonus_action: { label: "Bonus Action", emoji: "⚡" },
@@ -141,7 +150,9 @@ function OptionBadge({ tone, children }: { tone: "best" | "improvised"; children
 }
 
 function OptionRow({ option, glossary }: { option: AiOption; glossary: AiGlossary }) {
-  const hint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
+  const sheetHint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
+  const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
+  const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
   const name = hint ? (
     <InfoTooltip inline panel={hint}>
       <strong>{option.name}</strong>
@@ -152,7 +163,7 @@ function OptionRow({ option, glossary }: { option: AiOption; glossary: AiGlossar
 
   return (
     <li className="flex gap-2 text-sm leading-relaxed text-slate-300">
-      <span className="mt-0.5 shrink-0 text-slate-600">–</span>
+      <span className="mt-0.5 shrink-0 text-slate-600">•</span>
       <div className="flex-1">
         <p>
           {name}
@@ -176,9 +187,11 @@ export function AiResponseText({ response, glossary = {} }: { response: AiTactic
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
-        {renderSummary(response.game_plan.summary, glossary)}
-      </p>
+      <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
+        {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
+          <p key={i}>{renderSummary(paragraph, glossary)}</p>
+        ))}
+      </div>
       {CATEGORY_ORDER.map((category) => {
         const options = grouped.get(category);
         const alwaysShown = ALWAYS_SHOWN_CATEGORIES.has(category);

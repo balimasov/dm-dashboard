@@ -135,8 +135,14 @@ export function characterAssistantContext(character: Character): string {
     for (const a of c.attacks) {
       const masteryEffect = a.mastery ? getMasteryInfo(a.mastery) : undefined;
       const mastery = a.mastery ? ` — Mastery (${a.mastery}): ${masteryEffect ?? "effect not on file"}` : "";
+      // Properties (Light, Thrown, Versatile, ...) aren't just flavor here —
+      // Light in particular is what lets the model recognize a two-weapon
+      // fighting bonus-action attack across two separate weapon lines (see
+      // the TWO-WEAPON FIGHTING prompt section), which it has no other way
+      // to detect from the flattened attack list.
+      const properties = a.properties.length > 0 ? ` [${a.properties.join(", ")}]` : "";
       lines.push(
-        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${mastery}`
+        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${properties}${mastery}`
       );
     }
   }

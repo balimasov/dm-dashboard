@@ -62,6 +62,11 @@ of the interface.
 Do not make it artificially short.
 It should normally be a detailed paragraph of approximately 80-180 words
 and may be longer when the situation requires it.
+When the plan covers more than one distinct idea (e.g. the main
+recommendation, then a fallback, then a positioning note), split it into
+multiple short paragraphs separated by a blank line rather than one dense
+block — this is expected and encouraged whenever it helps readability, not
+just allowed.
 The summary should:
 - explain the best overall plan;
 - explain why it is strong;
@@ -132,6 +137,17 @@ Account for the tactical cost of spending a limited resource, especially
 when it is the last available use or highest remaining spell slot.
 The frontend visualizes resources separately, but the AI must use the
 current resource state when ranking and filtering options.
+On a single turn, only one spell slot total can ever be expended, no
+matter which action type pays for it — never build game_plan.summary or
+the "best" combination of options around casting two different spells
+that each cost a slot in the same turn (e.g. one slotted spell with the
+Action and a second slotted spell with a Bonus Action or Reaction is
+always illegal, even though both action types are individually free). A
+cantrip costs no slot, so pairing a cantrip with one slotted spell across
+two different action types in the same turn is fine and may be
+recommended together. When two slotted spells could each fill the same
+action-economy slot, present them as separate alternatives, never as a
+combined plan.
 Use status "available" when legality and relevant requirements are confirmed.
 Use status "conditional" when an option may work but depends on missing
 positioning, distance, visibility, targeting, or battlefield information.
@@ -140,8 +156,8 @@ List these requirements in conditions.
 NAMING LIMITED OPTIONS
 For any sheet option that costs a spell slot or has its own limited
 charges/uses, append its current availability in parentheses at the end of
-the name field, every time it appears — e.g. "Fireball (3rd level, 1 of 2
-slots)" or "Second Wind (2 of 3 charges)". Leave cantrips, weapon attacks,
+the name field, every time it appears — e.g. "Fireball (3rd lvl, 1/2
+slots)" or "Second Wind (2/3 charges)". Leave cantrips, weapon attacks,
 and anything with unlimited/at-will use unannotated. This is the only place
 availability numbers belong — never repeat them in description.
 
@@ -166,6 +182,24 @@ effect verbatim in the option's description (e.g. "Vex: hit grants
 advantage on your next attack against this target"), don't guess at what
 the property does from the name alone. Only apply a mastery property to a
 weapon whose own line actually lists one; don't assume every weapon has one.
+
+TWO-WEAPON FIGHTING
+Do not forget this action-economy rule — it is easy to miss and important
+whenever it applies. When the sheet lists two separate weapon attacks that
+both carry the Light property (shown in each attack's bracketed property
+tags), the character can attack with one of them as part of the Attack
+action and then make a bonus-action attack with the other one; no ability
+modifier applies to that bonus-action attack's damage unless the modifier
+itself is negative. Return this as its own bonus_action option, source_id
+copied from the off-hand weapon's own [id], whenever both weapons are
+otherwise usable this turn — do not silently skip it.
+If either of those two weapons' mastery property is Nick, that same
+off-hand attack can instead be made as part of the Attack action itself,
+without spending the bonus action at all, once per turn — call this out
+explicitly in that option's description and prefer recommending the
+Nick-enabled version when the freed-up bonus action has a good use (e.g.
+a bonus-action spell or feature is also available), since it strictly
+dominates spending the bonus action on the same attack.
 
 BATTLEFIELD STATE
 Never invent battlefield information.
@@ -215,13 +249,21 @@ Keep the description concise; the detailed reasoning belongs in
 game_plan.summary, not here.
 
 OUTPUT
-- Reply in the language of user_request. When user_request is empty,
-  use the application language supplied in the input.
+- Determine the reply language from user_request. When user_request is
+  empty, use the application language supplied in the input.
+- Write every piece of natural-language text in that same reply language —
+  this applies to all of: game_plan.summary, every option's description,
+  every string inside every option's conditions, and every string in
+  missing_information. None of these default to English just because this
+  prompt itself is written in English; a Ukrainian question must produce
+  Ukrainian text in all four places, not just in game_plan.summary.
 - Regardless of that reply language, keep every sheet-sourced name and
-  every system/game term — ability/spell/feature/item names, conditions,
-  skills, ability scores, exhaustion, saving throws, and similar — exactly
-  as given, in English. Translate only the surrounding sentences, never
-  those terms themselves.
+  every system/game term — ability/spell/feature/item/attack names,
+  conditions, skills, ability scores, exhaustion, saving throws, and
+  similar — exactly as given, in English. Translate only the surrounding
+  sentences, never those terms themselves.
+- Never translate the fixed schema values themselves: category, kind,
+  priority, and status must stay exactly one of their defined enum values.
 - missing_information should contain only missing facts that could
   materially change the recommendation.
 - Do not ask follow-up questions.

@@ -67,6 +67,7 @@ export function AiAssistantModal({
     const trimmed = situation.trim();
     setAsked(true);
     setAskedSituation(trimmed);
+    setSituation("");
     setLoading(true);
     setError(null);
     // The bar's own "✦ Best move" vs "Ask" morph already told the user which
@@ -90,52 +91,56 @@ export function AiAssistantModal({
       title={
         <span className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-sky-400" />
-          {name} — Turn Advisor
+          Turn Advisor: {name}
         </span>
       }
       panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 overflow-y-auto border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
     >
-      {!asked && (
-        <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
-          <textarea
-            ref={textareaRef}
-            autoFocus
-            value={situation}
-            onChange={(e) => setSituation(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                ask();
-              }
-            }}
-            placeholder="or describe the situation…"
-            rows={1}
-            maxLength={500}
-            className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={ask}
-            aria-label="Ask"
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
-              situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
-            }`}
-          >
-            {situation.trim() ? (
-              <SendIcon className="h-4 w-4 shrink-0" />
-            ) : (
-              <>
-                <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
-                Best move
-              </>
-            )}
-          </button>
-        </div>
-      )}
-      {asked && askedSituation && (
+      {/* Always in place (not hidden after the first ask) so the player can
+          re-ask a follow-up question without closing and reopening the modal. */}
+      <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+        <textarea
+          ref={textareaRef}
+          autoFocus
+          value={situation}
+          onChange={(e) => setSituation(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+              e.preventDefault();
+              ask();
+            }
+          }}
+          placeholder="or describe the situation…"
+          rows={1}
+          maxLength={500}
+          className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={ask}
+          aria-label="Ask"
+          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
+            situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
+          }`}
+        >
+          {situation.trim() ? (
+            <SendIcon className="h-4 w-4 shrink-0" />
+          ) : (
+            <>
+              <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
+              Best move
+            </>
+          )}
+        </button>
+      </div>
+      {asked && (
         <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-          <p className={MUTED_LABEL_CLS}>Additional conditions</p>
-          <p className="mt-1 text-sm text-slate-300">{askedSituation}</p>
+          <p className={MUTED_LABEL_CLS}>Given</p>
+          {askedSituation ? (
+            <p className="mt-1 text-sm text-slate-300">{askedSituation}</p>
+          ) : (
+            <p className="mt-1 text-sm italic text-slate-500">No additional details — general best move.</p>
+          )}
         </div>
       )}
       {loading && (
@@ -157,7 +162,7 @@ export function AiAssistantModal({
               <ul className="mt-1.5 flex flex-col gap-1">
                 {response.missing_information.map((item, i) => (
                   <li key={i} className="flex gap-2 text-sm leading-relaxed text-slate-400">
-                    <span className="mt-0.5 shrink-0 text-slate-600">–</span>
+                    <span className="mt-0.5 shrink-0 text-slate-600">•</span>
                     <span>{item}</span>
                   </li>
                 ))}

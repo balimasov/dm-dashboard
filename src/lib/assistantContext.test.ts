@@ -183,6 +183,19 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[attack-0] Longsword: +5 to hit, 1d8+3 slashing");
   });
 
+  test("lists a weapon's properties so the model can spot a Light off-hand pair for two-weapon fighting", () => {
+    const character = makeCharacter({
+      name: "Tarah",
+      attacks: [
+        { id: "attack-0", name: "Shortsword", attackType: "melee", attackBonus: 6, damage: "1d6+3", damageType: "piercing", properties: ["Light", "Finesse"], proficient: true },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[attack-0] Shortsword: +6 to hit, 1d6+3 piercing [Light, Finesse]");
+  });
+
   test("includes a weapon's mastery property and its mechanical effect, since the model has no other way to know it applies", () => {
     const character = makeCharacter({
       name: "Bram",
