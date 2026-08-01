@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
+import { buildAiGlossary } from "@/lib/aiGlossary";
+import { Character, Creature } from "@/lib/types";
 import { AiResponseText } from "./AiResponseText";
 import { Button } from "./ui/Button";
 import { SparklesIcon } from "./ui/icons";
@@ -20,10 +22,26 @@ type Target = { campaignId: string; characterId: string } | { campaignId: string
  * and shows the answer. One request per open: no follow-up chat, no
  * conversation history — this is a quick "what've I got" glance, not a chat
  * feature. The situation step can be skipped entirely for a generic answer.
+ *
+ * `entity` is the same `Character`/`Creature` object the caller already has
+ * in scope (not re-fetched) — only used client-side to build the hover-hint
+ * glossary for `AiResponseText` (see `buildAiGlossary`), never sent
+ * anywhere; the actual LLM request still only carries `target`'s ids.
  */
-export function AiAssistantModal({ name, target, onClose }: { name: string; target: Target; onClose: () => void }) {
+export function AiAssistantModal({
+  name,
+  target,
+  entity,
+  onClose,
+}: {
+  name: string;
+  target: Target;
+  entity: Character | Creature;
+  onClose: () => void;
+}) {
   useScrollLock();
   useEscapeToClose(onClose);
+  const glossary = useMemo(() => buildAiGlossary(entity), [entity]);
 
   const [situation, setSituation] = useState("");
   const [asked, setAsked] = useState(false);
@@ -91,7 +109,7 @@ export function AiAssistantModal({ name, target, onClose }: { name: string; targ
         </div>
       )}
       {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
-      {!loading && suggestion && <AiResponseText text={suggestion} />}
+      {!loading && suggestion && <AiResponseText text={suggestion} glossary={glossary} />}
     </Modal>
   );
 }

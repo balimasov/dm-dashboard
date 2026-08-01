@@ -1,4 +1,5 @@
 import { Character, Creature, RECOVERY_LABELS } from "./types";
+import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
 
 /**
  * Turns a character/creature's *current* state — not just what abilities
@@ -9,10 +10,18 @@ import { Character, Creature, RECOVERY_LABELS } from "./types";
  * as a real character sheet excerpt, which produces a more natural answer
  * than asking it to first mentally parse a data structure.
  *
- * Deliberately omits full spell/feature *descriptions* (only name + level +
- * recovery/charge state) — the assistant is meant to reason about "what's
- * usable right now" from the action economy and resource pool, not restate
- * rules text, and keeping the prompt short keeps the request fast and cheap.
+ * Conditions and exhaustion are spelled out with their exact mechanical
+ * effect (via `conditionInfo.ts`, the same source the card's own hover
+ * hints use) rather than left for the model to recall from training data —
+ * a model asked to reason about "Frightened" or "Exhaustion 3" from name
+ * alone risks blending 2014/2024 rules text or just getting the penalty
+ * number wrong, where computing it here is exact and free.
+ *
+ * Known spells/features/traits get a short structured summary (their own
+ * short rules blurb where one exists, plus casting time/range/damage/DC for
+ * spells) rather than the *full* rules text — enough for the model to reason
+ * about what an option actually does without ballooning the prompt with
+ * complete spell descriptions.
  */
 export function characterAssistantContext(character: Character): string {
   const c = character;
@@ -22,8 +31,19 @@ export function characterAssistantContext(character: Character): string {
   lines.push(
     `HP: ${c.combat.hp}/${c.combat.maxHp}${c.combat.tempHp ? ` (+${c.combat.tempHp} temp)` : ""} | AC: ${c.combat.ac} | Speed: ${c.combat.speed}ft`
   );
-  if (c.combat.conditions.length > 0) lines.push(`Conditions: ${c.combat.conditions.join(", ")}`);
-  if (c.combat.exhaustion > 0) lines.push(`Exhaustion: level ${c.combat.exhaustion}`);
+  if (c.combat.conditions.length > 0) {
+    lines.push("Conditions:");
+    for (const condition of c.combat.conditions) {
+      const effect = getConditionInfo(condition);
+      lines.push(`- ${condition}${effect ? `: ${effect}` : ""}`);
+    }
+  }
+  if (c.combat.exhaustion > 0) {
+    const effect = getExhaustionEffect(c.combat.exhaustion);
+    lines.push(
+      `Exhaustion: level ${c.combat.exhaustion}${effect ? ` (−${effect.d20Penalty} to every d20 roll — ability checks, attacks, saves; speed −${effect.speedPenalty} ft)` : ""}`
+    );
+  }
   if (c.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (c.combat.deathSaves) {
     lines.push(`Death saves: ${c.combat.deathSaves.successes} successes, ${c.combat.deathSaves.failures} failures`);
@@ -54,6 +74,20 @@ export function characterAssistantContext(character: Character): string {
     }
   }
 
+  // "other" isn't "unimportant" — it's everything not tied to its own Action/
+  // Bonus Action/Reaction slot, which includes passives that change what an
+  // existing action does (Extra Attack turning the Attack action into two
+  // attacks, Sneak Attack adding damage to one of them) — omitting this
+  // bucket entirely used to mean the assistant had no idea those existed.
+  const passiveFeatures = c.features.filter((f) => f.group === "other");
+  if (passiveFeatures.length > 0) {
+    lines.push("");
+    lines.push("Other passive traits/features (not their own action, but can change what an action does):");
+    for (const f of passiveFeatures) {
+      lines.push(`- ${f.name}${f.description ? `: ${f.description}` : ""}`);
+    }
+  }
+
   if (c.knownSpells.length > 0) {
     lines.push("");
     lines.push("Known spells (level, own charges if any — otherwise costs a spell slot of that level):");
@@ -61,7 +95,15 @@ export function characterAssistantContext(character: Character): string {
       const levelLabel = s.level === 0 ? "cantrip" : `level ${s.level}`;
       const charge = s.max != null ? `, own charges ${s.current}/${s.max} (recovers: ${RECOVERY_LABELS[s.recovery!]})` : "";
       const tags = [s.isReaction ? "reaction" : null, s.isAreaEffect ? "AOE" : null].filter(Boolean).join(", ");
-      lines.push(`- ${s.name} (${levelLabel}${tags ? `, ${tags}` : ""}${charge})`);
+      const detail = [
+        s.castingTime,
+        s.range,
+        s.effect ? `${s.effect}${s.effectType ? ` ${s.effectType}` : ""}` : null,
+        s.hitOrDc,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      lines.push(`- ${s.name} (${levelLabel}${tags ? `, ${tags}` : ""}${charge})${detail ? ` — ${detail}` : ""}`);
     }
   }
 
@@ -86,8 +128,19 @@ export function creatureAssistantContext(creature: Creature): string {
   lines.push(
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speed}ft`
   );
-  if (cr.conditions.length > 0) lines.push(`Conditions: ${cr.conditions.join(", ")}`);
-  if (cr.exhaustion > 0) lines.push(`Exhaustion: level ${cr.exhaustion}`);
+  if (cr.conditions.length > 0) {
+    lines.push("Conditions:");
+    for (const condition of cr.conditions) {
+      const effect = getConditionInfo(condition);
+      lines.push(`- ${condition}${effect ? `: ${effect}` : ""}`);
+    }
+  }
+  if (cr.exhaustion > 0) {
+    const effect = getExhaustionEffect(cr.exhaustion);
+    lines.push(
+      `Exhaustion: level ${cr.exhaustion}${effect ? ` (−${effect.d20Penalty} to every d20 roll — ability checks, attacks, saves; speed −${effect.speedPenalty} ft)` : ""}`
+    );
+  }
   if (cr.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (cr.deathSaves) {
     lines.push(`Death saves: ${cr.deathSaves.successes} successes, ${cr.deathSaves.failures} failures`);
@@ -108,7 +161,14 @@ export function creatureAssistantContext(creature: Creature): string {
         parts.push(`— ${t.effects.map((e) => `${e.kind} ${e.amount}${e.label ? ` (${e.label})` : ""}`).join(", ")}`);
       }
       if (t.spell) parts.push(`— casts ${t.spell}`);
+      if (t.aoe) parts.push(`— ${t.aoe.size}${t.aoe.width ? `x${t.aoe.width}` : ""} ft ${t.aoe.shape}`);
       lines.push(`- ${parts.join(" ")}`);
+      // A structured `attack`/`save`/`effects` combo doesn't cover everything
+      // a trait can do — e.g. Multiattack's whole point ("makes three attacks:
+      // one Bite and two Claws") only exists as this free-text description,
+      // and omitting it meant the assistant had no way to know a creature
+      // could attack more than once per turn.
+      if (t.description) lines.push(`  ${t.description}`);
     }
   }
 

@@ -91,8 +91,8 @@ describe("characterAssistantContext", () => {
     const context = characterAssistantContext(character);
 
     expect(context).toContain("HP: 8/20 (+3 temp)");
-    expect(context).toContain("Conditions: Poisoned");
-    expect(context).toContain("Exhaustion: level 1");
+    expect(context).toContain("- Poisoned: Disadvantage on attack rolls and ability checks.");
+    expect(context).toContain("Exhaustion: level 1 (−2 to every d20 roll");
     expect(context).toContain("Level 1: 0/4");
     expect(context).toContain("Level 2: 2/2");
   });
@@ -130,6 +130,47 @@ describe("characterAssistantContext", () => {
     expect(concentrating).toContain("Concentrating on a spell right now");
     expect(notConcentrating).not.toContain("Concentrating");
   });
+
+  test("computes the exact 2024 d20/speed penalty for the current exhaustion level instead of leaving it to the model", () => {
+    const level2 = characterAssistantContext(makeCharacter({ name: "Bram", combat: { ...makeCharacter({ name: "x" }).combat, exhaustion: 2 } }));
+    expect(level2).toContain("Exhaustion: level 2 (−4 to every d20 roll — ability checks, attacks, saves; speed −10 ft)");
+  });
+
+  test("includes a passive ('other'-group) feature like Extra Attack, not just action-economy ones", () => {
+    const character = makeCharacter({
+      name: "Alor",
+      features: [
+        { id: "f1", name: "Extra Attack", source: "Fighter", group: "other", originType: "class", description: "You can attack twice, instead of once, whenever you take the Attack action." },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Extra Attack: You can attack twice, instead of once, whenever you take the Attack action.");
+  });
+
+  test("includes a spell's casting time/range/damage/DC detail alongside its level", () => {
+    const character = makeCharacter({
+      name: "Nyra",
+      knownSpells: [
+        {
+          id: "s1",
+          name: "Fireball",
+          level: 3,
+          source: "Class",
+          castingTime: "1 action",
+          range: "150 ft.",
+          effect: "8d6",
+          effectType: "Fire",
+          hitOrDc: "DC 15 DEX",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Fireball (level 3) — 1 action, 150 ft., 8d6 Fire, DC 15 DEX");
+  });
 });
 
 describe("creatureAssistantContext", () => {
@@ -150,9 +191,26 @@ describe("creatureAssistantContext", () => {
 
     expect(context).toContain("HP: 50/178");
     expect(context).toContain("AC: 18");
-    expect(context).toContain("Conditions: Frightened");
+    expect(context).toContain("- Frightened: Disadvantage on ability checks and attack rolls");
     expect(context).toContain("(action) Fire Breath [Recharge 5-6]");
     expect(context).toContain("(action) Multiattack");
+  });
+
+  test("passes a trait's free-text description through, since structured fields alone don't cover Multiattack's own effect", () => {
+    const creature = makeCreature({
+      name: "Young Red Dragon",
+      traits: [
+        {
+          name: "Multiattack",
+          group: "action",
+          description: "The dragon makes three attacks: one bite and two claws.",
+        },
+      ],
+    });
+
+    const context = creatureAssistantContext(creature);
+
+    expect(context).toContain("The dragon makes three attacks: one bite and two claws.");
   });
 
   test("includes attack bonus/damage and save DC when a trait has them", () => {

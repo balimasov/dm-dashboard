@@ -1,3 +1,8 @@
+import { CONDITION_INFO } from "@/lib/conditionInfo";
+import { AiGlossary } from "@/lib/aiGlossary";
+import { InfoTooltip } from "./InfoTooltip";
+import { RichText } from "./RichText";
+
 /**
  * Renders `/api/assistant/suggest`'s answer — not `RichText`, since this
  * output has real structure `RichText` doesn't parse (`SYSTEM_PROMPT` asks
@@ -9,7 +14,32 @@
  * each gets a distinct treatment: a highlighted callout for the leading
  * game plan, a colored heading row per section, and properly indented,
  * spaced bullet lists under each.
+ *
+ * Every recognized game term — the character/creature's own abilities
+ * (`glossary`, from `buildAiGlossary`) plus the universal condition/ability
+ * vocabulary below — gets wrapped in the same hover-hint affordance the
+ * rest of the app already uses (`InfoTooltip`), so "what does Tail Attack
+ * actually do" or "what does Frightened mean" doesn't require leaving the
+ * assistant's answer to go check the card.
  */
+
+const ABILITY_GLOSSARY: Record<string, string> = {
+  strength: "Physical power — melee attacks and damage, Athletics, forcing objects.",
+  dexterity: "Agility and reflexes — Armor Class, Initiative, ranged attacks, Stealth.",
+  constitution: "Stamina and health — hit points, Concentration checks.",
+  intelligence: "Reasoning and memory — Arcana, History, Investigation, Nature, Religion.",
+  wisdom: "Awareness and intuition — Perception, Insight, Medicine, Survival.",
+  charisma: "Force of personality — Deception, Intimidation, Performance, Persuasion.",
+};
+
+const UNIVERSAL_GLOSSARY: Record<string, string> = { ...CONDITION_INFO, ...ABILITY_GLOSSARY };
+
+const UNIVERSAL_TERMS_RE = new RegExp(
+  `\\b(${Object.keys(UNIVERSAL_GLOSSARY)
+    .sort((a, b) => b.length - a.length)
+    .join("|")})\\b`,
+  "gi"
+);
 
 type Block =
   | { type: "heading"; emoji: string; label: string }
@@ -58,20 +88,44 @@ function parseBlocks(text: string): Block[] {
   return blocks;
 }
 
-function renderInline(text: string, keyPrefix: string) {
+/** A run of plain (non-bold) text — tokenized against the universal condition/ability glossary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as bolded item names. */
+function renderPlainSegment(text: string, keyPrefix: string) {
+  return text
+    .split(UNIVERSAL_TERMS_RE)
+    .filter((part) => part !== "")
+    .map((part, i) => {
+      const hint = UNIVERSAL_GLOSSARY[part.toLowerCase()];
+      return hint ? (
+        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<RichText text={hint} />}>
+          {part}
+        </InfoTooltip>
+      ) : (
+        <span key={`${keyPrefix}-${i}`}>{part}</span>
+      );
+    });
+}
+
+function renderInline(text: string, keyPrefix: string, glossary: AiGlossary) {
   return text
     .split(/(\*\*[^*]+\*\*)/g)
     .filter((part) => part !== "")
-    .map((part, i) =>
-      part.startsWith("**") && part.endsWith("**") ? (
-        <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
-      ) : (
-        <span key={`${keyPrefix}-${i}`}>{part}</span>
-      )
-    );
+    .flatMap((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        const label = part.slice(2, -2);
+        const hint = glossary[label.toLowerCase()] || UNIVERSAL_GLOSSARY[label.toLowerCase()];
+        return hint ? (
+          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<RichText text={hint} />}>
+            <strong>{label}</strong>
+          </InfoTooltip>
+        ) : (
+          <strong key={`${keyPrefix}-${i}`}>{label}</strong>
+        );
+      }
+      return renderPlainSegment(part, `${keyPrefix}-${i}`);
+    });
 }
 
-export function AiResponseText({ text }: { text: string }) {
+export function AiResponseText({ text, glossary = {} }: { text: string; glossary?: AiGlossary }) {
   const blocks = parseBlocks(text);
   const firstHeadingIndex = blocks.findIndex((b) => b.type === "heading");
   const strategyIndex = blocks.findIndex(
@@ -95,7 +149,7 @@ export function AiResponseText({ text }: { text: string }) {
               {block.items.map((item, j) => (
                 <li key={j} className="flex gap-2 text-sm leading-relaxed text-slate-300">
                   <span className="mt-0.5 shrink-0 text-slate-600">–</span>
-                  <span>{renderInline(item, `${i}-${j}`)}</span>
+                  <span>{renderInline(item, `${i}-${j}`, glossary)}</span>
                 </li>
               ))}
             </ul>
@@ -104,13 +158,13 @@ export function AiResponseText({ text }: { text: string }) {
         if (i === strategyIndex) {
           return (
             <p key={i} className="rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] font-medium leading-relaxed text-slate-100">
-              {renderInline(block.text, `${i}`)}
+              {renderInline(block.text, `${i}`, glossary)}
             </p>
           );
         }
         return (
           <p key={i} className="text-sm leading-relaxed text-slate-300">
-            {renderInline(block.text, `${i}`)}
+            {renderInline(block.text, `${i}`, glossary)}
           </p>
         );
       })}

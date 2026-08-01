@@ -290,6 +290,7 @@ export function CharacterCard({
         <AiAssistantModal
           name={c.name}
           target={{ campaignId: c.campaignId, characterId: c.id }}
+          entity={c}
           onClose={() => setAiOpen(false)}
         />
       )}
