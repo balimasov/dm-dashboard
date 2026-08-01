@@ -198,7 +198,7 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
   });
 });
 
-describe("spell tags/isAreaEffect/isReaction — Party Toolkit coverage categorization signals", () => {
+describe("spell tags/isAreaEffect/isReaction/isConcentration — Party Toolkit coverage categorization signals", () => {
   test("Fireball carries D&D Beyond's own Damage tag and is flagged area-effect (range.aoeType set)", () => {
     const c = load("yorun-all-immunities");
     const fireball = c.knownSpells.find((s) => s.name === "Fireball");
@@ -234,6 +234,16 @@ describe("spell tags/isAreaEffect/isReaction — Party Toolkit coverage categori
   test("Cure Wounds carries the Healing tag", () => {
     const c = load("durgin-cleric");
     expect(c.knownSpells.find((s) => s.name === "Cure Wounds")?.tags).toEqual(["Healing"]);
+  });
+
+  test("Bless (a concentration spell) is flagged isConcentration (durationType 'Concentration')", () => {
+    const c = load("durgin-cleric");
+    expect(c.knownSpells.find((s) => s.name === "Bless")?.isConcentration).toBe(true);
+  });
+
+  test("Fireball (instantaneous, not concentration) has no isConcentration flag", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Fireball")?.isConcentration).toBeUndefined();
   });
 });
 

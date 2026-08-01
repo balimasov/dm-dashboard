@@ -9,6 +9,7 @@ import { SENSE_INFO } from "@/lib/senseInfo";
 import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
+import { FAINT_TINT_CLS } from "./ui/containerStyles";
 import { HintPanel } from "./ui/HintPanel";
 
 /**
@@ -318,7 +319,7 @@ function OptionRow({
           : {renderPlainSegment(option.description, `desc-${descriptionKey}`, glossaryByName, sheetTermsRe)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
-          <div className="mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 bg-white/[0.025] px-2.5 py-1.5">
+          <div className={`mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 px-2.5 py-1.5 ${FAINT_TINT_CLS}`}>
             <ul className="flex flex-col gap-0.5 text-xs text-slate-400">
               {option.conditions.map((condition, i) => (
                 <li key={i} className="flex gap-1.5">
@@ -352,7 +353,7 @@ export function AiResponseText({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 rounded-lg bg-white/[0.025] px-3 py-2 text-sm leading-relaxed text-slate-300">
+      <div className={`flex flex-col gap-2 rounded-lg px-3 py-2 text-sm leading-relaxed text-slate-300 ${FAINT_TINT_CLS}`}>
         {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
           <p key={i}>{renderSummary(paragraph, glossary, glossaryByName, sheetTermsRe)}</p>
         ))}

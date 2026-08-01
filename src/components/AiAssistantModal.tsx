@@ -103,76 +103,74 @@ export function AiAssistantModal({
         </span>
       }
     >
-      <div className="flex flex-col gap-4">
-        {/* Always in place (not hidden after the first ask) so the player can
-            re-ask a follow-up question without closing and reopening the panel. */}
-        <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
-          <textarea
-            ref={textareaRef}
-            autoFocus
-            value={situation}
-            onChange={(e) => setSituation(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                ask();
-              }
-            }}
-            placeholder="or describe the situation…"
-            rows={1}
-            maxLength={500}
-            className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={ask}
-            aria-label="Ask"
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
-              situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
-            }`}
-          >
-            {situation.trim() ? (
-              <SendIcon className="h-4 w-4 shrink-0" />
-            ) : (
-              <>
-                <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
-                Best move
-              </>
-            )}
-          </button>
-        </div>
-        {asked && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-            <p className={MUTED_LABEL_CLS}>Given</p>
-            {askedSituation ? (
-              <p className="mt-1 text-sm text-slate-300">{askedSituation}</p>
-            ) : (
-              <p className="mt-1 text-sm italic text-slate-500">No additional details — general best move.</p>
-            )}
-          </div>
-        )}
-        {loading && (
-          <div className="flex items-center gap-3 py-8">
-            <Spinner className="h-5 w-5" />
-            <p className={MUTED_BODY_CLS}>Thinking...</p>
-          </div>
-        )}
-        {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
-        {!loading && response && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-            <p className={MUTED_LABEL_CLS}>Answer</p>
-            <div className="mt-2">
-              <AiResponseText
-                response={response}
-                glossary={glossary}
-                glossaryByName={glossaryByName}
-                availability={availability}
-                availabilityByName={availabilityByName}
-              />
-            </div>
-          </div>
-        )}
+      {/* Always in place (not hidden after the first ask) so the player can
+          re-ask a follow-up question without closing and reopening the panel. */}
+      <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+        <textarea
+          ref={textareaRef}
+          autoFocus
+          value={situation}
+          onChange={(e) => setSituation(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+              e.preventDefault();
+              ask();
+            }
+          }}
+          placeholder="or describe the situation…"
+          rows={1}
+          maxLength={500}
+          className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={ask}
+          aria-label="Ask"
+          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
+            situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
+          }`}
+        >
+          {situation.trim() ? (
+            <SendIcon className="h-4 w-4 shrink-0" />
+          ) : (
+            <>
+              <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
+              Best move
+            </>
+          )}
+        </button>
       </div>
+      {asked && (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+          <p className={MUTED_LABEL_CLS}>Given</p>
+          {askedSituation ? (
+            <p className="mt-1 text-sm text-slate-300">{askedSituation}</p>
+          ) : (
+            <p className="mt-1 text-sm italic text-slate-500">No additional details — general best move.</p>
+          )}
+        </div>
+      )}
+      {loading && (
+        <div className="flex items-center gap-3 py-8">
+          <Spinner className="h-5 w-5" />
+          <p className={MUTED_BODY_CLS}>Thinking...</p>
+        </div>
+      )}
+      {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
+      {!loading && response && (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+          <p className={MUTED_LABEL_CLS}>Answer</p>
+          <div className="mt-2">
+            <AiResponseText
+              response={response}
+              glossary={glossary}
+              glossaryByName={glossaryByName}
+              availability={availability}
+              availabilityByName={availabilityByName}
+            />
+          </div>
+        </div>
+      )}
     </FloatingPanel>
   );
 }

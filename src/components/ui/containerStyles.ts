@@ -59,3 +59,13 @@ export const POPOVER_SHELL_CLS = "rounded-lg border border-slate-700 bg-slate-90
  * near-miss of the more common dropdown/kebab-menu shell above.
  */
 export const QUICK_MENU_SHELL_CLS = "rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-xl";
+
+/**
+ * Barely-there background tint for a block that needs to read as "its own
+ * area" without competing for attention the way a bordered card does — no
+ * border, just `bg-white/[0.025]` layered over whatever's underneath. Exact
+ * match across `AiResponseText.tsx`'s Tactics summary block and its
+ * per-option Conditions callout (the border-left accent on the latter is
+ * that call site's own addition, not part of this shared recipe).
+ */
+export const FAINT_TINT_CLS = "bg-white/[0.025]";

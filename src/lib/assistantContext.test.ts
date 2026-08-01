@@ -123,11 +123,11 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[s2] Detect Magic (level 1, own charges 0/1 (recovers: Long Rest))");
   });
 
-  test("tags a spell as concentration from its own duration text, not left for the model to guess", () => {
+  test("tags a spell as concentration from its own isConcentration field, not left for the model to guess", () => {
     const character = makeCharacter({
       name: "Nyra",
       knownSpells: [
-        { id: "s1", name: "Hold Person", level: 2, source: "Class", duration: "Concentration, 1 minute" },
+        { id: "s1", name: "Hold Person", level: 2, source: "Class", isConcentration: true, duration: "Concentration, 1 minute" },
         { id: "s2", name: "Magic Missile", level: 1, source: "Class", duration: "Instantaneous" },
       ],
     });

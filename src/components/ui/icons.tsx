@@ -256,3 +256,12 @@ export function SendIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Diagonal resize-grip glyph — two parallel strokes toward a corner, `FloatingPanel`'s bottom-right resize handle. */
+export function ResizeGripIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M20 4L4 20M20 12L12 20" strokeLinecap="round" />
+    </svg>
+  );
+}

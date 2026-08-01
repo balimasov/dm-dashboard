@@ -189,6 +189,12 @@ export function computeSpells(
       // uses (see `ddbParser/features.ts`'s own doc comment) — 4 is reaction,
       // confirmed on real Shield/Counterspell exports.
       ...(df.activation?.activationType === 4 ? { isReaction: true } : {}),
+      // The exact same raw field `formatDuration` below reads to decide
+      // whether to prefix its display string "Concentration, " — computed
+      // here too as a real boolean so downstream code (the AI assistant's
+      // prompt context) doesn't have to re-derive it by string-matching that
+      // already-formatted text.
+      ...(df.duration?.durationType === "Concentration" ? { isConcentration: true } : {}),
       ...(formatCastingTime(df.activation) ? { castingTime: formatCastingTime(df.activation) } : {}),
       ...(formatRange(df.range) ? { range: formatRange(df.range) } : {}),
       ...(formatHitOrDc(df, spellcasting) ? { hitOrDc: formatHitOrDc(df, spellcasting) } : {}),

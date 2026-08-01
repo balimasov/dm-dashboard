@@ -1,7 +1,9 @@
 "use client";
 
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
+import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
+import { ResizeGripIcon } from "./icons";
 import { MODAL_TITLE_CLS } from "./typography";
 
 const MIN_WIDTH = 440;
@@ -9,29 +11,16 @@ const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
 const STORAGE_PREFIX = "floating-panel:";
 
-type Rect = { width: number; height: number; top: number; left: number };
-
-/** Best-effort read of a previously saved size/position — absent, corrupted, or blocked (private browsing, storage disabled) `localStorage` all fall back to the caller's own default rather than throwing. */
-function loadSavedRect(storageKey: string): Rect | null {
+/** Best-effort read of a previously saved size/position — blocked `localStorage` access (private browsing, storage disabled) falls back to `null` the same as no saved value at all; malformed JSON is `parseSavedRect`'s own concern. */
+function loadSavedRect(storageKey: string): FloatingPanelRect | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (
-      typeof parsed.width === "number" &&
-      typeof parsed.height === "number" &&
-      typeof parsed.top === "number" &&
-      typeof parsed.left === "number"
-    ) {
-      return parsed;
-    }
+    return parseSavedRect(window.localStorage.getItem(STORAGE_PREFIX + storageKey));
   } catch {
-    // Fall through to null below.
+    return null;
   }
-  return null;
 }
 
-function saveRect(storageKey: string, rect: Rect) {
+function saveRect(storageKey: string, rect: FloatingPanelRect) {
   try {
     window.localStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify(rect));
   } catch {
@@ -46,12 +35,18 @@ function saveRect(storageKey: string, rect: Rect) {
  * suggestion against other characters/creatures still on screen — a
  * centered `Modal` with its full-viewport backdrop made that impossible.
  *
- * Size/position are clamped to `MIN_WIDTH`/`MIN_HEIGHT` on the small end
- * (large enough that the input bar and an option's text never wrap into an
- * awkwardly narrow column) and only to the window's own top/left edge
- * (`EDGE_MARGIN`) on the other — there's no maximum-position clamp, so the
- * panel can be dragged mostly off the right/bottom edge if the user wants
- * it out of the way rather than closed.
+ * Size/position math (parsing a saved rect, clamping a drag/resize) lives in
+ * `lib/floatingPanelGeometry.ts`, not here — see that file's own doc comment
+ * for why (short version: it's the only way that logic gets unit-tested at
+ * all in this project). This component owns only the DOM/event wiring and
+ * the actual `localStorage` calls.
+ *
+ * Clamped to `MIN_WIDTH`/`MIN_HEIGHT` on the small end (large enough that the
+ * input bar and an option's text never wrap into an awkwardly narrow column)
+ * and only to the window's own top/left edge (`EDGE_MARGIN`) on the other —
+ * there's no maximum-position clamp, so the panel can be dragged mostly off
+ * the right/bottom edge if the user wants it out of the way rather than
+ * closed.
  *
  * `storageKey` persists the last size/position to `localStorage` (read once
  * on mount, written on drag/resize release) so the panel reopens where it
@@ -91,30 +86,21 @@ export function FloatingPanel({
   const titleId = useId();
   // Lazy initializer runs once, after mount in practice (this component is
   // only ever rendered once its caller's "open" state flips true, never
-  // during the initial SSR pass). Falls back to anchoring near the top-right
-  // corner like a chat widget (not centered, so it reads as "a tool window
-  // that appeared," not "the modal that used to be here") when nothing was
-  // saved yet, or the viewport shrank enough since the save that the old
-  // rect no longer fits.
-  const [rect, setRect] = useState<Rect>(() => {
-    const saved = loadSavedRect(storageKey);
-    const maxWidth = window.innerWidth - EDGE_MARGIN * 2;
-    const maxHeight = window.innerHeight - EDGE_MARGIN * 2;
-    if (saved && saved.width <= maxWidth && saved.height <= maxHeight) {
-      return {
-        width: Math.max(MIN_WIDTH, saved.width),
-        height: Math.max(MIN_HEIGHT, saved.height),
-        top: Math.min(Math.max(EDGE_MARGIN, saved.top), window.innerHeight - MIN_HEIGHT),
-        left: Math.min(Math.max(EDGE_MARGIN, saved.left), window.innerWidth - MIN_WIDTH),
-      };
-    }
-    return {
-      width: initialWidth,
-      height: initialHeight,
-      top: 88,
-      left: Math.max(EDGE_MARGIN, window.innerWidth - initialWidth - 32),
-    };
-  });
+  // during the initial SSR pass).
+  const [rect, setRect] = useState<FloatingPanelRect>(() =>
+    resolveInitialRect({
+      saved: loadSavedRect(storageKey),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      minWidth: MIN_WIDTH,
+      minHeight: MIN_HEIGHT,
+      edgeMargin: EDGE_MARGIN,
+      defaultWidth: initialWidth,
+      defaultHeight: initialHeight,
+      defaultTop: 88,
+      defaultRightGap: 32,
+    })
+  );
   // Mirrors `rect` synchronously (set inside the same `setRect` updater, so
   // it's never a render behind) purely so the pointerup handlers below have
   // a guaranteed-fresh value to persist — reading `rect` itself there would
@@ -136,11 +122,7 @@ export function FloatingPanel({
     const drag = dragStart.current;
     if (!drag) return;
     setRect((r) => {
-      const next = {
-        ...r,
-        left: Math.max(EDGE_MARGIN, drag.left + (e.clientX - drag.x)),
-        top: Math.max(EDGE_MARGIN, drag.top + (e.clientY - drag.y)),
-      };
+      const next = { ...r, ...clampPosition(drag.left + (e.clientX - drag.x), drag.top + (e.clientY - drag.y), EDGE_MARGIN) };
       rectRef.current = next;
       return next;
     });
@@ -166,8 +148,12 @@ export function FloatingPanel({
     setRect((r) => {
       const next = {
         ...r,
-        width: Math.min(Math.max(MIN_WIDTH, resize.width + (e.clientX - resize.x)), maxWidth),
-        height: Math.min(Math.max(MIN_HEIGHT, resize.height + (e.clientY - resize.y)), maxHeight),
+        ...clampSize(resize.width + (e.clientX - resize.x), resize.height + (e.clientY - resize.y), {
+          minWidth: MIN_WIDTH,
+          minHeight: MIN_HEIGHT,
+          maxWidth,
+          maxHeight,
+        }),
       };
       rectRef.current = next;
       return next;
@@ -198,7 +184,7 @@ export function FloatingPanel({
           ✕
         </IconButton>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">{children}</div>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
       <div
         onPointerDown={onResizePointerDown}
         onPointerMove={onResizePointerMove}
@@ -207,9 +193,7 @@ export function FloatingPanel({
         className="absolute bottom-0 right-0 flex h-5 w-5 touch-none items-end justify-end p-1 text-slate-600 hover:text-slate-400"
         style={{ cursor: "nwse-resize" }}
       >
-        <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-          <path d="M8 1L1 8M8 4.5L4.5 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        </svg>
+        <ResizeGripIcon className="h-2.5 w-2.5" />
       </div>
     </div>
   );
