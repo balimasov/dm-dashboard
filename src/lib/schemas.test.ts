@@ -359,4 +359,22 @@ describe("assistantSuggestSchema", () => {
     const result = assistantSuggestSchema.safeParse({ characterId: "char-1" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts an optional situation string", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      situation: "Surrounded by 5 goblins and a warlock on a cliff edge.",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a situation string over 500 characters", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      situation: "x".repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
 });

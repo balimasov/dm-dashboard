@@ -412,6 +412,8 @@ export const assistantSuggestSchema = z
     campaignId: z.string().min(1),
     characterId: z.string().min(1).optional(),
     creatureId: z.string().min(1).optional(),
+    /** Optional free-text "here's the current scene" note from the user, folded into the LLM prompt. */
+    situation: z.string().max(500).optional(),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",

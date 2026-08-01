@@ -11,7 +11,9 @@ Rules:
 - Only suggest actions the sheet below actually supports — never invent abilities, spells, or resources that aren't listed.
 - Pay close attention to what's currently available (remaining spell slots, remaining charges, HP, conditions) vs. what's merely known — a feature with 0 charges left, or a spell with no slot available to cast it, is NOT currently usable; say so plainly if everything relevant is used up.
 - Group the answer by action economy where it matters: Action, Bonus Action, Reaction, and "no action needed" (passive/at-will) options.
-- Be concise and practical — a handful of strong options, not an exhaustive list. Plain text with short bullet points, no markdown headers.`;
+- Be concise and practical — a handful of strong options, not an exhaustive list. Short bullet points under each heading.
+- Format each section heading as one relevant thematic emoji followed by a space and the heading text wrapped in double asterisks, e.g. "⚔️ **Action**" or "🛡️ **Reaction**" — no other markdown (no #, no numbered lists).
+- If a "current situation" is described below, tailor the answer to it specifically — prioritize options that make sense for that scene over a generic list.`;
 
 /**
  * "What can this character/creature do right now" — sends the sheet's
@@ -26,7 +28,7 @@ Rules:
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId } = parsed.data;
+  const { campaignId, characterId, creatureId, situation } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -54,6 +56,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 });
   }
 
+  const question = situation
+    ? `Current situation: ${situation}\n\nGiven that situation, what can ${name} do right now?`
+    : `What can ${name} do right now?`;
+
   let upstream: Response;
   try {
     upstream = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -64,7 +70,7 @@ export async function POST(req: Request) {
         temperature: 0.4,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `${name}'s current sheet:\n\n${context}\n\nWhat can ${name} do right now?` },
+          { role: "user", content: `${name}'s current sheet:\n\n${context}\n\n${question}` },
         ],
       }),
     });
