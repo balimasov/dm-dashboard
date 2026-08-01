@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { buildAiAvailability, buildAiAvailabilityByName } from "@/lib/aiAvailability";
-import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
+import { parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary, buildAiGlossaryByName } from "@/lib/aiGlossary";
 import { AiTacticalResponse } from "@/lib/schemas";
 import { Character, Creature } from "@/lib/types";
@@ -81,7 +81,11 @@ export function AiAssistantModal({
     // mode they're getting — this is just relaying that same choice to the
     // API, not a separate decision.
     const responseMode = trimmed ? "focused" : "overview";
-    apiFetch("/api/assistant/suggest", {
+    // Plain fetch, not `apiFetch` — this request already has its own "Thinking..."
+    // spinner filling the panel below, and it routinely runs for several
+    // seconds (an LLM call, not a quick save), so also popping the app-wide
+    // centered spinner on top of it was a redundant second loading indicator.
+    fetch("/api/assistant/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...target, response_mode: responseMode, ...(trimmed ? { situation: trimmed } : {}) }),
