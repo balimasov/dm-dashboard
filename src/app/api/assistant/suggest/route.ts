@@ -15,9 +15,17 @@ Rules:
 - The sheet gives you the exact current numeric penalty for exhaustion and the exact effect of each active condition — use those numbers/effects as given rather than recalculating or recalling them from memory, and apply them to any check/attack/save you discuss.
 - If the sheet says they're already concentrating on a spell, take that into account — casting another concentration spell would end the current one, so only suggest that if it's genuinely the better trade, and say plainly that it would break the existing concentration.
 - Open with a short 2-4 sentence "game plan" paragraph: the single best overall approach given everything available (and the situation, if one is described) — plain prose, no heading, no bullets, no emoji.
-- After that, group the rest of the answer by action economy where it matters: Action, Bonus Action, Reaction, and "no action needed" (passive/at-will) options. List every currently-available option in its proper category — don't drop one just because it doesn't fit the situation; the opening game plan is where you rank priority, not where options get filtered out below.
+- After that, group the rest of the answer into exactly these categories, in this exact order, each formatted as its fixed emoji + a space + the exact heading text wrapped in double asterisks — no other markdown (no #, no numbered lists), and no emoji/heading besides these:
+  - "⚔️ **Action**" — always include this one, even if everything under it is currently used up (say so plainly rather than omitting the section).
+  - "⚡ **Bonus Action**" — only if a bonus action option exists.
+  - "🏃 **Movement**" — only if there's a movement-based option worth calling out on its own (e.g. flying away, a burrow/climb speed, a dash-like feature) beyond ordinary walking.
+  - "🛡️ **Reaction**" — only if a reaction option exists.
+  - "👑 **Legendary Action**" — only if the sheet lists legendary actions.
+  - "🏰 **Lair Action**" — only if the sheet lists lair actions.
+  - "🆓 **No Action Needed**" — only if there's a passive/at-will option worth mentioning.
+  Skip a category entirely (heading and all) when nothing belongs in it — never render an empty section or a "none available" line for a category that just doesn't apply.
+- List every currently-available option in its proper category — don't drop one just because it doesn't fit the situation; the opening game plan is where you rank priority, not where options get filtered out below.
 - Be concise per option, but complete per category — a tight one-line description of each, not an exhaustive essay, but the full available set.
-- Format each section heading as one relevant thematic emoji followed by a space and the heading text wrapped in double asterisks, e.g. "⚔️ **Action**" or "🛡️ **Reaction**" — no other markdown (no #, no numbered lists).
 - If a "current situation" is described below, tailor the whole answer — including the opening game plan — to it specifically, prioritizing options that make sense for that scene over a generic list.`;
 
 /**
