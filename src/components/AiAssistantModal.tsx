@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { buildAiAvailability } from "@/lib/aiAvailability";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary } from "@/lib/aiGlossary";
 import { AiTacticalResponse } from "@/lib/schemas";
@@ -43,6 +44,7 @@ export function AiAssistantModal({
   useScrollLock();
   useEscapeToClose(onClose);
   const glossary = useMemo(() => buildAiGlossary(entity), [entity]);
+  const availability = useMemo(() => buildAiAvailability(entity), [entity]);
 
   const [situation, setSituation] = useState("");
   const [asked, setAsked] = useState(false);
@@ -154,7 +156,7 @@ export function AiAssistantModal({
         <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
           <p className={MUTED_LABEL_CLS}>Answer</p>
           <div className="mt-2">
-            <AiResponseText response={response} glossary={glossary} />
+            <AiResponseText response={response} glossary={glossary} availability={availability} />
           </div>
           {response.missing_information.length > 0 && (
             <SectionDivider className="mt-3">

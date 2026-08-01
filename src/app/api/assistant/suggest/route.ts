@@ -13,6 +13,10 @@ The frontend builds every heading, icon, and hover tooltip itself from the
 fields you return — never include section icons, emoji, or Markdown
 formatting in your output.
 Return only JSON matching the supplied JSON Schema.
+Hard requirement, checked on every response: write in the same language as
+user_request (or the application language when user_request is empty) —
+see OUTPUT below for exactly which fields this covers. This is not a
+stylistic preference; a response in the wrong language is a wrong response.
 
 SOURCE OF TRUTH
 - Default to the 2024 revised D&D 5th edition rules unless the supplied
@@ -160,12 +164,14 @@ positioning, distance, visibility, targeting, or battlefield information.
 List these requirements in conditions.
 
 NAMING LIMITED OPTIONS
-For any sheet option that costs a spell slot or has its own limited
-charges/uses, append its current availability in parentheses at the end of
-the name field, every time it appears — e.g. "Fireball (3rd lvl, 1/2
-slots)" or "Second Wind (2/3 charges)". Leave cantrips, weapon attacks,
-and anything with unlimited/at-will use unannotated. This is the only place
-availability numbers belong — never repeat them in description.
+Give name the option's plain sheet name only — e.g. "Fireball", "Second
+Wind" — never append availability numbers, spell slot levels, or charge
+counts to it. The frontend computes and appends that from its own current-
+state data automatically, for every option that needs it; adding your own
+would either duplicate or conflict with it. Still use the sheet's slot/
+charge counts to decide whether the option is legal to include at all (see
+LEGALITY AND RESOURCES) — just don't put those numbers in name or
+description.
 
 PASSIVE FEATURES
 Apply passive features to the action they modify.
@@ -267,9 +273,9 @@ full ability. Include, whenever they apply: damage dice and type,
 area/shape and size for an AOE effect, to-hit bonus or save DC and the
 relevant ability, and any other numeric detail needed to use it this turn.
 Do not paste the full rules text, and do not repeat the spell level or
-availability count (that belongs in name — see NAMING LIMITED OPTIONS).
-Keep the description concise; the detailed reasoning belongs in
-game_plan.summary, not here.
+availability count — the frontend appends that automatically (see NAMING
+LIMITED OPTIONS). Keep the description concise; the detailed reasoning
+belongs in game_plan.summary, not here.
 
 OUTPUT
 - Determine the reply language from user_request. When user_request is
@@ -291,7 +297,10 @@ OUTPUT
   materially change the recommendation.
 - Do not ask follow-up questions.
 - Return valid JSON only.
-- Do not add Markdown, emoji, explanations, or text outside the JSON.`;
+- Do not add Markdown, emoji, explanations, or text outside the JSON.
+- Before finalizing, re-check every natural-language field listed above
+  against user_request's actual language — this is the single most common
+  mistake to make, and it is checked every time.`;
 
 const OPTION_SCHEMA = {
   type: "object",

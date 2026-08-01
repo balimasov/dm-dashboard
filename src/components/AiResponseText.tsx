@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
-import { CONDITION_INFO } from "@/lib/conditionInfo";
+import { AiAvailability } from "@/lib/aiAvailability";
 import { AiGlossary } from "@/lib/aiGlossary";
+import { CONDITION_INFO } from "@/lib/conditionInfo";
 import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
 import { MASTERY_INFO } from "@/lib/masteryInfo";
 import { AiOption, AiTacticalResponse } from "@/lib/schemas";
@@ -104,17 +105,45 @@ function renderPlainSegment(text: string, keyPrefix: string) {
     });
 }
 
-function renderSummary(summary: string, glossary: AiGlossary) {
+/**
+ * A summary token's own `source_id` occasionally doesn't match anything in
+ * `glossary` — the model sometimes garbles or re-derives an id when writing
+ * free-form prose, even though it reliably copies the *same* ability's real
+ * id into that ability's own `options[].source_id` field right next to it.
+ * Rather than trust the model to keep the two in sync, this builds a
+ * second, name-keyed lookup from the very same response's own options —
+ * every option's name is already resolved against `glossary` once, here —
+ * so a token whose id fails still finds its hint by the name the model
+ * used, with zero extra trust placed in id consistency.
+ */
+function buildSummaryNameFallback(options: AiOption[], glossary: AiGlossary): Record<string, ReactNode> {
+  const byName: Record<string, ReactNode> = {};
+  for (const option of options) {
+    if (!option.source_id) continue;
+    const hint = glossary[option.source_id];
+    if (hint) byName[option.name.trim().toLowerCase()] = hint;
+  }
+  return byName;
+}
+
+function renderSummary(summary: string, glossary: AiGlossary, nameFallback: Record<string, ReactNode>) {
   return parseSummaryTokens(summary).flatMap((token, i) => {
     if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`);
-    const hint = glossary[token.sourceId];
+    const hint = glossary[token.sourceId] ?? nameFallback[token.displayName.trim().toLowerCase()];
     return [
       hint ? (
         <InfoTooltip key={`sum-${i}`} inline panel={hint}>
           <strong>{token.displayName}</strong>
         </InfoTooltip>
       ) : (
-        <strong key={`sum-${i}`}>{token.displayName}</strong>
+        // Same `align-top` an `InfoTooltip` trigger applies to itself (see
+        // its own doc comment) — without it, a bolded ability mention sits
+        // at the default baseline while every hinted one sits at align-top,
+        // so the text visibly shifts depending on whether a hint happened
+        // to resolve for that one mention.
+        <strong key={`sum-${i}`} className="align-top">
+          {token.displayName}
+        </strong>
       ),
     ];
   });
@@ -184,7 +213,17 @@ function OptionBadge({ tone, children }: { tone: "best" | "improvised"; children
   );
 }
 
-function OptionRow({ option, isBest, glossary }: { option: AiOption; isBest: boolean; glossary: AiGlossary }) {
+function OptionRow({
+  option,
+  isBest,
+  glossary,
+  availability,
+}: {
+  option: AiOption;
+  isBest: boolean;
+  glossary: AiGlossary;
+  availability: AiAvailability;
+}) {
   const sheetHint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
@@ -193,8 +232,14 @@ function OptionRow({ option, isBest, glossary }: { option: AiOption; isBest: boo
       <strong>{option.name}</strong>
     </InfoTooltip>
   ) : (
-    <strong>{option.name}</strong>
+    // Same `align-top` an `InfoTooltip` trigger applies to itself — without
+    // it, an option with no hint (e.g. a universal action with no matching
+    // dictionary entry) sits at the default baseline while a hinted one
+    // sits at align-top, so the name visibly jumps between rows depending
+    // on whether a hint happened to resolve for that particular option.
+    <strong className="align-top">{option.name}</strong>
   );
+  const availabilityText = option.source_id ? availability[option.source_id] : undefined;
   const descriptionKey = option.source_id ?? option.name;
 
   return (
@@ -204,6 +249,7 @@ function OptionRow({ option, isBest, glossary }: { option: AiOption; isBest: boo
         <p>
           <span className="inline-flex flex-wrap items-center gap-1.5 align-middle">
             {name}
+            {availabilityText && <span className="text-xs font-normal text-slate-500">({availabilityText})</span>}
             {isBest && <OptionBadge tone="best">Best</OptionBadge>}
             {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}
           </span>
@@ -221,15 +267,30 @@ function OptionRow({ option, isBest, glossary }: { option: AiOption; isBest: boo
   );
 }
 
-export function AiResponseText({ response, glossary = {} }: { response: AiTacticalResponse; glossary?: AiGlossary }) {
+export function AiResponseText({
+  response,
+  glossary = {},
+  availability = {},
+}: {
+  response: AiTacticalResponse;
+  glossary?: AiGlossary;
+  availability?: AiAvailability;
+}) {
   const grouped = groupOptionsByCategory(response.options);
+  const nameFallback = buildSummaryNameFallback(response.options, glossary);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
-        {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-          <p key={i}>{renderSummary(paragraph, glossary)}</p>
-        ))}
+      <div>
+        <h4 className="flex items-center gap-2 pb-1.5 text-sm font-semibold text-sky-300">
+          <span>🧭</span>
+          Tactics
+        </h4>
+        <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
+          {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
+            <p key={i}>{renderSummary(paragraph, glossary, nameFallback)}</p>
+          ))}
+        </div>
       </div>
       {CATEGORY_ORDER.map((category) => {
         const options = grouped.get(category);
@@ -245,7 +306,13 @@ export function AiResponseText({ response, glossary = {} }: { response: AiTactic
             {options && options.length > 0 ? (
               <ul className="mt-1.5 flex flex-col gap-1.5">
                 {options.map((option, i) => (
-                  <OptionRow key={`${category}-${i}`} option={option} isBest={i === 0 && options.length > 1} glossary={glossary} />
+                  <OptionRow
+                    key={`${category}-${i}`}
+                    option={option}
+                    isBest={i === 0 && options.length > 1}
+                    glossary={glossary}
+                    availability={availability}
+                  />
                 ))}
               </ul>
             ) : (
