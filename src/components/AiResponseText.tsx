@@ -10,7 +10,6 @@ import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
 import { HintPanel } from "./ui/HintPanel";
-import { MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 
 /**
  * Renders `/api/assistant/suggest`'s structured `AiTacticalResponse` — the
@@ -320,7 +319,6 @@ function OptionRow({
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
           <div className="mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 bg-white/[0.025] px-2.5 py-1.5">
-            <p className={MICRO_LABEL_STRONG_CLS}>Conditions</p>
             <ul className="flex flex-col gap-0.5 text-xs text-slate-400">
               {option.conditions.map((condition, i) => (
                 <li key={i} className="flex gap-1.5">
