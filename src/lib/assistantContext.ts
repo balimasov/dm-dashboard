@@ -24,6 +24,7 @@ export function characterAssistantContext(character: Character): string {
   );
   if (c.combat.conditions.length > 0) lines.push(`Conditions: ${c.combat.conditions.join(", ")}`);
   if (c.combat.exhaustion > 0) lines.push(`Exhaustion: level ${c.combat.exhaustion}`);
+  if (c.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (c.combat.deathSaves) {
     lines.push(`Death saves: ${c.combat.deathSaves.successes} successes, ${c.combat.deathSaves.failures} failures`);
   }
@@ -87,6 +88,7 @@ export function creatureAssistantContext(creature: Creature): string {
   );
   if (cr.conditions.length > 0) lines.push(`Conditions: ${cr.conditions.join(", ")}`);
   if (cr.exhaustion > 0) lines.push(`Exhaustion: level ${cr.exhaustion}`);
+  if (cr.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (cr.deathSaves) {
     lines.push(`Death saves: ${cr.deathSaves.successes} successes, ${cr.deathSaves.failures} failures`);
   }

@@ -10,10 +10,12 @@ Rules:
 - Default to the 2024 revised D&D 5th edition rules (also called "5.5e" / the 2024 Player's Handbook) unless the sheet below clearly indicates an older-edition build — e.g. use current terminology and mechanics (Weapon Mastery properties, the 2024 phrasing of class features) rather than 2014-era rules text, since that's the assumed baseline unless told otherwise.
 - Only suggest actions the sheet below actually supports — never invent abilities, spells, or resources that aren't listed.
 - Pay close attention to what's currently available (remaining spell slots, remaining charges, HP, conditions) vs. what's merely known — a feature with 0 charges left, or a spell with no slot available to cast it, is NOT currently usable; say so plainly if everything relevant is used up.
-- Group the answer by action economy where it matters: Action, Bonus Action, Reaction, and "no action needed" (passive/at-will) options.
+- If the sheet says they're already concentrating on a spell, take that into account — casting another concentration spell would end the current one, so only suggest that if it's genuinely the better trade, and say plainly that it would break the existing concentration.
+- Open with a short 2-4 sentence "game plan" paragraph: the single best overall approach given everything available (and the situation, if one is described) — plain prose, no heading, no bullets, no emoji.
+- After that, group the rest of the answer by action economy where it matters: Action, Bonus Action, Reaction, and "no action needed" (passive/at-will) options.
 - Be concise and practical — a handful of strong options, not an exhaustive list. Short bullet points under each heading.
 - Format each section heading as one relevant thematic emoji followed by a space and the heading text wrapped in double asterisks, e.g. "⚔️ **Action**" or "🛡️ **Reaction**" — no other markdown (no #, no numbered lists).
-- If a "current situation" is described below, tailor the answer to it specifically — prioritize options that make sense for that scene over a generic list.`;
+- If a "current situation" is described below, tailor the whole answer — including the opening game plan — to it specifically, prioritizing options that make sense for that scene over a generic list.`;
 
 /**
  * "What can this character/creature do right now" — sends the sheet's

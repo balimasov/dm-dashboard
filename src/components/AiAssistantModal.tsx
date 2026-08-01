@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
-import { RichText } from "./RichText";
+import { AiResponseText } from "./AiResponseText";
 import { Button } from "./ui/Button";
 import { SparklesIcon } from "./ui/icons";
 import { Modal } from "./ui/Modal";
@@ -56,7 +56,7 @@ export function AiAssistantModal({ name, target, onClose }: { name: string; targ
           {name} — what can they do right now?
         </span>
       }
-      panelClassName="max-h-[80vh] w-full max-w-lg gap-4 overflow-y-auto border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
+      panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 overflow-y-auto border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
     >
       {!asked && (
         <div className="flex flex-col gap-3">
@@ -67,7 +67,7 @@ export function AiAssistantModal({ name, target, onClose }: { name: string; targ
               value={situation}
               onChange={(e) => setSituation(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                   e.preventDefault();
                   ask();
                 }
@@ -78,9 +78,10 @@ export function AiAssistantModal({ name, target, onClose }: { name: string; targ
               className="mt-1 w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
             />
           </div>
-          <Button onClick={ask} className="self-end">
-            Ask
-          </Button>
+          <div className={`flex items-center justify-between ${MUTED_LABEL_CLS}`}>
+            <span>Enter to ask · Shift+Enter for a new line</span>
+            <Button onClick={ask}>Ask</Button>
+          </div>
         </div>
       )}
       {loading && (
@@ -90,11 +91,7 @@ export function AiAssistantModal({ name, target, onClose }: { name: string; targ
         </div>
       )}
       {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
-      {!loading && suggestion && (
-        <p className="text-sm leading-relaxed text-slate-200">
-          <RichText text={suggestion} />
-        </p>
-      )}
+      {!loading && suggestion && <AiResponseText text={suggestion} />}
     </Modal>
   );
 }

@@ -122,6 +122,14 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("Fireball (level 3)");
     expect(context).toContain("Detect Magic (level 1, own charges 0/1 (recovers: Long Rest))");
   });
+
+  test("flags an active concentration so the assistant knows a new concentration spell would end it", () => {
+    const concentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: true }));
+    const notConcentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: false }));
+
+    expect(concentrating).toContain("Concentrating on a spell right now");
+    expect(notConcentrating).not.toContain("Concentrating");
+  });
 });
 
 describe("creatureAssistantContext", () => {
@@ -168,5 +176,10 @@ describe("creatureAssistantContext", () => {
 
     expect(context).toContain("+6 to hit, 2d8 +4 bludgeoning");
     expect(context).toContain("DC 13 WIS save");
+  });
+
+  test("flags an active concentration the same way a character's does", () => {
+    const context = creatureAssistantContext(makeCreature({ name: "Cultist Priest", concentrating: true }));
+    expect(context).toContain("Concentrating on a spell right now");
   });
 });
