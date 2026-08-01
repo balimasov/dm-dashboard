@@ -73,7 +73,7 @@ export function AiAssistantModal({
       title={
         <span className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-sky-400" />
-          {name} — what can they do right now?
+          {name} — Turn Advisor
         </span>
       }
       panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 overflow-y-auto border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
@@ -81,7 +81,11 @@ export function AiAssistantModal({
       {!asked && (
         <div className="flex flex-col gap-3">
           <div>
-            <p className={MUTED_LABEL_CLS}>Current situation (optional)</p>
+            <p className={MUTED_LABEL_CLS}>Additional conditions for this turn (optional)</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Spell out specifics — enemy positions, terrain, who&rsquo;s already down. Leave it blank and
+              you&rsquo;ll get the optimal tactic with no extra conditions assumed.
+            </p>
             <textarea
               autoFocus
               value={situation}
@@ -95,7 +99,7 @@ export function AiAssistantModal({
               placeholder="e.g. Standing on a cliff edge, surrounded by 5 goblins and a warlock — what's my best option?"
               rows={3}
               maxLength={500}
-              className="mt-1 w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
+              className="mt-2 w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
             />
           </div>
           <div className={`flex items-center justify-between ${MUTED_LABEL_CLS}`}>
@@ -105,9 +109,9 @@ export function AiAssistantModal({
         </div>
       )}
       {asked && askedSituation && (
-        <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-          <p className={MUTED_LABEL_CLS}>Situation you described</p>
-          <p className="mt-0.5 text-sm text-slate-300">{askedSituation}</p>
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+          <p className={MUTED_LABEL_CLS}>Additional conditions</p>
+          <p className="mt-1 text-sm text-slate-300">{askedSituation}</p>
         </div>
       )}
       {loading && (
@@ -117,7 +121,14 @@ export function AiAssistantModal({
         </div>
       )}
       {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
-      {!loading && suggestion && <AiResponseText text={suggestion} glossary={glossary} />}
+      {!loading && suggestion && (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+          <p className={MUTED_LABEL_CLS}>Answer</p>
+          <div className="mt-2">
+            <AiResponseText text={suggestion} glossary={glossary} />
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

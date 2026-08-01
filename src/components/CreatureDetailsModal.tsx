@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
+import { AiAssistantModal } from "./AiAssistantModal";
 import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
@@ -51,6 +52,7 @@ export function CreatureDetailsModal({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEscapeToClose(onClose);
   useScrollLock();
@@ -106,6 +108,7 @@ export function CreatureDetailsModal({
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
             onDuplicate={onDuplicate}
             onShowHpHistory={() => setHpHistoryOpen(true)}
+            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}
           />
         </div>
@@ -137,6 +140,15 @@ export function CreatureDetailsModal({
         characters={characters}
         onClose={() => setEditOpen(false)}
         onUpdate={onUpdate}
+      />
+    )}
+
+    {aiOpen && (
+      <AiAssistantModal
+        name={creature.name}
+        target={{ campaignId: creature.campaignId, creatureId: creature.id }}
+        entity={creature}
+        onClose={() => setAiOpen(false)}
       />
     )}
     </>

@@ -20,6 +20,7 @@ import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from 
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
+import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { EditCharacterModal } from "./EditCharacterModal";
 import { SkillPanel } from "./SkillPanel";
@@ -201,6 +202,7 @@ export function CharacterDetailsModal({
   const c = character;
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
   const [editOpen, setEditOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const flaggedAbilities = c.flaggedAbilities ?? [];
   function toggleFlag(name: string) {
@@ -305,6 +307,7 @@ export function CharacterDetailsModal({
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
             onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
             syncing={syncing}
+            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(c.id) : undefined}
           />
         </div>
@@ -638,6 +641,15 @@ export function CharacterDetailsModal({
 
     {editOpen && onUpdate && (
       <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
+    )}
+
+    {aiOpen && (
+      <AiAssistantModal
+        name={c.name}
+        target={{ campaignId: c.campaignId, characterId: c.id }}
+        entity={c}
+        onClose={() => setAiOpen(false)}
+      />
     )}
     </>
   );
