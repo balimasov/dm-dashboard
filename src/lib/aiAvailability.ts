@@ -33,6 +33,13 @@ function availabilityEntries(c: Character): AvailabilityEntry[] {
       if (slot) entries.push({ id: s.id, name: s.name, label: `${ordinal(s.level)} lvl, ${slot.current}/${slot.max} slots` });
     }
   }
+  // Same "x{quantity}" convention `InventoryOverview.tsx` already uses for a
+  // stackable item's remaining count — a Potion of Healing or Scroll of
+  // Fireball the assistant recommends should show how many are left, same
+  // as a spell's own charge pool does.
+  for (const item of c.inventory) {
+    if (item.category === "Consumable") entries.push({ id: item.id, name: item.name, label: `x${item.quantity}` });
+  }
   return entries;
 }
 

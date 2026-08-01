@@ -119,6 +119,21 @@ describe("buildAiAvailability", () => {
     expect(buildAiAvailability(character)).toEqual({});
   });
 
+  test("formats a consumable item as 'x{quantity}', same convention InventoryOverview.tsx uses", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [
+        { id: "potion-1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 3 },
+        { id: "shield-1", name: "Shield", rarity: "Common", category: "Armor", quantity: 1 },
+      ],
+    });
+
+    const availability = buildAiAvailability(character);
+
+    expect(availability["potion-1"]).toBe("x3");
+    expect(availability["shield-1"]).toBeUndefined();
+  });
+
   test("returns an empty map for a creature, which has no current/max resource tracking", () => {
     const creature = makeCreature({ name: "Ogre" });
     expect(buildAiAvailability(creature)).toEqual({});

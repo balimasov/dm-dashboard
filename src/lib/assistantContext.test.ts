@@ -244,6 +244,23 @@ describe("characterAssistantContext", () => {
 
     expect(context).toContain("Senses: Darkvision 60 ft");
   });
+
+  test("lists Consumable inventory items (potions, scrolls) with their own [id] and remaining quantity, but not other item categories", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [
+        { id: "potion-1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 2, description: "Regain 2d4+2 hit points." },
+        { id: "scroll-1", name: "Scroll of Fireball", rarity: "Rare", category: "Consumable", quantity: 0 },
+        { id: "shield-1", name: "Shield", rarity: "Common", category: "Armor", quantity: 1 },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[potion-1] Potion of Healing (qty 2): Regain 2d4+2 hit points.");
+    expect(context).toContain("[scroll-1] Scroll of Fireball (qty 0)");
+    expect(context).not.toContain("Shield");
+  });
 });
 
 describe("creatureAssistantContext", () => {

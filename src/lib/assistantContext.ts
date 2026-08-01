@@ -13,9 +13,10 @@ import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
  * than asking it to first mentally parse a data structure.
  *
  * Every option the model could recommend (resource, feature, spell, attack,
- * creature trait) is prefixed with a `[source_id]` tag — `Feature`/
- * `KnownSpell`/`Attack`/`Resource` already carry a stable-within-this-object
- * `.id`; a `CreatureTrait`/creature spellcasting spell name has none on the
+ * consumable item, creature trait) is prefixed with a `[source_id]` tag —
+ * `Feature`/`KnownSpell`/`Attack`/`Resource`/`InventoryItem` already carry a
+ * stable-within-this-object `.id`; a `CreatureTrait`/creature spellcasting
+ * spell name has none on the
  * data model, so `aiSourceIds.ts`'s array-position formula stands in
  * (computed fresh here and again in `aiGlossary.tsx`'s lookup table, always
  * over the same array in the same request, so the two never disagree). The
@@ -153,6 +154,21 @@ export function characterAssistantContext(character: Character): string {
       lines.push(
         `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${properties}${mastery}`
       );
+    }
+  }
+
+  // Potions and spell scrolls can be the single strongest option in a
+  // specific situation (a healing potion when critically low, a scroll of a
+  // spell the character has no slot left for) — listed here, not just left
+  // implicit in the inventory the frontend renders separately, so the
+  // assistant actually has a chance to recommend one (see the prompt's
+  // CONSUMABLE ITEMS section).
+  const consumables = c.inventory.filter((item) => item.category === "Consumable");
+  if (consumables.length > 0) {
+    lines.push("");
+    lines.push("Consumable items (potions, scrolls, and similar — quantity 0 means none left):");
+    for (const item of consumables) {
+      lines.push(`- [${item.id}] ${item.name} (qty ${item.quantity})${item.description ? `: ${item.description}` : ""}`);
     }
   }
 

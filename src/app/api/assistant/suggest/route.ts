@@ -134,8 +134,9 @@ ACTION ORIGINS
 
 Each option must use one kind:
 
-- sheet: an ability, spell, attack, item, monster action, legendary action,
-  or lair action explicitly present in the supplied sheet;
+- sheet: an ability, spell, attack, consumable item (see CONSUMABLE ITEMS),
+  monster action, legendary action, or lair action explicitly present in
+  the supplied sheet;
 
 - universal: a generally available rules action such as Dash, Disengage,
   Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple, or Shove;
@@ -225,6 +226,7 @@ Never recommend:
 
 - a spell without a usable slot or its own remaining charge;
 - a feature with no remaining uses;
+- a consumable item with a quantity of 0 (see CONSUMABLE ITEMS);
 - an action type that has already been spent;
 - an option that is definitely illegal in the supplied current state.
 
@@ -298,6 +300,34 @@ game plan.
 
 Use category "no_action_needed" only when a passive effect is independently
 important for the current turn.
+
+CONSUMABLE ITEMS
+
+The sheet's "Consumable items" list (potions, spell scrolls, and similar)
+holds real, usable options, not flavor text — a Potion of Healing when
+critically low, or a Scroll of Fireball when out of your own damage
+spells, can be the single strongest choice in a specific situation.
+Actively consider them alongside spells, features, and attacks; do not
+list one only when asked about items specifically.
+
+Use the supplied quantity to decide whether the item is still available.
+Never recommend one with a quantity of 0.
+
+Use the item's own description for its effect. Do not invent what an
+undescribed or unlisted item does.
+
+Under the 2024 revised rules, drinking a potion (or administering one to
+a willing creature within 5 feet) is a Bonus Action; reading a spell
+scroll takes the casting time of the spell it contains (usually 1
+Action) — unless the item's own description states a different action
+cost.
+
+A spell cast from a scroll does not consume the caster's own spell
+slots — the scroll itself is the resource that gets used up instead — so
+it never counts against the one-spell-slot-per-turn restriction in
+LEGALITY AND RESOURCES. It can still require concentration exactly like
+any other spell of that kind; apply the same concentration-conflict
+rules to it.
 
 WEAPON MASTERY
 
