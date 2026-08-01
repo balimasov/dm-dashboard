@@ -95,6 +95,7 @@ export function AiAssistantModal({
   return (
     <FloatingPanel
       onClose={onClose}
+      storageKey="ai-assistant"
       title={
         <span className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-sky-400" />
