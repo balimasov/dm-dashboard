@@ -1,10 +1,11 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { AiAvailability } from "@/lib/aiAvailability";
 import { AiGlossary } from "@/lib/aiGlossary";
-import { CONDITION_INFO } from "@/lib/conditionInfo";
+import { CONDITION_INFO, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
 import { MASTERY_INFO } from "@/lib/masteryInfo";
 import { AiOption, AiTacticalResponse } from "@/lib/schemas";
+import { SENSE_INFO } from "@/lib/senseInfo";
 import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
@@ -21,8 +22,9 @@ import { HintPanel } from "./ui/HintPanel";
  * Every option's name is wrapped in the app's own `InfoTooltip`, but the
  * panel content is never invented here: for a `kind: "sheet"` option,
  * `option.source_id` is looked up in `glossary` (from `buildAiGlossary` —
- * keyed by the entity's own `Feature`/`KnownSpell`/`Attack`/`Resource` `.id`,
- * or a creature trait/spellcasting-spell's `aiSourceIds.ts` id) to show the
+ * keyed by the entity's own `Feature`/`KnownSpell`/`Attack`/`Resource`/
+ * `InventoryItem` `.id`, or a creature trait/spellcasting-spell's
+ * `aiSourceIds.ts` id) to show the
  * *exact* hint component the character/creature card itself renders for
  * that thing — falling back to `glossaryByName` (the same hints, keyed by
  * name instead) whenever the id doesn't match anything, since the model is
@@ -35,11 +37,17 @@ import { HintPanel } from "./ui/HintPanel";
  * `game_plan.summary` is free prose from the model but can reference sheet
  * abilities via `[[ability:<source_id>|<name>]]` tokens (see
  * `SYSTEM_PROMPT`); `parseSummaryTokens` splits those out so each becomes
- * the same `glossary`-backed tooltip as an option name. The remaining plain
- * text is still scanned for universal terms (conditions, ability scores)
- * the same way the old freeform response was — the model isn't asked to
- * tag those, so a term like "Frightened" only shows a hint when it's
- * recognized here, in prose, exactly as before.
+ * the same `glossary`-backed tooltip as an option name. In practice the
+ * model is inconsistent about which mentions it actually wraps in a token —
+ * across several rounds of feedback, half the ability names in a given
+ * summary would show up as plain untagged prose. Rather than keep chasing
+ * the model's tagging behavior, every plain-text segment (both the summary
+ * and an option's own description) is *also* scanned against this specific
+ * entity's own sheet term names (`glossaryByName`'s keys — every resource/
+ * feature/spell/attack/inventory item it has), the same way it's already
+ * scanned for universal terms (conditions, ability scores, senses,
+ * exhaustion) and Weapon Mastery property names — so a hint shows up
+ * whether or not the model bothered to tag that particular mention.
  */
 
 const ABILITY_GLOSSARY: Record<string, string> = {
@@ -66,7 +74,10 @@ const ABILITY_GLOSSARY: Record<string, string> = {
  */
 const INLINE_HINT_ALIGN_CLS = "!align-baseline";
 
-const UNIVERSAL_TERMS = [...Object.keys(CONDITION_INFO), ...Object.keys(ABILITY_GLOSSARY)];
+/** `senseInfo.ts`'s keys (darkvision, blindsight, ...) plus a literal "exhaustion" — `EXHAUSTION_RULES_TEXT` isn't keyed by name since it's the one entry that isn't a lookup table (a level-scaled rule, not a per-term dictionary). */
+const EXHAUSTION_TERM = "exhaustion";
+
+const UNIVERSAL_TERMS = [...Object.keys(CONDITION_INFO), ...Object.keys(ABILITY_GLOSSARY), ...Object.keys(SENSE_INFO), EXHAUSTION_TERM];
 
 const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.length - a.length).join("|")})\\b`, "gi");
 
@@ -81,12 +92,37 @@ const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.le
  */
 const MASTERY_TERMS_RE = new RegExp(`\\b(${Object.keys(MASTERY_INFO).join("|")})\\b`, "g");
 
-/** A condition uses the app's own `ConditionHintPanel`; an ability score has no equivalent standalone hint elsewhere (the closest, `AbilityScoreHintPanel`, needs a real score/modifier this context doesn't have), so it keeps a plain title+blurb `HintPanel`. */
+/** A condition uses the app's own `ConditionHintPanel`; everything else here (ability score, sense, exhaustion) has no equivalent standalone hint elsewhere (the closest for a score, `AbilityScoreHintPanel`, needs a real score/modifier this context doesn't have), so it keeps a plain title+blurb `HintPanel`. */
 function universalHint(term: string) {
   const lower = term.toLowerCase();
   if (CONDITION_INFO[lower]) return <ConditionHintPanel condition={term} />;
   if (ABILITY_GLOSSARY[lower]) return <HintPanel title={term} description={ABILITY_GLOSSARY[lower]} />;
+  if (SENSE_INFO[lower]) return <HintPanel title={term} description={SENSE_INFO[lower]} />;
+  if (lower === EXHAUSTION_TERM) return <HintPanel title="Exhaustion" description={EXHAUSTION_RULES_TEXT} />;
   return undefined;
+}
+
+function escapeRegExp(term: string): string {
+  return term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * A per-response regex matching any of *this* entity's own sheet term names
+ * (`glossaryByName`'s keys), longest-first so e.g. "Heavy Weapon Mastery"
+ * wins over a shorter unrelated substring. `null` when there's nothing to
+ * match (no glossary supplied, or an empty one) — an empty alternation
+ * would otherwise make the `RegExp` constructor throw. Single/double-letter
+ * keys are excluded: too short to safely match by name alone (and nothing
+ * on a real sheet is named that tersely anyway).
+ */
+function buildSheetTermsRegex(glossaryByName: AiGlossary): RegExp | null {
+  const terms = Object.keys(glossaryByName).filter((term) => term.length > 2);
+  if (terms.length === 0) return null;
+  const pattern = terms
+    .map(escapeRegExp)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  return new RegExp(`\\b(${pattern})\\b`, "gi");
 }
 
 /** A run of text that didn't match a universal condition/ability term — checked once more against the Weapon Mastery vocabulary, since a mastery property name can show up in an option's description or the summary the same way a condition can. */
@@ -106,8 +142,27 @@ function renderMasterySegment(text: string, keyPrefix: string) {
     });
 }
 
-/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against Weapon Mastery property names for whatever's left over. */
-function renderPlainSegment(text: string, keyPrefix: string) {
+/** A run of text that didn't match a universal term — checked once more against this entity's own sheet term names, since the model frequently mentions a real ability/spell/attack/item by name without ever wrapping it in an `[[ability:...]]` token (see this file's own doc comment). Falls through to the Weapon Mastery vocabulary for whatever's still unmatched. */
+function renderSheetSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
+  if (!sheetTermsRe) return renderMasterySegment(text, keyPrefix);
+  return text
+    .split(sheetTermsRe)
+    .filter((part) => part !== "")
+    .flatMap((part, i) => {
+      const hint = glossaryByName[part.trim().toLowerCase()];
+      if (hint) {
+        return [
+          <InfoTooltip key={`${keyPrefix}-sh-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
+            {part}
+          </InfoTooltip>,
+        ];
+      }
+      return renderMasterySegment(part, `${keyPrefix}-sh-${i}`);
+    });
+}
+
+/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability/sense/exhaustion vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against this entity's own sheet term names, then against Weapon Mastery property names for whatever's left over. */
+function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary = {}, sheetTermsRe: RegExp | null = null) {
   return text
     .split(UNIVERSAL_TERMS_RE)
     .filter((part) => part !== "")
@@ -120,13 +175,13 @@ function renderPlainSegment(text: string, keyPrefix: string) {
           </InfoTooltip>,
         ];
       }
-      return renderMasterySegment(part, `${keyPrefix}-${i}`);
+      return renderSheetSegment(part, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe);
     });
 }
 
-function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: AiGlossary) {
+function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
   return parseSummaryTokens(summary).flatMap((token, i) => {
-    if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`);
+    if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`, glossaryByName, sheetTermsRe);
     // The token's own `source_id` occasionally doesn't match anything —
     // the model sometimes garbles or re-derives an id when writing
     // free-form prose. `glossaryByName` (built straight from the entity's
@@ -216,6 +271,7 @@ function OptionRow({
   isBest,
   glossary,
   glossaryByName,
+  sheetTermsRe,
   availability,
   availabilityByName,
 }: {
@@ -223,6 +279,7 @@ function OptionRow({
   isBest: boolean;
   glossary: AiGlossary;
   glossaryByName: AiGlossary;
+  sheetTermsRe: RegExp | null;
   availability: AiAvailability;
   availabilityByName: AiAvailability;
 }) {
@@ -258,7 +315,7 @@ function OptionRow({
             {isBest && <OptionBadge tone="best">Best</OptionBadge>}
             {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}
           </span>
-          : {renderPlainSegment(option.description, `desc-${descriptionKey}`)}
+          : {renderPlainSegment(option.description, `desc-${descriptionKey}`, glossaryByName, sheetTermsRe)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
           <ul className="mt-0.5 flex flex-col gap-0.5 text-xs italic text-slate-500">
@@ -286,6 +343,7 @@ export function AiResponseText({
   availabilityByName?: AiAvailability;
 }) {
   const grouped = groupOptionsByCategory(response.options);
+  const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -296,7 +354,7 @@ export function AiResponseText({
         </h4>
         <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
           {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-            <p key={i}>{renderSummary(paragraph, glossary, glossaryByName)}</p>
+            <p key={i}>{renderSummary(paragraph, glossary, glossaryByName, sheetTermsRe)}</p>
           ))}
         </div>
       </div>
@@ -320,6 +378,7 @@ export function AiResponseText({
                     isBest={i === 0 && options.length > 1}
                     glossary={glossary}
                     glossaryByName={glossaryByName}
+                    sheetTermsRe={sheetTermsRe}
                     availability={availability}
                     availabilityByName={availabilityByName}
                   />
