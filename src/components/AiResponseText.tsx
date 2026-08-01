@@ -51,6 +51,21 @@ const ABILITY_GLOSSARY: Record<string, string> = {
   charisma: "Force of personality — Deception, Intimidation, Performance, Persuasion.",
 };
 
+/**
+ * `InfoTooltip`'s trigger always carries `align-top` (see its own doc
+ * comment — right for a card's compact single-line rows, where it avoids
+ * reserving extra descender space). Inside flowing prose, that same
+ * `align-top` makes a hinted word sit visibly higher/lower than the plain
+ * baseline-aligned text around it (a bold ability name mid-sentence, a
+ * condition name mid-description) — this override forces it back to
+ * `baseline` so a hinted word sits exactly where the same plain text would.
+ * `!` (Tailwind's important-modifier) is required, not optional: two
+ * utility classes of equal specificity are decided by their order in the
+ * compiled stylesheet, not by which one is written later in `className`,
+ * so a plain `align-baseline` here would not reliably beat `align-top`.
+ */
+const INLINE_HINT_ALIGN_CLS = "!align-baseline";
+
 const UNIVERSAL_TERMS = [...Object.keys(CONDITION_INFO), ...Object.keys(ABILITY_GLOSSARY)];
 
 const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.length - a.length).join("|")})\\b`, "gi");
@@ -82,7 +97,7 @@ function renderMasterySegment(text: string, keyPrefix: string) {
     .map((part, i) => {
       const effect = MASTERY_INFO[part];
       return effect ? (
-        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<HintPanel title={part} description={effect} />}>
+        <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={<HintPanel title={part} description={effect} />}>
           {part}
         </InfoTooltip>
       ) : (
@@ -100,7 +115,7 @@ function renderPlainSegment(text: string, keyPrefix: string) {
       const hint = universalHint(part);
       if (hint) {
         return [
-          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
+          <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
             {part}
           </InfoTooltip>,
         ];
@@ -122,18 +137,11 @@ function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: Ai
     const hint = glossary[token.sourceId] ?? glossaryByName[token.displayName.trim().toLowerCase()];
     return [
       hint ? (
-        <InfoTooltip key={`sum-${i}`} inline panel={hint}>
+        <InfoTooltip key={`sum-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
           <strong>{token.displayName}</strong>
         </InfoTooltip>
       ) : (
-        // Same `align-top` an `InfoTooltip` trigger applies to itself (see
-        // its own doc comment) — without it, a bolded ability mention sits
-        // at the default baseline while every hinted one sits at align-top,
-        // so the text visibly shifts depending on whether a hint happened
-        // to resolve for that one mention.
-        <strong key={`sum-${i}`} className="align-top">
-          {token.displayName}
-        </strong>
+        <strong key={`sum-${i}`}>{token.displayName}</strong>
       ),
     ];
   });
@@ -229,16 +237,11 @@ function OptionRow({
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
   const name = hint ? (
-    <InfoTooltip inline panel={hint}>
+    <InfoTooltip inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
       <strong>{option.name}</strong>
     </InfoTooltip>
   ) : (
-    // Same `align-top` an `InfoTooltip` trigger applies to itself — without
-    // it, an option with no hint (e.g. a universal action with no matching
-    // dictionary entry) sits at the default baseline while a hinted one
-    // sits at align-top, so the name visibly jumps between rows depending
-    // on whether a hint happened to resolve for that particular option.
-    <strong className="align-top">{option.name}</strong>
+    <strong>{option.name}</strong>
   );
   const availabilityText =
     option.kind === "sheet" ? (option.source_id ? availability[option.source_id] : undefined) ?? availabilityByName[nameKey] : undefined;
@@ -249,7 +252,7 @@ function OptionRow({
       <span className="mt-0.5 shrink-0 text-slate-600">•</span>
       <div className="flex-1">
         <p>
-          <span className="inline-flex flex-wrap items-center gap-1.5 align-middle">
+          <span className="inline-flex flex-wrap items-baseline gap-1.5">
             {name}
             {availabilityText && <span className="text-xs font-normal text-slate-500">({availabilityText})</span>}
             {isBest && <OptionBadge tone="best">Best</OptionBadge>}
