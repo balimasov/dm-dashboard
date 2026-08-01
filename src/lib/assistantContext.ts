@@ -1,7 +1,9 @@
-import { Character, Creature, RECOVERY_LABELS } from "./types";
+import { Character, Creature, RECOVERY_LABELS, SKILL_LABELS, STAT_ORDER } from "./types";
 import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
 import { getMasteryInfo } from "./masteryInfo";
 import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
+import { abilityModifier, savingThrowBonus, skillBonus } from "./characterMath";
+import { formatModifier } from "./format";
 
 /**
  * Turns a character/creature's *current* state — not just what abilities
@@ -64,6 +66,42 @@ export function characterAssistantContext(character: Character): string {
   if (c.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (c.combat.deathSaves) {
     lines.push(`Death saves: ${c.combat.deathSaves.successes} successes, ${c.combat.deathSaves.failures} failures`);
+  }
+  if (c.heroicInspiration) lines.push("Heroic Inspiration: available — can be spent to reroll one d20 roll.");
+
+  lines.push("");
+  lines.push(
+    `Ability scores: ${STAT_ORDER.map((k) => `${k.toUpperCase()} ${c.stats[k]} (${formatModifier(abilityModifier(c.stats[k]))})`).join(", ")}`
+  );
+  lines.push(
+    `Saving throws: ${STAT_ORDER.map(
+      (k) => `${k.toUpperCase()} ${formatModifier(savingThrowBonus(c, k))}${c.savingThrowProficiencies.includes(k) ? " (proficient)" : ""}`
+    ).join(", ")}`
+  );
+
+  // Only proficient/trained/advantaged skills — the other ~15 are just the
+  // plain ability modifier already shown above, and listing all 18 for
+  // every request would bloat the prompt without adding anything the model
+  // can't already derive.
+  const trainedSkills = c.skillProficiencies.filter((s) => s.proficient || s.expertise || s.halfProficiency || s.advantage);
+  if (trainedSkills.length > 0) {
+    lines.push("");
+    lines.push("Skills (trained/notable only — bonus already includes proficiency):");
+    for (const s of trainedSkills) {
+      const tags: string[] = [];
+      if (s.expertise) tags.push("expertise");
+      else if (s.halfProficiency) tags.push("half-proficiency");
+      else if (s.proficient) tags.push("proficient");
+      if (s.advantage) tags.push(`${s.advantage}${s.advantageNote ? ` — ${s.advantageNote}` : ""}`);
+      lines.push(`- ${SKILL_LABELS[s.name]}: ${formatModifier(skillBonus(c, s))}${tags.length > 0 ? ` (${tags.join(", ")})` : ""}`);
+    }
+  }
+
+  if (c.resistances.length > 0 || c.immunities.length > 0 || c.vulnerabilities.length > 0) {
+    lines.push("");
+    if (c.resistances.length > 0) lines.push(`Damage resistances: ${c.resistances.join(", ")}`);
+    if (c.immunities.length > 0) lines.push(`Damage immunities: ${c.immunities.join(", ")}`);
+    if (c.vulnerabilities.length > 0) lines.push(`Damage vulnerabilities: ${c.vulnerabilities.join(", ")}`);
   }
 
   const availableSlots = c.spellSlots.filter((s) => s.max > 0);
@@ -253,6 +291,27 @@ export function creatureAssistantContext(creature: Creature, ownerName?: string)
   if (cr.concentrating) lines.push("Concentrating on a spell right now — casting another concentration spell would end it.");
   if (cr.deathSaves) {
     lines.push(`Death saves: ${cr.deathSaves.successes} successes, ${cr.deathSaves.failures} failures`);
+  }
+
+  lines.push("");
+  lines.push(
+    `Ability scores: ${STAT_ORDER.map((k) => `${k.toUpperCase()} ${cr.stats[k]} (${formatModifier(abilityModifier(cr.stats[k]))})`).join(", ")}`
+  );
+  // Same fallback `CreatureStatBlock.tsx` already displays: an explicit
+  // `savingThrows` entry only exists when it differs from the plain ability
+  // modifier (e.g. a monster's trained save), otherwise the modifier itself
+  // is the save bonus.
+  lines.push(
+    `Saving throws: ${STAT_ORDER.map((k) => `${k.toUpperCase()} ${formatModifier(cr.savingThrows?.[k] ?? abilityModifier(cr.stats[k]))}`).join(", ")}`
+  );
+  if (cr.skills) lines.push(`Skills: ${cr.skills}`);
+
+  if (cr.damageResistances || cr.damageImmunities || cr.damageVulnerabilities || cr.conditionImmunities) {
+    lines.push("");
+    if (cr.damageResistances) lines.push(`Damage resistances: ${cr.damageResistances}`);
+    if (cr.damageImmunities) lines.push(`Damage immunities: ${cr.damageImmunities}`);
+    if (cr.damageVulnerabilities) lines.push(`Damage vulnerabilities: ${cr.damageVulnerabilities}`);
+    if (cr.conditionImmunities) lines.push(`Condition immunities: ${cr.conditionImmunities}`);
   }
 
   if (cr.traits.length > 0) {

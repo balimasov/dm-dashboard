@@ -261,6 +261,64 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[scroll-1] Scroll of Fireball (qty 0)");
     expect(context).not.toContain("Shield");
   });
+
+  test("reports ability scores with their modifier, and saving throws with proficiency already folded in and marked", () => {
+    const character = makeCharacter({
+      name: "Alor",
+      level: 5,
+      stats: { str: 16, dex: 14, con: 14, int: 10, wis: 12, cha: 8 },
+      savingThrowProficiencies: ["con", "wis"],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Ability scores: STR 16 (+3), DEX 14 (+2), CON 14 (+2), INT 10 (+0), WIS 12 (+1), CHA 8 (-1)");
+    expect(context).toContain("Saving throws: STR +3, DEX +2, CON +5 (proficient), INT +0, WIS +4 (proficient), CHA -1");
+  });
+
+  test("lists only trained/notable skills with their full bonus (proficiency/expertise/half-proficiency/advantage already folded in), not the other ~15", () => {
+    const character = makeCharacter({
+      name: "Tarah",
+      level: 5,
+      stats: { str: 16, dex: 14, con: 14, int: 10, wis: 12, cha: 8 },
+      skillProficiencies: [
+        { name: "athletics", proficient: true, expertise: false },
+        { name: "stealth", proficient: true, expertise: true },
+        { name: "performance", proficient: false, expertise: false, advantage: "advantage", advantageNote: "while dancing" },
+        { name: "insight", proficient: false, expertise: false },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("- Athletics: +6 (proficient)");
+    expect(context).toContain("- Stealth: +8 (expertise)");
+    expect(context).toContain("- Performance: -1 (advantage — while dancing)");
+    expect(context).not.toContain("Insight");
+  });
+
+  test("reports resistances/immunities/vulnerabilities, omitting a category with none", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      resistances: ["Fire", "Cold"],
+      immunities: ["Poison"],
+      vulnerabilities: [],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Damage resistances: Fire, Cold");
+    expect(context).toContain("Damage immunities: Poison");
+    expect(context).not.toContain("Damage vulnerabilities");
+  });
+
+  test("flags available Heroic Inspiration, and omits the line entirely when unavailable", () => {
+    const available = characterAssistantContext(makeCharacter({ name: "Bram", heroicInspiration: true }));
+    const unavailable = characterAssistantContext(makeCharacter({ name: "Bram", heroicInspiration: false }));
+
+    expect(available).toContain("Heroic Inspiration: available");
+    expect(unavailable).not.toContain("Heroic Inspiration");
+  });
 });
 
 describe("creatureAssistantContext", () => {
@@ -366,6 +424,38 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("- [spell-0-1] Mage Hand");
     expect(context).toContain("- 3/Day each:");
     expect(context).toContain("- [spell-1-0] Fireball");
+  });
+
+  test("reports ability scores, and falls back a saving throw to the plain modifier when no explicit trained save is set — same convention CreatureStatBlock.tsx displays", () => {
+    const creature = makeCreature({
+      name: "Ogre",
+      stats: { str: 19, dex: 8, con: 16, int: 5, wis: 7, cha: 7 },
+      savingThrows: { str: 6 },
+    });
+
+    const context = creatureAssistantContext(creature);
+
+    expect(context).toContain("Ability scores: STR 19 (+4), DEX 8 (-1), CON 16 (+3), INT 5 (-3), WIS 7 (-2), CHA 7 (-2)");
+    expect(context).toContain("Saving throws: STR +6, DEX -1, CON +3, INT -3, WIS -2, CHA -2");
+  });
+
+  test("passes a creature's free-text Skills line and damage resistances/immunities/vulnerabilities/condition immunities through unstructured", () => {
+    const creature = makeCreature({
+      name: "Owlbear",
+      skills: "Perception +5, Stealth +3",
+      damageResistances: "Bludgeoning, Piercing, and Slashing from Nonmagical Attacks",
+      damageImmunities: "Poison",
+      damageVulnerabilities: "Radiant",
+      conditionImmunities: "Poisoned, Frightened",
+    });
+
+    const context = creatureAssistantContext(creature);
+
+    expect(context).toContain("Skills: Perception +5, Stealth +3");
+    expect(context).toContain("Damage resistances: Bludgeoning, Piercing, and Slashing from Nonmagical Attacks");
+    expect(context).toContain("Damage immunities: Poison");
+    expect(context).toContain("Damage vulnerabilities: Radiant");
+    expect(context).toContain("Condition immunities: Poisoned, Frightened");
   });
 });
 
