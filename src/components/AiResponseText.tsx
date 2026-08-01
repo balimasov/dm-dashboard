@@ -1,7 +1,7 @@
 import { CONDITION_INFO } from "@/lib/conditionInfo";
 import { AiGlossary } from "@/lib/aiGlossary";
 import { InfoTooltip } from "./InfoTooltip";
-import { RichText } from "./RichText";
+import { ConditionHintPanel } from "./ui/conditionHints";
 import { HintPanel } from "./ui/HintPanel";
 
 /**
@@ -16,15 +16,15 @@ import { HintPanel } from "./ui/HintPanel";
  * game plan, a colored heading row per section, and properly indented,
  * spaced bullet lists under each.
  *
- * Every recognized game term — the character/creature's own abilities
- * (`glossary`, from `buildAiGlossary`) plus the universal condition/ability
- * vocabulary below — gets wrapped in the same hover-hint affordance the
- * rest of the app already uses: `InfoTooltip` as the trigger, `HintPanel`
- * (title + description, the same shape every spell/feature/resource/item
- * hint in the app already renders through) as the panel content — not a
- * bespoke one, so "what does Tail Attack actually do" or "what does
- * Frightened mean" looks like every other hint in the app, not a
- * one-off.
+ * Every recognized game term gets wrapped in the app's own `InfoTooltip`,
+ * but the panel content is never invented here: an entity's own ability
+ * (`glossary`, from `buildAiGlossary`) shows the *exact* hint component the
+ * character/creature card itself renders for that spell/feature/attack/
+ * trait (`AbilityHintPanel`/`SpellHintPanel`/`AttackHintPanel`/
+ * `CreatureAbilityHintPanel`), and a condition shows the same
+ * `ConditionHintPanel` `StatusRail`'s own badges use — so hovering "Tail
+ * Attack" or "Frightened" in the assistant's answer looks identical to
+ * hovering the same name anywhere else in the app, not a one-off.
  */
 
 const ABILITY_GLOSSARY: Record<string, string> = {
@@ -36,14 +36,17 @@ const ABILITY_GLOSSARY: Record<string, string> = {
   charisma: "Force of personality — Deception, Intimidation, Performance, Persuasion.",
 };
 
-const UNIVERSAL_GLOSSARY: Record<string, string> = { ...CONDITION_INFO, ...ABILITY_GLOSSARY };
+const UNIVERSAL_TERMS = [...Object.keys(CONDITION_INFO), ...Object.keys(ABILITY_GLOSSARY)];
 
-const UNIVERSAL_TERMS_RE = new RegExp(
-  `\\b(${Object.keys(UNIVERSAL_GLOSSARY)
-    .sort((a, b) => b.length - a.length)
-    .join("|")})\\b`,
-  "gi"
-);
+const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.length - a.length).join("|")})\\b`, "gi");
+
+/** A condition uses the app's own `ConditionHintPanel`; an ability score has no equivalent standalone hint elsewhere (the closest, `AbilityScoreHintPanel`, needs a real score/modifier this context doesn't have), so it keeps a plain title+blurb `HintPanel`. */
+function universalHint(term: string) {
+  const lower = term.toLowerCase();
+  if (CONDITION_INFO[lower]) return <ConditionHintPanel condition={term} />;
+  if (ABILITY_GLOSSARY[lower]) return <HintPanel title={term} description={ABILITY_GLOSSARY[lower]} />;
+  return undefined;
+}
 
 type Block =
   | { type: "heading"; emoji: string; label: string }
@@ -52,7 +55,7 @@ type Block =
 
 const HEADING_RE = /^(\p{Extended_Pictographic}\uFE0F?)\s+\*\*(.+)\*\*$/u;
 const BOLD_ONLY_RE = /^\*\*(.+)\*\*$/;
-/** A bullet's own leading "Name: " label, when the model didn't already wrap it in `**` itself \u2014 `SYSTEM_PROMPT` asks for that, but doesn't always get followed. Capped at 80 chars so an ordinary sentence that happens to contain a colon further in ("Roll a d20: on a 15+...") doesn't get its whole first clause bolded. */
+/** A bullet's own leading "Name: " label, when the model didn't already wrap it in `**` itself — `SYSTEM_PROMPT` asks for that, but doesn't always get followed. Capped at 80 chars so an ordinary sentence that happens to contain a colon further in ("Roll a d20: on a 15+...") doesn't get its whole first clause bolded. */
 const LEADING_LABEL_RE = /^([^*\n:]{1,80}?):\s*([\s\S]*)$/;
 
 function boldenLeadingLabel(item: string): string {
@@ -100,15 +103,15 @@ function parseBlocks(text: string): Block[] {
   return blocks;
 }
 
-/** A run of plain (non-bold) text — tokenized against the universal condition/ability glossary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as bolded item names. */
+/** A run of plain (non-bold) text — tokenized against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as bolded item names. */
 function renderPlainSegment(text: string, keyPrefix: string) {
   return text
     .split(UNIVERSAL_TERMS_RE)
     .filter((part) => part !== "")
     .map((part, i) => {
-      const hint = UNIVERSAL_GLOSSARY[part.toLowerCase()];
+      const hint = universalHint(part);
       return hint ? (
-        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<HintPanel title={part} description={<RichText text={hint} />} />}>
+        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
           {part}
         </InfoTooltip>
       ) : (
@@ -124,9 +127,9 @@ function renderInline(text: string, keyPrefix: string, glossary: AiGlossary) {
     .flatMap((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         const label = part.slice(2, -2);
-        const hint = glossary[label.toLowerCase()] || UNIVERSAL_GLOSSARY[label.toLowerCase()];
+        const hint = glossary[label.toLowerCase()] ?? universalHint(label);
         return hint ? (
-          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<HintPanel title={label} description={<RichText text={hint} />} />}>
+          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
             <strong>{label}</strong>
           </InfoTooltip>
         ) : (

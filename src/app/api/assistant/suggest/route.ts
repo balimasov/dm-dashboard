@@ -26,7 +26,8 @@ Rules:
   Skip a category entirely (heading and all) when nothing belongs in it — never render an empty section or a "none available" line for a category that just doesn't apply.
 - List every currently-available option in its proper category — don't drop one just because it doesn't fit the situation; the opening game plan is where you rank priority, not where options get filtered out below.
 - Be concise per option, but complete per category — a tight one-line description of each, not an exhaustive essay, but the full available set.
-- If a "current situation" is described below, tailor the whole answer — including the opening game plan — to it specifically, prioritizing options that make sense for that scene over a generic list.`;
+- If a "current situation" is described below, tailor the whole answer — including the opening game plan — to it specifically, prioritizing options that make sense for that scene over a generic list.
+- End the answer right after the last category — no closing offer to do more ("if you want, I can work out the best combo for this round", "let me know if you'd like me to calculate X"). This is a one-shot answer with no follow-up turn, so an offer like that is always a dead end.`;
 
 /**
  * "What can this character/creature do right now" — sends the sheet's

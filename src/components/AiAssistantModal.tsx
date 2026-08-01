@@ -45,15 +45,17 @@ export function AiAssistantModal({
 
   const [situation, setSituation] = useState("");
   const [asked, setAsked] = useState(false);
+  const [askedSituation, setAskedSituation] = useState("");
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   function ask() {
+    const trimmed = situation.trim();
     setAsked(true);
+    setAskedSituation(trimmed);
     setLoading(true);
     setError(null);
-    const trimmed = situation.trim();
     apiFetch("/api/assistant/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,6 +102,12 @@ export function AiAssistantModal({
             <span>Enter to ask · Shift+Enter for a new line</span>
             <Button onClick={ask}>Ask</Button>
           </div>
+        </div>
+      )}
+      {asked && askedSituation && (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+          <p className={MUTED_LABEL_CLS}>Situation you described</p>
+          <p className="mt-0.5 text-sm text-slate-300">{askedSituation}</p>
         </div>
       )}
       {loading && (
