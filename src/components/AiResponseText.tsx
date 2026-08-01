@@ -1,30 +1,38 @@
+import { ReactNode } from "react";
 import { CONDITION_INFO } from "@/lib/conditionInfo";
 import { AiGlossary } from "@/lib/aiGlossary";
+import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
+import { AiOption, AiTacticalResponse } from "@/lib/schemas";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
 import { HintPanel } from "./ui/HintPanel";
 
 /**
- * Renders `/api/assistant/suggest`'s answer — not `RichText`, since this
- * output has real structure `RichText` doesn't parse (`SYSTEM_PROMPT` asks
- * for an opening "game plan" paragraph, then `emoji **Heading**` section
- * markers, then `- ` bullets under each) and reusing `RichText`'s generic
- * paragraph/line splitter left the whole thing reading as one dense block —
- * headings didn't stand out from their own bullets, and bullets didn't
- * stand out from each other. This groups lines into typed blocks first so
- * each gets a distinct treatment: a highlighted callout for the leading
- * game plan, a colored heading row per section, and properly indented,
- * spaced bullet lists under each.
+ * Renders `/api/assistant/suggest`'s structured `AiTacticalResponse` — the
+ * model no longer returns markdown to parse; it returns `game_plan.summary`
+ * plus a flat `options[]` array (see `schemas.ts`), and *this* component is
+ * the one place that owns turning `category` into a heading+emoji, grouping
+ * options under it, and skipping empty categories — the model is
+ * instructed not to send any of that presentation itself.
  *
- * Every recognized game term gets wrapped in the app's own `InfoTooltip`,
- * but the panel content is never invented here: an entity's own ability
- * (`glossary`, from `buildAiGlossary`) shows the *exact* hint component the
- * character/creature card itself renders for that spell/feature/attack/
- * trait (`AbilityHintPanel`/`SpellHintPanel`/`AttackHintPanel`/
- * `CreatureAbilityHintPanel`), and a condition shows the same
- * `ConditionHintPanel` `StatusRail`'s own badges use — so hovering "Tail
- * Attack" or "Frightened" in the assistant's answer looks identical to
- * hovering the same name anywhere else in the app, not a one-off.
+ * Every option's name is wrapped in the app's own `InfoTooltip`, but the
+ * panel content is never invented here: for a `kind: "sheet"` option,
+ * `option.source_id` is looked up directly in `glossary` (from
+ * `buildAiGlossary` — keyed by the entity's own `Feature`/`KnownSpell`/
+ * `Attack`/`Resource` `.id`, or a creature trait/spellcasting-spell's
+ * `aiSourceIds.ts` id) to show the *exact* hint component the character/
+ * creature card itself renders for that thing. `universal`/`improvised`
+ * options have a `null` source_id and get no tooltip at all — there's
+ * nothing on the sheet to link to.
+ *
+ * `game_plan.summary` is free prose from the model but can reference sheet
+ * abilities via `[[ability:<source_id>|<name>]]` tokens (see
+ * `SYSTEM_PROMPT`); `parseSummaryTokens` splits those out so each becomes
+ * the same `glossary`-backed tooltip as an option name. The remaining plain
+ * text is still scanned for universal terms (conditions, ability scores)
+ * the same way the old freeform response was — the model isn't asked to
+ * tag those, so a term like "Frightened" only shows a hint when it's
+ * recognized here, in prose, exactly as before.
  */
 
 const ABILITY_GLOSSARY: Record<string, string> = {
@@ -48,73 +56,7 @@ function universalHint(term: string) {
   return undefined;
 }
 
-/** Strips a trailing "(...)" annotation off a bolded label — e.g. "Fireball (3rd level, 1 slot available)" — so slot/charge counts the prompt asks the model to append don't break the name match against the glossary or universal terms. */
-const TRAILING_ANNOTATION_RE = /\s*\([^()]*\)\s*$/;
-
-function lookupHint(label: string, glossary: AiGlossary) {
-  const direct = glossary[label.toLowerCase()] ?? universalHint(label);
-  if (direct) return direct;
-  const bareName = label.replace(TRAILING_ANNOTATION_RE, "").trim();
-  if (bareName === label || bareName === "") return undefined;
-  return glossary[bareName.toLowerCase()] ?? universalHint(bareName);
-}
-
-type Block =
-  | { type: "heading"; emoji: string; label: string }
-  | { type: "bullets"; items: string[] }
-  | { type: "paragraph"; text: string };
-
-const HEADING_RE = /^(\p{Extended_Pictographic}\uFE0F?)\s+\*\*(.+)\*\*$/u;
-const BOLD_ONLY_RE = /^\*\*(.+)\*\*$/;
-/** A bullet's own leading "Name: " label, when the model didn't already wrap it in `**` itself — `SYSTEM_PROMPT` asks for that, but doesn't always get followed. Capped at 80 chars so an ordinary sentence that happens to contain a colon further in ("Roll a d20: on a 15+...") doesn't get its whole first clause bolded. */
-const LEADING_LABEL_RE = /^([^*\n:]{1,80}?):\s*([\s\S]*)$/;
-
-function boldenLeadingLabel(item: string): string {
-  if (item.startsWith("**")) return item;
-  const match = item.match(LEADING_LABEL_RE);
-  return match ? `**${match[1]}**: ${match[2]}` : item;
-}
-
-function parseBlocks(text: string): Block[] {
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
-  const blocks: Block[] = [];
-  let bulletBuffer: string[] = [];
-
-  function flushBullets() {
-    if (bulletBuffer.length > 0) {
-      blocks.push({ type: "bullets", items: bulletBuffer });
-      bulletBuffer = [];
-    }
-  }
-
-  for (const line of lines) {
-    const headingMatch = line.match(HEADING_RE);
-    if (headingMatch) {
-      flushBullets();
-      blocks.push({ type: "heading", emoji: headingMatch[1], label: headingMatch[2] });
-      continue;
-    }
-    const boldOnlyMatch = line.match(BOLD_ONLY_RE);
-    if (boldOnlyMatch) {
-      flushBullets();
-      blocks.push({ type: "heading", emoji: "", label: boldOnlyMatch[1] });
-      continue;
-    }
-    if (line.startsWith("- ") || line.startsWith("* ")) {
-      bulletBuffer.push(line.slice(2));
-      continue;
-    }
-    flushBullets();
-    blocks.push({ type: "paragraph", text: line });
-  }
-  flushBullets();
-  return blocks;
-}
-
-/** A run of plain (non-bold) text — tokenized against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as bolded item names. */
+/** A run of plain summary text — tokenized against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens. */
 function renderPlainSegment(text: string, keyPrefix: string) {
   return text
     .split(UNIVERSAL_TERMS_RE)
@@ -131,67 +73,116 @@ function renderPlainSegment(text: string, keyPrefix: string) {
     });
 }
 
-function renderInline(text: string, keyPrefix: string, glossary: AiGlossary) {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .filter((part) => part !== "")
-    .flatMap((part, i) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        const label = part.slice(2, -2);
-        const hint = lookupHint(label, glossary);
-        return hint ? (
-          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
-            <strong>{label}</strong>
-          </InfoTooltip>
-        ) : (
-          <strong key={`${keyPrefix}-${i}`}>{label}</strong>
-        );
-      }
-      return renderPlainSegment(part, `${keyPrefix}-${i}`);
-    });
+function renderSummary(summary: string, glossary: AiGlossary) {
+  return parseSummaryTokens(summary).flatMap((token, i) => {
+    if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`);
+    const hint = glossary[token.sourceId];
+    return [
+      hint ? (
+        <InfoTooltip key={`sum-${i}`} inline panel={hint}>
+          <strong>{token.displayName}</strong>
+        </InfoTooltip>
+      ) : (
+        <strong key={`sum-${i}`}>{token.displayName}</strong>
+      ),
+    ];
+  });
 }
 
-export function AiResponseText({ text, glossary = {} }: { text: string; glossary?: AiGlossary }) {
-  const blocks = parseBlocks(text);
-  const firstHeadingIndex = blocks.findIndex((b) => b.type === "heading");
-  const strategyIndex = blocks.findIndex(
-    (b, i) => b.type === "paragraph" && (firstHeadingIndex === -1 || i < firstHeadingIndex)
+const CATEGORY_META: Record<AiOption["category"], { label: string; emoji: string }> = {
+  action: { label: "Action", emoji: "⚔️" },
+  bonus_action: { label: "Bonus Action", emoji: "⚡" },
+  movement: { label: "Movement", emoji: "🏃" },
+  reaction: { label: "Reaction", emoji: "🛡️" },
+  legendary_action: { label: "Legendary Action", emoji: "👑" },
+  lair_action: { label: "Lair Action", emoji: "🏰" },
+  no_action_needed: { label: "No Action Needed", emoji: "🆓" },
+};
+
+const CATEGORY_ORDER: AiOption["category"][] = [
+  "action",
+  "bonus_action",
+  "movement",
+  "reaction",
+  "legendary_action",
+  "lair_action",
+  "no_action_needed",
+];
+
+const PRIORITY_ORDER: Record<AiOption["priority"], number> = { best: 0, alternative: 1, available: 2 };
+
+/** Groups options by category (skipping categories with none) and sorts each group best-first — a defensive re-sort rather than trusting the model's own array order. */
+function groupOptionsByCategory(options: AiOption[]): Map<AiOption["category"], AiOption[]> {
+  const grouped = new Map<AiOption["category"], AiOption[]>();
+  for (const option of options) {
+    const list = grouped.get(option.category) ?? [];
+    list.push(option);
+    grouped.set(option.category, list);
+  }
+  for (const list of grouped.values()) list.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+  return grouped;
+}
+
+function OptionBadge({ tone, children }: { tone: "best" | "improvised"; children: ReactNode }) {
+  const cls = tone === "best" ? "bg-sky-950/60 text-sky-400" : "bg-amber-950/50 text-amber-400";
+  return <span className={`ml-1.5 rounded px-1 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide ${cls}`}>{children}</span>;
+}
+
+function OptionRow({ option, glossary }: { option: AiOption; glossary: AiGlossary }) {
+  const hint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
+  const name = hint ? (
+    <InfoTooltip inline panel={hint}>
+      <strong>{option.name}</strong>
+    </InfoTooltip>
+  ) : (
+    <strong>{option.name}</strong>
   );
 
   return (
+    <li className="flex gap-2 text-sm leading-relaxed text-slate-300">
+      <span className="mt-0.5 shrink-0 text-slate-600">–</span>
+      <div className="flex-1">
+        <p>
+          {name}
+          {option.priority === "best" && <OptionBadge tone="best">Best</OptionBadge>}
+          {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}: {option.description}
+        </p>
+        {option.status === "conditional" && option.conditions.length > 0 && (
+          <ul className="mt-0.5 flex flex-col gap-0.5 text-xs italic text-slate-500">
+            {option.conditions.map((condition, i) => (
+              <li key={i}>if {condition}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </li>
+  );
+}
+
+export function AiResponseText({ response, glossary = {} }: { response: AiTacticalResponse; glossary?: AiGlossary }) {
+  const grouped = groupOptionsByCategory(response.options);
+
+  return (
     <div className="flex flex-col gap-3">
-      {blocks.map((block, i) => {
-        if (block.type === "heading") {
-          return (
-            <h4 key={i} className="flex items-center gap-2 pt-1 text-sm font-semibold text-sky-300 first:pt-0">
-              {block.emoji && <span>{block.emoji}</span>}
-              {block.label}
+      <p className="rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
+        {renderSummary(response.game_plan.summary, glossary)}
+      </p>
+      {CATEGORY_ORDER.map((category) => {
+        const options = grouped.get(category);
+        if (!options || options.length === 0) return null;
+        const meta = CATEGORY_META[category];
+        return (
+          <div key={category}>
+            <h4 className="flex items-center gap-2 pt-1 text-sm font-semibold text-sky-300 first:pt-0">
+              <span>{meta.emoji}</span>
+              {meta.label}
             </h4>
-          );
-        }
-        if (block.type === "bullets") {
-          return (
-            <ul key={i} className="flex flex-col gap-1.5">
-              {block.items.map((item, j) => (
-                <li key={j} className="flex gap-2 text-sm leading-relaxed text-slate-300">
-                  <span className="mt-0.5 shrink-0 text-slate-600">–</span>
-                  <span>{renderInline(boldenLeadingLabel(item), `${i}-${j}`, glossary)}</span>
-                </li>
+            <ul className="mt-1.5 flex flex-col gap-1.5">
+              {options.map((option, i) => (
+                <OptionRow key={`${category}-${i}`} option={option} glossary={glossary} />
               ))}
             </ul>
-          );
-        }
-        if (i === strategyIndex) {
-          return (
-            <p key={i} className="rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
-              {renderInline(block.text, `${i}`, glossary)}
-            </p>
-          );
-        }
-        return (
-          <p key={i} className="text-sm leading-relaxed text-slate-300">
-            {renderInline(block.text, `${i}`, glossary)}
-          </p>
+          </div>
         );
       })}
     </div>

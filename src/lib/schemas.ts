@@ -414,10 +414,49 @@ export const assistantSuggestSchema = z
     creatureId: z.string().min(1).optional(),
     /** Optional free-text "here's the current scene" note from the user, folded into the LLM prompt. */
     situation: z.string().max(500).optional(),
+    /**
+     * Set by the frontend, not inferred here — `AiAssistantModal` sends
+     * `"overview"` when the situation bar was left empty (the "✦ Best move"
+     * button) and `"focused"` the moment there's typed text (the send-arrow
+     * button), so this always lines up with whether `situation` is present.
+     * Defaulted rather than required so older/other callers that don't send
+     * it yet still get the previous "just give me an overview" behavior.
+     */
+    response_mode: z.enum(["overview", "focused"]).default("overview"),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",
   });
+
+/**
+ * The AI assistant's structured reply — mirrors the JSON Schema passed to
+ * OpenAI's structured-output `response_format` in
+ * `/api/assistant/suggest/route.ts` (kept in sync by hand, same as every
+ * other schema in this file). Re-validated here after `JSON.parse`-ing the
+ * model's response: structured-output "strict" mode makes the *shape*
+ * reliable, but never trust an upstream API blindly — this is the same
+ * boundary-validation posture as every other schema below.
+ */
+export const aiOptionSchema = z.object({
+  category: z.enum(["action", "bonus_action", "movement", "reaction", "legendary_action", "lair_action", "no_action_needed"]),
+  /** The exact `Feature`/`KnownSpell`/`Attack`/`Resource` `.id`, or a `trait-N`/`spell-G-N` id from `aiSourceIds.ts` for a creature — `null` for `universal`/`improvised` options, which have nothing on the sheet to link to. */
+  source_id: z.string().nullable(),
+  name: z.string().min(1).max(160),
+  kind: z.enum(["sheet", "universal", "improvised"]),
+  priority: z.enum(["best", "alternative", "available"]),
+  status: z.enum(["available", "conditional"]),
+  description: z.string().min(1).max(600),
+  conditions: z.array(z.string().min(1).max(300)).max(5),
+});
+
+export const aiTacticalResponseSchema = z.object({
+  game_plan: z.object({ summary: z.string().min(1).max(3000) }),
+  options: z.array(aiOptionSchema).max(100),
+  missing_information: z.array(z.string().min(1).max(300)).max(10),
+});
+
+export type AiOption = z.infer<typeof aiOptionSchema>;
+export type AiTacticalResponse = z.infer<typeof aiTacticalResponseSchema>;
 
 /**
  * PATCH `/api/journal/entries/[id]`. Deliberately NOT a `.partial()` of a

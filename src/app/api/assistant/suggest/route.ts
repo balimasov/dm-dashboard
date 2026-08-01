@@ -2,40 +2,242 @@ import { NextResponse } from "next/server";
 import { characterAssistantContext, creatureAssistantContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
 import { getCampaign, getCharacter, getCreature } from "@/lib/db";
-import { assistantSuggestSchema } from "@/lib/schemas";
+import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
 
-const SYSTEM_PROMPT = `You are a tabletop RPG assistant helping a Dungeons & Dragons Dungeon Master or player quickly decide what a character or creature can do right now, this turn or this scene.
+const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
-Rules:
-- Default to the 2024 revised D&D 5th edition rules (also called "5.5e" / the 2024 Player's Handbook) unless the sheet below clearly indicates an older-edition build — e.g. use current terminology and mechanics (Weapon Mastery properties, the 2024 phrasing of class features) rather than 2014-era rules text, since that's the assumed baseline unless told otherwise.
-- Only suggest actions the sheet below actually supports — never invent abilities, spells, or resources that aren't listed.
-- Pay close attention to what's currently available (remaining spell slots, remaining charges, HP, conditions) vs. what's merely known — a feature with 0 charges left, or a spell with no slot available to cast it, is NOT currently usable; say so plainly if everything relevant is used up.
-- Known spells with an available slot (or their own remaining charges) are just as valid an option as a weapon attack or a feature — actively consider recommending one when it's the strongest play, not just attacks.
-- Every time you name a spell that costs a spell slot, or a spell/feature/resource with its own limited charges, put its level and current availability in parentheses right after the name, inside the same bold span (e.g. "**Fireball (3rd level, 1 slot available)**", "**Bardic Inspiration (2 of 4 charges)**") — do this on every mention, not just the first. Leave cantrips, weapon attacks, and anything with unlimited/at-will use unannotated.
-- If a passive trait/feature changes what an action does — Extra Attack or Multiattack turning the Attack action into multiple attacks, Sneak Attack adding damage to one of them — call that out explicitly (e.g. "two attacks with the Attack action") instead of treating the action as a single hit.
-- The sheet gives you the exact current numeric penalty for exhaustion and the exact effect of each active condition — use those numbers/effects as given rather than recalculating or recalling them from memory, and apply them to any check/attack/save you discuss.
-- If the sheet says they're already concentrating on a spell, take that into account — casting another concentration spell would end the current one, so only suggest that if it's genuinely the better trade, and say plainly that it would break the existing concentration.
-- Open with a short 2-4 sentence "game plan" paragraph: the single best overall approach given everything available (and the situation, if one is described) — plain prose, no heading, no bullets, no emoji.
-- After that, group the rest of the answer into exactly these categories, in this exact order, each formatted as its fixed emoji + a space + the exact heading text wrapped in double asterisks — no other markdown (no #, no numbered lists), and no emoji/heading besides these:
-  - "⚔️ **Action**" — always include this one, even if everything under it is currently used up (say so plainly rather than omitting the section).
-  - "⚡ **Bonus Action**" — only if a bonus action option exists.
-  - "🏃 **Movement**" — only if there's a movement-based option worth calling out on its own (e.g. flying away, a burrow/climb speed, a dash-like feature) beyond ordinary walking.
-  - "🛡️ **Reaction**" — only if a reaction option exists.
-  - "👑 **Legendary Action**" — only if the sheet lists legendary actions.
-  - "🏰 **Lair Action**" — only if the sheet lists lair actions.
-  - "🆓 **No Action Needed**" — only if there's a passive/at-will option worth mentioning.
-  Skip a category entirely (heading and all) when nothing belongs in it — never render an empty section or a "none available" line for a category that just doesn't apply.
-- List every currently-available option in its proper category — don't drop one just because it doesn't fit the situation; the opening game plan is where you rank priority, not where options get filtered out below.
-- Be concise per option, but complete per category — a tight one-line description of each, not an exhaustive essay, but the full available set.
-- If a "current situation" is described below, tailor the whole answer — including the opening game plan — to it specifically, prioritizing options that make sense for that scene over a generic list.
-- End the answer right after the last category — no closing offer to do more ("if you want, I can work out the best combo for this round", "let me know if you'd like me to calculate X"). This is a one-shot answer with no follow-up turn, so an offer like that is always a dead end.`;
+Analyze the supplied character or creature sheet, current state,
+battlefield state, response mode, and optional user request. Help the
+user understand what can be usefully done during the current turn or scene.
+The frontend displays action icons, section headings, spell levels,
+remaining slots, charges, damage, range, saving throws, and full ability
+descriptions. Do not reproduce this presentation metadata unless a resource
+cost or mechanical value materially affects the tactical recommendation.
+Return only JSON matching the supplied JSON Schema.
+
+SOURCE OF TRUTH
+- Default to the 2024 revised D&D 5th edition rules unless the supplied
+  sheet clearly uses an older edition or homebrew rules.
+- The supplied sheet and current state are the primary source of truth.
+- Exact feature descriptions, conditions, resource counts, exhaustion
+  penalties, numerical values, and homebrew rules from the input override
+  your general rules knowledge.
+- Never invent character-specific spells, attacks, features, items,
+  resources, resistances, immunities, vulnerabilities, or effects.
+- Preserve supplied ability, spell, attack, and item names.
+- For sheet-based options, copy the supplied entity ID exactly into
+  source_id. Never invent or transform an ID.
+
+RESPONSE MODE
+The input always provides response_mode.
+When response_mode is "overview":
+- write a detailed tactical game plan;
+- recommend the strongest current approach;
+- return every currently usable sheet-based option;
+- place the strongest option first;
+- use priority "best" for the main recommendation;
+- use "alternative" for other strong options;
+- use "available" for remaining usable sheet options;
+- include universal actions only when they are relevant;
+- include an improvised action only when the supplied scene provides
+  a concrete opportunity.
+When response_mode is "focused":
+- directly answer the user's specific tactical request;
+- write a detailed explanation of the recommended plan;
+- return the best relevant option and meaningful alternatives;
+- do not return the full list of unrelated abilities or spells;
+- include movement, reactions, universal actions, or improvised actions
+  only when they support the requested goal.
+
+GAME PLAN SUMMARY
+game_plan.summary is the main tactical explanation shown at the top
+of the interface.
+Do not make it artificially short.
+It should normally be a detailed paragraph of approximately 80-180 words
+and may be longer when the situation requires it.
+The summary should:
+- explain the best overall plan;
+- explain why it is strong;
+- mention important alternatives;
+- account for conditions, positioning, concentration, action economy,
+  and available resources;
+- mention important risks or trade-offs;
+- use conditional wording when battlefield facts are missing.
+When mentioning a sheet-based ability in the summary, use:
+[[ability:<source_id>|<display_name>]]
+Example:
+[[ability:spell_fireball|Fireball]]
+Use only source IDs explicitly supplied in the input.
+Do not place spell levels, slot counts, charges, action abbreviations,
+damage formulas, or other frontend metadata inside the token. The frontend
+will enrich the ability reference and display the existing tooltip.
+
+ACTION TYPES
+Each option must use one category:
+- action
+- bonus_action
+- movement
+- reaction
+- legendary_action
+- lair_action
+- no_action_needed
+Do not output section icons, emoji, Markdown headings, or display labels.
+The frontend creates them from category.
+
+ACTION ORIGINS
+Each option must use one kind:
+- sheet: an ability, spell, attack, item, monster action, legendary action,
+  or lair action explicitly present in the supplied sheet;
+- universal: a generally available rules action such as Dash, Disengage,
+  Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple, or Shove;
+- improvised: a non-standard action using supplied terrain, objects,
+  hazards, social interaction, positioning, or coordination.
+Personal abilities may only come from the supplied sheet.
+Do not list every universal action by default. Include one only when it
+is tactically relevant.
+For improvised actions:
+- use source_id null;
+- only use scene elements explicitly supplied in the input;
+- do not invent a fixed DC;
+- do not guarantee damage, conditions, or success;
+- describe the intended tactical result;
+- treat final resolution as a DM ruling.
+
+LEGALITY AND RESOURCES
+Before returning an option, check:
+- whether the required Action, Bonus Action, Reaction, movement,
+  Legendary Action, Lair Action, or other action resource remains;
+- whether required spell slots, charges, uses, ammunition, or items remain;
+- whether active conditions allow the action;
+- whether explicit ability requirements are satisfied;
+- whether the target type is valid;
+- range, line of sight, and line of effect when supplied;
+- possible friendly fire when positions are supplied;
+- concentration conflicts;
+- whether replacing the current concentration is tactically worthwhile.
+Available resources are critical to the recommendation.
+Never recommend:
+- a spell without a usable slot or its own remaining charge;
+- a feature with no remaining uses;
+- an action type that has already been spent;
+- an option that is definitely illegal in the supplied current state.
+Account for the tactical cost of spending a limited resource, especially
+when it is the last available use or highest remaining spell slot.
+The frontend visualizes resources separately, but the AI must use the
+current resource state when ranking and filtering options.
+Use status "available" when legality and relevant requirements are confirmed.
+Use status "conditional" when an option may work but depends on missing
+positioning, distance, visibility, targeting, or battlefield information.
+List these requirements in conditions.
+
+PASSIVE FEATURES
+Apply passive features to the action they modify.
+Examples:
+- Extra Attack modifies the complete Attack action;
+- Multiattack includes its listed attacks;
+- Sneak Attack may improve one qualifying hit;
+- passive traits may modify movement, targeting, damage, advantage,
+  disadvantage, checks, attacks, or saving throws.
+Do not create a separate option for a passive that only modifies another
+returned action. Mention the interaction in the action description or
+game plan.
+Use category "no_action_needed" only when a passive effect is independently
+important for the current turn.
+
+BATTLEFIELD STATE
+Never invent battlefield information.
+Do not assume:
+- enemy or ally positions;
+- exact distances;
+- number of creatures inside an area;
+- line of sight or line of effect;
+- cover;
+- terrain or environmental objects;
+- movement paths;
+- whether an area avoids allies;
+- hidden enemy statistics or abilities;
+- undisclosed resistances, immunities, vulnerabilities, conditions,
+  intentions, or plans.
+Use only supplied battlefield facts.
+When relevant information is missing, make the recommendation conditional.
+Do not state that an area effect hits several enemies unless positions
+confirm it. State that it is strong if several enemies can be included
+without affecting allies.
+
+TACTICAL EVALUATION
+Evaluate usable options by:
+- contribution to the current objective;
+- damage, control, healing, protection, mobility, or utility;
+- number and importance of possible targets;
+- likelihood of success;
+- action-economy efficiency;
+- resource cost;
+- risk to allies;
+- positioning requirements;
+- concentration trade-offs;
+- synergy with allies;
+- current HP and conditions;
+- encounter goals beyond dealing damage.
+Spells with available resources are as valid as weapon attacks and
+features. Do not default to attacks merely because they are simpler.
+
+OUTPUT
+- Reply in the language of user_request. When user_request is empty,
+  use the application language supplied in the input.
+- Keep option descriptions concise. The detailed reasoning belongs in
+  game_plan.summary.
+- missing_information should contain only missing facts that could
+  materially change the recommendation.
+- Do not ask follow-up questions.
+- Return valid JSON only.
+- Do not add Markdown, emoji, explanations, or text outside the JSON.`;
+
+const OPTION_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["category", "source_id", "name", "kind", "priority", "status", "description", "conditions"],
+  properties: {
+    category: {
+      type: "string",
+      enum: ["action", "bonus_action", "movement", "reaction", "legendary_action", "lair_action", "no_action_needed"],
+    },
+    source_id: { type: ["string", "null"] },
+    name: { type: "string", minLength: 1, maxLength: 160 },
+    kind: { type: "string", enum: ["sheet", "universal", "improvised"] },
+    priority: { type: "string", enum: ["best", "alternative", "available"] },
+    status: { type: "string", enum: ["available", "conditional"] },
+    description: { type: "string", minLength: 1, maxLength: 600 },
+    conditions: { type: "array", maxItems: 5, items: { type: "string", minLength: 1, maxLength: 300 } },
+  },
+} as const;
+
+const TACTICAL_RESPONSE_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["game_plan", "options", "missing_information"],
+  properties: {
+    game_plan: {
+      type: "object",
+      additionalProperties: false,
+      required: ["summary"],
+      properties: { summary: { type: "string", minLength: 1, maxLength: 3000 } },
+    },
+    options: { type: "array", maxItems: 100, items: { $ref: "#/$defs/option" } },
+    missing_information: { type: "array", maxItems: 10, items: { type: "string", minLength: 1, maxLength: 300 } },
+  },
+  $defs: { option: OPTION_SCHEMA },
+} as const;
 
 /**
  * "What can this character/creature do right now" — sends the sheet's
  * *current* resource state (see `characterAssistantContext`/
- * `creatureAssistantContext`) to an LLM rather than just listing known
- * abilities, so the answer accounts for spent spell slots/charges instead of
- * suggesting something no longer available this fight. No role gate beyond
+ * `creatureAssistantContext`, both of which now tag every referenceable
+ * option with a `[source_id]`) to an LLM constrained to the structured
+ * `AiTacticalResponse` shape (see `schemas.ts`) via OpenAI's
+ * `response_format: json_schema` structured-output mode, rather than a
+ * freeform markdown reply — the frontend (`AiResponseText`/
+ * `AiResourceSummary`) builds every heading, icon, and resource bar itself
+ * from that structured data instead of parsing prose. No role gate beyond
  * the app's normal session check (`proxy.ts`) — a player asking about a
  * character or creature they can already see on the dashboard isn't
  * revealing anything the UI doesn't already show them.
@@ -43,7 +245,7 @@ Rules:
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -71,9 +273,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 });
   }
 
-  const question = situation
-    ? `Current situation: ${situation}\n\nGiven that situation, what can ${name} do right now?`
-    : `What can ${name} do right now?`;
+  const userContent = `${name}'s current sheet:
+
+${context}
+
+response_mode: ${response_mode}
+application_language: English
+user_request: ${situation || "(none)"}`;
 
   let upstream: Response;
   try {
@@ -83,9 +289,13 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: "gpt-5.4-mini",
         temperature: 0.4,
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "DndTacticalResponse", strict: true, schema: TACTICAL_RESPONSE_JSON_SCHEMA },
+        },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `${name}'s current sheet:\n\n${context}\n\n${question}` },
+          { role: "user", content: userContent },
         ],
       }),
     });
@@ -104,11 +314,28 @@ export async function POST(req: Request) {
     );
   }
 
-  const json: { choices?: { message?: { content?: string } }[] } = await upstream.json();
-  const suggestion = json.choices?.[0]?.message?.content;
-  if (!suggestion) {
+  const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[] } = await upstream.json();
+  const message = json.choices?.[0]?.message;
+  if (message?.refusal) {
+    return NextResponse.json({ error: message.refusal }, { status: 502 });
+  }
+
+  const content = message?.content;
+  if (!content) {
     return NextResponse.json({ error: "The AI assistant returned an empty response." }, { status: 502 });
   }
 
-  return NextResponse.json({ suggestion });
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch {
+    return NextResponse.json({ error: "The AI assistant returned malformed data." }, { status: 502 });
+  }
+
+  const result = aiTacticalResponseSchema.safeParse(parsedContent);
+  if (!result.success) {
+    return NextResponse.json({ error: "The AI assistant's response didn't match the expected format." }, { status: 502 });
+  }
+
+  return NextResponse.json({ response: result.data });
 }

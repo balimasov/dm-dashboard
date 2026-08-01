@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { demoCharacters } from "./mockData";
 import {
+  aiOptionSchema,
+  aiTacticalResponseSchema,
   assistantSuggestSchema,
   campaignUpdateSchema,
   characterUpdateSchema,
@@ -374,6 +376,88 @@ describe("assistantSuggestSchema", () => {
       campaignId: "campaign-1",
       characterId: "char-1",
       situation: "x".repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("defaults response_mode to \"overview\" when omitted", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.response_mode).toBe("overview");
+  });
+
+  it("accepts an explicit response_mode of \"focused\"", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", response_mode: "focused" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.response_mode).toBe("focused");
+  });
+
+  it("rejects an unknown response_mode", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", response_mode: "detailed" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("aiOptionSchema / aiTacticalResponseSchema", () => {
+  const validOption = {
+    category: "action",
+    source_id: "spell_fireball",
+    name: "Fireball",
+    kind: "sheet",
+    priority: "best",
+    status: "available",
+    description: "Strongest option for hitting several grouped enemies at once.",
+    conditions: [],
+  };
+
+  it("accepts a valid option", () => {
+    expect(aiOptionSchema.safeParse(validOption).success).toBe(true);
+  });
+
+  it("accepts a null source_id for a universal/improvised option", () => {
+    const result = aiOptionSchema.safeParse({ ...validOption, source_id: null, kind: "universal", name: "Dash" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an unknown category", () => {
+    const result = aiOptionSchema.safeParse({ ...validOption, category: "free_action" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an unknown kind/priority/status", () => {
+    expect(aiOptionSchema.safeParse({ ...validOption, kind: "homebrew" }).success).toBe(false);
+    expect(aiOptionSchema.safeParse({ ...validOption, priority: "critical" }).success).toBe(false);
+    expect(aiOptionSchema.safeParse({ ...validOption, status: "used" }).success).toBe(false);
+  });
+
+  it("rejects a missing description", () => {
+    const withoutDescription: Record<string, unknown> = { ...validOption };
+    delete withoutDescription.description;
+    expect(aiOptionSchema.safeParse(withoutDescription).success).toBe(false);
+  });
+
+  it("accepts a full tactical response with conditions and missing_information", () => {
+    const result = aiTacticalResponseSchema.safeParse({
+      game_plan: { summary: "Open with Bless, then attack." },
+      options: [{ ...validOption, conditions: ["Two or more enemies must be adjacent."] }],
+      missing_information: ["Exact enemy positions."],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a response missing missing_information", () => {
+    const result = aiTacticalResponseSchema.safeParse({
+      game_plan: { summary: "Open with Bless, then attack." },
+      options: [validOption],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an empty game_plan.summary", () => {
+    const result = aiTacticalResponseSchema.safeParse({
+      game_plan: { summary: "" },
+      options: [],
+      missing_information: [],
     });
     expect(result.success).toBe(false);
   });

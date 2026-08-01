@@ -5,7 +5,9 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary } from "@/lib/aiGlossary";
+import { AiTacticalResponse } from "@/lib/schemas";
 import { Character, Creature } from "@/lib/types";
+import { AiResourceSummary } from "./AiResourceSummary";
 import { AiResponseText } from "./AiResponseText";
 import { SendIcon, SparklesIcon } from "./ui/icons";
 import { Modal } from "./ui/Modal";
@@ -45,7 +47,7 @@ export function AiAssistantModal({
   const [situation, setSituation] = useState("");
   const [asked, setAsked] = useState(false);
   const [askedSituation, setAskedSituation] = useState("");
-  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [response, setResponse] = useState<AiTacticalResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -67,13 +69,17 @@ export function AiAssistantModal({
     setAskedSituation(trimmed);
     setLoading(true);
     setError(null);
+    // The bar's own "✦ Best move" vs "Ask" morph already told the user which
+    // mode they're getting — this is just relaying that same choice to the
+    // API, not a separate decision.
+    const responseMode = trimmed ? "focused" : "overview";
     apiFetch("/api/assistant/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(trimmed ? { ...target, situation: trimmed } : target),
+      body: JSON.stringify({ ...target, response_mode: responseMode, ...(trimmed ? { situation: trimmed } : {}) }),
     })
-      .then((res) => parseJsonOrThrow<{ suggestion: string }>(res, "The AI assistant couldn't answer right now."))
-      .then((data) => setSuggestion(data.suggestion))
+      .then((res) => parseJsonOrThrow<{ response: AiTacticalResponse }>(res, "The AI assistant couldn't answer right now."))
+      .then((data) => setResponse(data.response))
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }
@@ -139,12 +145,23 @@ export function AiAssistantModal({
         </div>
       )}
       {!loading && error && <p className="py-4 text-sm text-red-400">{error}</p>}
-      {!loading && suggestion && (
+      {!loading && response && (
         <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
           <p className={MUTED_LABEL_CLS}>Answer</p>
           <div className="mt-2">
-            <AiResponseText text={suggestion} glossary={glossary} />
+            <AiResponseText response={response} glossary={glossary} />
           </div>
+          <AiResourceSummary entity={entity} />
+          {response.missing_information.length > 0 && (
+            <div className="mt-3">
+              <p className={MUTED_LABEL_CLS}>Missing information</p>
+              <ul className="mt-1 flex flex-col gap-0.5 text-xs text-slate-500">
+                {response.missing_information.map((item, i) => (
+                  <li key={i}>• {item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </Modal>

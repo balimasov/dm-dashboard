@@ -1,5 +1,6 @@
 import { Character, Creature, RECOVERY_LABELS } from "./types";
 import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
+import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
 
 /**
  * Turns a character/creature's *current* state — not just what abilities
@@ -9,6 +10,17 @@ import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
  * `/api/assistant/suggest`). Plain text rather than JSON: the model reads it
  * as a real character sheet excerpt, which produces a more natural answer
  * than asking it to first mentally parse a data structure.
+ *
+ * Every option the model could recommend (resource, feature, spell, attack,
+ * creature trait) is prefixed with a `[source_id]` tag — `Feature`/
+ * `KnownSpell`/`Attack`/`Resource` already carry a stable-within-this-object
+ * `.id`; a `CreatureTrait`/creature spellcasting spell name has none on the
+ * data model, so `aiSourceIds.ts`'s array-position formula stands in
+ * (computed fresh here and again in `aiGlossary.tsx`'s lookup table, always
+ * over the same array in the same request, so the two never disagree). The
+ * model is instructed to copy these ids verbatim into `options[].source_id`
+ * and into `[[ability:<source_id>|<name>]]` tokens in its summary, so the
+ * frontend can resolve an exact hover-hint instead of matching by name.
  *
  * Conditions and exhaustion are spelled out with their exact mechanical
  * effect (via `conditionInfo.ts`, the same source the card's own hover
@@ -60,7 +72,7 @@ export function characterAssistantContext(character: Character): string {
     lines.push("");
     lines.push("Resources (current/max):");
     for (const r of c.resources) {
-      lines.push(`- ${r.name}: ${r.current}/${r.max} (recovers: ${RECOVERY_LABELS[r.recovery]})`);
+      lines.push(`- [${r.id}] ${r.name}: ${r.current}/${r.max} (recovers: ${RECOVERY_LABELS[r.recovery]})`);
     }
   }
 
@@ -70,7 +82,7 @@ export function characterAssistantContext(character: Character): string {
     lines.push("Features/traits usable via action economy:");
     for (const f of usableFeatures) {
       const charge = f.max != null ? ` [${f.current}/${f.max}, recovers: ${RECOVERY_LABELS[f.recovery!]}]` : "";
-      lines.push(`- (${f.group}) ${f.name}${charge}`);
+      lines.push(`- [${f.id}] (${f.group}) ${f.name}${charge}`);
     }
   }
 
@@ -84,7 +96,7 @@ export function characterAssistantContext(character: Character): string {
     lines.push("");
     lines.push("Other passive traits/features (not their own action, but can change what an action does):");
     for (const f of passiveFeatures) {
-      lines.push(`- ${f.name}${f.description ? `: ${f.description}` : ""}`);
+      lines.push(`- [${f.id}] ${f.name}${f.description ? `: ${f.description}` : ""}`);
     }
   }
 
@@ -103,7 +115,7 @@ export function characterAssistantContext(character: Character): string {
       ]
         .filter(Boolean)
         .join(", ");
-      lines.push(`- ${s.name} (${levelLabel}${tags ? `, ${tags}` : ""}${charge})${detail ? ` — ${detail}` : ""}`);
+      lines.push(`- [${s.id}] ${s.name} (${levelLabel}${tags ? `, ${tags}` : ""}${charge})${detail ? ` — ${detail}` : ""}`);
     }
   }
 
@@ -112,7 +124,7 @@ export function characterAssistantContext(character: Character): string {
     lines.push("Weapon attacks:");
     for (const a of c.attacks) {
       lines.push(
-        `- ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}`
+        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}`
       );
     }
   }
@@ -149,8 +161,8 @@ export function creatureAssistantContext(creature: Creature): string {
   if (cr.traits.length > 0) {
     lines.push("");
     lines.push("Traits/actions (recharge status is free text, e.g. \"3/Day\", \"Recharge 5-6\" — absent means always usable):");
-    for (const t of cr.traits) {
-      const parts: string[] = [`(${t.group ?? "trait"}) ${t.name}`];
+    cr.traits.forEach((t, index) => {
+      const parts: string[] = [`[${creatureTraitSourceId(index)}] (${t.group ?? "trait"}) ${t.name}`];
       if (t.recharge) parts.push(`[${t.recharge}]`);
       if (t.attack) {
         const dmg = t.attack.damage.map((d) => `${d.dice}${d.damageType ? ` ${d.damageType}` : ""}`).join(" + ");
@@ -169,7 +181,7 @@ export function creatureAssistantContext(creature: Creature): string {
       // and omitting it meant the assistant had no way to know a creature
       // could attack more than once per turn.
       if (t.description) lines.push(`  ${t.description}`);
-    }
+    });
   }
 
   if (cr.spellcasting) {
@@ -177,9 +189,12 @@ export function creatureAssistantContext(creature: Creature): string {
     lines.push(
       `Spellcasting: attack +${cr.spellcasting.attackBonus}, save DC ${cr.spellcasting.saveDc}`
     );
-    for (const group of cr.spellcasting.spellGroups) {
-      lines.push(`- ${group.label}: ${group.spells.join(", ")}`);
-    }
+    cr.spellcasting.spellGroups.forEach((group, groupIndex) => {
+      lines.push(`- ${group.label}:`);
+      group.spells.forEach((spellName, spellIndex) => {
+        lines.push(`  - [${creatureSpellSourceId(groupIndex, spellIndex)}] ${spellName}`);
+      });
+    });
   }
 
   return lines.join("\n");

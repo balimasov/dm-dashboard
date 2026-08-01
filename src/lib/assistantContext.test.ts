@@ -105,7 +105,7 @@ describe("characterAssistantContext", () => {
 
     const context = characterAssistantContext(character);
 
-    expect(context).toContain("Second Wind: 0/1 (recovers: Short Rest)");
+    expect(context).toContain("[second-wind] Second Wind: 0/1 (recovers: Short Rest)");
   });
 
   test("shows a spell's own charge pool when it has one, otherwise no charge suffix", () => {
@@ -119,8 +119,8 @@ describe("characterAssistantContext", () => {
 
     const context = characterAssistantContext(character);
 
-    expect(context).toContain("Fireball (level 3)");
-    expect(context).toContain("Detect Magic (level 1, own charges 0/1 (recovers: Long Rest))");
+    expect(context).toContain("[s1] Fireball (level 3)");
+    expect(context).toContain("[s2] Detect Magic (level 1, own charges 0/1 (recovers: Long Rest))");
   });
 
   test("flags an active concentration so the assistant knows a new concentration spell would end it", () => {
@@ -146,7 +146,7 @@ describe("characterAssistantContext", () => {
 
     const context = characterAssistantContext(character);
 
-    expect(context).toContain("Extra Attack: You can attack twice, instead of once, whenever you take the Attack action.");
+    expect(context).toContain("[f1] Extra Attack: You can attack twice, instead of once, whenever you take the Attack action.");
   });
 
   test("includes a spell's casting time/range/damage/DC detail alongside its level", () => {
@@ -169,7 +169,18 @@ describe("characterAssistantContext", () => {
 
     const context = characterAssistantContext(character);
 
-    expect(context).toContain("Fireball (level 3) — 1 action, 150 ft., 8d6 Fire, DC 15 DEX");
+    expect(context).toContain("[s1] Fireball (level 3) — 1 action, 150 ft., 8d6 Fire, DC 15 DEX");
+  });
+
+  test("tags a weapon attack with its own [id] so the assistant can reference it exactly", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      attacks: [{ id: "attack-0", name: "Longsword", attackType: "melee", attackBonus: 5, damage: "1d8+3", damageType: "slashing", properties: [], proficient: true }],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[attack-0] Longsword: +5 to hit, 1d8+3 slashing");
   });
 });
 
@@ -192,8 +203,8 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("HP: 50/178");
     expect(context).toContain("AC: 18");
     expect(context).toContain("- Frightened: Disadvantage on ability checks and attack rolls");
-    expect(context).toContain("(action) Fire Breath [Recharge 5-6]");
-    expect(context).toContain("(action) Multiattack");
+    expect(context).toContain("[trait-0] (action) Fire Breath [Recharge 5-6]");
+    expect(context).toContain("[trait-1] (action) Multiattack");
   });
 
   test("passes a trait's free-text description through, since structured fields alone don't cover Multiattack's own effect", () => {
@@ -239,5 +250,28 @@ describe("creatureAssistantContext", () => {
   test("flags an active concentration the same way a character's does", () => {
     const context = creatureAssistantContext(makeCreature({ name: "Cultist Priest", concentrating: true }));
     expect(context).toContain("Concentrating on a spell right now");
+  });
+
+  test("tags each spellcasting spell with its own group/index [id], since spell names alone have no id on the data model", () => {
+    const creature = makeCreature({
+      name: "Cultist Priest",
+      spellcasting: {
+        ability: "wis",
+        saveDc: 13,
+        attackBonus: 5,
+        spellGroups: [
+          { label: "At will", spells: ["Fire Bolt", "Mage Hand"] },
+          { label: "3/Day each", spells: ["Fireball"] },
+        ],
+      },
+    });
+
+    const context = creatureAssistantContext(creature);
+
+    expect(context).toContain("- At will:");
+    expect(context).toContain("- [spell-0-0] Fire Bolt");
+    expect(context).toContain("- [spell-0-1] Mage Hand");
+    expect(context).toContain("- 3/Day each:");
+    expect(context).toContain("- [spell-1-0] Fireball");
   });
 });
