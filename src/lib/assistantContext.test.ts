@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { characterAssistantContext, creatureAssistantContext } from "./assistantContext";
+import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "./assistantContext";
 import { Character, Creature } from "./types";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -218,6 +218,17 @@ describe("characterAssistantContext", () => {
 
     expect(context).toContain("Mastery (Graze): On a miss, still deal damage equal to your ability modifier.");
   });
+
+  test("reports senses (darkvision etc.) so the assistant can reason about vision in the dark or against hidden/invisible targets", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      senses: [{ name: "Darkvision", range: 60 }],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("Senses: Darkvision 60 ft");
+  });
 });
 
 describe("creatureAssistantContext", () => {
@@ -288,6 +299,12 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("Concentrating on a spell right now");
   });
 
+  test("passes a creature's free-text Senses line through unstructured", () => {
+    const creature = makeCreature({ name: "Owlbear", senses: "Darkvision 60 ft., Passive Perception 13" });
+    const context = creatureAssistantContext(creature);
+    expect(context).toContain("Senses: Darkvision 60 ft., Passive Perception 13");
+  });
+
   test("tags each spellcasting spell with its own group/index [id], since spell names alone have no id on the data model", () => {
     const creature = makeCreature({
       name: "Cultist Priest",
@@ -309,5 +326,46 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("- [spell-0-1] Mage Hand");
     expect(context).toContain("- 3/Day each:");
     expect(context).toContain("- [spell-1-0] Fireball");
+  });
+});
+
+describe("partyTeammatesContext", () => {
+  test("summarizes HP, conditions, exhaustion, concentration, spell slots, and limited-use spells for every other party member", () => {
+    const self = makeCharacter({ name: "Nyra" });
+    const cleric = makeCharacter({
+      name: "Durgin",
+      race: "Dwarf",
+      className: "Cleric",
+      level: 5,
+      combat: { ...self.combat, hp: 4, maxHp: 38, conditions: ["Poisoned"], exhaustion: 1 },
+      concentrating: true,
+      spellSlots: [{ level: 1, current: 0, max: 4 }],
+      knownSpells: [{ id: "s1", name: "Healing Word", level: 1, source: "Class", current: 1, max: 2, recovery: "long-rest" }],
+    });
+
+    const context = partyTeammatesContext([self, cleric], self.id);
+
+    expect(context).not.toContain("Nyra");
+    expect(context).toContain("Durgin (Dwarf Cleric, level 5)");
+    expect(context).toContain("HP 4/38");
+    expect(context).toContain("conditions: Poisoned");
+    expect(context).toContain("exhaustion 1");
+    expect(context).toContain("concentrating");
+    expect(context).toContain("spell slots: L1 0/4");
+    expect(context).toContain("limited-use spells: Healing Word 1/2");
+  });
+
+  test("omits a hidden character from the summary", () => {
+    const self = makeCharacter({ name: "Nyra" });
+    const hidden = makeCharacter({ name: "NPC Ally", hidden: true });
+
+    const context = partyTeammatesContext([self, hidden], self.id);
+
+    expect(context).not.toContain("NPC Ally");
+  });
+
+  test("returns an empty string when there are no other party members", () => {
+    const self = makeCharacter({ name: "Nyra" });
+    expect(partyTeammatesContext([self], self.id)).toBe("");
   });
 });

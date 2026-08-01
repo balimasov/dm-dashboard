@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { CONDITION_INFO } from "@/lib/conditionInfo";
 import { AiGlossary } from "@/lib/aiGlossary";
 import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
+import { MASTERY_INFO } from "@/lib/masteryInfo";
 import { AiOption, AiTacticalResponse } from "@/lib/schemas";
 import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
@@ -49,6 +50,17 @@ const UNIVERSAL_TERMS = [...Object.keys(CONDITION_INFO), ...Object.keys(ABILITY_
 
 const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.length - a.length).join("|")})\\b`, "gi");
 
+/**
+ * Weapon Mastery property names (Vex, Sap, Cleave, ...) — matched
+ * case-sensitively, unlike conditions/ability scores above. `masteryInfo.ts`'s
+ * keys are exactly the capitalized property names, and the prompt's WEAPON
+ * MASTERY section has the model name the property verbatim in a description
+ * (e.g. "Vex: hit grants advantage..."); two of the eight (Push, Slow) are
+ * also ordinary English words, so staying case-sensitive avoids turning
+ * every lowercase "push"/"slow" in unrelated prose into a false-positive hint.
+ */
+const MASTERY_TERMS_RE = new RegExp(`\\b(${Object.keys(MASTERY_INFO).join("|")})\\b`, "g");
+
 /** A condition uses the app's own `ConditionHintPanel`; an ability score has no equivalent standalone hint elsewhere (the closest, `AbilityScoreHintPanel`, needs a real score/modifier this context doesn't have), so it keeps a plain title+blurb `HintPanel`. */
 function universalHint(term: string) {
   const lower = term.toLowerCase();
@@ -57,20 +69,38 @@ function universalHint(term: string) {
   return undefined;
 }
 
-/** A run of plain summary text — tokenized against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens. */
-function renderPlainSegment(text: string, keyPrefix: string) {
+/** A run of text that didn't match a universal condition/ability term — checked once more against the Weapon Mastery vocabulary, since a mastery property name can show up in an option's description or the summary the same way a condition can. */
+function renderMasterySegment(text: string, keyPrefix: string) {
   return text
-    .split(UNIVERSAL_TERMS_RE)
+    .split(MASTERY_TERMS_RE)
     .filter((part) => part !== "")
     .map((part, i) => {
-      const hint = universalHint(part);
-      return hint ? (
-        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
+      const effect = MASTERY_INFO[part];
+      return effect ? (
+        <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={<HintPanel title={part} description={effect} />}>
           {part}
         </InfoTooltip>
       ) : (
         <span key={`${keyPrefix}-${i}`}>{part}</span>
       );
+    });
+}
+
+/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against Weapon Mastery property names for whatever's left over. */
+function renderPlainSegment(text: string, keyPrefix: string) {
+  return text
+    .split(UNIVERSAL_TERMS_RE)
+    .filter((part) => part !== "")
+    .flatMap((part, i) => {
+      const hint = universalHint(part);
+      if (hint) {
+        return [
+          <InfoTooltip key={`${keyPrefix}-${i}`} inline panel={hint}>
+            {part}
+          </InfoTooltip>,
+        ];
+      }
+      return renderMasterySegment(part, `${keyPrefix}-${i}`);
     });
 }
 
@@ -144,12 +174,17 @@ function groupOptionsByCategory(options: AiOption[]): Map<AiOption["category"], 
   return grouped;
 }
 
+/** "Best" (amber — the one to actually pick) and "DM ruling" (sky — a caveat, not a rank) are deliberately different hues, not just different labels: they answer two unrelated questions ("which is strongest" vs. "this one isn't RAW"), and sharing a color made them easy to mix up at a glance. */
 function OptionBadge({ tone, children }: { tone: "best" | "improvised"; children: ReactNode }) {
-  const cls = tone === "best" ? "bg-sky-950/60 text-sky-400" : "bg-amber-950/50 text-amber-400";
-  return <span className={`ml-1.5 rounded px-1 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide ${cls}`}>{children}</span>;
+  const cls = tone === "best" ? "bg-amber-950/60 text-amber-400" : "bg-sky-950/60 text-sky-400";
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
+      {children}
+    </span>
+  );
 }
 
-function OptionRow({ option, glossary }: { option: AiOption; glossary: AiGlossary }) {
+function OptionRow({ option, isBest, glossary }: { option: AiOption; isBest: boolean; glossary: AiGlossary }) {
   const sheetHint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
@@ -160,15 +195,19 @@ function OptionRow({ option, glossary }: { option: AiOption; glossary: AiGlossar
   ) : (
     <strong>{option.name}</strong>
   );
+  const descriptionKey = option.source_id ?? option.name;
 
   return (
     <li className="flex gap-2 text-sm leading-relaxed text-slate-300">
       <span className="mt-0.5 shrink-0 text-slate-600">•</span>
       <div className="flex-1">
         <p>
-          {name}
-          {option.priority === "best" && <OptionBadge tone="best">Best</OptionBadge>}
-          {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}: {option.description}
+          <span className="inline-flex flex-wrap items-center gap-1.5 align-middle">
+            {name}
+            {isBest && <OptionBadge tone="best">Best</OptionBadge>}
+            {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}
+          </span>
+          : {renderPlainSegment(option.description, `desc-${descriptionKey}`)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
           <ul className="mt-0.5 flex flex-col gap-0.5 text-xs italic text-slate-500">
@@ -206,7 +245,7 @@ export function AiResponseText({ response, glossary = {} }: { response: AiTactic
             {options && options.length > 0 ? (
               <ul className="mt-1.5 flex flex-col gap-1.5">
                 {options.map((option, i) => (
-                  <OptionRow key={`${category}-${i}`} option={option} glossary={glossary} />
+                  <OptionRow key={`${category}-${i}`} option={option} isBest={i === 0 && options.length > 1} glossary={glossary} />
                 ))}
               </ul>
             ) : (

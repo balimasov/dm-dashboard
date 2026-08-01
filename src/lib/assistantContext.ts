@@ -44,6 +44,9 @@ export function characterAssistantContext(character: Character): string {
   lines.push(
     `HP: ${c.combat.hp}/${c.combat.maxHp}${c.combat.tempHp ? ` (+${c.combat.tempHp} temp)` : ""} | AC: ${c.combat.ac} | Speed: ${c.combat.speed}ft`
   );
+  if (c.senses.length > 0) {
+    lines.push(`Senses: ${c.senses.map((s) => `${s.name} ${s.range} ft`).join(", ")}`);
+  }
   if (c.combat.conditions.length > 0) {
     lines.push("Conditions:");
     for (const condition of c.combat.conditions) {
@@ -150,6 +153,49 @@ export function characterAssistantContext(character: Character): string {
   return lines.join("\n");
 }
 
+/**
+ * A compact per-teammate summary of the rest of the party — HP, conditions,
+ * exhaustion, concentration, remaining spell slots, and any spell with its
+ * own limited-use charge pool. Deliberately not the full sheet (no full
+ * feature/spell/attack lists): this exists so the assistant can factor in
+ * "the cleric is already at 4 HP" or "nobody else has a spell slot left"
+ * when recommending what *this* character/creature should do, not so it can
+ * recommend actions on a teammate's behalf. `excludeId` drops the character
+ * whose own turn this request is already about (a no-op when the request is
+ * about a creature instead, since no creature id will ever match a
+ * character's), so nobody appears twice between the main context and here.
+ */
+export function partyTeammatesContext(party: Character[], excludeId?: string): string {
+  const teammates = party.filter((c) => c.id !== excludeId && !c.hidden);
+  if (teammates.length === 0) return "";
+
+  const lines: string[] = ["", "Other active party members (for tactical awareness, not this turn's own resources):"];
+  for (const t of teammates) {
+    const parts: string[] = [
+      `${t.name} (${[t.race, t.className].filter(Boolean).join(" ")}, level ${t.level})`,
+      `HP ${t.combat.hp}/${t.combat.maxHp}${t.combat.tempHp ? ` (+${t.combat.tempHp} temp)` : ""}`,
+    ];
+    if (t.combat.conditions.length > 0) parts.push(`conditions: ${t.combat.conditions.join(", ")}`);
+    if (t.combat.exhaustion > 0) parts.push(`exhaustion ${t.combat.exhaustion}`);
+    if (t.concentrating) parts.push("concentrating");
+
+    const slots = t.spellSlots
+      .filter((s) => s.max > 0)
+      .map((s) => `L${s.level} ${s.current}/${s.max}`)
+      .join(", ");
+    if (slots) parts.push(`spell slots: ${slots}`);
+
+    const limitedSpells = t.knownSpells
+      .filter((s) => s.max != null)
+      .map((s) => `${s.name} ${s.current}/${s.max}`)
+      .join(", ");
+    if (limitedSpells) parts.push(`limited-use spells: ${limitedSpells}`);
+
+    lines.push(`- ${parts.join(" | ")}`);
+  }
+  return lines.join("\n");
+}
+
 export function creatureAssistantContext(creature: Creature): string {
   const cr = creature;
   const lines: string[] = [];
@@ -158,6 +204,7 @@ export function creatureAssistantContext(creature: Creature): string {
   lines.push(
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speed}ft`
   );
+  if (cr.senses) lines.push(`Senses: ${cr.senses}`);
   if (cr.conditions.length > 0) {
     lines.push("Conditions:");
     for (const condition of cr.conditions) {

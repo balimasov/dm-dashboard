@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { characterAssistantContext, creatureAssistantContext } from "@/lib/assistantContext";
+import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
-import { getCampaign, getCharacter, getCreature } from "@/lib/db";
+import { getCampaign, getCharacter, getCreature, listCharacters } from "@/lib/db";
 import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
 
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
@@ -128,6 +128,12 @@ Before returning an option, check:
 - concentration conflicts;
 - whether replacing the current concentration is tactically worthwhile.
 Available resources are critical to the recommendation.
+When the sheet shows the character/creature is already concentrating and a
+spell you're about to list or recommend normally requires concentration
+(judge this from standard D&D rules — the sheet doesn't tag it), you may
+still include it, but that option's description must say that casting it
+ends the current concentration effect. Never leave that consequence
+unstated just because the new spell might be strong.
 Never recommend:
 - a spell without a usable slot or its own remaining charge;
 - a feature with no remaining uses;
@@ -220,6 +226,23 @@ When relevant information is missing, make the recommendation conditional.
 Do not state that an area effect hits several enemies unless positions
 confirm it. State that it is strong if several enemies can be included
 without affecting allies.
+The sheet's own Senses line (e.g. Darkvision, Blindsight, Tremorsense,
+Truesight) is a supplied fact, not an assumption — use it when it matters:
+acting in darkness, noticing a hidden or invisible creature, or targeting
+something that requires seeing it. Don't extend vision beyond what the
+listed senses and other supplied facts actually support.
+
+PARTY AWARENESS
+When supplied, "Other active party members" describes the rest of the
+party's current state (HP, conditions, exhaustion, concentration, spell
+slots, limited-use spells) — for situational awareness only. Use it to
+inform the plan for the current character/creature's own turn (e.g.
+prioritizing a heal because an ally is critically low, avoiding an AOE that
+would catch a nearby ally, noting that no one else has a spell slot left
+so this may be the party's only chance to use one). Never return an option
+whose action economy or resources belong to one of those other party
+members — options[] is only for the character/creature this request is
+about.
 
 TACTICAL EVALUATION
 Evaluate usable options by:
@@ -332,6 +355,7 @@ export async function POST(req: Request) {
 
   let name: string;
   let context: string;
+  let selfCharacterId: string | undefined;
   if (characterId) {
     const character = getCharacter(characterId);
     if (!character || character.campaignId !== campaignId) {
@@ -339,6 +363,7 @@ export async function POST(req: Request) {
     }
     name = character.name;
     context = characterAssistantContext(character);
+    selfCharacterId = character.id;
   } else {
     const creature = getCreature(creatureId!);
     if (!creature || creature.campaignId !== campaignId) {
@@ -347,6 +372,11 @@ export async function POST(req: Request) {
     name = creature.name;
     context = creatureAssistantContext(creature);
   }
+  // Battlefield-wide awareness (see the prompt's PARTY AWARENESS section) —
+  // e.g. "is anyone else already critically low," "does anyone else still
+  // have a heal ready" — matters for a creature's turn just as much as a
+  // character's, so this isn't gated on `characterId` alone.
+  context += partyTeammatesContext(listCharacters(campaignId), selfCharacterId);
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
