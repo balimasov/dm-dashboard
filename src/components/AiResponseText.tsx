@@ -10,6 +10,7 @@ import { getUniversalActionInfo } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
 import { HintPanel } from "./ui/HintPanel";
+import { MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 
 /**
  * Renders `/api/assistant/suggest`'s structured `AiTacticalResponse` — the
@@ -318,11 +319,17 @@ function OptionRow({
           : {renderPlainSegment(option.description, `desc-${descriptionKey}`, glossaryByName, sheetTermsRe)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
-          <ul className="mt-0.5 flex flex-col gap-0.5 text-xs italic text-slate-500">
-            {option.conditions.map((condition, i) => (
-              <li key={i}>if {condition}</li>
-            ))}
-          </ul>
+          <div className="mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 bg-white/[0.025] px-2.5 py-1.5">
+            <p className={MICRO_LABEL_STRONG_CLS}>Conditions</p>
+            <ul className="flex flex-col gap-0.5 text-xs text-slate-400">
+              {option.conditions.map((condition, i) => (
+                <li key={i} className="flex gap-1.5">
+                  <span className="mt-0.5 shrink-0 text-slate-600">•</span>
+                  <span>{condition}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </li>
@@ -347,16 +354,10 @@ export function AiResponseText({
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <h4 className="flex items-center gap-2 pb-1.5 text-sm font-semibold text-sky-300">
-          <span>🧭</span>
-          Tactics
-        </h4>
-        <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
-          {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-            <p key={i}>{renderSummary(paragraph, glossary, glossaryByName, sheetTermsRe)}</p>
-          ))}
-        </div>
+      <div className="flex flex-col gap-2 rounded-lg bg-white/[0.025] px-3 py-2 text-sm leading-relaxed text-slate-300">
+        {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
+          <p key={i}>{renderSummary(paragraph, glossary, glossaryByName, sheetTermsRe)}</p>
+        ))}
       </div>
       {CATEGORY_ORDER.map((category) => {
         const options = grouped.get(category);

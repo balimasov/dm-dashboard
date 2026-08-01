@@ -452,7 +452,6 @@ export const aiOptionSchema = z.object({
 export const aiTacticalResponseSchema = z.object({
   game_plan: z.object({ summary: z.string().min(1).max(3000) }),
   options: z.array(aiOptionSchema).max(100),
-  missing_information: z.array(z.string().min(1).max(300)).max(10),
 });
 
 export type AiOption = z.infer<typeof aiOptionSchema>;

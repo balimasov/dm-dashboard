@@ -11,7 +11,6 @@ import { Character, Creature } from "@/lib/types";
 import { AiResponseText } from "./AiResponseText";
 import { SendIcon, SparklesIcon } from "./ui/icons";
 import { Modal } from "./ui/Modal";
-import { SectionDivider } from "./ui/SectionDivider";
 import { Spinner } from "./ui/Spinner";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
@@ -166,19 +165,6 @@ export function AiAssistantModal({
               availabilityByName={availabilityByName}
             />
           </div>
-          {response.missing_information.length > 0 && (
-            <SectionDivider className="mt-3">
-              <p className={MUTED_LABEL_CLS}>Missing information</p>
-              <ul className="mt-1.5 flex flex-col gap-1">
-                {response.missing_information.map((item, i) => (
-                  <li key={i} className="flex gap-2 text-sm leading-relaxed text-slate-400">
-                    <span className="mt-0.5 shrink-0 text-slate-600">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </SectionDivider>
-          )}
         </div>
       )}
     </Modal>

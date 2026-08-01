@@ -78,7 +78,11 @@ The summary should:
 - account for conditions, positioning, concentration, action economy,
   and available resources;
 - mention important risks or trade-offs;
-- use conditional wording when battlefield facts are missing.
+- use conditional wording when battlefield facts are missing;
+- state general uncertainty or important assumptions directly here (e.g.
+  "assuming the target stays within range" or "exact enemy positions
+  aren't known, so this plan favors the safer option") — this is the only
+  place for that; there is no separate list of missing information.
 When mentioning a sheet-based ability in the summary, use:
 [[ability:<source_id>|<display_name>]]
 Example:
@@ -158,6 +162,13 @@ two different action types in the same turn is fine and may be
 recommended together. When two slotted spells could each fill the same
 action-economy slot, present them as separate alternatives, never as a
 combined plan.
+When a roll would have both advantage and disadvantage from different
+sources at once (passive features, conditions, spells, or the described
+situation), they cancel out completely — the roll is made normally with a
+single die, regardless of how many sources contribute to each side. Never
+describe a roll as having "advantage and disadvantage" or stack them into
+an extra bonus/penalty; if the sources cancel, say the roll is made
+normally.
 Use status "available" when legality and relevant requirements are confirmed.
 Use status "conditional" when an option may work but depends on missing
 positioning, distance, visibility, targeting, or battlefield information.
@@ -228,7 +239,10 @@ Do not assume:
 - undisclosed resistances, immunities, vulnerabilities, conditions,
   intentions, or plans.
 Use only supplied battlefield facts.
-When relevant information is missing, make the recommendation conditional.
+When an individual option's legality or best target depends on missing
+positioning, distance, visibility, or other unknown battlefield facts, use
+status "conditional" and list the concrete requirements in that option's
+own conditions (see LEGALITY AND RESOURCES) — do not silently guess.
 Do not state that an area effect hits several enemies unless positions
 confirm it. State that it is strong if several enemies can be included
 without affecting allies.
@@ -287,10 +301,10 @@ OUTPUT
   empty, use the application language supplied in the input.
 - Write every piece of natural-language text in that same reply language —
   this applies to all of: game_plan.summary, every option's description,
-  every string inside every option's conditions, and every string in
-  missing_information. None of these default to English just because this
-  prompt itself is written in English; a Ukrainian question must produce
-  Ukrainian text in all four places, not just in game_plan.summary.
+  and every string inside every option's conditions. None of these default
+  to English just because this prompt itself is written in English; a
+  Ukrainian question must produce Ukrainian text in all three places, not
+  just in game_plan.summary.
 - Regardless of that reply language, keep every sheet-sourced name and
   every system/game term — ability/spell/feature/item/attack names,
   conditions, skills, ability scores, exhaustion, saving throws, and
@@ -298,8 +312,6 @@ OUTPUT
   sentences, never those terms themselves.
 - Never translate the fixed schema values themselves: category, kind,
   priority, and status must stay exactly one of their defined enum values.
-- missing_information should contain only missing facts that could
-  materially change the recommendation.
 - Do not ask follow-up questions.
 - Return valid JSON only.
 - Do not add Markdown, emoji, explanations, or text outside the JSON.
@@ -329,7 +341,7 @@ const OPTION_SCHEMA = {
 const TACTICAL_RESPONSE_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["game_plan", "options", "missing_information"],
+  required: ["game_plan", "options"],
   properties: {
     game_plan: {
       type: "object",
@@ -338,7 +350,6 @@ const TACTICAL_RESPONSE_JSON_SCHEMA = {
       properties: { summary: { type: "string", minLength: 1, maxLength: 3000 } },
     },
     options: { type: "array", maxItems: 100, items: { $ref: "#/$defs/option" } },
-    missing_information: { type: "array", maxItems: 10, items: { type: "string", minLength: 1, maxLength: 300 } },
   },
   $defs: { option: OPTION_SCHEMA },
 } as const;
@@ -405,7 +416,7 @@ export async function POST(req: Request) {
 ${context}
 
 response_mode: ${response_mode}
-application_language: English
+application_language: Ukrainian
 user_request: ${situation || "(none)"}`;
 
   let upstream: Response;

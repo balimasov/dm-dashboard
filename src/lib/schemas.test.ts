@@ -436,28 +436,18 @@ describe("aiOptionSchema / aiTacticalResponseSchema", () => {
     expect(aiOptionSchema.safeParse(withoutDescription).success).toBe(false);
   });
 
-  it("accepts a full tactical response with conditions and missing_information", () => {
+  it("accepts a full tactical response with conditions", () => {
     const result = aiTacticalResponseSchema.safeParse({
       game_plan: { summary: "Open with Bless, then attack." },
       options: [{ ...validOption, conditions: ["Two or more enemies must be adjacent."] }],
-      missing_information: ["Exact enemy positions."],
     });
     expect(result.success).toBe(true);
-  });
-
-  it("rejects a response missing missing_information", () => {
-    const result = aiTacticalResponseSchema.safeParse({
-      game_plan: { summary: "Open with Bless, then attack." },
-      options: [validOption],
-    });
-    expect(result.success).toBe(false);
   });
 
   it("rejects an empty game_plan.summary", () => {
     const result = aiTacticalResponseSchema.safeParse({
       game_plan: { summary: "" },
       options: [],
-      missing_information: [],
     });
     expect(result.success).toBe(false);
   });
