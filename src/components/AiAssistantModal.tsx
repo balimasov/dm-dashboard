@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary } from "@/lib/aiGlossary";
 import { Character, Creature } from "@/lib/types";
 import { AiResponseText } from "./AiResponseText";
-import { Button } from "./ui/Button";
-import { SparklesIcon } from "./ui/icons";
+import { SendIcon, SparklesIcon } from "./ui/icons";
 import { Modal } from "./ui/Modal";
 import { Spinner } from "./ui/Spinner";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "./ui/typography";
@@ -49,6 +48,18 @@ export function AiAssistantModal({
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grows the bar with the text instead of scrolling inside a fixed-height
+  // box — matches the single-line "chat input" feel up until someone actually
+  // writes several lines, capped so a very long paste doesn't push the Ask
+  // button off screen.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }, [situation]);
 
   function ask() {
     const trimmed = situation.trim();
@@ -79,33 +90,40 @@ export function AiAssistantModal({
       panelClassName="max-h-[80vh] w-full max-w-2xl gap-4 overflow-y-auto border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-black/40"
     >
       {!asked && (
-        <div className="flex flex-col gap-3">
-          <div>
-            <p className={MUTED_LABEL_CLS}>Additional conditions for this turn (optional)</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Spell out specifics — enemy positions, terrain, who&rsquo;s already down. Leave it blank and
-              you&rsquo;ll get the optimal tactic with no extra conditions assumed.
-            </p>
-            <textarea
-              autoFocus
-              value={situation}
-              onChange={(e) => setSituation(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                  e.preventDefault();
-                  ask();
-                }
-              }}
-              placeholder="e.g. Standing on a cliff edge, surrounded by 5 goblins and a warlock — what's my best option?"
-              rows={3}
-              maxLength={500}
-              className="mt-2 w-full resize-none rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600"
-            />
-          </div>
-          <div className={`flex items-center justify-between ${MUTED_LABEL_CLS}`}>
-            <span>Enter to ask · Shift+Enter for a new line</span>
-            <Button onClick={ask}>Ask</Button>
-          </div>
+        <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+          <textarea
+            ref={textareaRef}
+            autoFocus
+            value={situation}
+            onChange={(e) => setSituation(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                ask();
+              }
+            }}
+            placeholder="or describe the situation…"
+            rows={1}
+            maxLength={500}
+            className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={ask}
+            aria-label="Ask"
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
+              situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
+            }`}
+          >
+            {situation.trim() ? (
+              <SendIcon className="h-4 w-4 shrink-0" />
+            ) : (
+              <>
+                <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
+                Best move
+              </>
+            )}
+          </button>
         </div>
       )}
       {asked && askedSituation && (
