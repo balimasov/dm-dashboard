@@ -1,6 +1,7 @@
 "use client";
 
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
+import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
 import { ResizeGripIcon } from "./icons";
@@ -67,6 +68,13 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * No `aria-modal` (defaults to non-modal) since, unlike `Modal`, this
  * doesn't make the rest of the page inert — a screen reader user can still
  * reach content behind it.
+ *
+ * Below `useDesktopViewport`'s breakpoint, drag/resize are dropped entirely
+ * in favor of a fixed sheet inset from every edge by `EDGE_MARGIN`: on a
+ * phone-width screen there's no room to usefully reposition a `MIN_WIDTH`-
+ * wide window anyway, and the draggable version could previously spawn (or
+ * be dragged) with its own header — the only way to close it — pushed
+ * off-screen entirely, with no way back short of reloading the page.
  */
 export function FloatingPanel({
   title,
@@ -83,6 +91,7 @@ export function FloatingPanel({
   initialWidth?: number;
   initialHeight?: number;
 }) {
+  const isDesktop = useDesktopViewport();
   const titleId = useId();
   // Lazy initializer runs once, after mount in practice (this component is
   // only ever rendered once its caller's "open" state flips true, never
@@ -109,6 +118,27 @@ export function FloatingPanel({
 
   const dragStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const resizeStart = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  if (!isDesktop) {
+    return (
+      <div
+        role="dialog"
+        aria-labelledby={titleId}
+        style={{ top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN }}
+        className="fixed z-[45] flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+          <h2 id={titleId} className={MODAL_TITLE_CLS}>
+            {title}
+          </h2>
+          <IconButton onClick={onClose} aria-label="Close">
+            ✕
+          </IconButton>
+        </div>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
+      </div>
+    );
+  }
 
   function onHeaderPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     // Excludes the close button — without this, pressing it would also
