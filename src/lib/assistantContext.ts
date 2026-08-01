@@ -196,11 +196,21 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
   return lines.join("\n");
 }
 
-export function creatureAssistantContext(creature: Creature): string {
+/**
+ * `ownerName` — the party member this creature is summoned/commanded by
+ * (resolved from `Creature.ownerCharacterId` against the party roster by
+ * the caller, since this function only ever sees the one `Creature`) —
+ * matters for tactical reasoning the same way a familiar's or steed's
+ * proximity to its owner does: worth protecting, worth coordinating with,
+ * and its own turn can free up the owner's for something else. Omitted
+ * entirely for a creature with no owner (most enemies/NPCs).
+ */
+export function creatureAssistantContext(creature: Creature, ownerName?: string): string {
   const cr = creature;
   const lines: string[] = [];
 
   lines.push(`${cr.name}${cr.creatureType ? ` — ${cr.size ? `${cr.size} ` : ""}${cr.creatureType}` : ""}`);
+  if (ownerName) lines.push(`Owned/commanded by: ${ownerName} (a party member — see their own status below)`);
   lines.push(
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speed}ft`
   );

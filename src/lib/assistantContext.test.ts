@@ -232,6 +232,14 @@ describe("characterAssistantContext", () => {
 });
 
 describe("creatureAssistantContext", () => {
+  test("names the party member this creature is summoned/commanded by, when given one", () => {
+    const withOwner = creatureAssistantContext(makeCreature({ name: "Otherworldly Steed" }), "Lilith");
+    expect(withOwner).toContain("Owned/commanded by: Lilith");
+
+    const withoutOwner = creatureAssistantContext(makeCreature({ name: "Young Red Dragon" }));
+    expect(withoutOwner).not.toContain("Owned/commanded by");
+  });
+
   test("reports HP/AC and passes trait recharge text through unstructured", () => {
     const creature = makeCreature({
       name: "Young Red Dragon",

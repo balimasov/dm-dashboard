@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildAiAvailability } from "./aiAvailability";
+import { buildAiAvailability, buildAiAvailabilityByName } from "./aiAvailability";
 import { Character, Creature } from "./types";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -122,5 +122,20 @@ describe("buildAiAvailability", () => {
   test("returns an empty map for a creature, which has no current/max resource tracking", () => {
     const creature = makeCreature({ name: "Ogre" });
     expect(buildAiAvailability(creature)).toEqual({});
+  });
+});
+
+describe("buildAiAvailabilityByName", () => {
+  test("keys the same suffixes by trimmed lowercased name instead of id, for when an option's source_id doesn't resolve", () => {
+    const character = makeCharacter({
+      name: "Alor",
+      features: [{ id: "f1", name: "Channel Divinity", source: "Cleric", group: "action", originType: "class", current: 1, max: 2, recovery: "short-rest" }],
+    });
+
+    expect(buildAiAvailabilityByName(character)).toEqual({ "channel divinity": "1/2 charges" });
+  });
+
+  test("returns an empty map for a creature", () => {
+    expect(buildAiAvailabilityByName(makeCreature({ name: "Ogre" }))).toEqual({});
   });
 });

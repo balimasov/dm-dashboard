@@ -20,13 +20,17 @@ import { HintPanel } from "./ui/HintPanel";
  *
  * Every option's name is wrapped in the app's own `InfoTooltip`, but the
  * panel content is never invented here: for a `kind: "sheet"` option,
- * `option.source_id` is looked up directly in `glossary` (from
- * `buildAiGlossary` — keyed by the entity's own `Feature`/`KnownSpell`/
- * `Attack`/`Resource` `.id`, or a creature trait/spellcasting-spell's
- * `aiSourceIds.ts` id) to show the *exact* hint component the character/
- * creature card itself renders for that thing. `universal`/`improvised`
- * options have a `null` source_id and get no tooltip at all — there's
- * nothing on the sheet to link to.
+ * `option.source_id` is looked up in `glossary` (from `buildAiGlossary` —
+ * keyed by the entity's own `Feature`/`KnownSpell`/`Attack`/`Resource` `.id`,
+ * or a creature trait/spellcasting-spell's `aiSourceIds.ts` id) to show the
+ * *exact* hint component the character/creature card itself renders for
+ * that thing — falling back to `glossaryByName` (the same hints, keyed by
+ * name instead) whenever the id doesn't match anything, since the model is
+ * far more consistent about copying a sheet name verbatim than an opaque
+ * id. `availability`/`availabilityByName` follow the same id-then-name
+ * pattern for the current-charges/slots suffix (`buildAiAvailability`).
+ * `universal`/`improvised` options have a `null` source_id and get no
+ * sheet-based tooltip at all — there's nothing on the sheet to link to.
  *
  * `game_plan.summary` is free prose from the model but can reference sheet
  * abilities via `[[ability:<source_id>|<name>]]` tokens (see
@@ -105,31 +109,17 @@ function renderPlainSegment(text: string, keyPrefix: string) {
     });
 }
 
-/**
- * A summary token's own `source_id` occasionally doesn't match anything in
- * `glossary` — the model sometimes garbles or re-derives an id when writing
- * free-form prose, even though it reliably copies the *same* ability's real
- * id into that ability's own `options[].source_id` field right next to it.
- * Rather than trust the model to keep the two in sync, this builds a
- * second, name-keyed lookup from the very same response's own options —
- * every option's name is already resolved against `glossary` once, here —
- * so a token whose id fails still finds its hint by the name the model
- * used, with zero extra trust placed in id consistency.
- */
-function buildSummaryNameFallback(options: AiOption[], glossary: AiGlossary): Record<string, ReactNode> {
-  const byName: Record<string, ReactNode> = {};
-  for (const option of options) {
-    if (!option.source_id) continue;
-    const hint = glossary[option.source_id];
-    if (hint) byName[option.name.trim().toLowerCase()] = hint;
-  }
-  return byName;
-}
-
-function renderSummary(summary: string, glossary: AiGlossary, nameFallback: Record<string, ReactNode>) {
+function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: AiGlossary) {
   return parseSummaryTokens(summary).flatMap((token, i) => {
     if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`);
-    const hint = glossary[token.sourceId] ?? nameFallback[token.displayName.trim().toLowerCase()];
+    // The token's own `source_id` occasionally doesn't match anything —
+    // the model sometimes garbles or re-derives an id when writing
+    // free-form prose. `glossaryByName` (built straight from the entity's
+    // own resources/features/spells/attacks or creature traits, the same
+    // as `glossary` but keyed by name) catches it as long as the token's
+    // `displayName` is the real sheet name, which has proven far more
+    // reliable than an opaque id round-tripped through free generation.
+    const hint = glossary[token.sourceId] ?? glossaryByName[token.displayName.trim().toLowerCase()];
     return [
       hint ? (
         <InfoTooltip key={`sum-${i}`} inline panel={hint}>
@@ -217,14 +207,25 @@ function OptionRow({
   option,
   isBest,
   glossary,
+  glossaryByName,
   availability,
+  availabilityByName,
 }: {
   option: AiOption;
   isBest: boolean;
   glossary: AiGlossary;
+  glossaryByName: AiGlossary;
   availability: AiAvailability;
+  availabilityByName: AiAvailability;
 }) {
-  const sheetHint = option.kind === "sheet" && option.source_id ? glossary[option.source_id] : undefined;
+  const nameKey = option.name.trim().toLowerCase();
+  // Same id-then-name fallback as `renderSummary` — `option.source_id` is
+  // supposed to be an exact copy of the sheet entity's id, but a model that
+  // gets it wrong still reliably gets `name` right, so a lookup by name
+  // against the entity's own data (not just this response's other options)
+  // catches it either way.
+  const sheetHint =
+    option.kind === "sheet" ? (option.source_id ? glossary[option.source_id] : undefined) ?? glossaryByName[nameKey] : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
   const name = hint ? (
@@ -239,7 +240,8 @@ function OptionRow({
     // on whether a hint happened to resolve for that particular option.
     <strong className="align-top">{option.name}</strong>
   );
-  const availabilityText = option.source_id ? availability[option.source_id] : undefined;
+  const availabilityText =
+    option.kind === "sheet" ? (option.source_id ? availability[option.source_id] : undefined) ?? availabilityByName[nameKey] : undefined;
   const descriptionKey = option.source_id ?? option.name;
 
   return (
@@ -270,14 +272,17 @@ function OptionRow({
 export function AiResponseText({
   response,
   glossary = {},
+  glossaryByName = {},
   availability = {},
+  availabilityByName = {},
 }: {
   response: AiTacticalResponse;
   glossary?: AiGlossary;
+  glossaryByName?: AiGlossary;
   availability?: AiAvailability;
+  availabilityByName?: AiAvailability;
 }) {
   const grouped = groupOptionsByCategory(response.options);
-  const nameFallback = buildSummaryNameFallback(response.options, glossary);
 
   return (
     <div className="flex flex-col gap-3">
@@ -288,7 +293,7 @@ export function AiResponseText({
         </h4>
         <div className="flex flex-col gap-2 rounded-lg border-l-2 border-sky-600 bg-sky-950/20 px-3 py-2 text-[15px] leading-relaxed text-slate-100">
           {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-            <p key={i}>{renderSummary(paragraph, glossary, nameFallback)}</p>
+            <p key={i}>{renderSummary(paragraph, glossary, glossaryByName)}</p>
           ))}
         </div>
       </div>
@@ -311,7 +316,9 @@ export function AiResponseText({
                     option={option}
                     isBest={i === 0 && options.length > 1}
                     glossary={glossary}
+                    glossaryByName={glossaryByName}
                     availability={availability}
+                    availabilityByName={availabilityByName}
                   />
                 ))}
               </ul>

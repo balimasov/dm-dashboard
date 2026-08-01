@@ -249,6 +249,11 @@ so this may be the party's only chance to use one). Never return an option
 whose action economy or resources belong to one of those other party
 members — options[] is only for the character/creature this request is
 about.
+When a creature's own sheet line says "Owned/commanded by," that names
+the party member who summons/controls it — cross-reference that member's
+entry in "Other active party members" (e.g. keep the creature near a
+critically low owner, or note that the owner using its own turn to
+command this creature costs the owner an action).
 
 TACTICAL EVALUATION
 Evaluate usable options by:
@@ -362,6 +367,8 @@ export async function POST(req: Request) {
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
 
+  const party = listCharacters(campaignId);
+
   let name: string;
   let context: string;
   let selfCharacterId: string | undefined;
@@ -379,13 +386,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Creature not found." }, { status: 404 });
     }
     name = creature.name;
-    context = creatureAssistantContext(creature);
+    const ownerName = creature.ownerCharacterId ? party.find((c) => c.id === creature.ownerCharacterId)?.name : undefined;
+    context = creatureAssistantContext(creature, ownerName);
   }
   // Battlefield-wide awareness (see the prompt's PARTY AWARENESS section) —
   // e.g. "is anyone else already critically low," "does anyone else still
   // have a heal ready" — matters for a creature's turn just as much as a
   // character's, so this isn't gated on `characterId` alone.
-  context += partyTeammatesContext(listCharacters(campaignId), selfCharacterId);
+  context += partyTeammatesContext(party, selfCharacterId);
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {

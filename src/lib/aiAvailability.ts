@@ -2,6 +2,8 @@ import { Character, Creature } from "./types";
 
 export type AiAvailability = Record<string, string>;
 
+type AvailabilityEntry = { id: string; name: string; label: string };
+
 function ordinal(n: number): string {
   const mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
@@ -17,6 +19,23 @@ function ordinal(n: number): string {
   }
 }
 
+function availabilityEntries(c: Character): AvailabilityEntry[] {
+  const entries: AvailabilityEntry[] = [];
+  for (const r of c.resources) entries.push({ id: r.id, name: r.name, label: `${r.current}/${r.max} charges` });
+  for (const f of c.features) {
+    if (f.max != null) entries.push({ id: f.id, name: f.name, label: `${f.current}/${f.max} charges` });
+  }
+  for (const s of c.knownSpells) {
+    if (s.max != null) {
+      entries.push({ id: s.id, name: s.name, label: `${s.current}/${s.max} charges` });
+    } else if (s.level > 0) {
+      const slot = c.spellSlots.find((sl) => sl.level === s.level);
+      if (slot) entries.push({ id: s.id, name: s.name, label: `${ordinal(s.level)} lvl, ${slot.current}/${slot.max} slots` });
+    }
+  }
+  return entries;
+}
+
 /**
  * Availability suffix ("3rd lvl, 1/2 slots", "2/3 charges") for every
  * limited sheet option, keyed by the same `source_id` `AiGlossary`
@@ -30,19 +49,20 @@ function ordinal(n: number): string {
  */
 export function buildAiAvailability(entity: Character | Creature): AiAvailability {
   if (!("className" in entity)) return {};
-  const c = entity;
   const availability: AiAvailability = {};
-  for (const r of c.resources) availability[r.id] = `${r.current}/${r.max} charges`;
-  for (const f of c.features) {
-    if (f.max != null) availability[f.id] = `${f.current}/${f.max} charges`;
-  }
-  for (const s of c.knownSpells) {
-    if (s.max != null) {
-      availability[s.id] = `${s.current}/${s.max} charges`;
-    } else if (s.level > 0) {
-      const slot = c.spellSlots.find((sl) => sl.level === s.level);
-      if (slot) availability[s.id] = `${ordinal(s.level)} lvl, ${slot.current}/${slot.max} slots`;
-    }
-  }
+  for (const entry of availabilityEntries(entity)) availability[entry.id] = entry.label;
+  return availability;
+}
+
+/**
+ * The same suffixes as `buildAiAvailability`, keyed by trimmed lowercased
+ * display name instead of source_id — a fallback for an option whose
+ * `source_id` doesn't match anything (same rationale as
+ * `buildAiGlossaryByName`), used only when the id lookup misses.
+ */
+export function buildAiAvailabilityByName(entity: Character | Creature): AiAvailability {
+  if (!("className" in entity)) return {};
+  const availability: AiAvailability = {};
+  for (const entry of availabilityEntries(entity)) availability[entry.name.trim().toLowerCase()] = entry.label;
   return availability;
 }
