@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
 import { creatureReminders } from "@/lib/reminders";
 import { useCardSortable } from "@/hooks/useCardSortable";
+import { AiAssistantModal } from "./AiAssistantModal";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
@@ -61,6 +62,7 @@ export function CreatureCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(creature.id, dragEnabled);
 
   return (
@@ -109,6 +111,7 @@ export function CreatureCard({
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
             onDuplicate={onDuplicate}
             onShowHpHistory={() => setHpHistoryOpen(true)}
+            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}
           />
         </div>
@@ -148,6 +151,14 @@ export function CreatureCard({
           creature={creature}
           onClear={onClearHpHistory ? () => onClearHpHistory(creature.id) : undefined}
           onClose={() => setHpHistoryOpen(false)}
+        />
+      )}
+
+      {aiOpen && (
+        <AiAssistantModal
+          name={creature.name}
+          target={{ campaignId: creature.campaignId, creatureId: creature.id }}
+          onClose={() => setAiOpen(false)}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ import { characterReminders } from "@/lib/reminders";
 import { useCardSortable } from "@/hooks/useCardSortable";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { ResourceTrackerBar } from "./ResourceMeter";
+import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
 import { EditCharacterModal } from "./EditCharacterModal";
 import { CharacterHeader } from "./CharacterHeader";
@@ -58,6 +59,7 @@ export function CharacterCard({
   const isDown = c.combat.hp <= 0;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
   const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(c.id, dragEnabled);
   // Half-proficiency-only skills (Jack of All Trades) are real proficiency
@@ -120,6 +122,7 @@ export function CharacterCard({
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
             onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
             syncing={syncing}
+            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(c.id) : undefined}
           />
         </div>
@@ -281,6 +284,14 @@ export function CharacterCard({
 
       {editOpen && onUpdate && (
         <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
+      )}
+
+      {aiOpen && (
+        <AiAssistantModal
+          name={c.name}
+          target={{ campaignId: c.campaignId, characterId: c.id }}
+          onClose={() => setAiOpen(false)}
+        />
       )}
     </div>
   );

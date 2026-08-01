@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+import { characterAssistantContext, creatureAssistantContext } from "@/lib/assistantContext";
+import { parseJsonBody } from "@/lib/apiRoute";
+import { getCampaign, getCharacter, getCreature } from "@/lib/db";
+import { assistantSuggestSchema } from "@/lib/schemas";
+
+const SYSTEM_PROMPT = `You are a tabletop RPG assistant helping a Dungeons & Dragons 5th edition Dungeon Master or player quickly decide what a character or creature can do right now, this turn or this scene.
+
+Rules:
+- Only suggest actions the sheet below actually supports — never invent abilities, spells, or resources that aren't listed.
+- Pay close attention to what's currently available (remaining spell slots, remaining charges, HP, conditions) vs. what's merely known — a feature with 0 charges left, or a spell with no slot available to cast it, is NOT currently usable; say so plainly if everything relevant is used up.
+- Group the answer by action economy where it matters: Action, Bonus Action, Reaction, and "no action needed" (passive/at-will) options.
+- Be concise and practical — a handful of strong options, not an exhaustive list. Plain text with short bullet points, no markdown headers.`;
+
+/**
+ * "What can this character/creature do right now" — sends the sheet's
+ * *current* resource state (see `characterAssistantContext`/
+ * `creatureAssistantContext`) to an LLM rather than just listing known
+ * abilities, so the answer accounts for spent spell slots/charges instead of
+ * suggesting something no longer available this fight. No role gate beyond
+ * the app's normal session check (`proxy.ts`) — a player asking about a
+ * character or creature they can already see on the dashboard isn't
+ * revealing anything the UI doesn't already show them.
+ */
+export async function POST(req: Request) {
+  const parsed = await parseJsonBody(req, assistantSuggestSchema);
+  if ("error" in parsed) return parsed.error;
+  const { campaignId, characterId, creatureId } = parsed.data;
+
+  const campaign = getCampaign(campaignId);
+  if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
+
+  let name: string;
+  let context: string;
+  if (characterId) {
+    const character = getCharacter(characterId);
+    if (!character || character.campaignId !== campaignId) {
+      return NextResponse.json({ error: "Character not found." }, { status: 404 });
+    }
+    name = character.name;
+    context = characterAssistantContext(character);
+  } else {
+    const creature = getCreature(creatureId!);
+    if (!creature || creature.campaignId !== campaignId) {
+      return NextResponse.json({ error: "Creature not found." }, { status: 404 });
+    }
+    name = creature.name;
+    context = creatureAssistantContext(creature);
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 });
+  }
+
+  let upstream: Response;
+  try {
+    upstream = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `${name}'s current sheet:\n\n${context}\n\nWhat can ${name} do right now?` },
+        ],
+      }),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Couldn't reach the AI assistant. Check your connection and try again." },
+      { status: 502 }
+    );
+  }
+
+  if (!upstream.ok) {
+    const detail: { error?: { message?: string } } | null = await upstream.json().catch(() => null);
+    return NextResponse.json(
+      { error: detail?.error?.message || `The AI assistant is temporarily unavailable (error ${upstream.status}).` },
+      { status: upstream.status === 401 || upstream.status === 403 ? 500 : 502 }
+    );
+  }
+
+  const json: { choices?: { message?: { content?: string } }[] } = await upstream.json();
+  const suggestion = json.choices?.[0]?.message?.content;
+  if (!suggestion) {
+    return NextResponse.json({ error: "The AI assistant returned an empty response." }, { status: 502 });
+  }
+
+  return NextResponse.json({ suggestion });
+}

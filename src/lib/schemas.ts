@@ -406,6 +406,17 @@ export const journalEntryCreateSchema = z.object({
   audience: z.enum(["dm", "party"]).optional(),
 });
 
+/** POST `/api/assistant/suggest` — exactly one of `characterId`/`creatureId`, never both/neither. */
+export const assistantSuggestSchema = z
+  .object({
+    campaignId: z.string().min(1),
+    characterId: z.string().min(1).optional(),
+    creatureId: z.string().min(1).optional(),
+  })
+  .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
+    message: "Provide exactly one of characterId or creatureId.",
+  });
+
 /**
  * PATCH `/api/journal/entries/[id]`. Deliberately NOT a `.partial()` of a
  * full `JournalEntry` shape the way the other update schemas above are —

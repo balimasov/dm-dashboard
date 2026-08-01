@@ -238,3 +238,13 @@ export function ConcentrationIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** "Ask AI" entry point on the character/creature card kebab menu — a sparkle, the near-universal shorthand for "AI-generated/assisted" at this point. */
+export function SparklesIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M11 2l1.6 5.4L18 9l-5.4 1.6L11 16l-1.6-5.4L4 9l5.4-1.6L11 2z" />
+      <path d="M18.5 14l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z" />
+    </svg>
+  );
+}

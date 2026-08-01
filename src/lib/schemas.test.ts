@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoCharacters } from "./mockData";
 import {
+  assistantSuggestSchema,
   campaignUpdateSchema,
   characterUpdateSchema,
   creatureUpdateSchema,
@@ -329,6 +330,33 @@ describe("journalSessionUpdateSchema", () => {
 
   it("rejects an empty title", () => {
     const result = journalSessionUpdateSchema.safeParse({ title: "" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("assistantSuggestSchema", () => {
+  it("accepts a body with just characterId", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a body with just creatureId", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", creatureId: "creature-1" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a body with neither characterId nor creatureId", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a body with both characterId and creatureId", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", creatureId: "creature-1" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing campaignId", () => {
+    const result = assistantSuggestSchema.safeParse({ characterId: "char-1" });
     expect(result.success).toBe(false);
   });
 });
