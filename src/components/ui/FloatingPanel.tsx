@@ -135,7 +135,15 @@ export function FloatingPanel({
             ✕
           </IconButton>
         </div>
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
+        {/* `overscroll-contain` — without it, scrolling this content past its
+          own top/bottom edge fell through to the dashboard page underneath
+          and started scrolling *that* instead (a nested scroller's "no more
+          room" bounce chains to the next scrollable ancestor by default —
+          the same fix `RemindersFab.tsx`'s dropdown list already needed).
+          The whole point of this panel not locking body scroll (see the
+          component doc comment) is that the *page* stays scrollable on its
+          own — not that scrolling *inside* the panel should leak into it. */}
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">{children}</div>
       </div>
     );
   }
@@ -214,7 +222,15 @@ export function FloatingPanel({
           ✕
         </IconButton>
       </div>
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">{children}</div>
+      {/* `overscroll-contain` — without it, scrolling this content past its
+          own top/bottom edge fell through to the dashboard page underneath
+          and started scrolling *that* instead (a nested scroller's "no more
+          room" bounce chains to the next scrollable ancestor by default —
+          the same fix `RemindersFab.tsx`'s dropdown list already needed).
+          The whole point of this panel not locking body scroll (see the
+          component doc comment) is that the *page* stays scrollable on its
+          own — not that scrolling *inside* the panel should leak into it. */}
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">{children}</div>
       <div
         onPointerDown={onResizePointerDown}
         onPointerMove={onResizePointerMove}
