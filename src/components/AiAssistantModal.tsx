@@ -8,6 +8,7 @@ import { buildAiGlossary, buildAiGlossaryByName } from "@/lib/aiGlossary";
 import { formatSyncTimestamp } from "@/lib/format";
 import { AssistantChatMessage, Character, Creature } from "@/lib/types";
 import { AiChatReply, AiResponseText } from "./AiResponseText";
+import { CollapseChevron } from "./ui/CollapseChevron";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
 import { AI_CHIP_CLS } from "./ui/containerStyles";
@@ -94,7 +95,7 @@ function PlanCard({
           onClick={onToggle}
           className="flex w-full items-center gap-2 rounded-t-xl px-3 py-2 text-left hover:bg-sky-950/20"
         >
-          <span className={`shrink-0 text-[10px] text-slate-500 transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          <CollapseChevron open={!collapsed} className="text-slate-500" />
           <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-sky-300">
             <SparklesIcon className="h-3 w-3 shrink-0" />
             Suggested move

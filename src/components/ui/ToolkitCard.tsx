@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { CollapseChevron } from "./CollapseChevron";
 import { ENTITY_CARD_BASE_CLS } from "./containerStyles";
 
 /** The bordered card every Party Toolkit/Inventory panel is built from — `actions` is an optional right-aligned slot next to the title (e.g. Coins' party total). `title` is optional: a card that already sits under its own section heading (e.g. `InventoryOverview`'s item grid, directly below the "Inventory" `CollapsibleSection`) can skip the header row entirely rather than showing a redundant second label. `collapsible` is opt-in per caller (controlled, not internal state — the caller owns open/closed so it can persist it, same as `CollapsibleSection` does for whole dashboard sections); a card without it always renders its content, unchanged from before this prop existed. */
@@ -19,11 +20,7 @@ export function ToolkitCard({
         <div className="mb-2 flex items-center justify-between gap-3">
           {collapsible ? (
             <button type="button" onClick={collapsible.onToggle} className="group flex items-center gap-1.5 text-left">
-              <span
-                className={`shrink-0 text-[10px] text-slate-500 transition-transform group-hover:text-slate-300 ${collapsible.open ? "rotate-90" : ""}`}
-              >
-                ▶
-              </span>
+              <CollapseChevron open={collapsible.open} className="text-slate-500 group-hover:text-slate-300" />
               <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 group-hover:text-slate-400">{title}</h3>
             </button>
           ) : (

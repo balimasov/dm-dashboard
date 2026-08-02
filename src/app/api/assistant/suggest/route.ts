@@ -36,6 +36,27 @@ const ASSISTANT_TEMPERATURE = 0.4;
  */
 const OUTPUT_LANGUAGE = "Ukrainian";
 
+/**
+ * Shared verbatim between `SYSTEM_PROMPT` (its GAME PLAN SUMMARY section)
+ * and `ASK_SYSTEM_PROMPT` (its ABILITY REFERENCES section) — genuinely the
+ * same rule in both places, not just similar wording, so it's named once
+ * here instead of hand-copied twice. Named specifically because this exact
+ * rule has already drifted out of sync between the two prompts twice in one
+ * review round (once fixing an invented `skill:`/`condition:` token prefix,
+ * once dropping the bracket-token instruction entirely) — every other
+ * section genuinely differs between the two request shapes (a full option
+ * list vs. a single reply field) and isn't a duplication problem the same
+ * way this one is.
+ */
+const ABILITY_MENTION_RULE = `When mentioning any sheet-based ability, spell, attack, feature, resource,
+or item, or a skill, ability score, sense, or condition, just write its
+plain name in ordinary prose, exactly as supplied. Never wrap a name in
+brackets or invent a token/prefix syntax for it (e.g. [[ability:...]],
+[[skill:Religion]], [[condition:Blinded]]) — the app's own renderer already
+recognizes every one of these terms directly from plain text (both
+sheet-supplied names and general D&D vocabulary) and adds the matching
+hover-hint on its own; a bracket only breaks that instead of helping it.`;
+
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
 Analyze the supplied character or creature sheet, current state,
@@ -133,14 +154,7 @@ The summary should:
   aren't known, so this plan favors the safer option") — this is the only
   place for that; there is no separate list of missing information.
 
-When mentioning any sheet-based ability, spell, attack, feature, resource,
-or item — or a skill, ability score, sense, or condition — just write its
-plain name in ordinary prose, exactly as supplied. Never wrap a name in
-brackets or invent a token/prefix syntax for it (e.g. [[ability:...]],
-[[skill:Religion]], [[condition:Blinded]]) — the frontend already
-recognizes every one of these terms directly from plain text (both
-sheet-supplied names and general D&D vocabulary) and adds the matching
-hover-hint on its own; a bracket only breaks that instead of helping it.
+${ABILITY_MENTION_RULE}
 
 ACTION TYPES
 
@@ -685,14 +699,7 @@ LIST FORMAT
 
 ABILITY REFERENCES
 
-- When mentioning a sheet-based ability, spell, attack, feature, resource,
-  or item, or a skill, ability score, sense, or condition, just write its
-  plain name in ordinary prose, exactly as supplied. Never wrap a name in
-  brackets or invent a token/prefix syntax for it (e.g. [[ability:...]],
-  [[skill:Religion]]) — the app's own renderer already recognizes every one
-  of these terms directly from plain text (both sheet-supplied names and
-  general D&D vocabulary) and adds the matching hover-hint on its own; a
-  bracket only breaks that instead of helping it.
+${ABILITY_MENTION_RULE}
 
 OUTPUT
 

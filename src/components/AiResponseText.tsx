@@ -148,66 +148,38 @@ function buildSheetTermsRegex(glossaryByName: AiGlossary): RegExp | null {
   return new RegExp(`\\b(${pattern})\\b`, "gi");
 }
 
-/** A run of text that didn't match a universal condition/ability term, a sheet term, or a Weapon Mastery property name — checked once more against the universal-action vocabulary (Dash, Disengage, Dodge, ...), since the model's chat replies frequently name one of these in plain prose without it ever appearing as a `kind: "universal"` option. */
-function renderUniversalActionSegment(text: string, keyPrefix: string) {
-  return text
-    .split(UNIVERSAL_ACTION_TERMS_RE)
-    .filter((part) => part !== "")
-    .map((part, i) => {
-      const description = UNIVERSAL_ACTION_INFO[part.toLowerCase()];
-      return description ? (
-        <InfoTooltip key={`${keyPrefix}-ua-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={<HintPanel title={part} description={description} />}>
-          {part}
-        </InfoTooltip>
-      ) : (
-        <span key={`${keyPrefix}-ua-${i}`}>{part}</span>
-      );
-    });
-}
+/**
+ * One vocabulary pass for `scanTermLayers` below: `regex` isolates this
+ * layer's own terms (`null` skips the layer entirely — see
+ * `buildSheetTermsRegex`'s own doc comment for why that has to be an option
+ * rather than an empty-alternation regex), and `hint` turns a matched term
+ * into its tooltip panel, or `undefined` for a segment that isn't actually
+ * one of this layer's terms (the plain-prose gaps `.split` also produces).
+ */
+type TermLayer = { regex: RegExp | null; hint: (term: string) => ReactNode | undefined };
 
-/** A run of text that didn't match a universal condition/ability term — checked once more against the Weapon Mastery vocabulary, since a mastery property name can show up in an option's description or the summary the same way a condition can. Falls through to `renderUniversalActionSegment` for whatever's still unmatched. */
-function renderMasterySegment(text: string, keyPrefix: string) {
+/**
+ * Runs `text` through each vocabulary layer in order, splitting on a layer's
+ * own terms and wrapping any match with a hint into an `InfoTooltip`, then
+ * recursing whatever that layer *didn't* recognize (plain prose, or a term
+ * from a different vocabulary entirely) into the remaining layers. Every
+ * vocabulary this file has picked up over time (universal conditions/
+ * ability-scores/senses/exhaustion, this entity's own sheet terms, Weapon
+ * Mastery property names, universal action names) used to be its own
+ * hand-copied split/filter/flatMap function differing only in which regex/
+ * lookup it used — this is the one engine behind all of them, so adding a
+ * future vocabulary is one more `TermLayer` entry, not one more copy-pasted
+ * function.
+ */
+function scanTermLayers(text: string, keyPrefix: string, layers: TermLayer[]): ReactNode[] {
+  if (layers.length === 0) return [<span key={keyPrefix}>{text}</span>];
+  const [layer, ...rest] = layers;
+  if (!layer.regex) return scanTermLayers(text, keyPrefix, rest);
   return text
-    .split(MASTERY_TERMS_RE)
+    .split(layer.regex)
     .filter((part) => part !== "")
     .flatMap((part, i) => {
-      const effect = MASTERY_INFO[part];
-      return effect ? (
-        <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={<HintPanel title={part} description={effect} />}>
-          {part}
-        </InfoTooltip>
-      ) : (
-        renderUniversalActionSegment(part, `${keyPrefix}-${i}`)
-      );
-    });
-}
-
-/** A run of text that didn't match a universal term — checked once more against this entity's own sheet term names, since the model frequently mentions a real ability/spell/attack/item by name without ever wrapping it in an `[[ability:...]]` token (see this file's own doc comment). Falls through to the Weapon Mastery vocabulary for whatever's still unmatched. */
-function renderSheetSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
-  if (!sheetTermsRe) return renderMasterySegment(text, keyPrefix);
-  return text
-    .split(sheetTermsRe)
-    .filter((part) => part !== "")
-    .flatMap((part, i) => {
-      const hint = glossaryByName[part.trim().toLowerCase()];
-      if (hint) {
-        return [
-          <InfoTooltip key={`${keyPrefix}-sh-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
-            {part}
-          </InfoTooltip>,
-        ];
-      }
-      return renderMasterySegment(part, `${keyPrefix}-sh-${i}`);
-    });
-}
-
-/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability/sense/exhaustion vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against this entity's own sheet term names, then against Weapon Mastery property names, then against universal action names (Dash, Disengage, ...) for whatever's left over. */
-function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary = {}, sheetTermsRe: RegExp | null = null) {
-  return text
-    .split(UNIVERSAL_TERMS_RE)
-    .filter((part) => part !== "")
-    .flatMap((part, i) => {
-      const hint = universalHint(part);
+      const hint = layer.hint(part);
       if (hint) {
         return [
           <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
@@ -215,8 +187,44 @@ function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiG
           </InfoTooltip>,
         ];
       }
-      return renderSheetSegment(part, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe);
+      return scanTermLayers(part, `${keyPrefix}-${i}`, rest);
     });
+}
+
+/**
+ * The four vocabularies checked, in order, for a plain-text segment (a
+ * summary paragraph, or an option's description/condition): universal
+ * condition/ability-score/sense/exhaustion terms (these show up in prose,
+ * e.g. "DC 19 Strength saving throw", rather than as `[[ability:...]]`
+ * tokens), this entity's own sheet term names, Weapon Mastery property
+ * names, then universal action names (Dash, Disengage, ...). The last two
+ * are matched case-sensitively (see `MASTERY_TERMS_RE`/
+ * `UNIVERSAL_ACTION_TERMS_RE`'s own comments for why); the first two aren't.
+ */
+function plainTextTermLayers(glossaryByName: AiGlossary, sheetTermsRe: RegExp | null): TermLayer[] {
+  return [
+    { regex: UNIVERSAL_TERMS_RE, hint: universalHint },
+    { regex: sheetTermsRe, hint: (term) => glossaryByName[term.trim().toLowerCase()] },
+    {
+      regex: MASTERY_TERMS_RE,
+      hint: (term) => {
+        const effect = MASTERY_INFO[term];
+        return effect ? <HintPanel title={term} description={effect} /> : undefined;
+      },
+    },
+    {
+      regex: UNIVERSAL_ACTION_TERMS_RE,
+      hint: (term) => {
+        const description = UNIVERSAL_ACTION_INFO[term.toLowerCase()];
+        return description ? <HintPanel title={term} description={description} /> : undefined;
+      },
+    },
+  ];
+}
+
+/** A run of plain text (a summary paragraph, or an option's description) — see `plainTextTermLayers` for the vocabulary order. */
+function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary = {}, sheetTermsRe: RegExp | null = null) {
+  return scanTermLayers(text, keyPrefix, plainTextTermLayers(glossaryByName, sheetTermsRe));
 }
 
 /**
