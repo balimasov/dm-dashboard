@@ -203,6 +203,14 @@ export function AiAssistantModal({
   // clears it, since a rebuilt plan's own `query` is shown inside its
   // `GivenBox` instead, not as a bubble.
   const [pendingAsk, setPendingAsk] = useState<string | null>(null);
+  // The "Rebuild without previous context" checkbox — only ever shown (and
+  // only ever meaningful) alongside actual typed text: a blank rebuild
+  // already ignores the previous turn by default (see `route.ts`'s own
+  // comment), so this exists purely for a *specific* rebuild request that's
+  // still meant to stand on its own rather than build on whatever this
+  // conversation last said. Reset after every submit rather than left
+  // sticky, so it never silently carries over onto an unrelated later ask.
+  const [ignoreContext, setIgnoreContext] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
@@ -236,7 +244,7 @@ export function AiAssistantModal({
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
   }, [situation]);
 
-  function submit(intent: "plan" | "ask", text: string) {
+  function submit(intent: "plan" | "ask", text: string, ignore = false) {
     // Guards against a double-fire (an accidental extra click, or Enter
     // pressed again before the last turn lands) sending a second paid LLM
     // call for the exact same question — the buttons below are also
@@ -254,6 +262,7 @@ export function AiAssistantModal({
         intent,
         ...(intent === "plan" ? { response_mode: responseMode } : {}),
         ...(text ? { situation: text } : {}),
+        ...(intent === "plan" && ignore ? { ignore_context: true } : {}),
       }),
     })
       .then((res) => parseJsonOrThrow<{ message: AssistantChatMessage }>(res, "The AI assistant couldn't answer right now."))
@@ -267,8 +276,10 @@ export function AiAssistantModal({
 
   function onSuggestOrRebuild() {
     const text = situation.trim();
+    const ignore = ignoreContext;
     setSituation("");
-    submit("plan", text);
+    setIgnoreContext(false);
+    submit("plan", text, ignore);
   }
 
   function ask() {
@@ -388,6 +399,17 @@ export function AiAssistantModal({
             className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
           />
         </div>
+        {hasMessages && situation.trim().length > 0 && (
+          <label className="flex w-fit cursor-pointer items-center gap-1.5 text-xs text-slate-500 hover:text-slate-400">
+            <input
+              type="checkbox"
+              checked={ignoreContext}
+              onChange={(e) => setIgnoreContext(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 accent-sky-600"
+            />
+            Rebuild without previous context
+          </label>
+        )}
         {hasMessages ? (
           <div className="flex gap-2">
             <button

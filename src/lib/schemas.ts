@@ -439,6 +439,15 @@ export const assistantSuggestSchema = z
      * text, so this always lines up with whether `situation` is present.
      */
     response_mode: z.enum(["overview", "focused"]).default("overview"),
+    /**
+     * Only meaningful for `intent: "plan"` — the "Rebuild without previous
+     * context" checkbox in `AiAssistantModal`, for a specific rebuild
+     * request (`situation` non-empty) that's deliberately *not* a follow-up
+     * to whatever this entity's conversation last said. Ignored for
+     * `intent: "ask"`, which has no equivalent control (see the panel's own
+     * doc comment on why that path always relates to the prior turn).
+     */
+    ignore_context: z.boolean().optional().default(false),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",

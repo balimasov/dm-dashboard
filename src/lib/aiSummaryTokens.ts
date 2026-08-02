@@ -1,16 +1,23 @@
 export type SummaryToken = { type: "text"; text: string } | { type: "ability"; sourceId: string; displayName: string };
 
 /**
- * Matches either a well-formed `[[ability:<source_id>|<display_name>]]`
- * token (groups 1/2) or a stray shorthand the model sometimes emits instead
- * — e.g. `[[feature-0]]` right before the plain name, with no `ability:`
- * prefix and no `|<display_name>` half at all (observed in chat replies,
- * where the model seems to echo the sheet context's own `[source_id]`
- * markers verbatim instead of building the real token). The alternation's
- * second branch has no capture groups, so `parseSummaryTokens` tells them
- * apart by checking whether group 1 is defined.
+ * Matches either a real ability token (groups 1/2) or a bare bracket with no
+ * display name at all, e.g. `[[feature-0]]` (dropped — see below).
+ *
+ * The first branch's `(?:ability:)?` prefix is *optional* — the model has
+ * been observed dropping just the literal word "ability:" while still
+ * writing the rest of the token correctly (`[[spell-7|Fireball]]` instead of
+ * `[[ability:spell-7|Fireball]]`). That still carries a real display name
+ * and must be kept, not stripped — an earlier version of this regex
+ * required the `ability:` prefix even for the "does this have a name at
+ * all" check, so a token like that fell through to the second branch (any
+ * `[[...]]`) and lost its display name entirely, which is worse than the
+ * original raw-bracket bug it was meant to fix. Requiring only `id|name`
+ * shape (with or without the "ability:" label) for the first branch, and
+ * reserving the second branch for brackets with no `|` at all, keeps every
+ * token that actually names something.
  */
-const TOKEN_RE = /\[\[ability:([^|\]]+)\|([^\]]+)\]\]|\[\[(?!ability:)[^\]]*\]\]\s*/g;
+const TOKEN_RE = /\[\[(?:ability:)?([^|\]]+)\|([^\]]+)\]\]|\[\[[^\]]*\]\]\s*/g;
 
 /**
  * Splits text on `[[ability:<source_id>|<display_name>]]` tokens (see the

@@ -438,6 +438,23 @@ describe("assistantSuggestSchema", () => {
     const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", intent: "chat" });
     expect(result.success).toBe(false);
   });
+
+  it("defaults ignore_context to false when omitted", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.ignore_context).toBe(false);
+  });
+
+  it("accepts ignore_context: true alongside a specific rebuild request", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      situation: "Assume I already used Action Surge this turn.",
+      ignore_context: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.ignore_context).toBe(true);
+  });
 });
 
 describe("aiOptionSchema / aiTacticalResponseSchema", () => {

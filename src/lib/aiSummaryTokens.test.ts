@@ -69,4 +69,15 @@ describe("parseSummaryTokens", () => {
       { type: "text", text: "." },
     ]);
   });
+
+  test("parses a token missing only the `ability:` prefix — keeps the display name instead of stripping it", () => {
+    const tokens = parseSummaryTokens("Найкращий варіант — [[spell-7|Fireball]] або [[spell-12|Lightning Bolt]].");
+    expect(tokens).toEqual([
+      { type: "text", text: "Найкращий варіант — " },
+      { type: "ability", sourceId: "spell-7", displayName: "Fireball" },
+      { type: "text", text: " або " },
+      { type: "ability", sourceId: "spell-12", displayName: "Lightning Bolt" },
+      { type: "text", text: "." },
+    ]);
+  });
 });

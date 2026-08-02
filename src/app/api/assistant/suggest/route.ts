@@ -732,7 +732,7 @@ async function callAssistantModel<T>(
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode, intent } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, intent, ignore_context } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -812,7 +812,11 @@ user_request: ${situation}`;
     // actual typed text keeps a blank rebuild from getting subtly anchored
     // to the old plan's narrative (the model was seen doing exactly that
     // when previous_summary was always attached, even to "(none)" requests).
-    const planPreviousContext = situation ? previousContext : undefined;
+    // `ignore_context` covers the opposite case: a *specific* rebuild
+    // request (situation non-empty) that's still deliberately not a
+    // follow-up to the prior turn — see `assistantSuggestSchema`'s own doc
+    // comment on the checkbox this comes from.
+    const planPreviousContext = situation && !ignore_context ? previousContext : undefined;
     const userContent = `${name}'s current sheet:
 
 ${context}
