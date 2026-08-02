@@ -27,7 +27,7 @@ type Target = { campaignId: string; characterId: string } | { campaignId: string
  * only leans into "epic/cinematic/improvised" when the actual prompt says so
  * explicitly, not from a two-word label alone.
  */
-const QUICK_QUESTIONS: { emoji: string; label: string; query: string }[] = [
+export const QUICK_QUESTIONS: { emoji: string; label: string; query: string }[] = [
   { emoji: "🎯", label: "Чому це найкраще?", query: "Чому це найкраще?" },
   { emoji: "🔀", label: "Який альтернативний варіант?", query: "Який альтернативний варіант?" },
   { emoji: "🔋", label: "Як зберегти ресурси?", query: "Як зберегти ресурси?" },

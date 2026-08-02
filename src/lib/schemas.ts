@@ -429,8 +429,19 @@ export const assistantSuggestSchema = z
     campaignId: z.string().min(1),
     characterId: z.string().min(1).optional(),
     creatureId: z.string().min(1).optional(),
-    /** Optional free-text "here's the current scene" note (required for `intent: "ask"` — see the class-level refine below), folded into the LLM prompt. */
-    situation: z.string().max(500).optional(),
+    /**
+     * Optional free-text "here's the current scene" note (required for
+     * `intent: "ask"` — see the class-level refine below), folded into the
+     * LLM prompt. This isn't only what a human typed — `AiAssistantModal`'s
+     * quick-question chips (see `QUICK_QUESTIONS`) send their own longer,
+     * app-authored instruction text through this same field, bypassing the
+     * textarea's own 500-char `maxLength` entirely (that limit only bounds
+     * what someone can *type*, not what the app can send programmatically).
+     * The cap here is set well above that so a longer chip query never hits
+     * it — a real chip query already did once (876 chars), which is what
+     * this comment is here to prevent happening silently again.
+     */
+    situation: z.string().max(2000).optional(),
     intent: z.enum(["plan", "ask"]).default("plan"),
     /**
      * Only meaningful for `intent: "plan"`. Set by the frontend, not

@@ -372,11 +372,20 @@ describe("assistantSuggestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects a situation string over 500 characters", () => {
+  it("accepts a situation string well past the textarea's own 500-char typing limit, since a quick-question chip's app-authored query also goes through this field", () => {
     const result = assistantSuggestSchema.safeParse({
       campaignId: "campaign-1",
       characterId: "char-1",
-      situation: "x".repeat(501),
+      situation: "x".repeat(1000),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a situation string over 2000 characters", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      situation: "x".repeat(2001),
     });
     expect(result.success).toBe(false);
   });
