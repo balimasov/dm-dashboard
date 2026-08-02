@@ -125,9 +125,17 @@ function PlanCard({
   );
 }
 
-function UserBubble({ text }: { text: string }) {
+/** Right-aligned timestamp under a user bubble, left-aligned under a reply bubble — same small muted-caption treatment either side, Telegram's own convention for "when was this sent" without competing with the message text for attention. */
+function BubbleTimestamp({ createdAt, align }: { createdAt: string; align: "left" | "right" }) {
+  return <p className={`px-1 text-[10px] text-slate-600 ${align === "right" ? "text-right" : "text-left"}`}>{formatSyncTimestamp(createdAt)}</p>;
+}
+
+function UserBubble({ text, createdAt }: { text: string; createdAt: string }) {
   return (
-    <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-sky-600 px-3 py-2 text-sm text-white">{text}</div>
+    <div className="ml-auto flex max-w-[85%] flex-col">
+      <div className="rounded-2xl rounded-br-sm bg-sky-600 px-3 py-2 text-sm text-white">{text}</div>
+      <BubbleTimestamp createdAt={createdAt} align="right" />
+    </div>
   );
 }
 
@@ -141,8 +149,11 @@ function ReplyBubble({
   glossaryByName: ReturnType<typeof buildAiGlossary>;
 }) {
   return (
-    <div className="max-w-[92%] rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
-      <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} />
+    <div className="flex max-w-[92%] flex-col">
+      <div className="rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
+        <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} />
+      </div>
+      <BubbleTimestamp createdAt={message.createdAt} align="left" />
     </div>
   );
 }
@@ -202,7 +213,7 @@ export function AiAssistantModal({
   // the error message instead of vanishing along with it; a "plan" submit
   // clears it, since a rebuilt plan's own `query` is shown inside its
   // `GivenBox` instead, not as a bubble.
-  const [pendingAsk, setPendingAsk] = useState<string | null>(null);
+  const [pendingAsk, setPendingAsk] = useState<{ text: string; createdAt: string } | null>(null);
   // The "Rebuild without previous context" checkbox — only ever shown (and
   // only ever meaningful) alongside actual typed text: a blank rebuild
   // already ignores the previous turn by default (see `route.ts`'s own
@@ -252,7 +263,7 @@ export function AiAssistantModal({
     if (loading) return;
     setLoading(true);
     setError(null);
-    setPendingAsk(intent === "ask" ? text : null);
+    setPendingAsk(intent === "ask" ? { text, createdAt: new Date().toISOString() } : null);
     const responseMode = text ? "focused" : "overview";
     fetch("/api/assistant/suggest", {
       method: "POST",
@@ -323,7 +334,7 @@ export function AiAssistantModal({
       title={
         <span className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-sky-400" />
-          Turn Advisor: {name}
+          Ask AI: {name}
         </span>
       }
       headerActions={
@@ -335,7 +346,12 @@ export function AiAssistantModal({
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
         {!messagesLoaded && <p className={MUTED_BODY_CLS}>Loading...</p>}
         {messagesLoaded && !hasMessages && (
-          <p className={EMPTY_STATE_CLS}>Describe the situation (optional) and ask for a plan to get started.</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-1.5 py-6 text-center">
+            <p className={EMPTY_STATE_CLS}>Ask this assistant anything D&D:</p>
+            <p className={EMPTY_STATE_CLS}>⚔️ the best move for the current turn</p>
+            <p className={EMPTY_STATE_CLS}>📜 current state and resources</p>
+            <p className={EMPTY_STATE_CLS}>📖 any D&D 2024 (5.5e) rules question</p>
+          </div>
         )}
         {messages.map((msg) =>
           msg.kind === "plan" ? (
@@ -353,14 +369,14 @@ export function AiAssistantModal({
             />
           ) : (
             <div key={msg.id} className="flex flex-col gap-2">
-              {msg.query && <UserBubble text={msg.query} />}
+              {msg.query && <UserBubble text={msg.query} createdAt={msg.createdAt} />}
               <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} />
             </div>
           )
         )}
         {pendingAsk !== null && (
           <div className="flex flex-col gap-2">
-            <UserBubble text={pendingAsk} />
+            <UserBubble text={pendingAsk.text} createdAt={pendingAsk.createdAt} />
             {loading && (
               <div className="flex max-w-[92%] items-center gap-3 rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
                 <Spinner className="h-4 w-4" />
@@ -389,11 +405,17 @@ export function AiAssistantModal({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                if (hasMessages) ask();
+                // Typed text reads as a question to ask, regardless of
+                // whether this is the very first message in the
+                // conversation — both buttons are always on screen now,
+                // Enter just picks whichever one an empty vs. non-empty bar
+                // would imply. An empty bar has nothing to "ask," so it
+                // falls back to the plan action instead.
+                if (situation.trim()) ask();
                 else onSuggestOrRebuild();
               }
             }}
-            placeholder="describe the situation or ask a follow-up question…"
+            placeholder="describe the situation, or ask anything D&D…"
             rows={1}
             maxLength={500}
             className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
@@ -410,37 +432,36 @@ export function AiAssistantModal({
             Rebuild without previous context
           </label>
         )}
-        {hasMessages ? (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onSuggestOrRebuild}
-              disabled={loading}
-              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              ↻ Rebuild plan
-            </button>
-            <button
-              type="button"
-              onClick={ask}
-              disabled={loading}
-              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <SendIcon className="h-4 w-4 shrink-0" />
-              Ask
-            </button>
-          </div>
-        ) : (
+        {/* Both actions are always on screen, even for the very first
+            message — a fresh conversation isn't necessarily starting with
+            "what's my best move," it might just as well open with a
+            state/rules question via "Ask" instead. */}
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={onSuggestOrRebuild}
             disabled={loading}
-            className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
-            Best move
+            {hasMessages ? (
+              "↻ Rebuild plan"
+            ) : (
+              <>
+                <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
+                Best move
+              </>
+            )}
           </button>
-        )}
+          <button
+            type="button"
+            onClick={ask}
+            disabled={loading}
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <SendIcon className="h-4 w-4 shrink-0" />
+            Ask
+          </button>
+        </div>
       </div>
     </FloatingPanel>
   );

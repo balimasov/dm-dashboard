@@ -785,8 +785,8 @@ export function removeJournalEntry(id: string): void {
   getDb().prepare("DELETE FROM journal_entries WHERE id = ?").run(id);
 }
 
-/** Nothing kept this list bounded before this feature existed for anyone to configure — a fixed cap on a per-entity conversation that nobody asked to keep forever, same spirit as the response cache's own size cap. */
-const ASSISTANT_MESSAGE_HISTORY_LIMIT = 20;
+/** Nothing kept this list bounded before this feature existed for anyone to configure — a fixed cap on a per-entity conversation that nobody asked to keep forever, same spirit as the response cache's own size cap. Doubled from the original 20 once the assistant grew into a general-purpose "ask anything D&D" tool (state/rules questions, not just turn plans) — a wider range of question types means a DM is more likely to want to scroll back further before it gets pruned. */
+const ASSISTANT_MESSAGE_HISTORY_LIMIT = 40;
 
 function rowToAssistantMessage(row: { data: string }): AssistantChatMessage {
   return JSON.parse(row.data) as AssistantChatMessage;

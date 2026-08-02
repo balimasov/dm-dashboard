@@ -735,15 +735,15 @@ describe("createAssistantMessage / listAssistantMessages", () => {
 
   it("prunes the oldest entries once a single entity passes the history cap, keeping the newest ones", async () => {
     const entityId = "char-am-prune";
-    for (let i = 0; i < 21; i++) {
+    for (let i = 0; i < 41; i++) {
       db.createAssistantMessage(makePlanInput({ entityId, query: `q${i}` }));
       await tick();
     }
 
     const history = db.listAssistantMessages(entityId);
-    expect(history).toHaveLength(20);
-    // Oldest first — q0 (the very first one created) should be the one pruned, q20 (newest) present.
-    expect(history[history.length - 1].query).toBe("q20");
+    expect(history).toHaveLength(40);
+    // Oldest first — q0 (the very first one created) should be the one pruned, q40 (newest) present.
+    expect(history[history.length - 1].query).toBe("q40");
     expect(history.some((h) => h.query === "q0")).toBe(false);
   });
 });
