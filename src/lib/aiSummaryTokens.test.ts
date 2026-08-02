@@ -96,4 +96,20 @@ describe("parseSummaryTokens", () => {
       { type: "text", text: "прямо зараз." },
     ]);
   });
+
+  test("strips an invented namespace prefix (e.g. skill:) from a bare bracket, keeping the name", () => {
+    const tokens = parseSummaryTokens("[[skill:Religion]] використовують, коли треба.");
+    expect(tokens).toEqual([
+      { type: "text", text: "Religion " },
+      { type: "text", text: "використовують, коли треба." },
+    ]);
+  });
+
+  test("drops a bare ability: bracket missing its |name half, even though it looks namespaced", () => {
+    const tokens = parseSummaryTokens("Спробуй [[ability:spell-7]] цього ходу.");
+    expect(tokens).toEqual([
+      { type: "text", text: "Спробуй " },
+      { type: "text", text: "цього ходу." },
+    ]);
+  });
 });

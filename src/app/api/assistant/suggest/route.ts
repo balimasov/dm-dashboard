@@ -131,10 +131,12 @@ damage formulas, or other frontend metadata inside the token. The frontend
 will enrich the ability reference and display the existing tooltip.
 
 Never use this token syntax for a skill, ability score, sense, condition,
-or other general D&D term — none of those carry a [source_id] on the
-sheet, so there is never a real id to put in one. Just write the plain
-word (e.g. Religion, Perception, Blinded); the frontend already recognizes
-these terms on its own and adds a hint automatically.
+or other general D&D term, and never invent a made-up prefix for one
+either (e.g. [[skill:Religion]] or [[condition:Blinded]]) — none of those
+carry a [source_id] on the sheet, so there is never a real id, "skill:"
+included, to put in one. Just write the plain word on its own — Religion,
+Perception, Blinded — with no brackets and no prefix at all; the frontend
+already recognizes these terms on its own and adds a hint automatically.
 
 ACTION TYPES
 
@@ -658,10 +660,13 @@ ABILITY REFERENCES
   leave the token out and just use the plain name.
 
 - Never wrap a skill, ability score, sense, condition, or other general
-  D&D term in this token syntax — none of those carry a [source_id] on the
-  sheet, so there is never a real id to put in one. Just write the plain
-  word (e.g. Religion, Perception, Blinded); the app's own renderer already
-  recognizes these terms on its own and adds a hint automatically.
+  D&D term in this token syntax, and never invent a made-up prefix for one
+  either (e.g. [[skill:Religion]] or [[condition:Blinded]]) — none of those
+  carry a [source_id] on the sheet, so there is never a real id, "skill:"
+  included, to put in one. Just write the plain word on its own — Religion,
+  Perception, Blinded — with no brackets and no prefix at all; the app's
+  own renderer already recognizes these terms on its own and adds a hint
+  automatically.
 
 OUTPUT
 
