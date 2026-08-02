@@ -595,23 +595,28 @@ SOURCE OF TRUTH
 
 CONTEXT
 
-- previous_summary, when supplied, is your own most recent plan's summary
-  or reply in this same conversation — use it only when user_request
-  actually reads as building on it. Absent, or clearly unrelated (e.g. a
-  standalone rules question), means treat this as its own fresh request;
-  never force a connection that isn't there.
+- previous_summary, when supplied, is the most recent turn of this same
+  conversation: the DM's own note for that turn (if any) followed by your
+  plan's summary or reply — use it only when user_request actually reads
+  as building on it. Absent, or clearly unrelated (e.g. a standalone rules
+  question), means treat this as its own fresh request; never force a
+  connection that isn't there.
 
 - Do not repeat a full list of tactical options, categories, or
-  action-economy labels from an already-shown plan card — for a
-  single-topic question, give a short, direct, conversational answer
-  instead (usually 1-3 sentences, longer only when it genuinely needs it).
+  action-economy labels from an already-shown plan card.
 
-- When the question is inherently about several distinct things at once
-  (e.g. "what do you know about my party," listing multiple characters'
-  resources or spells), do NOT compress them into one dense run-on
-  paragraph — put one item per line, with a blank line between items, so
-  each stays readable on its own. Brevity still applies per item; only the
-  layout changes.
+- Default to ordinary flowing prose (usually 1-3 sentences, longer only
+  when it genuinely needs it) — most questions are about one thing, and a
+  one-item-per-line layout on an ordinary single-topic answer reads as
+  fragmented for no reason.
+
+- The one exception: when the question is explicitly asking to enumerate
+  several distinct things at once (e.g. "what do you know about my whole
+  party," "list everyone's remaining spell slots") — not just because the
+  answer happens to run a little long — put one item per line, blank line
+  between, instead of cramming them into a single run-on paragraph.
+  Brevity still applies per item; this layout is for genuinely multi-item
+  answers only, never the default.
 
 ABILITY REFERENCES
 
@@ -792,9 +797,18 @@ export async function POST(req: Request) {
   // last, even after a fresh page load with no client state at all. Only
   // the "ask" branch below uses this — "Suggest move" (the "plan" branch)
   // deliberately never carries the prior turn forward, per its own comment.
+  //
+  // Includes the turn's own `query` (the DM's original note, if any) ahead
+  // of its summary/reply — a quick-question chip's "why is this best?"
+  // otherwise only saw the plan's resulting summary, never the specific
+  // premise (e.g. "assume I already used Action Surge") that shaped it, so
+  // a follow-up could contradict or ignore a detail the DM had explicitly
+  // supplied just one turn earlier.
   const history = listAssistantMessages(entityId);
   const lastMessage = history[history.length - 1];
-  const previousContext = lastMessage ? (lastMessage.kind === "plan" ? lastMessage.plan.game_plan.summary : lastMessage.reply) : undefined;
+  const previousContext = lastMessage
+    ? [lastMessage.query, lastMessage.kind === "plan" ? lastMessage.plan.game_plan.summary : lastMessage.reply].filter(Boolean).join("\n")
+    : undefined;
 
   let contentResult: ModelCallResult<unknown>;
   if (intent === "ask") {

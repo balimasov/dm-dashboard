@@ -95,7 +95,10 @@ function PlanCard({
           className="flex w-full items-center gap-2 rounded-t-xl px-3 py-2 text-left hover:bg-sky-950/20"
         >
           <span className={`shrink-0 text-slate-500 transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
-          <span className="text-xs font-bold uppercase tracking-wide text-sky-300">🗂️ Plan</span>
+          <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-sky-300">
+            <SparklesIcon className="h-3 w-3 shrink-0" />
+            Suggested move
+          </span>
           <span className="text-xs text-slate-500">{formatSyncTimestamp(message.createdAt)}</span>
         </button>
         {!collapsed && (
@@ -456,9 +459,9 @@ export function AiAssistantModal({
             Ask
           </button>
         </div>
-        <p className="truncate text-center text-xs text-slate-500">
-          <b className="font-semibold text-slate-400">Suggest move:</b> empty note = best move, or add details to
-          factor in.
+        <p className="truncate text-center text-[10px] text-slate-500">
+          <b className="font-semibold text-slate-400">Suggest move:</b> leave note empty for the best move, or add
+          details to factor them in.
         </p>
       </div>
     </FloatingPanel>
