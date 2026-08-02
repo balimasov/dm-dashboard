@@ -257,6 +257,44 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
 }
 
 /**
+ * Every creature this character owns/commands (a summoned mount, a
+ * familiar, a Wild Shape companion...) — surfaced on the character's OWN
+ * turn so the model can reason about it without needing to already know it
+ * exists, e.g. recognizing that a summoned mount's own stat block actually
+ * grants flight before claiming no confirmed flight is available. `creature.
+ * ownerCharacterId` is the only link between the two, so without this the
+ * character's context never mentions the companion at all — its known
+ * spells might list "Find Steed", but not that a steed has actually been
+ * summoned this campaign, let alone what it can do.
+ *
+ * Same "current state, not full stat block" scope `partyTeammatesContext`
+ * already uses for the same reason — the full stat block (traits, actions,
+ * spellcasting) only matters when the companion's OWN turn is what's being
+ * asked about (`creatureAssistantContext`), not here.
+ */
+export function companionsContext(creatures: Creature[], ownerId: string): string {
+  const owned = creatures.filter((cr) => cr.ownerCharacterId === ownerId && !cr.hidden);
+  if (owned.length === 0) return "";
+
+  const lines: string[] = ["", "Your companions/mounts (for tactical awareness — their own full actions aren't available on your turn):"];
+  for (const cr of owned) {
+    const parts: string[] = [
+      `${cr.name}${cr.creatureType ? ` (${cr.size ? `${cr.size} ` : ""}${cr.creatureType})` : ""}`,
+      `HP ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""}`,
+      `AC ${cr.ac}`,
+      // `speedDetail` (e.g. "40 ft., fly 80 ft.") is the only place flight/
+      // swim/climb speeds actually show up — the plain `speed` number is
+      // always just the walk speed, which alone is exactly how "no confirmed
+      // flight" gets wrongly concluded despite a flying mount being summoned.
+      `Speed ${cr.speedDetail || `${cr.speed}ft`}`,
+    ];
+    if (cr.conditions.length > 0) parts.push(`conditions: ${cr.conditions.join(", ")}`);
+    lines.push(`- ${parts.join(" | ")}`);
+  }
+  return lines.join("\n");
+}
+
+/**
  * `ownerName` — the party member this creature is summoned/commanded by
  * (resolved from `Creature.ownerCharacterId` against the party roster by
  * the caller, since this function only ever sees the one `Creature`) —

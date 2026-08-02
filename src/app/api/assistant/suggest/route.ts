@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
 import { assistantCacheKey, getCachedAssistantResponse, setCachedAssistantResponse } from "@/lib/assistantResponseCache";
-import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
+import { characterAssistantContext, companionsContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
-import { createAssistantQuery, getCampaign, getCharacter, getCreature, listCharacters } from "@/lib/db";
+import { createAssistantQuery, getCampaign, getCharacter, getCreature, listCharacters, listCreatures } from "@/lib/db";
 import { fetchWithRetry } from "@/lib/fetchWithRetry";
 import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
 
@@ -588,6 +588,7 @@ export async function POST(req: Request) {
     }
     name = character.name;
     context = characterAssistantContext(character);
+    context += companionsContext(listCreatures(campaignId), character.id);
     selfCharacterId = character.id;
   } else {
     const creature = getCreature(creatureId!);

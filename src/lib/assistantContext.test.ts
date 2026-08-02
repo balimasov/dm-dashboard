@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "./assistantContext";
+import { characterAssistantContext, companionsContext, creatureAssistantContext, partyTeammatesContext } from "./assistantContext";
 import { Character, Creature } from "./types";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -497,5 +497,56 @@ describe("partyTeammatesContext", () => {
   test("returns an empty string when there are no other party members", () => {
     const self = makeCharacter({ name: "Nyra" });
     expect(partyTeammatesContext([self], self.id)).toBe("");
+  });
+});
+
+describe("companionsContext", () => {
+  test("surfaces an owned companion's speedDetail (e.g. flight), not just its plain walk speed", () => {
+    const steed = makeCreature({
+      name: "Otherworldly Steed",
+      category: "companion",
+      ownerCharacterId: "char-lilith",
+      creatureType: "Celestial",
+      size: "Large",
+      hp: 22,
+      maxHp: 22,
+      ac: 13,
+      speed: 40,
+      speedDetail: "40 ft., fly 80 ft.",
+    });
+
+    const context = companionsContext([steed], "char-lilith");
+
+    expect(context).toContain("Your companions/mounts");
+    expect(context).toContain("Otherworldly Steed (Large Celestial)");
+    expect(context).toContain("HP 22/22");
+    expect(context).toContain("AC 13");
+    expect(context).toContain("Speed 40 ft., fly 80 ft.");
+  });
+
+  test("falls back to the plain speed number when speedDetail is absent", () => {
+    const familiar = makeCreature({ name: "Raven", ownerCharacterId: "char-1", speed: 20 });
+    const context = companionsContext([familiar], "char-1");
+    expect(context).toContain("Speed 20ft");
+  });
+
+  test("includes a companion's active conditions", () => {
+    const mount = makeCreature({ name: "Warhorse", ownerCharacterId: "char-1", conditions: ["Prone"] });
+    const context = companionsContext([mount], "char-1");
+    expect(context).toContain("conditions: Prone");
+  });
+
+  test("omits a creature owned by someone else, or hidden, or with no owner at all", () => {
+    const someoneElses = makeCreature({ name: "Someone Else's Wolf", ownerCharacterId: "char-2" });
+    const hidden = makeCreature({ name: "Hidden Steed", ownerCharacterId: "char-1", hidden: true });
+    const noOwner = makeCreature({ name: "Wild Goblin", ownerCharacterId: undefined });
+
+    const context = companionsContext([someoneElses, hidden, noOwner], "char-1");
+
+    expect(context).toBe("");
+  });
+
+  test("returns an empty string when this character owns no creatures", () => {
+    expect(companionsContext([], "char-1")).toBe("");
   });
 });

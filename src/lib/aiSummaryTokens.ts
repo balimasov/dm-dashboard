@@ -3,12 +3,15 @@ export type SummaryToken = { type: "text"; text: string } | { type: "ability"; s
 const ABILITY_TOKEN_RE = /\[\[ability:([^|\]]+)\|([^\]]+)\]\]/g;
 
 /**
- * Splits `game_plan.summary` on `[[ability:<source_id>|<display_name>]]`
- * tokens (see the assistant's `SYSTEM_PROMPT`) into an ordered list of
- * plain-text and ability-reference segments. Pure/no React so it's testable
- * on its own; `AiResponseText` turns each `"ability"` token into an
- * `InfoTooltip` keyed by `sourceId` and each `"text"` segment through the
- * existing universal-term (condition/ability-score) scan.
+ * Splits text on `[[ability:<source_id>|<display_name>]]` tokens (see the
+ * assistant's `SYSTEM_PROMPT`) into an ordered list of plain-text and
+ * ability-reference segments — used on `game_plan.summary`, and (since the
+ * model doesn't always confine the token syntax to just that field) an
+ * option's own `description`/`conditions` too, via `AiResponseText`'s
+ * `renderTokenizedText`. Pure/no React so it's testable on its own;
+ * `AiResponseText` turns each `"ability"` token into an `InfoTooltip` keyed
+ * by `sourceId` and each `"text"` segment through the existing
+ * universal-term (condition/ability-score) scan.
  */
 export function parseSummaryTokens(text: string): SummaryToken[] {
   const tokens: SummaryToken[] = [];

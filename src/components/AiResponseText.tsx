@@ -36,19 +36,27 @@ import { HintPanel } from "./ui/HintPanel";
  * sheet-based tooltip at all — there's nothing on the sheet to link to.
  *
  * `game_plan.summary` is free prose from the model but can reference sheet
- * abilities via `[[ability:<source_id>|<name>]]` tokens (see
- * `SYSTEM_PROMPT`); `parseSummaryTokens` splits those out so each becomes
- * the same `glossary`-backed tooltip as an option name. In practice the
- * model is inconsistent about which mentions it actually wraps in a token —
- * across several rounds of feedback, half the ability names in a given
- * summary would show up as plain untagged prose. Rather than keep chasing
- * the model's tagging behavior, every plain-text segment (both the summary
- * and an option's own description) is *also* scanned against this specific
- * entity's own sheet term names (`glossaryByName`'s keys — every resource/
- * feature/spell/attack/inventory item it has), the same way it's already
- * scanned for universal terms (conditions, ability scores, senses,
- * exhaustion) and Weapon Mastery property names — so a hint shows up
- * whether or not the model bothered to tag that particular mention.
+ * abilities via `[[ability:<source_id>|<name>]]` tokens (see the prompt's
+ * GAME PLAN SUMMARY section); `renderTokenizedText` (via `parseSummaryTokens`)
+ * splits those out so each becomes the same `glossary`-backed tooltip as an
+ * option name. The prompt only *teaches* the token syntax for the summary,
+ * but the model has been observed reusing it verbatim inside an option's own
+ * `description`/`conditions` too — those go through the exact same
+ * `renderTokenizedText` path (not a plain-text-only one) specifically so a
+ * stray `[[ability:...]]` never leaks to the user as raw, unparsed text
+ * regardless of which field the model put it in.
+ *
+ * In practice the model is also inconsistent about which mentions it bothers
+ * to wrap in a token at all — across several rounds of feedback, half the
+ * ability names in a given summary would show up as plain untagged prose.
+ * Rather than keep chasing the model's tagging behavior, every plain-text
+ * segment (the summary, an option's description, and its conditions) is
+ * *also* scanned against this specific entity's own sheet term names
+ * (`glossaryByName`'s keys — every resource/feature/spell/attack/inventory
+ * item it has), the same way it's already scanned for universal terms
+ * (conditions, ability scores, senses, exhaustion) and Weapon Mastery
+ * property names — so a hint shows up whether or not the model bothered to
+ * tag that particular mention at all.
  */
 
 const ABILITY_GLOSSARY: Record<string, string> = {
@@ -180,9 +188,21 @@ function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiG
     });
 }
 
-function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
-  return parseSummaryTokens(summary).flatMap((token, i) => {
-    if (token.type === "text") return renderPlainSegment(token.text, `sum-${i}`, glossaryByName, sheetTermsRe);
+/**
+ * Splits `text` on `[[ability:<source_id>|<display_name>]]` tokens (see the
+ * prompt's GAME PLAN SUMMARY section) before tokenizing the rest as plain
+ * text — used for `game_plan.summary`, but also for an option's own
+ * `description` and each of its `conditions` strings: the prompt only
+ * teaches the token syntax for the summary, but the model has been observed
+ * reusing it verbatim in a description/condition too, and leaving those two
+ * on the plain `renderPlainSegment` path left a raw, unparsed
+ * `[[ability:...]]` string visible to the user instead of a hint-wrapped
+ * name. Renders every field through the same tolerant path rather than
+ * trying to keep tightening the prompt to prevent it.
+ */
+function renderTokenizedText(text: string, keyPrefix: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
+  return parseSummaryTokens(text).flatMap((token, i) => {
+    if (token.type === "text") return renderPlainSegment(token.text, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe);
     // The token's own `source_id` occasionally doesn't match anything —
     // the model sometimes garbles or re-derives an id when writing
     // free-form prose. `glossaryByName` (built straight from the entity's
@@ -193,11 +213,11 @@ function renderSummary(summary: string, glossary: AiGlossary, glossaryByName: Ai
     const hint = glossary[token.sourceId] ?? glossaryByName[token.displayName.trim().toLowerCase()];
     return [
       hint ? (
-        <InfoTooltip key={`sum-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
+        <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
           <strong>{token.displayName}</strong>
         </InfoTooltip>
       ) : (
-        <strong key={`sum-${i}`}>{token.displayName}</strong>
+        <strong key={`${keyPrefix}-${i}`}>{token.displayName}</strong>
       ),
     ];
   });
@@ -285,7 +305,7 @@ function OptionRow({
   availabilityByName: AiAvailability;
 }) {
   const nameKey = option.name.trim().toLowerCase();
-  // Same id-then-name fallback as `renderSummary` — `option.source_id` is
+  // Same id-then-name fallback as `renderTokenizedText` — `option.source_id` is
   // supposed to be an exact copy of the sheet entity's id, but a model that
   // gets it wrong still reliably gets `name` right, so a lookup by name
   // against the entity's own data (not just this response's other options)
@@ -316,7 +336,7 @@ function OptionRow({
             {isBest && <OptionBadge tone="best">Best</OptionBadge>}
             {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}
           </span>
-          : {renderPlainSegment(option.description, `desc-${descriptionKey}`, glossaryByName, sheetTermsRe)}
+          : {renderTokenizedText(option.description, `desc-${descriptionKey}`, glossary, glossaryByName, sheetTermsRe)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
           <div className={`mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 px-2.5 py-1.5 ${FAINT_TINT_CLS}`}>
@@ -324,7 +344,7 @@ function OptionRow({
               {option.conditions.map((condition, i) => (
                 <li key={i} className="flex gap-1.5">
                   <span className="mt-0.5 shrink-0 text-slate-600">•</span>
-                  <span>{condition}</span>
+                  <span>{renderTokenizedText(condition, `cond-${descriptionKey}-${i}`, glossary, glossaryByName, sheetTermsRe)}</span>
                 </li>
               ))}
             </ul>
@@ -355,7 +375,7 @@ export function AiResponseText({
     <div className="flex flex-col gap-3">
       <div className={`flex flex-col gap-2 rounded-lg px-3 py-2 text-sm leading-relaxed text-slate-300 ${FAINT_TINT_CLS}`}>
         {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-          <p key={i}>{renderSummary(paragraph, glossary, glossaryByName, sheetTermsRe)}</p>
+          <p key={i}>{renderTokenizedText(paragraph, `sum-${i}`, glossary, glossaryByName, sheetTermsRe)}</p>
         ))}
       </div>
       {CATEGORY_ORDER.map((category) => {
