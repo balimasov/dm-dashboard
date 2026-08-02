@@ -12,6 +12,33 @@ const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
 const STORAGE_PREFIX = "floating-panel:";
 
+/**
+ * The header's own action cluster (an optional caller action, e.g. "clear
+ * conversation", plus the always-present close button) — split into its own
+ * component only because the exact same row is otherwise hand-copied between
+ * this file's mobile and desktop branches below.
+ *
+ * A thin vertical divider sits between `headerActions` and the close button
+ * whenever the former is present, with a wider gap on each side of it —
+ * without it, a destructive action (e.g. "clear conversation," `TrashOutlineIcon`
+ * in `AiAssistantModal`) and "close" sat only 4px apart, which on a touch
+ * screen is well within a fingertip's margin of error for hitting the wrong
+ * one. The divider reads as two distinct button *groups* rather than one
+ * continuous row, which cuts mis-taps far more than spacing alone would —
+ * increasing gap without it just makes one row look sparser, not separated.
+ */
+function HeaderActionsRow({ headerActions, onClose }: { headerActions?: ReactNode; onClose: () => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      {headerActions}
+      {headerActions && <span aria-hidden="true" className="h-4 w-px shrink-0 bg-slate-700" />}
+      <IconButton onClick={onClose} aria-label="Close">
+        ✕
+      </IconButton>
+    </div>
+  );
+}
+
 /** Best-effort read of a previously saved size/position — blocked `localStorage` access (private browsing, storage disabled) falls back to `null` the same as no saved value at all; malformed JSON is `parseSavedRect`'s own concern. */
 function loadSavedRect(storageKey: string): FloatingPanelRect | null {
   try {
@@ -134,12 +161,7 @@ export function FloatingPanel({
           <h2 id={titleId} className={MODAL_TITLE_CLS}>
             {title}
           </h2>
-          <div className="flex shrink-0 items-center gap-1">
-            {headerActions}
-            <IconButton onClick={onClose} aria-label="Close">
-              ✕
-            </IconButton>
-          </div>
+          <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
         </div>
         {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
@@ -224,12 +246,7 @@ export function FloatingPanel({
         <h2 id={titleId} className={MODAL_TITLE_CLS}>
           {title}
         </h2>
-        <div className="flex shrink-0 items-center gap-1">
-          {headerActions}
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
+        <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
       </div>
       {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
