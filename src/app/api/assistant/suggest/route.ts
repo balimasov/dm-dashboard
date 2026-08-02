@@ -478,25 +478,6 @@ the relevant option description.
 
 Do not return actions belonging to allies.
 
-FOLLOW-UP REQUESTS
-
-The input may supply previous_summary — the most recent turn of this same
-conversation (either an earlier plan's game_plan.summary, or an earlier
-short reply) that the current user_request is refining or reacting to
-(e.g. "what if I move closer first," "any option that doesn't cost my last
-spell slot").
-
-When present, treat user_request as building on that specific prior turn —
-adjust, reconsider, or compare against it rather than generating an
-unrelated fresh overview. Do not just restate it verbatim.
-
-previous_summary reflects the sheet's state at the time it was given, not
-necessarily the state supplied now — the sheet below is always the current
-source of truth for what's actually still legal or available.
-
-Absent means an unrelated request — never invent a previous turn when none
-is supplied.
-
 TACTICAL EVALUATION
 
 Evaluate usable options by:
@@ -620,10 +601,17 @@ CONTEXT
   standalone rules question), means treat this as its own fresh request;
   never force a connection that isn't there.
 
-- Do not repeat a full list of options, categories, or action-economy
-  labels — that already happened in the plan card this conversation
-  started from. Give a short, direct, conversational answer instead
-  (usually 1-3 sentences, longer only when the question genuinely needs it).
+- Do not repeat a full list of tactical options, categories, or
+  action-economy labels from an already-shown plan card — for a
+  single-topic question, give a short, direct, conversational answer
+  instead (usually 1-3 sentences, longer only when it genuinely needs it).
+
+- When the question is inherently about several distinct things at once
+  (e.g. "what do you know about my party," listing multiple characters'
+  resources or spells), do NOT compress them into one dense run-on
+  paragraph — put one item per line, with a blank line between items, so
+  each stays readable on its own. Brevity still applies per item; only the
+  layout changes.
 
 ABILITY REFERENCES
 
@@ -644,8 +632,10 @@ OUTPUT
 
 - Do not ask follow-up questions.
 
-- Return valid JSON only, matching the supplied schema — no Markdown,
-  emoji, or text outside the JSON.`;
+- Return valid JSON only, matching the supplied schema — no Markdown
+  syntax (no **bold**, # headers, code fences), emoji, or text outside the
+  JSON. Plain blank-line-separated lines (see the CONTEXT section above)
+  are not Markdown and are fine.`;
 
 /**
  * "What can this character/creature do right now" (`intent: "plan"`) or "why/
@@ -760,7 +750,7 @@ async function callAssistantModel<T>(
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode, intent, ignore_context } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, intent } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -798,9 +788,10 @@ export async function POST(req: Request) {
 
   // Derived server-side from this entity's own persisted conversation
   // (never client-supplied — see `assistantSuggestSchema`'s own doc
-  // comment) so a follow-up "ask" or a plan rebuild can build on whatever
-  // was actually said last, even after a fresh page load with no client
-  // state at all.
+  // comment) so a follow-up "ask" can build on whatever was actually said
+  // last, even after a fresh page load with no client state at all. Only
+  // the "ask" branch below uses this — "Suggest move" (the "plan" branch)
+  // deliberately never carries the prior turn forward, per its own comment.
   const history = listAssistantMessages(entityId);
   const lastMessage = history[history.length - 1];
   const previousContext = lastMessage ? (lastMessage.kind === "plan" ? lastMessage.plan.game_plan.summary : lastMessage.reply) : undefined;
@@ -832,29 +823,21 @@ user_request: ${situation}`;
       contentResult = result;
     }
   } else {
-    // Unlike the "ask" branch above, a plan request has no situation to
-    // relate the previous turn to when the DM just clicks "Rebuild plan"/
-    // "Best move" with the bar left empty — that's a request for a fresh
-    // best move given the *current* sheet, not a continuation of whatever
-    // was last discussed. Only carrying previousContext forward when there's
-    // actual typed text keeps a blank rebuild from getting subtly anchored
-    // to the old plan's narrative (the model was seen doing exactly that
-    // when previous_summary was always attached, even to "(none)" requests).
-    // `ignore_context` covers the opposite case: a *specific* rebuild
-    // request (situation non-empty) that's still deliberately not a
-    // follow-up to the prior turn — see `assistantSuggestSchema`'s own doc
-    // comment on the checkbox this comes from.
-    const planPreviousContext = situation && !ignore_context ? previousContext : undefined;
+    // "Suggest move" always evaluates fresh off the *current* sheet — unlike
+    // "ask" above, it never carries the prior turn's context forward, empty
+    // situation or not. That's deliberate: a specific request ("assume I
+    // already used Action Surge") is still just additional detail for a
+    // clean read of the current state, not a continuation of whatever was
+    // last discussed — that distinction is "Ask"'s job.
     const userContent = `${name}'s current sheet:
 
 ${context}
 
 response_mode: ${response_mode}
 output_language: Ukrainian
-user_request: ${situation || "(none)"}
-previous_summary: ${planPreviousContext || "(none)"}`;
+user_request: ${situation || "(none)"}`;
 
-    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context, planPreviousContext);
+    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context);
     const cached = getCachedAssistantResponse<AiTacticalResponse>(cacheKey);
     if (cached) {
       contentResult = { ok: true, data: cached };

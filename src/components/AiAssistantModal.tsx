@@ -13,7 +13,7 @@ import { IconButton } from "./ui/IconButton";
 import { AI_CHIP_CLS } from "./ui/containerStyles";
 import { SendIcon, SparklesIcon, TrashOutlineIcon } from "./ui/icons";
 import { Spinner } from "./ui/Spinner";
-import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS, MUTED_LABEL_CLS } from "./ui/typography";
+import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 type Target = { campaignId: string; characterId: string } | { campaignId: string; creatureId: string };
 
@@ -48,11 +48,10 @@ function historyQueryParams(target: Target): string {
 function GivenBox({ query }: { query: string }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-      <p className={MUTED_LABEL_CLS}>Given</p>
       {query ? (
-        <p className="mt-1 text-sm text-slate-300">{query}</p>
+        <p className="text-sm text-slate-300">{query}</p>
       ) : (
-        <p className="mt-1 text-sm italic text-slate-500">No additional details — general best move.</p>
+        <p className="text-sm italic text-slate-500">No additional details — general best move.</p>
       )}
     </div>
   );
@@ -214,17 +213,16 @@ export function AiAssistantModal({
   // clears it, since a rebuilt plan's own `query` is shown inside its
   // `GivenBox` instead, not as a bubble.
   const [pendingAsk, setPendingAsk] = useState<{ text: string; createdAt: string } | null>(null);
-  // The "Rebuild without previous context" checkbox — only ever shown (and
-  // only ever meaningful) alongside actual typed text: a blank rebuild
-  // already ignores the previous turn by default (see `route.ts`'s own
-  // comment), so this exists purely for a *specific* rebuild request that's
-  // still meant to stand on its own rather than build on whatever this
-  // conversation last said. Reset after every submit rather than left
-  // sticky, so it never silently carries over onto an unrelated later ask.
-  const [ignoreContext, setIgnoreContext] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
+  // The most recently appended message's own wrapper (see the `.map` below)
+  // — scrolled to its *top* when a new one arrives (see the effect below),
+  // rather than the feed's bottom: a long plan card's bottom edge is deep
+  // past its own summary/header, so scrolling to the feed's absolute end
+  // was landing the DM past the very thing a fresh plan needs them to read
+  // first.
+  const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const entityId = "characterId" in target ? target.characterId : target.creatureId;
 
@@ -240,9 +238,23 @@ export function AiAssistantModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target.campaignId, entityId]);
 
+  // While a request is in flight (a pending "ask" bubble, or the generic
+  // "Thinking..." spinner for a plan), scroll to the feed's actual bottom so
+  // that placeholder is visible.
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length, loading, pendingAsk]);
+  }, [loading, pendingAsk]);
+
+  // Once a new message actually lands, scroll *its own top* into view
+  // instead — for a short reply this looks the same as scrolling to the
+  // bottom, but for a plan card it means landing on the header/summary
+  // instead of buried past the full option list. Runs after the effect
+  // above in the same commit (React runs effects in declaration order), so
+  // this is the one that wins when a message arrives in the same update
+  // that clears `loading`.
+  useEffect(() => {
+    if (messages.length > 0) lastMessageRef.current?.scrollIntoView({ block: "start" });
+  }, [messages.length]);
 
   // Grows the bar with the text instead of scrolling inside a fixed-height
   // box — matches the single-line "chat input" feel up until someone actually
@@ -255,7 +267,7 @@ export function AiAssistantModal({
     el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
   }, [situation]);
 
-  function submit(intent: "plan" | "ask", text: string, ignore = false) {
+  function submit(intent: "plan" | "ask", text: string) {
     // Guards against a double-fire (an accidental extra click, or Enter
     // pressed again before the last turn lands) sending a second paid LLM
     // call for the exact same question — the buttons below are also
@@ -273,7 +285,6 @@ export function AiAssistantModal({
         intent,
         ...(intent === "plan" ? { response_mode: responseMode } : {}),
         ...(text ? { situation: text } : {}),
-        ...(intent === "plan" && ignore ? { ignore_context: true } : {}),
       }),
     })
       .then((res) => parseJsonOrThrow<{ message: AssistantChatMessage }>(res, "The AI assistant couldn't answer right now."))
@@ -285,12 +296,10 @@ export function AiAssistantModal({
       .finally(() => setLoading(false));
   }
 
-  function onSuggestOrRebuild() {
+  function suggestMove() {
     const text = situation.trim();
-    const ignore = ignoreContext;
     setSituation("");
-    setIgnoreContext(false);
-    submit("plan", text, ignore);
+    submit("plan", text);
   }
 
   function ask() {
@@ -353,27 +362,28 @@ export function AiAssistantModal({
             <p className={EMPTY_STATE_CLS}>📖 any D&D 2024 (5.5e) rules question</p>
           </div>
         )}
-        {messages.map((msg) =>
-          msg.kind === "plan" ? (
-            <PlanCard
-              key={msg.id}
-              message={msg}
-              isLatest={msg.id === lastPlanId}
-              collapsed={isPlanCollapsed(msg.id)}
-              onToggle={() => toggleCollapse(msg.id)}
-              onPickChip={(q) => submit("ask", q)}
-              glossary={glossary}
-              glossaryByName={glossaryByName}
-              availability={availability}
-              availabilityByName={availabilityByName}
-            />
-          ) : (
-            <div key={msg.id} className="flex flex-col gap-2">
-              {msg.query && <UserBubble text={msg.query} createdAt={msg.createdAt} />}
-              <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} />
-            </div>
-          )
-        )}
+        {messages.map((msg, i) => (
+          <div key={msg.id} ref={i === messages.length - 1 ? lastMessageRef : undefined}>
+            {msg.kind === "plan" ? (
+              <PlanCard
+                message={msg}
+                isLatest={msg.id === lastPlanId}
+                collapsed={isPlanCollapsed(msg.id)}
+                onToggle={() => toggleCollapse(msg.id)}
+                onPickChip={(q) => submit("ask", q)}
+                glossary={glossary}
+                glossaryByName={glossaryByName}
+                availability={availability}
+                availabilityByName={availabilityByName}
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                {msg.query && <UserBubble text={msg.query} createdAt={msg.createdAt} />}
+                <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} />
+              </div>
+            )}
+          </div>
+        ))}
         {pendingAsk !== null && (
           <div className="flex flex-col gap-2">
             <UserBubble text={pendingAsk.text} createdAt={pendingAsk.createdAt} />
@@ -405,14 +415,11 @@ export function AiAssistantModal({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                // Typed text reads as a question to ask, regardless of
-                // whether this is the very first message in the
-                // conversation — both buttons are always on screen now,
-                // Enter just picks whichever one an empty vs. non-empty bar
-                // would imply. An empty bar has nothing to "ask," so it
-                // falls back to the plan action instead.
+                // Typed text reads as a question to ask; an empty bar has
+                // nothing to "ask," so it falls back to suggesting a move
+                // instead. Both buttons are always on screen regardless.
                 if (situation.trim()) ask();
-                else onSuggestOrRebuild();
+                else suggestMove();
               }
             }}
             placeholder="describe the situation, or ask anything D&D…"
@@ -421,36 +428,23 @@ export function AiAssistantModal({
             className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
           />
         </div>
-        {hasMessages && situation.trim().length > 0 && (
-          <label className="flex w-fit cursor-pointer items-center gap-1.5 text-xs text-slate-500 hover:text-slate-400">
-            <input
-              type="checkbox"
-              checked={ignoreContext}
-              onChange={(e) => setIgnoreContext(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-slate-700 bg-slate-900 accent-sky-600"
-            />
-            Rebuild without previous context
-          </label>
-        )}
         {/* Both actions are always on screen, even for the very first
             message — a fresh conversation isn't necessarily starting with
             "what's my best move," it might just as well open with a
-            state/rules question via "Ask" instead. */}
+            state/rules question via "Ask" instead. "Suggest move" always
+            reads the same regardless of whether the note above is empty or
+            not — see `suggestMove`/`route.ts`'s own comment: a typed note is
+            just extra detail for a clean read of the *current* sheet, never
+            a follow-up to the prior turn (that's what "Ask" is for). */}
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onSuggestOrRebuild}
+            onClick={suggestMove}
             disabled={loading}
             className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {hasMessages ? (
-              "↻ Rebuild plan"
-            ) : (
-              <>
-                <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
-                Best move
-              </>
-            )}
+            <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
+            Suggest move
           </button>
           <button
             type="button"
@@ -462,6 +456,10 @@ export function AiAssistantModal({
             Ask
           </button>
         </div>
+        <p className="truncate text-center text-xs text-slate-500">
+          <b className="font-semibold text-slate-400">Suggest move:</b> empty note = best move, or add details to
+          factor in.
+        </p>
       </div>
     </FloatingPanel>
   );
