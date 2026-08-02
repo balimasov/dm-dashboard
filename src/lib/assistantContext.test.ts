@@ -343,6 +343,17 @@ describe("creatureAssistantContext", () => {
     expect(context).not.toContain("Young Red Dragon, Large Dragon");
   });
 
+  test("reports the full multi-mode speedDetail (e.g. a flier's fly speed), not just the plain walk-speed number", () => {
+    const context = creatureAssistantContext(makeCreature({ name: "Owl", speed: 5, speedDetail: "5 ft., fly 60 ft." }));
+    expect(context).toContain("Speed: 5 ft., fly 60 ft.");
+    expect(context).not.toContain("Speed: 5ft");
+  });
+
+  test("falls back to the plain speed number when speedDetail is absent", () => {
+    const context = creatureAssistantContext(makeCreature({ name: "Young Red Dragon", speed: 40 }));
+    expect(context).toContain("Speed: 40ft");
+  });
+
   test("reports HP/AC and passes trait recharge text through unstructured", () => {
     const creature = makeCreature({
       name: "Young Red Dragon",

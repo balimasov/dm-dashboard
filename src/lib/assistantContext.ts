@@ -324,7 +324,12 @@ export function creatureAssistantContext(creature: Creature, ownerName?: string)
   lines.push(`${cr.name}${typeDetail ? ` — ${typeDetail}` : ""}`);
   if (ownerName) lines.push(`Owned/commanded by: ${ownerName} (a party member — see their own status below)`);
   lines.push(
-    `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speed}ft`
+    // `speedDetail` (e.g. "40 ft., fly 80 ft.") is the only place flight/
+    // swim/climb speeds actually show up — same reasoning as
+    // `companionsContext`'s own fallback below. Without it, the model only
+    // ever saw the plain walk-speed number, so a creature that only flies
+    // (walk speed 5ft, fly 60ft) looked nearly immobile instead of a flier.
+    `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speedDetail || `${cr.speed}ft`}`
   );
   if (cr.senses) lines.push(`Senses: ${cr.senses}`);
   if (cr.conditions.length > 0) {
