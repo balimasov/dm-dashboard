@@ -330,6 +330,19 @@ describe("creatureAssistantContext", () => {
     expect(withoutOwner).not.toContain("Owned/commanded by");
   });
 
+  test("names the actual species/template (e.g. Unicorn) alongside an in-play nickname, not just the D&D type category", () => {
+    const context = creatureAssistantContext(
+      makeCreature({ name: "Rosatar", templateName: "Unicorn", creatureType: "Celestial", size: "Large" })
+    );
+    expect(context).toContain("Rosatar — Unicorn, Large Celestial");
+  });
+
+  test("doesn't repeat the species when no nickname was ever set (name and templateName are identical)", () => {
+    const context = creatureAssistantContext(makeCreature({ name: "Young Red Dragon", creatureType: "Dragon", size: "Large" }));
+    expect(context).toContain("Young Red Dragon — Large Dragon");
+    expect(context).not.toContain("Young Red Dragon, Large Dragon");
+  });
+
   test("reports HP/AC and passes trait recharge text through unstructured", () => {
     const creature = makeCreature({
       name: "Young Red Dragon",
@@ -522,6 +535,18 @@ describe("companionsContext", () => {
     expect(context).toContain("HP 22/22");
     expect(context).toContain("AC 13");
     expect(context).toContain("Speed 40 ft., fly 80 ft.");
+  });
+
+  test("names the actual species/template (e.g. Unicorn) alongside an in-play nickname, not just the D&D type category", () => {
+    const mount = makeCreature({
+      name: "Rosatar",
+      templateName: "Unicorn",
+      ownerCharacterId: "char-1",
+      creatureType: "Celestial",
+      size: "Large",
+    });
+    const context = companionsContext([mount], "char-1");
+    expect(context).toContain("Rosatar (Unicorn, Large Celestial)");
   });
 
   test("falls back to the plain speed number when speedDetail is absent", () => {

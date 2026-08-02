@@ -278,8 +278,15 @@ export function companionsContext(creatures: Creature[], ownerId: string): strin
 
   const lines: string[] = ["", "Your companions/mounts (for tactical awareness — their own full actions aren't available on your turn):"];
   for (const cr of owned) {
+    // `templateName` is the creature's actual species/import name (e.g.
+    // "Unicorn") — `name` is just an in-play nickname (e.g. "Rosatar") that
+    // can differ from it entirely and carries no species information on its
+    // own. Omitted when the two are identical (no nickname was ever set)
+    // to avoid a redundant "Unicorn (Unicorn, Large Celestial)".
+    const species = cr.templateName && cr.templateName !== cr.name ? cr.templateName : null;
+    const typeDetail = [species, cr.creatureType ? `${cr.size ? `${cr.size} ` : ""}${cr.creatureType}` : null].filter(Boolean).join(", ");
     const parts: string[] = [
-      `${cr.name}${cr.creatureType ? ` (${cr.size ? `${cr.size} ` : ""}${cr.creatureType})` : ""}`,
+      `${cr.name}${typeDetail ? ` (${typeDetail})` : ""}`,
       `HP ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""}`,
       `AC ${cr.ac}`,
       // `speedDetail` (e.g. "40 ft., fly 80 ft.") is the only place flight/
@@ -307,7 +314,14 @@ export function creatureAssistantContext(creature: Creature, ownerName?: string)
   const cr = creature;
   const lines: string[] = [];
 
-  lines.push(`${cr.name}${cr.creatureType ? ` — ${cr.size ? `${cr.size} ` : ""}${cr.creatureType}` : ""}`);
+  // Same `templateName`-vs-`name` distinction as `companionsContext` — without
+  // it, the model only ever learns this creature's D&D *type* category (e.g.
+  // "Large Celestial") and never its actual species/import name (e.g.
+  // "Unicorn"), so asked point-blank "what creature are you," it could only
+  // answer with the type category, never the species.
+  const species = cr.templateName && cr.templateName !== cr.name ? cr.templateName : null;
+  const typeDetail = [species, cr.creatureType ? `${cr.size ? `${cr.size} ` : ""}${cr.creatureType}` : null].filter(Boolean).join(", ");
+  lines.push(`${cr.name}${typeDetail ? ` — ${typeDetail}` : ""}`);
   if (ownerName) lines.push(`Owned/commanded by: ${ownerName} (a party member — see their own status below)`);
   lines.push(
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speed}ft`
