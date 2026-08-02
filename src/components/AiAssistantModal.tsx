@@ -71,6 +71,11 @@ export function AiAssistantModal({
   }, [situation]);
 
   function ask() {
+    // Guards against a double-fire (an accidental extra click, or Enter
+    // pressed again before the first answer lands) sending a second paid LLM
+    // call for the exact same question — the button below is also disabled
+    // while loading, this covers the Enter-key path too.
+    if (loading) return;
     const trimmed = situation.trim();
     setAsked(true);
     setAskedSituation(trimmed);
@@ -129,8 +134,9 @@ export function AiAssistantModal({
         <button
           type="button"
           onClick={ask}
+          disabled={loading}
           aria-label="Ask"
-          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 ${
+          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-sky-600 font-medium text-white transition-[width,padding] duration-150 hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-sky-600 ${
             situation.trim() ? "h-9 w-9" : "h-9 px-3.5 text-sm"
           }`}
         >

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
+import { assistantCacheKey, getCachedAssistantResponse, setCachedAssistantResponse } from "@/lib/assistantResponseCache";
 import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
 import { getCampaign, getCharacter, getCreature, listCharacters } from "@/lib/db";
+import { fetchWithRetry } from "@/lib/fetchWithRetry";
 import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
+
+const LOG_PREFIX = "[assistant/suggest]";
 
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
@@ -529,41 +534,6 @@ OUTPUT
 - Before finalizing, re-check every natural-language field against
   output_language.`;
 
-const OPTION_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["category", "source_id", "name", "kind", "priority", "status", "description", "conditions"],
-  properties: {
-    category: {
-      type: "string",
-      enum: ["action", "bonus_action", "movement", "reaction", "legendary_action", "lair_action", "no_action_needed"],
-    },
-    source_id: { type: ["string", "null"] },
-    name: { type: "string", minLength: 1, maxLength: 160 },
-    kind: { type: "string", enum: ["sheet", "universal", "improvised"] },
-    priority: { type: "string", enum: ["best", "alternative", "available"] },
-    status: { type: "string", enum: ["available", "conditional"] },
-    description: { type: "string", minLength: 1, maxLength: 600 },
-    conditions: { type: "array", maxItems: 5, items: { type: "string", minLength: 1, maxLength: 300 } },
-  },
-} as const;
-
-const TACTICAL_RESPONSE_JSON_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["game_plan", "options"],
-  properties: {
-    game_plan: {
-      type: "object",
-      additionalProperties: false,
-      required: ["summary"],
-      properties: { summary: { type: "string", minLength: 1, maxLength: 3000 } },
-    },
-    options: { type: "array", maxItems: 100, items: { $ref: "#/$defs/option" } },
-  },
-  $defs: { option: OPTION_SCHEMA },
-} as const;
-
 /**
  * "What can this character/creature do right now" — sends the sheet's
  * *current* resource state (see `characterAssistantContext`/
@@ -616,6 +586,13 @@ export async function POST(req: Request) {
   // character's, so this isn't gated on `characterId` alone.
   context += partyTeammatesContext(party, selfCharacterId);
 
+  // Keyed on the exact context text, so reopening the panel or re-asking the
+  // same question seconds later (nothing on the sheet changed) skips a
+  // second paid LLM call entirely — see `assistantResponseCache.ts`.
+  const cacheKey = assistantCacheKey(characterId ?? creatureId!, response_mode, situation, context);
+  const cached = getCachedAssistantResponse(cacheKey);
+  if (cached) return NextResponse.json({ response: cached });
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 });
@@ -631,7 +608,7 @@ user_request: ${situation || "(none)"}`;
 
   let upstream: Response;
   try {
-    upstream = await fetch("https://api.openai.com/v1/chat/completions", {
+    upstream = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
@@ -639,7 +616,7 @@ user_request: ${situation || "(none)"}`;
         temperature: 0.4,
         response_format: {
           type: "json_schema",
-          json_schema: { name: "DndTacticalResponse", strict: true, schema: TACTICAL_RESPONSE_JSON_SCHEMA },
+          json_schema: { name: "DndTacticalResponse", strict: true, schema: AI_TACTICAL_RESPONSE_JSON_SCHEMA },
         },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
@@ -647,15 +624,22 @@ user_request: ${situation || "(none)"}`;
         ],
       }),
     });
-  } catch {
+  } catch (err) {
+    const timedOut = err instanceof DOMException && err.name === "TimeoutError";
+    console.error(`${LOG_PREFIX} upstream request failed after retries`, err);
     return NextResponse.json(
-      { error: "Couldn't reach the AI assistant. Check your connection and try again." },
+      {
+        error: timedOut
+          ? "The AI assistant is taking too long to respond. Try again."
+          : "Couldn't reach the AI assistant. Check your connection and try again.",
+      },
       { status: 502 }
     );
   }
 
   if (!upstream.ok) {
     const detail: { error?: { message?: string } } | null = await upstream.json().catch(() => null);
+    console.error(`${LOG_PREFIX} upstream responded with ${upstream.status} after retries`, detail);
     return NextResponse.json(
       { error: detail?.error?.message || `The AI assistant is temporarily unavailable (error ${upstream.status}).` },
       { status: upstream.status === 401 || upstream.status === 403 ? 500 : 502 }
@@ -665,25 +649,30 @@ user_request: ${situation || "(none)"}`;
   const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[] } = await upstream.json();
   const message = json.choices?.[0]?.message;
   if (message?.refusal) {
+    console.error(`${LOG_PREFIX} model refused`, message.refusal);
     return NextResponse.json({ error: message.refusal }, { status: 502 });
   }
 
   const content = message?.content;
   if (!content) {
+    console.error(`${LOG_PREFIX} empty response content`, json);
     return NextResponse.json({ error: "The AI assistant returned an empty response." }, { status: 502 });
   }
 
   let parsedContent: unknown;
   try {
     parsedContent = JSON.parse(content);
-  } catch {
+  } catch (err) {
+    console.error(`${LOG_PREFIX} model content wasn't valid JSON`, err, content.slice(0, 2000));
     return NextResponse.json({ error: "The AI assistant returned malformed data." }, { status: 502 });
   }
 
   const result = aiTacticalResponseSchema.safeParse(parsedContent);
   if (!result.success) {
+    console.error(`${LOG_PREFIX} model content failed schema validation`, result.error.issues, JSON.stringify(parsedContent).slice(0, 2000));
     return NextResponse.json({ error: "The AI assistant's response didn't match the expected format." }, { status: 502 });
   }
 
+  setCachedAssistantResponse(cacheKey, result.data);
   return NextResponse.json({ response: result.data });
 }

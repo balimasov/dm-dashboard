@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AI_OPTION_CATEGORIES, AI_OPTION_KINDS, AI_OPTION_LIMITS, AI_OPTION_PRIORITIES, AI_OPTION_STATUSES } from "./aiOptionContract";
 
 /**
  * Runtime validation for API route request bodies, mirroring the shapes in
@@ -439,20 +440,20 @@ export const assistantSuggestSchema = z
  * boundary-validation posture as every other schema below.
  */
 export const aiOptionSchema = z.object({
-  category: z.enum(["action", "bonus_action", "movement", "reaction", "legendary_action", "lair_action", "no_action_needed"]),
+  category: z.enum(AI_OPTION_CATEGORIES),
   /** The exact `Feature`/`KnownSpell`/`Attack`/`Resource` `.id`, or a `trait-N`/`spell-G-N` id from `aiSourceIds.ts` for a creature — `null` for `universal`/`improvised` options, which have nothing on the sheet to link to. */
   source_id: z.string().nullable(),
-  name: z.string().min(1).max(160),
-  kind: z.enum(["sheet", "universal", "improvised"]),
-  priority: z.enum(["best", "alternative", "available"]),
-  status: z.enum(["available", "conditional"]),
-  description: z.string().min(1).max(600),
-  conditions: z.array(z.string().min(1).max(300)).max(5),
+  name: z.string().min(1).max(AI_OPTION_LIMITS.nameMaxLength),
+  kind: z.enum(AI_OPTION_KINDS),
+  priority: z.enum(AI_OPTION_PRIORITIES),
+  status: z.enum(AI_OPTION_STATUSES),
+  description: z.string().min(1).max(AI_OPTION_LIMITS.descriptionMaxLength),
+  conditions: z.array(z.string().min(1).max(AI_OPTION_LIMITS.conditionMaxLength)).max(AI_OPTION_LIMITS.conditionMaxItems),
 });
 
 export const aiTacticalResponseSchema = z.object({
-  game_plan: z.object({ summary: z.string().min(1).max(3000) }),
-  options: z.array(aiOptionSchema).max(100),
+  game_plan: z.object({ summary: z.string().min(1).max(AI_OPTION_LIMITS.summaryMaxLength) }),
+  options: z.array(aiOptionSchema).max(AI_OPTION_LIMITS.optionsMaxItems),
 });
 
 export type AiOption = z.infer<typeof aiOptionSchema>;
