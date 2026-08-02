@@ -6,7 +6,7 @@ import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
 import { MASTERY_INFO } from "@/lib/masteryInfo";
 import { AiOption, AiTacticalResponse } from "@/lib/schemas";
 import { SENSE_INFO } from "@/lib/senseInfo";
-import { getUniversalActionInfo } from "@/lib/universalActionInfo";
+import { getUniversalActionInfo, UNIVERSAL_ACTION_INFO } from "@/lib/universalActionInfo";
 import { InfoTooltip } from "./InfoTooltip";
 import { ConditionHintPanel } from "./ui/conditionHints";
 import { FAINT_TINT_CLS } from "./ui/containerStyles";
@@ -101,6 +101,21 @@ const UNIVERSAL_TERMS_RE = new RegExp(`\\b(${UNIVERSAL_TERMS.sort((a, b) => b.le
  */
 const MASTERY_TERMS_RE = new RegExp(`\\b(${Object.keys(MASTERY_INFO).join("|")})\\b`, "g");
 
+/**
+ * Universal action names (Dash, Disengage, Dodge, ...) — matched
+ * case-sensitively, same reasoning as `MASTERY_TERMS_RE`: several of these
+ * (Help, Hide, Ready, Search, Study) are also ordinary English words, so
+ * requiring the capitalized form the model actually writes when naming the
+ * action avoids turning every lowercase "help"/"search" in unrelated prose
+ * into a false-positive hint.
+ */
+const UNIVERSAL_ACTION_TERMS_RE = new RegExp(
+  `\\b(${Object.keys(UNIVERSAL_ACTION_INFO)
+    .map((key) => key.charAt(0).toUpperCase() + key.slice(1))
+    .join("|")})\\b`,
+  "g",
+);
+
 /** A condition uses the app's own `ConditionHintPanel`; everything else here (ability score, sense, exhaustion) has no equivalent standalone hint elsewhere (the closest for a score, `AbilityScoreHintPanel`, needs a real score/modifier this context doesn't have), so it keeps a plain title+blurb `HintPanel`. */
 function universalHint(term: string) {
   const lower = term.toLowerCase();
@@ -134,19 +149,36 @@ function buildSheetTermsRegex(glossaryByName: AiGlossary): RegExp | null {
   return new RegExp(`\\b(${pattern})\\b`, "gi");
 }
 
-/** A run of text that didn't match a universal condition/ability term — checked once more against the Weapon Mastery vocabulary, since a mastery property name can show up in an option's description or the summary the same way a condition can. */
+/** A run of text that didn't match a universal condition/ability term, a sheet term, or a Weapon Mastery property name — checked once more against the universal-action vocabulary (Dash, Disengage, Dodge, ...), since the model's chat replies frequently name one of these in plain prose without it ever appearing as a `kind: "universal"` option. */
+function renderUniversalActionSegment(text: string, keyPrefix: string) {
+  return text
+    .split(UNIVERSAL_ACTION_TERMS_RE)
+    .filter((part) => part !== "")
+    .map((part, i) => {
+      const description = UNIVERSAL_ACTION_INFO[part.toLowerCase()];
+      return description ? (
+        <InfoTooltip key={`${keyPrefix}-ua-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={<HintPanel title={part} description={description} />}>
+          {part}
+        </InfoTooltip>
+      ) : (
+        <span key={`${keyPrefix}-ua-${i}`}>{part}</span>
+      );
+    });
+}
+
+/** A run of text that didn't match a universal condition/ability term — checked once more against the Weapon Mastery vocabulary, since a mastery property name can show up in an option's description or the summary the same way a condition can. Falls through to `renderUniversalActionSegment` for whatever's still unmatched. */
 function renderMasterySegment(text: string, keyPrefix: string) {
   return text
     .split(MASTERY_TERMS_RE)
     .filter((part) => part !== "")
-    .map((part, i) => {
+    .flatMap((part, i) => {
       const effect = MASTERY_INFO[part];
       return effect ? (
         <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={<HintPanel title={part} description={effect} />}>
           {part}
         </InfoTooltip>
       ) : (
-        <span key={`${keyPrefix}-${i}`}>{part}</span>
+        renderUniversalActionSegment(part, `${keyPrefix}-${i}`)
       );
     });
 }
@@ -170,7 +202,7 @@ function renderSheetSegment(text: string, keyPrefix: string, glossaryByName: AiG
     });
 }
 
-/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability/sense/exhaustion vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against this entity's own sheet term names, then against Weapon Mastery property names for whatever's left over. */
+/** A run of plain text (a summary paragraph, or an option's description) — tokenized first against the universal condition/ability/sense/exhaustion vocabulary, since those terms show up in prose ("DC 19 Strength saving throw") rather than as `[[ability:...]]` tokens, then against this entity's own sheet term names, then against Weapon Mastery property names, then against universal action names (Dash, Disengage, ...) for whatever's left over. */
 function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary = {}, sheetTermsRe: RegExp | null = null) {
   return text
     .split(UNIVERSAL_TERMS_RE)
