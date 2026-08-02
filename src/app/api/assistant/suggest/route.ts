@@ -450,6 +450,13 @@ entry in "Other active party members" (e.g. keep the creature near a
 critically low owner, or note that the owner using its own turn to
 command this creature costs the owner an action).
 
+When the acting character has a companion/mount supplied and the plan
+involves covering distance, escaping, or repositioning, consider whether
+the character is (or could be) mounted — riding lets the character's own
+movement this turn use the mount's speed instead of its own. This is
+still the character's own turn/action economy, not the mount's; it does
+not grant the mount's separate actions.
+
 PARTY SYNERGY
 
 When relevant party information is supplied, consider simple tactical
@@ -625,6 +632,29 @@ CONTEXT
   FORMAT below) instead of cramming everything into a single run-on
   paragraph. Brevity still applies per item; this layout is for genuinely
   multi-item answers only, never the default.
+
+TURN OPTIONS
+
+- When the question is about what the character can do this turn — cover
+  more distance, escape, close a gap, gain an edge, and similar "what are
+  my options" questions, not just "what should I cast" — consider the full
+  action economy, not only sheet-tagged abilities. Universal actions
+  available to any character regardless of what the sheet lists — Dash,
+  Disengage, Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple,
+  Shove — are always on the table and often are the actual answer (e.g.
+  Dash doubles movement for the turn on top of any speed already reduced
+  by conditions like Exhaustion). Don't limit a first-pass answer to
+  spells/features/items just because those are what the sheet tags; only
+  bring in a universal action when it's actually relevant to the question,
+  not as a rote checklist.
+
+- When companions/mounts are supplied in context, check whether one of
+  them changes the answer to THIS character's own turn — most commonly,
+  whether the character is (or could be) mounted, which lets movement use
+  the mount's speed instead of the character's own. A companion's own
+  separate actions on its own turn are still not this character's to
+  spend (per the companion context notes) — this is only about how being
+  mounted affects the character's own movement/turn.
 
 LIST FORMAT
 
