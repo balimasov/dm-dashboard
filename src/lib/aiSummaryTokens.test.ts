@@ -80,4 +80,20 @@ describe("parseSummaryTokens", () => {
       { type: "text", text: "." },
     ]);
   });
+
+  test("keeps a bare bracket shaped like a display name (not a source id) as plain text instead of dropping it", () => {
+    const tokens = parseSummaryTokens("[[Religion]] використовують, коли треба.");
+    expect(tokens).toEqual([
+      { type: "text", text: "Religion " },
+      { type: "text", text: "використовують, коли треба." },
+    ]);
+  });
+
+  test("still drops a bare bracket shaped like a real source id, even without a following duplicate word", () => {
+    const tokens = parseSummaryTokens("Перевір [[skill-religion]] прямо зараз.");
+    expect(tokens).toEqual([
+      { type: "text", text: "Перевір " },
+      { type: "text", text: "прямо зараз." },
+    ]);
+  });
 });

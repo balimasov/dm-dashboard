@@ -71,14 +71,25 @@ export const AI_TACTICAL_RESPONSE_JSON_SCHEMA = {
 } as const;
 
 /**
- * The "Запитати" chat-reply shape — a short conversational answer instead
- * of a full structured plan, used when the DM is asking a follow-up
- * question rather than requesting a new turn plan. Deliberately just one
- * field: there's no option list to validate, since the whole point of this
- * path is not repeating one.
+ * The "Запитати" chat-reply shape — a conversational answer instead of a
+ * full structured plan, used when the DM is asking a follow-up question
+ * rather than requesting a new turn plan. Deliberately just one field:
+ * there's no option list to validate, since the whole point of this path
+ * is not repeating one.
+ *
+ * `replyMaxLength` bumped from an original 1200 — since this path also
+ * covers general D&D consultation now (not just short tactical follow-ups),
+ * a legitimate answer can be much longer (e.g. "group my known spells by
+ * level with a short description each"). With OpenAI's structured-output
+ * `strict: true` mode, this schema's `maxLength` is enforced by the
+ * constrained decoder itself, not just validated after the fact — hitting
+ * it mid-generation silently truncates the JSON string wherever the cap
+ * falls, including mid-word or mid `[[ability:...]]` token, rather than
+ * ending the answer early at a sentence boundary. 1200 was being hit
+ * routinely by exactly this kind of longer, legitimate answer.
  */
 export const AI_REPLY_LIMITS = {
-  replyMaxLength: 1200,
+  replyMaxLength: 4000,
 } as const;
 
 export const AI_REPLY_JSON_SCHEMA = {

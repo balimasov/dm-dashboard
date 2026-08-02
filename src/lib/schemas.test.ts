@@ -505,8 +505,8 @@ describe("aiReplySchema", () => {
     expect(aiReplySchema.safeParse({ reply: "" }).success).toBe(false);
   });
 
-  it("rejects a reply over 1200 characters", () => {
-    expect(aiReplySchema.safeParse({ reply: "x".repeat(1201) }).success).toBe(false);
+  it("rejects a reply over 4000 characters", () => {
+    expect(aiReplySchema.safeParse({ reply: "x".repeat(4001) }).success).toBe(false);
   });
 
   it("rejects a missing reply field", () => {

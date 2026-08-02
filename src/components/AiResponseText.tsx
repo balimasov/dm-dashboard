@@ -231,6 +231,50 @@ function splitParagraphs(summary: string): string[] {
     .filter((p) => p.length > 0);
 }
 
+/** A line written as one list item (see `ASK_SYSTEM_PROMPT`'s LIST FORMAT section — a literal `"- "` prefix), as opposed to a group heading or an ordinary line of prose. */
+const LIST_ITEM_RE = /^-\s+/;
+
+/**
+ * Renders one blank-line-separated block from `splitParagraphs` — either an
+ * ordinary paragraph, or (see `LIST_ITEM_RE`) a run of one or more list
+ * items, optionally preceded by a heading line. Splits the block on single
+ * newlines *within itself* rather than assuming one item per block: a model
+ * asked for a list very reliably writes a group heading followed by several
+ * "- item" lines back-to-back with no blank line between them (ordinary
+ * Markdown-list muscle memory), not one blank-line-separated block per
+ * item — requiring the latter and only ever checking a whole block's first
+ * line left every item after the first one glued onto the same bullet as
+ * plain trailing text instead of getting its own.
+ */
+function renderReplyBlock(block: string, keyPrefix: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
+  const lines = block
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (!lines.some((l) => LIST_ITEM_RE.test(l))) {
+    return (
+      <p key={keyPrefix}>{renderTokenizedText(block, keyPrefix, glossary, glossaryByName, sheetTermsRe)}</p>
+    );
+  }
+  return (
+    <div key={keyPrefix} className="flex flex-col gap-1.5">
+      {lines.map((line, i) => {
+        const isListItem = LIST_ITEM_RE.test(line);
+        const content = line.replace(LIST_ITEM_RE, "");
+        const lineKey = `${keyPrefix}-${i}`;
+        return isListItem ? (
+          <div key={lineKey} className="flex gap-2">
+            <span className="mt-0.5 shrink-0 text-slate-600">•</span>
+            <p className="flex-1">{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe)}</p>
+          </div>
+        ) : (
+          <p key={lineKey}>{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe)}</p>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * Renders a "Запитати" chat reply (`AssistantChatMessage`'s `reply` field)
  * through the exact same tokenization pipeline a plan's `game_plan.summary`
@@ -242,6 +286,15 @@ function splitParagraphs(summary: string): string[] {
  * own small component rather than exposing the lower-level render helpers
  * directly — `AiAssistantModal` only ever needs "turn this reply string into
  * hinted paragraphs," not the tokenization internals.
+ *
+ * A line written as a list item (see `LIST_ITEM_RE`) renders as an actual
+ * bulleted row instead of a plain paragraph — same bullet-dot treatment
+ * `OptionRow`'s own conditions list already uses below, so a multi-item
+ * answer (e.g. "group my spells by level") reads as a real list rather than
+ * a run of visually identical paragraphs with no marker at all. A group
+ * heading line (e.g. "Cantrips:") has no such prefix, so it stays a plain
+ * line of text — see `renderReplyBlock` for how the two mix within one
+ * blank-line-delimited block.
  */
 export function AiChatReply({
   text,
@@ -255,9 +308,7 @@ export function AiChatReply({
   const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
   return (
     <div className="flex flex-col gap-2 text-sm leading-relaxed text-slate-300">
-      {splitParagraphs(text).map((paragraph, i) => (
-        <p key={i}>{renderTokenizedText(paragraph, `reply-${i}`, glossary, glossaryByName, sheetTermsRe)}</p>
-      ))}
+      {splitParagraphs(text).map((block, i) => renderReplyBlock(block, `reply-${i}`, glossary, glossaryByName, sheetTermsRe))}
     </div>
   );
 }

@@ -94,7 +94,7 @@ function PlanCard({
           onClick={onToggle}
           className="flex w-full items-center gap-2 rounded-t-xl px-3 py-2 text-left hover:bg-sky-950/20"
         >
-          <span className={`shrink-0 text-slate-500 transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          <span className={`shrink-0 text-[10px] text-slate-500 transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
           <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-sky-300">
             <SparklesIcon className="h-3 w-3 shrink-0" />
             Suggested move
@@ -459,9 +459,9 @@ export function AiAssistantModal({
             Ask
           </button>
         </div>
-        <p className="truncate text-center text-[10px] text-slate-500">
+        <p className="truncate text-center text-[11px] text-slate-500">
           <b className="font-semibold text-slate-400">Suggest move:</b> leave note empty for the best move, or add
-          details to factor them in.
+          details to factor in.
         </p>
       </div>
     </FloatingPanel>

@@ -130,6 +130,12 @@ Do not place spell levels, slot counts, charges, action abbreviations,
 damage formulas, or other frontend metadata inside the token. The frontend
 will enrich the ability reference and display the existing tooltip.
 
+Never use this token syntax for a skill, ability score, sense, condition,
+or other general D&D term — none of those carry a [source_id] on the
+sheet, so there is never a real id to put in one. Just write the plain
+word (e.g. Religion, Perception, Blinded); the frontend already recognizes
+these terms on its own and adds a hint automatically.
+
 ACTION TYPES
 
 Each option must use one category:
@@ -613,19 +619,49 @@ CONTEXT
 - The one exception: when the question is explicitly asking to enumerate
   several distinct things at once (e.g. "what do you know about my whole
   party," "list everyone's remaining spell slots") — not just because the
-  answer happens to run a little long — put one item per line, blank line
-  between, instead of cramming them into a single run-on paragraph.
-  Brevity still applies per item; this layout is for genuinely multi-item
-  answers only, never the default.
+  answer happens to run a little long — format it as a real list (see LIST
+  FORMAT below) instead of cramming everything into a single run-on
+  paragraph. Brevity still applies per item; this layout is for genuinely
+  multi-item answers only, never the default.
+
+LIST FORMAT
+
+- Used only for the multi-item case above.
+
+- A group heading (e.g. a spell level, a character's name), if there is
+  one, is its own line ending with ":". Never attach the first item of
+  that group to the same line as its heading — the heading line has
+  nothing else on it.
+
+- Each item is its own line, starting with "- " (a literal dash and
+  space) followed by the item's name and a short description. Exactly one
+  item per line — never combine two items on the same line.
+
+- A heading and the items under it are consecutive lines (one newline
+  between them, like an ordinary list) — do not put a blank line between
+  every single item; that's unnecessary and makes a short list look like
+  several unrelated paragraphs. Use a blank line only to separate one
+  whole group (heading + its items) from the next, or from surrounding
+  prose.
+
+- Skip the heading line entirely for a flat list with no natural
+  grouping — just one "- " item per line.
 
 ABILITY REFERENCES
 
 - When mentioning a sheet-based ability, spell, attack, feature, resource,
-  or item, wrap it in [[ability:<source_id>|<display_name>]] using the
-  sheet's own [source_id] and exact name — same convention and token
-  syntax a plan's game_plan.summary uses. Use only source IDs explicitly
-  supplied in the input; if you cannot find an exact matching [id], it
-  isn't on the sheet — leave the token out and just use the plain name.
+  or item — something the sheet actually tags with its own [source_id] —
+  wrap it in [[ability:<source_id>|<display_name>]] using that exact
+  [source_id] and name, same convention and token syntax a plan's
+  game_plan.summary uses. Use only source IDs explicitly supplied in the
+  input; if you cannot find an exact matching [id], it isn't on the sheet —
+  leave the token out and just use the plain name.
+
+- Never wrap a skill, ability score, sense, condition, or other general
+  D&D term in this token syntax — none of those carry a [source_id] on the
+  sheet, so there is never a real id to put in one. Just write the plain
+  word (e.g. Religion, Perception, Blinded); the app's own renderer already
+  recognizes these terms on its own and adds a hint automatically.
 
 OUTPUT
 
