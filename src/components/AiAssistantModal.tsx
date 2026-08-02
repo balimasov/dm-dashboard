@@ -17,8 +17,26 @@ import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS, MUTED_LABEL_CLS } fr
 
 type Target = { campaignId: string; characterId: string } | { campaignId: string; creatureId: string };
 
-/** The three canned follow-up questions shown under the latest plan card. */
-const QUICK_QUESTIONS = ["Чому це найкраще?", "Як зберегти ресурси?", "Які є нестандартні варіанти?"];
+/**
+ * The canned follow-up questions shown under the latest plan card. Each has
+ * its own emoji (distinct across the set, so they read as different actions
+ * at a glance rather than a row of identical pills) and a `query` that's
+ * allowed to differ from the visible `label` — the cinematic one asks a much
+ * more detailed question than its short chip label shows, since the model
+ * only leans into "epic/cinematic/improvised" when the actual prompt says so
+ * explicitly, not from a two-word label alone.
+ */
+const QUICK_QUESTIONS: { emoji: string; label: string; query: string }[] = [
+  { emoji: "🎯", label: "Чому це найкраще?", query: "Чому це найкраще?" },
+  { emoji: "🔀", label: "Який альтернативний варіант?", query: "Який альтернативний варіант?" },
+  { emoji: "🔋", label: "Як зберегти ресурси?", query: "Як зберегти ресурси?" },
+  {
+    emoji: "🎬",
+    label: "Який кінематографічний варіант?",
+    query:
+      "Який максимально кінематографічний і епічний варіант дій цього ходу — з упором на видовищність та імпровізацію, навіть якщо тактично він не найоптимальніший?",
+  },
+];
 
 function historyQueryParams(target: Target): string {
   const params = new URLSearchParams({ campaignId: target.campaignId });
@@ -97,8 +115,8 @@ function PlanCard({
       {isLatest && !collapsed && (
         <div className="flex flex-wrap gap-2">
           {QUICK_QUESTIONS.map((q) => (
-            <button key={q} type="button" onClick={() => onPickChip(q)} className={AI_CHIP_CLS}>
-              {q}
+            <button key={q.label} type="button" onClick={() => onPickChip(q.query)} className={AI_CHIP_CLS}>
+              <span aria-hidden="true">{q.emoji}</span> {q.label}
             </button>
           ))}
         </div>
@@ -177,6 +195,14 @@ export function AiAssistantModal({
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The text of an in-flight "ask" — shown as its own bubble the instant the
+  // request goes out (see `submit`), rather than waiting for the reply to
+  // come back before the question itself appears. Left set on failure (not
+  // cleared in the `.catch()` below) so the question stays visible next to
+  // the error message instead of vanishing along with it; a "plan" submit
+  // clears it, since a rebuilt plan's own `query` is shown inside its
+  // `GivenBox` instead, not as a bubble.
+  const [pendingAsk, setPendingAsk] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
@@ -197,7 +223,7 @@ export function AiAssistantModal({
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length, loading]);
+  }, [messages.length, loading, pendingAsk]);
 
   // Grows the bar with the text instead of scrolling inside a fixed-height
   // box — matches the single-line "chat input" feel up until someone actually
@@ -218,6 +244,7 @@ export function AiAssistantModal({
     if (loading) return;
     setLoading(true);
     setError(null);
+    setPendingAsk(intent === "ask" ? text : null);
     const responseMode = text ? "focused" : "overview";
     fetch("/api/assistant/suggest", {
       method: "POST",
@@ -230,7 +257,10 @@ export function AiAssistantModal({
       }),
     })
       .then((res) => parseJsonOrThrow<{ message: AssistantChatMessage }>(res, "The AI assistant couldn't answer right now."))
-      .then((data) => setMessages((prev) => [...prev, data.message]))
+      .then((data) => {
+        setMessages((prev) => [...prev, data.message]);
+        setPendingAsk(null);
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }
@@ -317,7 +347,18 @@ export function AiAssistantModal({
             </div>
           )
         )}
-        {loading && (
+        {pendingAsk !== null && (
+          <div className="flex flex-col gap-2">
+            <UserBubble text={pendingAsk} />
+            {loading && (
+              <div className="flex max-w-[92%] items-center gap-3 rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
+                <Spinner className="h-4 w-4" />
+                <p className={MUTED_BODY_CLS}>Thinking...</p>
+              </div>
+            )}
+          </div>
+        )}
+        {loading && pendingAsk === null && (
           <div className="flex items-center gap-3 py-2">
             <Spinner className="h-5 w-5" />
             <p className={MUTED_BODY_CLS}>Thinking...</p>

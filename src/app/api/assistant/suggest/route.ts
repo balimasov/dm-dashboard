@@ -804,6 +804,15 @@ user_request: ${situation}`;
       contentResult = result;
     }
   } else {
+    // Unlike the "ask" branch above, a plan request has no situation to
+    // relate the previous turn to when the DM just clicks "Rebuild plan"/
+    // "Best move" with the bar left empty — that's a request for a fresh
+    // best move given the *current* sheet, not a continuation of whatever
+    // was last discussed. Only carrying previousContext forward when there's
+    // actual typed text keeps a blank rebuild from getting subtly anchored
+    // to the old plan's narrative (the model was seen doing exactly that
+    // when previous_summary was always attached, even to "(none)" requests).
+    const planPreviousContext = situation ? previousContext : undefined;
     const userContent = `${name}'s current sheet:
 
 ${context}
@@ -811,9 +820,9 @@ ${context}
 response_mode: ${response_mode}
 output_language: Ukrainian
 user_request: ${situation || "(none)"}
-previous_summary: ${previousContext || "(none)"}`;
+previous_summary: ${planPreviousContext || "(none)"}`;
 
-    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context, previousContext);
+    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context, planPreviousContext);
     const cached = getCachedAssistantResponse<AiTacticalResponse>(cacheKey);
     if (cached) {
       contentResult = { ok: true, data: cached };

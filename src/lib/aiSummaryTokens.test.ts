@@ -45,4 +45,28 @@ describe("parseSummaryTokens", () => {
   test("returns an empty array for an empty string", () => {
     expect(parseSummaryTokens("")).toEqual([]);
   });
+
+  test("drops a stray shorthand token (no ability: prefix, no display name) instead of leaking it as text", () => {
+    const tokens = parseSummaryTokens("через [[feature-0]] Blinded і [[feature-0]] Exhaustion ти просідаєш.");
+    expect(tokens).toEqual([
+      { type: "text", text: "через " },
+      { type: "text", text: "Blinded і " },
+      { type: "text", text: "Exhaustion ти просідаєш." },
+    ]);
+  });
+
+  test("drops a stray shorthand token at the very start", () => {
+    const tokens = parseSummaryTokens("[[spell-7]] Faerie Fire допомагає влучати.");
+    expect(tokens).toEqual([{ type: "text", text: "Faerie Fire допомагає влучати." }]);
+  });
+
+  test("still parses a well-formed token when a stray shorthand one appears alongside it", () => {
+    const tokens = parseSummaryTokens("Спробуй [[feature-0]] Blinded, а потім [[ability:spell-3|Command]].");
+    expect(tokens).toEqual([
+      { type: "text", text: "Спробуй " },
+      { type: "text", text: "Blinded, а потім " },
+      { type: "ability", sourceId: "spell-3", displayName: "Command" },
+      { type: "text", text: "." },
+    ]);
+  });
 });
