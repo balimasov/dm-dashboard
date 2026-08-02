@@ -665,60 +665,108 @@ describe("clearCreatureHpHistory", () => {
   });
 });
 
-const BLANK_RESPONSE = { game_plan: { summary: "Attack with your longsword." }, options: [] };
+const BLANK_PLAN = { game_plan: { summary: "Attack with your longsword." }, options: [] };
 
-function makeQueryInput(overrides: Partial<Parameters<typeof db.createAssistantQuery>[0]> = {}) {
+type AssistantMessageInput = Parameters<typeof db.createAssistantMessage>[0];
+type PlanMessageInput = Extract<AssistantMessageInput, { kind: "plan" }>;
+type ReplyMessageInput = Extract<AssistantMessageInput, { kind: "reply" }>;
+
+function makePlanInput(overrides: Partial<PlanMessageInput> = {}): PlanMessageInput {
   return {
-    campaignId: "campaign-aq-1",
-    entityId: "char-aq-1",
-    entityKind: "character" as const,
+    campaignId: "campaign-am-1",
+    entityId: "char-am-1",
+    entityKind: "character",
     entityName: "Ragnar",
     query: "",
-    responseMode: "overview" as const,
-    response: BLANK_RESPONSE,
+    kind: "plan",
+    responseMode: "overview",
+    plan: BLANK_PLAN,
     ...overrides,
   };
 }
 
-describe("createAssistantQuery / listAssistantQueries", () => {
-  it("persists the given fields and stamps id/createdAt", () => {
-    const entry = db.createAssistantQuery(makeQueryInput({ query: "flank the archer" }));
+function makeReplyInput(overrides: Partial<ReplyMessageInput> = {}): ReplyMessageInput {
+  return {
+    campaignId: "campaign-am-1",
+    entityId: "char-am-1",
+    entityKind: "character",
+    entityName: "Ragnar",
+    query: "why not Fireball?",
+    kind: "reply",
+    reply: "Because it would catch your ally too.",
+    ...overrides,
+  };
+}
+
+describe("createAssistantMessage / listAssistantMessages", () => {
+  it("persists a \"plan\" message and stamps id/createdAt", () => {
+    const entry = db.createAssistantMessage(makePlanInput({ query: "flank the archer" }));
     expect(entry.id).toBeTruthy();
     expect(entry.createdAt).toBeTruthy();
     expect(entry.query).toBe("flank the archer");
-    expect(entry.response).toEqual(BLANK_RESPONSE);
+    expect(entry.kind).toBe("plan");
+    if (entry.kind === "plan") expect(entry.plan).toEqual(BLANK_PLAN);
   });
 
-  it("lists newest first", async () => {
-    const entityId = "char-aq-order";
-    const first = db.createAssistantQuery(makeQueryInput({ entityId, query: "first" }));
+  it("persists a \"reply\" message", () => {
+    const entry = db.createAssistantMessage(makeReplyInput());
+    expect(entry.kind).toBe("reply");
+    if (entry.kind === "reply") expect(entry.reply).toBe("Because it would catch your ally too.");
+  });
+
+  it("lists chronologically, oldest first — the chat feed's own order", async () => {
+    const entityId = "char-am-order";
+    const first = db.createAssistantMessage(makePlanInput({ entityId, query: "first" }));
     await tick();
-    const second = db.createAssistantQuery(makeQueryInput({ entityId, query: "second" }));
+    const second = db.createAssistantMessage(makeReplyInput({ entityId, query: "second" }));
 
-    const history = db.listAssistantQueries(entityId);
-    expect(history.map((h) => h.id)).toEqual([second.id, first.id]);
+    const history = db.listAssistantMessages(entityId);
+    expect(history.map((h) => h.id)).toEqual([first.id, second.id]);
   });
 
-  it("scopes to the given entity, never leaking another character/creature's history", () => {
-    db.createAssistantQuery(makeQueryInput({ entityId: "char-aq-scope-a", query: "a" }));
-    db.createAssistantQuery(makeQueryInput({ entityId: "char-aq-scope-b", query: "b" }));
+  it("scopes to the given entity, never leaking another character/creature's conversation", () => {
+    db.createAssistantMessage(makePlanInput({ entityId: "char-am-scope-a", query: "a" }));
+    db.createAssistantMessage(makePlanInput({ entityId: "char-am-scope-b", query: "b" }));
 
-    const history = db.listAssistantQueries("char-aq-scope-a");
+    const history = db.listAssistantMessages("char-am-scope-a");
     expect(history).toHaveLength(1);
     expect(history[0].query).toBe("a");
   });
 
   it("prunes the oldest entries once a single entity passes the history cap, keeping the newest ones", async () => {
-    const entityId = "char-aq-prune";
+    const entityId = "char-am-prune";
     for (let i = 0; i < 21; i++) {
-      db.createAssistantQuery(makeQueryInput({ entityId, query: `q${i}` }));
+      db.createAssistantMessage(makePlanInput({ entityId, query: `q${i}` }));
       await tick();
     }
 
-    const history = db.listAssistantQueries(entityId);
+    const history = db.listAssistantMessages(entityId);
     expect(history).toHaveLength(20);
-    // Newest first — q20 (last created) should be present, q0 (first, oldest) pruned.
-    expect(history[0].query).toBe("q20");
+    // Oldest first — q0 (the very first one created) should be the one pruned, q20 (newest) present.
+    expect(history[history.length - 1].query).toBe("q20");
     expect(history.some((h) => h.query === "q0")).toBe(false);
+  });
+});
+
+describe("deleteAssistantMessages", () => {
+  it("clears every message for the given entity", () => {
+    const entityId = "char-am-delete";
+    db.createAssistantMessage(makePlanInput({ entityId, query: "a" }));
+    db.createAssistantMessage(makeReplyInput({ entityId, query: "b" }));
+    expect(db.listAssistantMessages(entityId)).toHaveLength(2);
+
+    db.deleteAssistantMessages(entityId);
+
+    expect(db.listAssistantMessages(entityId)).toEqual([]);
+  });
+
+  it("leaves another entity's conversation untouched", () => {
+    db.createAssistantMessage(makePlanInput({ entityId: "char-am-delete-a", query: "a" }));
+    db.createAssistantMessage(makePlanInput({ entityId: "char-am-delete-b", query: "b" }));
+
+    db.deleteAssistantMessages("char-am-delete-a");
+
+    expect(db.listAssistantMessages("char-am-delete-a")).toEqual([]);
+    expect(db.listAssistantMessages("char-am-delete-b")).toHaveLength(1);
   });
 });

@@ -231,6 +231,37 @@ function splitParagraphs(summary: string): string[] {
     .filter((p) => p.length > 0);
 }
 
+/**
+ * Renders a "Запитати" chat reply (`AssistantChatMessage`'s `reply` field)
+ * through the exact same tokenization pipeline a plan's `game_plan.summary`
+ * already gets — ability-hint tokens, universal terms (conditions/ability
+ * scores/senses/exhaustion), this entity's own sheet-term names, and Weapon
+ * Mastery property names all resolve the same way here, since the prompt
+ * tells the model to reference sheet abilities the same way in both places
+ * (see `ASK_SYSTEM_PROMPT`'s ABILITY REFERENCES section). Deliberately its
+ * own small component rather than exposing the lower-level render helpers
+ * directly — `AiAssistantModal` only ever needs "turn this reply string into
+ * hinted paragraphs," not the tokenization internals.
+ */
+export function AiChatReply({
+  text,
+  glossary = {},
+  glossaryByName = {},
+}: {
+  text: string;
+  glossary?: AiGlossary;
+  glossaryByName?: AiGlossary;
+}) {
+  const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
+  return (
+    <div className="flex flex-col gap-2 text-sm leading-relaxed text-slate-300">
+      {splitParagraphs(text).map((paragraph, i) => (
+        <p key={i}>{renderTokenizedText(paragraph, `reply-${i}`, glossary, glossaryByName, sheetTermsRe)}</p>
+      ))}
+    </div>
+  );
+}
+
 const CATEGORY_META: Record<AiOption["category"], { label: string; emoji: string }> = {
   action: { label: "Action", emoji: "⚔️" },
   bonus_action: { label: "Bonus Action", emoji: "⚡" },

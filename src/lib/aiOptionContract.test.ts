@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { AI_OPTION_JSON_SCHEMA, AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "./aiOptionContract";
-import { aiOptionSchema, aiTacticalResponseSchema } from "./schemas";
+import { AI_OPTION_JSON_SCHEMA, AI_REPLY_JSON_SCHEMA, AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "./aiOptionContract";
+import { aiOptionSchema, aiReplySchema, aiTacticalResponseSchema } from "./schemas";
 
 /**
  * `route.ts` sends `AI_TACTICAL_RESPONSE_JSON_SCHEMA` to OpenAI; `schemas.ts`
@@ -35,6 +35,15 @@ describe("AI option/response JSON Schema stays in sync with its zod counterpart"
     const zodKeys = Object.keys(aiTacticalResponseSchema.shape.game_plan.shape).sort();
     const jsonPropertyKeys = Object.keys(AI_TACTICAL_RESPONSE_JSON_SCHEMA.properties.game_plan.properties).sort();
     const jsonRequiredKeys = [...AI_TACTICAL_RESPONSE_JSON_SCHEMA.properties.game_plan.required].sort();
+
+    expect(jsonPropertyKeys).toEqual(zodKeys);
+    expect(jsonRequiredKeys).toEqual(zodKeys);
+  });
+
+  test("aiReplySchema's fields exactly match AI_REPLY_JSON_SCHEMA's properties and required list", () => {
+    const zodKeys = Object.keys(aiReplySchema.shape).sort();
+    const jsonPropertyKeys = Object.keys(AI_REPLY_JSON_SCHEMA.properties).sort();
+    const jsonRequiredKeys = [...AI_REPLY_JSON_SCHEMA.required].sort();
 
     expect(jsonPropertyKeys).toEqual(zodKeys);
     expect(jsonRequiredKeys).toEqual(zodKeys);

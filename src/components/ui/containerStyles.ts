@@ -69,3 +69,15 @@ export const QUICK_MENU_SHELL_CLS = "rounded-xl border border-slate-800 bg-slate
  * that call site's own addition, not part of this shared recipe).
  */
 export const FAINT_TINT_CLS = "bg-white/[0.025]";
+
+/**
+ * A small clickable rounded-full pill — the AI assistant's quick-suggestion
+ * chips ("Why is this best?", "How to save resources?"). No prior exact
+ * match in the codebase (an audit found only non-clickable avatar/badge
+ * chips), so this combines `ReminderBadge.tsx`'s border/bg/hover recipe
+ * (the closest real clickable rounded-full pill) with this feature's own
+ * `px-2.5 py-1 text-xs font-semibold` sizing (matching its sibling
+ * "Refine"-style action buttons in the same panel).
+ */
+export const AI_CHIP_CLS =
+  "rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs font-semibold text-sky-300 hover:border-sky-700 hover:bg-sky-950/60";

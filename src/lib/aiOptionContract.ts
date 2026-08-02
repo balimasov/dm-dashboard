@@ -69,3 +69,23 @@ export const AI_TACTICAL_RESPONSE_JSON_SCHEMA = {
   },
   $defs: { option: AI_OPTION_JSON_SCHEMA },
 } as const;
+
+/**
+ * The "Запитати" chat-reply shape — a short conversational answer instead
+ * of a full structured plan, used when the DM is asking a follow-up
+ * question rather than requesting a new turn plan. Deliberately just one
+ * field: there's no option list to validate, since the whole point of this
+ * path is not repeating one.
+ */
+export const AI_REPLY_LIMITS = {
+  replyMaxLength: 1200,
+} as const;
+
+export const AI_REPLY_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["reply"],
+  properties: {
+    reply: { type: "string", minLength: 1, maxLength: AI_REPLY_LIMITS.replyMaxLength },
+  },
+} as const;

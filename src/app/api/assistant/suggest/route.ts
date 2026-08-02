@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
-import { AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
+import type { ZodType } from "zod";
+import { AI_REPLY_JSON_SCHEMA, AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
 import { assistantCacheKey, getCachedAssistantResponse, setCachedAssistantResponse } from "@/lib/assistantResponseCache";
 import { characterAssistantContext, companionsContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
-import { createAssistantQuery, getCampaign, getCharacter, getCreature, listCharacters, listCreatures } from "@/lib/db";
+import {
+  createAssistantMessage,
+  getCampaign,
+  getCharacter,
+  getCreature,
+  listAssistantMessages,
+  listCharacters,
+  listCreatures,
+} from "@/lib/db";
 import { fetchWithRetry } from "@/lib/fetchWithRetry";
-import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
+import { AiReply, aiReplySchema, AiTacticalResponse, aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
+import { AssistantQueryEntityKind } from "@/lib/types";
 
 const LOG_PREFIX = "[assistant/suggest]";
 
@@ -470,21 +480,22 @@ Do not return actions belonging to allies.
 
 FOLLOW-UP REQUESTS
 
-The input may supply previous_summary — the game_plan.summary of an earlier
-answer in this same session that the current user_request is refining or
-reacting to (e.g. "what if I move closer first," "any option that doesn't
-cost my last spell slot").
+The input may supply previous_summary — the most recent turn of this same
+conversation (either an earlier plan's game_plan.summary, or an earlier
+short reply) that the current user_request is refining or reacting to
+(e.g. "what if I move closer first," "any option that doesn't cost my last
+spell slot").
 
-When present, treat user_request as building on that specific prior plan —
+When present, treat user_request as building on that specific prior turn —
 adjust, reconsider, or compare against it rather than generating an
-unrelated fresh overview. Do not just restate the prior plan verbatim.
+unrelated fresh overview. Do not just restate it verbatim.
 
 previous_summary reflects the sheet's state at the time it was given, not
 necessarily the state supplied now — the sheet below is always the current
 source of truth for what's actually still legal or available.
 
-Absent means an unrelated request — never invent a previous suggestion when
-none is supplied.
+Absent means an unrelated request — never invent a previous turn when none
+is supplied.
 
 TACTICAL EVALUATION
 
@@ -553,30 +564,182 @@ OUTPUT
   output_language.`;
 
 /**
- * "What can this character/creature do right now" — sends the sheet's
- * *current* resource state (see `characterAssistantContext`/
- * `creatureAssistantContext`, both of which now tag every referenceable
- * option with a `[source_id]`) to an LLM constrained to the structured
- * `AiTacticalResponse` shape (see `schemas.ts`) via OpenAI's
- * `response_format: json_schema` structured-output mode, rather than a
- * freeform markdown reply — the frontend (`AiResponseText`) builds every
- * heading and icon itself from that structured data instead of parsing
- * prose, and each option's own `name`/`description` already carries its
- * availability and mechanical specifics (see `SYSTEM_PROMPT`), so there's
- * no separate resource-summary block to keep in sync. No role gate beyond
- * the app's normal session check (`proxy.ts`) — a player asking about a
- * character or creature they can already see on the dashboard isn't
- * revealing anything the UI doesn't already show them.
+ * The "Запитати" chat-reply path — a short conversational answer to a
+ * follow-up question, not a new structured plan (that's `SYSTEM_PROMPT`).
+ * Deliberately much shorter: none of the plan-specific sections (action
+ * types/origins, weapon mastery, two-weapon fighting, party synergy, ...)
+ * apply here, since the model isn't building a new option list at all.
  */
+const ASK_SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons, answering
+a short follow-up question about a turn/scene you already gave a plan or
+reply for in this same conversation — not generating a new structured plan.
+
+SOURCE OF TRUTH
+
+- Always use the 2024 revised D&D 5th edition rules (D&D 5.5e), not the
+  2014 edition.
+
+- The supplied sheet and current state are the primary source of truth.
+
+- Never invent character-specific spells, attacks, features, items,
+  resources, resistances, immunities, vulnerabilities, or effects not
+  present on the supplied sheet.
+
+CONTEXT
+
+- previous_summary, when supplied, is your own most recent plan's summary
+  or reply in this same conversation — answer user_request as a
+  continuation of that, not a fresh unrelated take. Absent means an
+  unrelated request; never invent a previous turn when none is supplied.
+
+- Do not repeat a full list of options, categories, or action-economy
+  labels — that already happened in the plan card this conversation
+  started from. Give a short, direct, conversational answer instead
+  (usually 1-3 sentences, longer only when the question genuinely needs it).
+
+ABILITY REFERENCES
+
+- When mentioning a sheet-based ability, spell, attack, feature, resource,
+  or item, wrap it in [[ability:<source_id>|<display_name>]] using the
+  sheet's own [source_id] and exact name — same convention and token
+  syntax a plan's game_plan.summary uses. Use only source IDs explicitly
+  supplied in the input; if you cannot find an exact matching [id], it
+  isn't on the sheet — leave the token out and just use the plain name.
+
+OUTPUT
+
+- The input always provides output_language; write reply in it.
+
+- Preserve every sheet-sourced ability, spell, feature, item, attack,
+  condition, skill, or other named term exactly as supplied, regardless of
+  output_language.
+
+- Do not ask follow-up questions.
+
+- Return valid JSON only, matching the supplied schema — no Markdown,
+  emoji, or text outside the JSON.`;
+
+/**
+ * "What can this character/creature do right now" (`intent: "plan"`) or "why/
+ * how about that" (`intent: "ask"`) — sends the sheet's *current* resource
+ * state (see `characterAssistantContext`/`creatureAssistantContext`, both of
+ * which now tag every referenceable option with a `[source_id]`) to an LLM
+ * constrained to a structured shape (`AiTacticalResponse` for a plan,
+ * `AiReply` for a chat reply — see `schemas.ts`) via OpenAI's
+ * `response_format: json_schema` structured-output mode, rather than a
+ * freeform markdown reply. No role gate beyond the app's normal session check
+ * (`proxy.ts`) — a player asking about a character or creature they can
+ * already see on the dashboard isn't revealing anything the UI doesn't
+ * already show them.
+ */
+
+type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextResponse };
+
+/**
+ * Shared upstream-call/validate/log plumbing for both intents — the two
+ * paths differ only in which prompt, JSON Schema, and zod schema they use;
+ * everything else (retry/timeout via `fetchWithRetry`, refusal/malformed/
+ * validation-failure handling and logging) is identical.
+ */
+async function callAssistantModel<T>(
+  systemPrompt: string,
+  userContent: string,
+  jsonSchema: object,
+  schemaName: string,
+  responseSchema: ZodType<T>
+): Promise<ModelCallResult<T>> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return {
+      ok: false,
+      error: NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 }),
+    };
+  }
+
+  let upstream: Response;
+  try {
+    upstream = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "gpt-5.4-mini",
+        temperature: 0.4,
+        response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+      }),
+    });
+  } catch (err) {
+    const timedOut = err instanceof DOMException && err.name === "TimeoutError";
+    console.error(`${LOG_PREFIX} upstream request failed after retries`, err);
+    return {
+      ok: false,
+      error: NextResponse.json(
+        {
+          error: timedOut
+            ? "The AI assistant is taking too long to respond. Try again."
+            : "Couldn't reach the AI assistant. Check your connection and try again.",
+        },
+        { status: 502 }
+      ),
+    };
+  }
+
+  if (!upstream.ok) {
+    const detail: { error?: { message?: string } } | null = await upstream.json().catch(() => null);
+    console.error(`${LOG_PREFIX} upstream responded with ${upstream.status} after retries`, detail);
+    return {
+      ok: false,
+      error: NextResponse.json(
+        { error: detail?.error?.message || `The AI assistant is temporarily unavailable (error ${upstream.status}).` },
+        { status: upstream.status === 401 || upstream.status === 403 ? 500 : 502 }
+      ),
+    };
+  }
+
+  const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[] } = await upstream.json();
+  const message = json.choices?.[0]?.message;
+  if (message?.refusal) {
+    console.error(`${LOG_PREFIX} model refused`, message.refusal);
+    return { ok: false, error: NextResponse.json({ error: message.refusal }, { status: 502 }) };
+  }
+
+  const content = message?.content;
+  if (!content) {
+    console.error(`${LOG_PREFIX} empty response content`, json);
+    return { ok: false, error: NextResponse.json({ error: "The AI assistant returned an empty response." }, { status: 502 }) };
+  }
+
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch (err) {
+    console.error(`${LOG_PREFIX} model content wasn't valid JSON`, err, content.slice(0, 2000));
+    return { ok: false, error: NextResponse.json({ error: "The AI assistant returned malformed data." }, { status: 502 }) };
+  }
+
+  const result = responseSchema.safeParse(parsedContent);
+  if (!result.success) {
+    console.error(`${LOG_PREFIX} model content failed schema validation`, result.error.issues, JSON.stringify(parsedContent).slice(0, 2000));
+    return { ok: false, error: NextResponse.json({ error: "The AI assistant's response didn't match the expected format." }, { status: 502 }) };
+  }
+
+  return { ok: true, data: result.data };
+}
+
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode, previous_summary } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, intent } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
 
   const party = listCharacters(campaignId);
+  const entityId = characterId ?? creatureId!;
+  const entityKind: AssistantQueryEntityKind = characterId ? "character" : "creature";
 
   let name: string;
   let context: string;
@@ -605,104 +768,90 @@ export async function POST(req: Request) {
   // character's, so this isn't gated on `characterId` alone.
   context += partyTeammatesContext(party, selfCharacterId);
 
-  // Keyed on the exact context text (and previous_summary, when the request
-  // is a follow-up), so reopening the panel or re-asking the same question
-  // seconds later (nothing on the sheet changed) skips a second paid LLM
-  // call entirely — see `assistantResponseCache.ts`.
-  const cacheKey = assistantCacheKey(characterId ?? creatureId!, response_mode, situation, context, previous_summary);
-  const cached = getCachedAssistantResponse(cacheKey);
-  if (cached) return NextResponse.json({ response: cached });
+  // Derived server-side from this entity's own persisted conversation
+  // (never client-supplied — see `assistantSuggestSchema`'s own doc
+  // comment) so a follow-up "ask" or a plan rebuild can build on whatever
+  // was actually said last, even after a fresh page load with no client
+  // state at all.
+  const history = listAssistantMessages(entityId);
+  const lastMessage = history[history.length - 1];
+  const previousContext = lastMessage ? (lastMessage.kind === "plan" ? lastMessage.plan.game_plan.summary : lastMessage.reply) : undefined;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 });
-  }
+  let contentResult: ModelCallResult<unknown>;
+  if (intent === "ask") {
+    const userContent = `${name}'s current sheet:
 
-  const userContent = `${name}'s current sheet:
+${context}
+
+output_language: Ukrainian
+previous_summary: ${previousContext || "(none)"}
+user_request: ${situation}`;
+
+    // Keyed on the exact context text (and previous_summary), so re-asking
+    // the exact same question seconds later (nothing on the sheet changed)
+    // skips a second paid LLM call — see `assistantResponseCache.ts`. The
+    // *conversation record* is still always created fresh below, even on a
+    // cache hit: the chat log's whole point is showing what was actually
+    // asked/answered, not deduplicating visible turns.
+    const cacheKey = assistantCacheKey(entityId, "ask", "ask", situation, context, previousContext);
+    const cached = getCachedAssistantResponse<AiReply>(cacheKey);
+    if (cached) {
+      contentResult = { ok: true, data: cached };
+    } else {
+      const result = await callAssistantModel(ASK_SYSTEM_PROMPT, userContent, AI_REPLY_JSON_SCHEMA, "DndAssistantReply", aiReplySchema);
+      if (!result.ok) return result.error;
+      setCachedAssistantResponse(cacheKey, result.data);
+      contentResult = result;
+    }
+  } else {
+    const userContent = `${name}'s current sheet:
 
 ${context}
 
 response_mode: ${response_mode}
 output_language: Ukrainian
 user_request: ${situation || "(none)"}
-previous_summary: ${previous_summary || "(none)"}`;
+previous_summary: ${previousContext || "(none)"}`;
 
-  let upstream: Response;
-  try {
-    upstream = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-5.4-mini",
-        temperature: 0.4,
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "DndTacticalResponse", strict: true, schema: AI_TACTICAL_RESPONSE_JSON_SCHEMA },
-        },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userContent },
-        ],
-      }),
-    });
-  } catch (err) {
-    const timedOut = err instanceof DOMException && err.name === "TimeoutError";
-    console.error(`${LOG_PREFIX} upstream request failed after retries`, err);
-    return NextResponse.json(
-      {
-        error: timedOut
-          ? "The AI assistant is taking too long to respond. Try again."
-          : "Couldn't reach the AI assistant. Check your connection and try again.",
-      },
-      { status: 502 }
-    );
+    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context, previousContext);
+    const cached = getCachedAssistantResponse<AiTacticalResponse>(cacheKey);
+    if (cached) {
+      contentResult = { ok: true, data: cached };
+    } else {
+      const result = await callAssistantModel(
+        SYSTEM_PROMPT,
+        userContent,
+        AI_TACTICAL_RESPONSE_JSON_SCHEMA,
+        "DndTacticalResponse",
+        aiTacticalResponseSchema
+      );
+      if (!result.ok) return result.error;
+      setCachedAssistantResponse(cacheKey, result.data);
+      contentResult = result;
+    }
   }
 
-  if (!upstream.ok) {
-    const detail: { error?: { message?: string } } | null = await upstream.json().catch(() => null);
-    console.error(`${LOG_PREFIX} upstream responded with ${upstream.status} after retries`, detail);
-    return NextResponse.json(
-      { error: detail?.error?.message || `The AI assistant is temporarily unavailable (error ${upstream.status}).` },
-      { status: upstream.status === 401 || upstream.status === 403 ? 500 : 502 }
-    );
-  }
+  const chatMessage =
+    intent === "ask"
+      ? createAssistantMessage({
+          campaignId,
+          entityId,
+          entityKind,
+          entityName: name,
+          query: situation!,
+          kind: "reply",
+          reply: (contentResult.data as AiReply).reply,
+        })
+      : createAssistantMessage({
+          campaignId,
+          entityId,
+          entityKind,
+          entityName: name,
+          query: situation ?? "",
+          kind: "plan",
+          responseMode: response_mode,
+          plan: contentResult.data as AiTacticalResponse,
+        });
 
-  const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[] } = await upstream.json();
-  const message = json.choices?.[0]?.message;
-  if (message?.refusal) {
-    console.error(`${LOG_PREFIX} model refused`, message.refusal);
-    return NextResponse.json({ error: message.refusal }, { status: 502 });
-  }
-
-  const content = message?.content;
-  if (!content) {
-    console.error(`${LOG_PREFIX} empty response content`, json);
-    return NextResponse.json({ error: "The AI assistant returned an empty response." }, { status: 502 });
-  }
-
-  let parsedContent: unknown;
-  try {
-    parsedContent = JSON.parse(content);
-  } catch (err) {
-    console.error(`${LOG_PREFIX} model content wasn't valid JSON`, err, content.slice(0, 2000));
-    return NextResponse.json({ error: "The AI assistant returned malformed data." }, { status: 502 });
-  }
-
-  const result = aiTacticalResponseSchema.safeParse(parsedContent);
-  if (!result.success) {
-    console.error(`${LOG_PREFIX} model content failed schema validation`, result.error.issues, JSON.stringify(parsedContent).slice(0, 2000));
-    return NextResponse.json({ error: "The AI assistant's response didn't match the expected format." }, { status: 502 });
-  }
-
-  setCachedAssistantResponse(cacheKey, result.data);
-  createAssistantQuery({
-    campaignId,
-    entityId: characterId ?? creatureId!,
-    entityKind: characterId ? "character" : "creature",
-    entityName: name,
-    query: situation ?? "",
-    responseMode: response_mode,
-    response: result.data,
-  });
-  return NextResponse.json({ response: result.data });
+  return NextResponse.json({ message: chatMessage });
 }

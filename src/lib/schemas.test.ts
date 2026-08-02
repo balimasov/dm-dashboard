@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { demoCharacters } from "./mockData";
 import {
   aiOptionSchema,
+  aiReplySchema,
   aiTacticalResponseSchema,
   assistantSuggestSchema,
   campaignUpdateSchema,
@@ -397,21 +398,44 @@ describe("assistantSuggestSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts an optional previous_summary string", () => {
+  it("defaults intent to \"plan\" when omitted", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.intent).toBe("plan");
+  });
+
+  it("accepts intent \"plan\" with no situation at all (a plain \"Підказати хід\")", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", intent: "plan" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts intent \"ask\" when situation is a non-empty question", () => {
     const result = assistantSuggestSchema.safeParse({
       campaignId: "campaign-1",
       characterId: "char-1",
-      previous_summary: "Attack the nearest goblin with your longsword.",
+      intent: "ask",
+      situation: "Why is Web better than Fireball here?",
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects a previous_summary over 3000 characters, the same cap game_plan.summary itself has", () => {
+  it("rejects intent \"ask\" with no situation — there's nothing to ask about", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", intent: "ask" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects intent \"ask\" with a blank/whitespace-only situation", () => {
     const result = assistantSuggestSchema.safeParse({
       campaignId: "campaign-1",
       characterId: "char-1",
-      previous_summary: "x".repeat(3001),
+      intent: "ask",
+      situation: "   ",
     });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an unknown intent", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", intent: "chat" });
     expect(result.success).toBe(false);
   });
 });
@@ -468,5 +492,24 @@ describe("aiOptionSchema / aiTacticalResponseSchema", () => {
       options: [],
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("aiReplySchema", () => {
+  it("accepts a non-empty reply", () => {
+    const result = aiReplySchema.safeParse({ reply: "Because Fireball's blast would almost certainly catch Durgin too." });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty reply", () => {
+    expect(aiReplySchema.safeParse({ reply: "" }).success).toBe(false);
+  });
+
+  it("rejects a reply over 1200 characters", () => {
+    expect(aiReplySchema.safeParse({ reply: "x".repeat(1201) }).success).toBe(false);
+  });
+
+  it("rejects a missing reply field", () => {
+    expect(aiReplySchema.safeParse({}).success).toBe(false);
   });
 });

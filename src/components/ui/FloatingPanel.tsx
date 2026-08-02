@@ -78,6 +78,7 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  */
 export function FloatingPanel({
   title,
+  headerActions,
   onClose,
   children,
   storageKey,
@@ -85,6 +86,8 @@ export function FloatingPanel({
   initialHeight = 560,
 }: {
   title: ReactNode;
+  /** Optional extra icon buttons (e.g. a "clear conversation" trash icon) rendered between the title and the close button — `AiAssistantModal` is this component's only caller so far, but the slot itself is generic. */
+  headerActions?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   storageKey: string;
@@ -131,9 +134,12 @@ export function FloatingPanel({
           <h2 id={titleId} className={MODAL_TITLE_CLS}>
             {title}
           </h2>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
+          <div className="flex shrink-0 items-center gap-1">
+            {headerActions}
+            <IconButton onClick={onClose} aria-label="Close">
+              ✕
+            </IconButton>
+          </div>
         </div>
         {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
@@ -218,9 +224,12 @@ export function FloatingPanel({
         <h2 id={titleId} className={MODAL_TITLE_CLS}>
           {title}
         </h2>
-        <IconButton onClick={onClose} aria-label="Close">
-          ✕
-        </IconButton>
+        <div className="flex shrink-0 items-center gap-1">
+          {headerActions}
+          <IconButton onClick={onClose} aria-label="Close">
+            ✕
+          </IconButton>
+        </div>
       </div>
       {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
