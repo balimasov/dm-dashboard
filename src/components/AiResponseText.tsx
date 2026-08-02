@@ -178,7 +178,7 @@ function scanTermLayers(text: string, keyPrefix: string, layers: TermLayer[]): R
   return text
     .split(layer.regex)
     .filter((part) => part !== "")
-    .flatMap((part, i) => {
+    .flatMap<ReactNode>((part, i) => {
       const hint = layer.hint(part);
       if (hint) {
         return [
@@ -240,7 +240,7 @@ function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiG
  * trying to keep tightening the prompt to prevent it.
  */
 function renderTokenizedText(text: string, keyPrefix: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
-  return parseSummaryTokens(text).flatMap((token, i) => {
+  return parseSummaryTokens(text).flatMap<ReactNode>((token, i) => {
     if (token.type === "text") return renderPlainSegment(token.text, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe);
     // The token's own `source_id` occasionally doesn't match anything —
     // the model sometimes garbles or re-derives an id when writing
