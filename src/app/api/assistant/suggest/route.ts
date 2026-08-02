@@ -3,7 +3,7 @@ import { AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
 import { assistantCacheKey, getCachedAssistantResponse, setCachedAssistantResponse } from "@/lib/assistantResponseCache";
 import { characterAssistantContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
-import { getCampaign, getCharacter, getCreature, listCharacters } from "@/lib/db";
+import { createAssistantQuery, getCampaign, getCharacter, getCreature, listCharacters } from "@/lib/db";
 import { fetchWithRetry } from "@/lib/fetchWithRetry";
 import { aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
 
@@ -468,6 +468,24 @@ the relevant option description.
 
 Do not return actions belonging to allies.
 
+FOLLOW-UP REQUESTS
+
+The input may supply previous_summary — the game_plan.summary of an earlier
+answer in this same session that the current user_request is refining or
+reacting to (e.g. "what if I move closer first," "any option that doesn't
+cost my last spell slot").
+
+When present, treat user_request as building on that specific prior plan —
+adjust, reconsider, or compare against it rather than generating an
+unrelated fresh overview. Do not just restate the prior plan verbatim.
+
+previous_summary reflects the sheet's state at the time it was given, not
+necessarily the state supplied now — the sheet below is always the current
+source of truth for what's actually still legal or available.
+
+Absent means an unrelated request — never invent a previous suggestion when
+none is supplied.
+
 TACTICAL EVALUATION
 
 Evaluate usable options by:
@@ -553,7 +571,7 @@ OUTPUT
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, previous_summary } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -586,10 +604,11 @@ export async function POST(req: Request) {
   // character's, so this isn't gated on `characterId` alone.
   context += partyTeammatesContext(party, selfCharacterId);
 
-  // Keyed on the exact context text, so reopening the panel or re-asking the
-  // same question seconds later (nothing on the sheet changed) skips a
-  // second paid LLM call entirely — see `assistantResponseCache.ts`.
-  const cacheKey = assistantCacheKey(characterId ?? creatureId!, response_mode, situation, context);
+  // Keyed on the exact context text (and previous_summary, when the request
+  // is a follow-up), so reopening the panel or re-asking the same question
+  // seconds later (nothing on the sheet changed) skips a second paid LLM
+  // call entirely — see `assistantResponseCache.ts`.
+  const cacheKey = assistantCacheKey(characterId ?? creatureId!, response_mode, situation, context, previous_summary);
   const cached = getCachedAssistantResponse(cacheKey);
   if (cached) return NextResponse.json({ response: cached });
 
@@ -604,7 +623,8 @@ ${context}
 
 response_mode: ${response_mode}
 output_language: Ukrainian
-user_request: ${situation || "(none)"}`;
+user_request: ${situation || "(none)"}
+previous_summary: ${previous_summary || "(none)"}`;
 
   let upstream: Response;
   try {
@@ -674,5 +694,14 @@ user_request: ${situation || "(none)"}`;
   }
 
   setCachedAssistantResponse(cacheKey, result.data);
+  createAssistantQuery({
+    campaignId,
+    entityId: characterId ?? creatureId!,
+    entityKind: characterId ? "character" : "creature",
+    entityName: name,
+    query: situation ?? "",
+    responseMode: response_mode,
+    response: result.data,
+  });
   return NextResponse.json({ response: result.data });
 }

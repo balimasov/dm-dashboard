@@ -28,8 +28,23 @@ interface CacheEntry {
 
 const store = new Map<string, CacheEntry>();
 
-export function assistantCacheKey(entityId: string, responseMode: string, situation: string | undefined, context: string): string {
-  return createHash("sha256").update(`${entityId} ${responseMode} ${situation ?? ""} ${context}`).digest("hex");
+/**
+ * `previousSummary` (the prior answer a follow-up request builds on — see
+ * the prompt's FOLLOW-UP REQUESTS section) is part of the key for the same
+ * reason `situation`/`context` are: it's real input the model conditions
+ * its answer on, so a follow-up and a plain repeat of the same question
+ * must never collide on the same cache entry.
+ */
+export function assistantCacheKey(
+  entityId: string,
+  responseMode: string,
+  situation: string | undefined,
+  context: string,
+  previousSummary?: string
+): string {
+  return createHash("sha256")
+    .update(`${entityId} ${responseMode} ${situation ?? ""} ${previousSummary ?? ""} ${context}`)
+    .digest("hex");
 }
 
 export function getCachedAssistantResponse(key: string): AiTacticalResponse | undefined {

@@ -31,6 +31,7 @@ describe("assistantCacheKey", () => {
     expect(assistantCacheKey("char-2", "overview", undefined, "sheet text")).not.toBe(base);
     expect(assistantCacheKey("char-1", "focused", undefined, "sheet text")).not.toBe(base);
     expect(assistantCacheKey("char-1", "overview", "flank the archer", "sheet text")).not.toBe(base);
+    expect(assistantCacheKey("char-1", "overview", undefined, "sheet text", "earlier plan summary")).not.toBe(base);
     // The character's *current state* (HP, slots, conditions) lives inside
     // the context text — changing it must miss the cache, since the old
     // answer may no longer be legal or optimal.

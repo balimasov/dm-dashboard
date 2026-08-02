@@ -3,6 +3,8 @@ import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
 import {
+  AssistantQueryEntityKind,
+  AssistantQueryHistoryEntry,
   Campaign,
   CampaignSummary,
   Character,
@@ -21,6 +23,7 @@ import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { nullsToUndefined } from "./nullsToUndefined";
 import { demoCharacters } from "./mockData";
 import { formatSessionTitle } from "./journal";
+import type { AiTacticalResponse } from "./schemas";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at
 // whatever path it was actually mounted at — without it, the sqlite file
@@ -72,6 +75,14 @@ function openDb(): Database.Database {
       id TEXT PRIMARY KEY,
       campaign_id TEXT NOT NULL,
       session_id TEXT NOT NULL,
+      data TEXT NOT NULL
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS assistant_queries (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
       data TEXT NOT NULL
     )
   `);
@@ -223,7 +234,7 @@ export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign
   return updated;
 }
 
-/** Cascades: a campaign's characters, creatures, and journal both have nowhere else to belong, so removing it takes its whole roster (and journal) with it. */
+/** Cascades: a campaign's characters, creatures, journal, and assistant-query history all have nowhere else to belong, so removing it takes all of that with it. */
 export function deleteCampaign(id: string): void {
   const db = getDb();
   const transaction = db.transaction(() => {
@@ -231,6 +242,7 @@ export function deleteCampaign(id: string): void {
     db.prepare("DELETE FROM creatures WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM journal_entries WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM journal_sessions WHERE campaign_id = ?").run(id);
+    db.prepare("DELETE FROM assistant_queries WHERE campaign_id = ?").run(id);
     db.prepare("DELETE FROM campaigns WHERE id = ?").run(id);
   });
   transaction();
@@ -323,7 +335,12 @@ export function updateCharacter(id: string, updates: Partial<Character>): Charac
 }
 
 export function removeCharacter(id: string): void {
-  getDb().prepare("DELETE FROM characters WHERE id = ?").run(id);
+  const db = getDb();
+  const transaction = db.transaction(() => {
+    db.prepare("DELETE FROM characters WHERE id = ?").run(id);
+    db.prepare("DELETE FROM assistant_queries WHERE entity_id = ?").run(id);
+  });
+  transaction();
 }
 
 export function reorderCharacters(orderedIds: string[]): void {
@@ -510,7 +527,12 @@ export function clearCreatureHpHistory(id: string): Creature | null {
 }
 
 export function removeCreature(id: string): void {
-  getDb().prepare("DELETE FROM creatures WHERE id = ?").run(id);
+  const db = getDb();
+  const transaction = db.transaction(() => {
+    db.prepare("DELETE FROM creatures WHERE id = ?").run(id);
+    db.prepare("DELETE FROM assistant_queries WHERE entity_id = ?").run(id);
+  });
+  transaction();
 }
 
 export function reorderCreatures(orderedIds: string[]): void {
@@ -754,4 +776,64 @@ export function updateJournalEntryText(
 
 export function removeJournalEntry(id: string): void {
   getDb().prepare("DELETE FROM journal_entries WHERE id = ?").run(id);
+}
+
+/** Nothing kept this list bounded before this feature existed for anyone to configure — a fixed cap on a per-entity history that nobody asked to keep forever, same spirit as the response cache's own size cap. */
+const ASSISTANT_QUERY_HISTORY_LIMIT = 20;
+
+function rowToAssistantQuery(row: { data: string }): AssistantQueryHistoryEntry {
+  return JSON.parse(row.data) as AssistantQueryHistoryEntry;
+}
+
+/** Newest first — the History tab's own display order. */
+export function listAssistantQueries(entityId: string): AssistantQueryHistoryEntry[] {
+  const rows = getDb().prepare("SELECT data FROM assistant_queries WHERE entity_id = ?").all(entityId) as Array<{
+    data: string;
+  }>;
+  return rows.map(rowToAssistantQuery).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/**
+ * Records one completed Turn Advisor answer, then prunes the oldest entries
+ * for that same entity past `ASSISTANT_QUERY_HISTORY_LIMIT` — same
+ * "load then sort in JS" approach `listJournalEntries` already uses, since
+ * `createdAt` lives inside the JSON blob, not a real column to `ORDER BY`.
+ */
+export function createAssistantQuery(input: {
+  campaignId: string;
+  entityId: string;
+  entityKind: AssistantQueryEntityKind;
+  entityName: string;
+  query: string;
+  responseMode: "overview" | "focused";
+  response: AiTacticalResponse;
+}): AssistantQueryHistoryEntry {
+  const db = getDb();
+  const entry: AssistantQueryHistoryEntry = {
+    id: `assistant-query-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: new Date().toISOString(),
+    ...input,
+  };
+  const transaction = db.transaction(() => {
+    db.prepare("INSERT INTO assistant_queries (id, campaign_id, entity_id, data) VALUES (?, ?, ?, ?)").run(
+      entry.id,
+      entry.campaignId,
+      entry.entityId,
+      JSON.stringify(entry)
+    );
+    const rows = db.prepare("SELECT id, data FROM assistant_queries WHERE entity_id = ?").all(entry.entityId) as Array<{
+      id: string;
+      data: string;
+    }>;
+    const sorted = rows
+      .map((r) => ({ id: r.id, createdAt: rowToAssistantQuery(r).createdAt }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const excess = sorted.length - ASSISTANT_QUERY_HISTORY_LIMIT;
+    if (excess > 0) {
+      const del = db.prepare("DELETE FROM assistant_queries WHERE id = ?");
+      for (const stale of sorted.slice(0, excess)) del.run(stale.id);
+    }
+  });
+  transaction();
+  return entry;
 }

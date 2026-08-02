@@ -664,3 +664,61 @@ describe("clearCreatureHpHistory", () => {
     expect(db.clearCreatureHpHistory("no-such-creature")).toBeNull();
   });
 });
+
+const BLANK_RESPONSE = { game_plan: { summary: "Attack with your longsword." }, options: [] };
+
+function makeQueryInput(overrides: Partial<Parameters<typeof db.createAssistantQuery>[0]> = {}) {
+  return {
+    campaignId: "campaign-aq-1",
+    entityId: "char-aq-1",
+    entityKind: "character" as const,
+    entityName: "Ragnar",
+    query: "",
+    responseMode: "overview" as const,
+    response: BLANK_RESPONSE,
+    ...overrides,
+  };
+}
+
+describe("createAssistantQuery / listAssistantQueries", () => {
+  it("persists the given fields and stamps id/createdAt", () => {
+    const entry = db.createAssistantQuery(makeQueryInput({ query: "flank the archer" }));
+    expect(entry.id).toBeTruthy();
+    expect(entry.createdAt).toBeTruthy();
+    expect(entry.query).toBe("flank the archer");
+    expect(entry.response).toEqual(BLANK_RESPONSE);
+  });
+
+  it("lists newest first", async () => {
+    const entityId = "char-aq-order";
+    const first = db.createAssistantQuery(makeQueryInput({ entityId, query: "first" }));
+    await tick();
+    const second = db.createAssistantQuery(makeQueryInput({ entityId, query: "second" }));
+
+    const history = db.listAssistantQueries(entityId);
+    expect(history.map((h) => h.id)).toEqual([second.id, first.id]);
+  });
+
+  it("scopes to the given entity, never leaking another character/creature's history", () => {
+    db.createAssistantQuery(makeQueryInput({ entityId: "char-aq-scope-a", query: "a" }));
+    db.createAssistantQuery(makeQueryInput({ entityId: "char-aq-scope-b", query: "b" }));
+
+    const history = db.listAssistantQueries("char-aq-scope-a");
+    expect(history).toHaveLength(1);
+    expect(history[0].query).toBe("a");
+  });
+
+  it("prunes the oldest entries once a single entity passes the history cap, keeping the newest ones", async () => {
+    const entityId = "char-aq-prune";
+    for (let i = 0; i < 21; i++) {
+      db.createAssistantQuery(makeQueryInput({ entityId, query: `q${i}` }));
+      await tick();
+    }
+
+    const history = db.listAssistantQueries(entityId);
+    expect(history).toHaveLength(20);
+    // Newest first — q20 (last created) should be present, q0 (first, oldest) pruned.
+    expect(history[0].query).toBe("q20");
+    expect(history.some((h) => h.query === "q0")).toBe(false);
+  });
+});

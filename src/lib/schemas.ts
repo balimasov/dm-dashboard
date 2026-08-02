@@ -425,6 +425,16 @@ export const assistantSuggestSchema = z
      * it yet still get the previous "just give me an overview" behavior.
      */
     response_mode: z.enum(["overview", "focused"]).default("overview"),
+    /**
+     * The prior answer's `game_plan.summary` (from an earlier ask in the
+     * same panel session, or from a History-tab entry the user picked
+     * "Уточнити цю пораду" on) — folded into the prompt's FOLLOW-UP
+     * REQUESTS context so the model treats `situation` as a refinement of
+     * that plan rather than an unrelated fresh question. Capped at the same
+     * length a summary itself is allowed to be (see `AI_OPTION_LIMITS`),
+     * since that's exactly what this field always holds verbatim.
+     */
+    previous_summary: z.string().max(AI_OPTION_LIMITS.summaryMaxLength).optional(),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",

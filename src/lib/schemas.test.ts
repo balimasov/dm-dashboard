@@ -396,6 +396,24 @@ describe("assistantSuggestSchema", () => {
     const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", response_mode: "detailed" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts an optional previous_summary string", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      previous_summary: "Attack the nearest goblin with your longsword.",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a previous_summary over 3000 characters, the same cap game_plan.summary itself has", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      previous_summary: "x".repeat(3001),
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("aiOptionSchema / aiTacticalResponseSchema", () => {
