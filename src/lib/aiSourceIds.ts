@@ -20,3 +20,20 @@ export function creatureTraitSourceId(index: number): string {
 export function creatureSpellSourceId(groupIndex: number, spellIndex: number): string {
   return `spell-${groupIndex}-${spellIndex}`;
 }
+
+/**
+ * True for a `creatureTraitSourceId`/`creatureSpellSourceId`-shaped id — see
+ * this file's own doc comment: these are only guaranteed to point at the
+ * same trait/spell within the single request that generated them, since
+ * they're a plain array-position formula, not a real id stored on the
+ * creature. A generated plan/reply naming one of these gets *persisted*
+ * (`assistant_messages` in `db.ts`) and later re-rendered against whatever
+ * the creature's `traits`/`spellcasting` look like *then* — if a DM adds,
+ * removes, or reorders a trait in between, the exact same id can silently
+ * resolve to a *different* trait instead of just going missing. Used by
+ * `resolveAiHint` (`aiGlossary.tsx`) to know when a hint lookup should trust
+ * the token/option's own name over its id.
+ */
+export function isPositionalCreatureSourceId(sourceId: string): boolean {
+  return /^trait-\d+$/.test(sourceId) || /^spell-\d+-\d+$/.test(sourceId);
+}

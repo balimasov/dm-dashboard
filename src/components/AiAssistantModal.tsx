@@ -440,11 +440,18 @@ export function AiAssistantModal({
             just extra detail for a clean read of the *current* sheet, never
             a follow-up to the prior turn (that's what "Ask" is for). */}
         <div className="flex gap-2">
+          {/* Pill-shaped (`rounded-full`, fixed `h-9`) unlike every `Button`
+              variant's own baked-in `rounded-lg`/padding, so these stay plain
+              `<button>`s rather than risking the same equal-specificity
+              Tailwind class conflict `Button`'s own doc comment warns about
+              — but the focus-visible ring and disabled treatment below still
+              match that shared component's, instead of the plain
+              `disabled:opacity-50` every button in the app moved away from. */}
           <button
             type="button"
             onClick={suggestMove}
             disabled={loading}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700"
           >
             <SparklesIcon className="h-3.5 w-3.5 shrink-0" />
             Suggest move
@@ -453,7 +460,7 @@ export function AiAssistantModal({
             type="button"
             onClick={ask}
             disabled={loading}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
           >
             <SendIcon className="h-4 w-4 shrink-0" />
             Ask

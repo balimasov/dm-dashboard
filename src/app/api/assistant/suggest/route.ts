@@ -19,6 +19,23 @@ import { AssistantQueryEntityKind } from "@/lib/types";
 
 const LOG_PREFIX = "[assistant/suggest]";
 
+/** The one OpenAI model this route calls — named here instead of inline so swapping it (or reading it from an env var later) is a one-line change, not a search through `callAssistantModel`'s body. */
+const ASSISTANT_MODEL = "gpt-5.4-mini";
+
+/** Low enough to keep rules-heavy tactical output consistent turn to turn, high enough to still vary phrasing — tuned empirically, not derived from anything. */
+const ASSISTANT_TEMPERATURE = 0.4;
+
+/**
+ * The app has no language switch (see CLAUDE.md — chat and every AI reply
+ * are always Ukrainian regardless of code/UI language), so this is a plain
+ * constant, not a per-request/per-campaign setting. Named here rather than
+ * inlined twice in the two `userContent` templates below so the two can
+ * never drift apart, and kept as its own constant (instead of just deleting
+ * the `output_language` indirection) so the prompts' own wording — "the
+ * input always provides output_language" — stays literally true.
+ */
+const OUTPUT_LANGUAGE = "Ukrainian";
+
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
 Analyze the supplied character or creature sheet, current state,
@@ -116,27 +133,14 @@ The summary should:
   aren't known, so this plan favors the safer option") — this is the only
   place for that; there is no separate list of missing information.
 
-When mentioning a sheet-based ability in the summary, use:
-
-[[ability:<source_id>|<display_name>]]
-
-Example:
-
-[[ability:spell_fireball|Fireball]]
-
-Use only source IDs explicitly supplied in the input.
-
-Do not place spell levels, slot counts, charges, action abbreviations,
-damage formulas, or other frontend metadata inside the token. The frontend
-will enrich the ability reference and display the existing tooltip.
-
-Never use this token syntax for a skill, ability score, sense, condition,
-or other general D&D term, and never invent a made-up prefix for one
-either (e.g. [[skill:Religion]] or [[condition:Blinded]]) — none of those
-carry a [source_id] on the sheet, so there is never a real id, "skill:"
-included, to put in one. Just write the plain word on its own — Religion,
-Perception, Blinded — with no brackets and no prefix at all; the frontend
-already recognizes these terms on its own and adds a hint automatically.
+When mentioning any sheet-based ability, spell, attack, feature, resource,
+or item — or a skill, ability score, sense, or condition — just write its
+plain name in ordinary prose, exactly as supplied. Never wrap a name in
+brackets or invent a token/prefix syntax for it (e.g. [[ability:...]],
+[[skill:Religion]], [[condition:Blinded]]) — the frontend already
+recognizes every one of these terms directly from plain text (both
+sheet-supplied names and general D&D vocabulary) and adds the matching
+hover-hint on its own; a bracket only breaks that instead of helping it.
 
 ACTION TYPES
 
@@ -682,21 +686,13 @@ LIST FORMAT
 ABILITY REFERENCES
 
 - When mentioning a sheet-based ability, spell, attack, feature, resource,
-  or item — something the sheet actually tags with its own [source_id] —
-  wrap it in [[ability:<source_id>|<display_name>]] using that exact
-  [source_id] and name, same convention and token syntax a plan's
-  game_plan.summary uses. Use only source IDs explicitly supplied in the
-  input; if you cannot find an exact matching [id], it isn't on the sheet —
-  leave the token out and just use the plain name.
-
-- Never wrap a skill, ability score, sense, condition, or other general
-  D&D term in this token syntax, and never invent a made-up prefix for one
-  either (e.g. [[skill:Religion]] or [[condition:Blinded]]) — none of those
-  carry a [source_id] on the sheet, so there is never a real id, "skill:"
-  included, to put in one. Just write the plain word on its own — Religion,
-  Perception, Blinded — with no brackets and no prefix at all; the app's
-  own renderer already recognizes these terms on its own and adds a hint
-  automatically.
+  or item, or a skill, ability score, sense, or condition, just write its
+  plain name in ordinary prose, exactly as supplied. Never wrap a name in
+  brackets or invent a token/prefix syntax for it (e.g. [[ability:...]],
+  [[skill:Religion]]) — the app's own renderer already recognizes every one
+  of these terms directly from plain text (both sheet-supplied names and
+  general D&D vocabulary) and adds the matching hover-hint on its own; a
+  bracket only breaks that instead of helping it.
 
 OUTPUT
 
@@ -756,8 +752,8 @@ async function callAssistantModel<T>(
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "gpt-5.4-mini",
-        temperature: 0.4,
+        model: ASSISTANT_MODEL,
+        temperature: ASSISTANT_TEMPERATURE,
         response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
         messages: [
           { role: "system", content: systemPrompt },
@@ -887,7 +883,7 @@ export async function POST(req: Request) {
 
 ${context}
 
-output_language: Ukrainian
+output_language: ${OUTPUT_LANGUAGE}
 previous_summary: ${previousContext || "(none)"}
 user_request: ${situation}`;
 
@@ -919,7 +915,7 @@ user_request: ${situation}`;
 ${context}
 
 response_mode: ${response_mode}
-output_language: Ukrainian
+output_language: ${OUTPUT_LANGUAGE}
 user_request: ${situation || "(none)"}`;
 
     const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context);

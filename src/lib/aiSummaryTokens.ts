@@ -69,15 +69,21 @@ function bareBracketText(inner: string): string | null {
 }
 
 /**
- * Splits text on `[[ability:<source_id>|<display_name>]]` tokens (see the
- * assistant's `SYSTEM_PROMPT`) into an ordered list of plain-text and
- * ability-reference segments — used on `game_plan.summary`, and (since the
- * model doesn't always confine the token syntax to just that field) an
- * option's own `description`/`conditions` too, via `AiResponseText`'s
- * `renderTokenizedText`. Pure/no React so it's testable on its own;
- * `AiResponseText` turns each `"ability"` token into an `InfoTooltip` keyed
- * by `sourceId` and each `"text"` segment through the existing
- * universal-term (condition/ability-score) scan.
+ * Splits text on `[[ability:<source_id>|<display_name>]]` tokens into an
+ * ordered list of plain-text and ability-reference segments — used on
+ * `game_plan.summary`, and an option's own `description`/`conditions` too,
+ * via `AiResponseText`'s `renderTokenizedText`. Pure/no React so it's
+ * testable on its own; `AiResponseText` turns each `"ability"` token into an
+ * `InfoTooltip` keyed by `sourceId` and each `"text"` segment through the
+ * existing universal-term (condition/ability-score) scan.
+ *
+ * The assistant's prompts no longer teach this token syntax at all (see
+ * `AiResponseText`'s own doc comment for why — three separate rounds of the
+ * model malforming or reinventing it were the reason it was dropped); this
+ * parser stays purely so a conversation already persisted from before that
+ * change keeps rendering correctly. New model output is expected to be
+ * plain, untokenized prose that never matches `TOKEN_RE` at all, in which
+ * case this function is a no-op pass-through to a single `"text"` entry.
  *
  * A bare bracket (see `TOKEN_RE`'s own comment) is handled by
  * `bareBracketText`: an id-shaped one is dropped entirely (the raw

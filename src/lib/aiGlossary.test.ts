@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildAiGlossary, buildAiGlossaryByName } from "./aiGlossary";
+import { buildAiGlossary, buildAiGlossaryByName, resolveAiHint } from "./aiGlossary";
 import { Character, Creature } from "./types";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -122,5 +122,40 @@ describe("buildAiGlossary / buildAiGlossaryByName", () => {
 
     expect(buildAiGlossary(creature)).toEqual({});
     expect(buildAiGlossaryByName(creature)).toEqual({});
+  });
+});
+
+describe("resolveAiHint", () => {
+  test("prefers id over name for an ordinary sheet id", () => {
+    const byId = { "feature-0": "by-id" };
+    const byName = { "second wind": "by-name" };
+    expect(resolveAiHint("feature-0", "second wind", byId, byName)).toBe("by-id");
+  });
+
+  test("falls back to name when an ordinary id doesn't match anything", () => {
+    const byId = {};
+    const byName = { fireball: "by-name" };
+    expect(resolveAiHint("spell-7", "fireball", byId, byName)).toBe("by-name");
+  });
+
+  test("prefers name over id for a positional creature trait/spell id, since that id can point at a different trait once persisted history is re-rendered against edited traits", () => {
+    // Simulates the exact stale-history scenario: "trait-0" used to be Fire
+    // Breath when a plan was generated, but the creature's traits have since
+    // been reordered so "trait-0" now resolves to a *different* trait (Bite)
+    // — the name the old message carries ("Fire Breath") must still win.
+    const byId = { "trait-0": "Bite (wrong, reordered)" };
+    const byName = { "fire breath": "Fire Breath (correct)" };
+    expect(resolveAiHint("trait-0", "fire breath", byId, byName)).toBe("Fire Breath (correct)");
+  });
+
+  test("still falls back to the (possibly stale) id for a positional creature id when no name match exists", () => {
+    const byId = { "trait-0": "by-id" };
+    const byName = {};
+    expect(resolveAiHint("trait-0", "unrecognized", byId, byName)).toBe("by-id");
+  });
+
+  test("returns undefined when neither an id nor a name match exists", () => {
+    expect(resolveAiHint("feature-0", "unrecognized", {}, {})).toBeUndefined();
+    expect(resolveAiHint(null, "unrecognized", {}, {})).toBeUndefined();
   });
 });

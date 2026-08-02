@@ -4,7 +4,7 @@ import { AttackHintPanel } from "@/components/ui/AttackDisplay";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
 import { SpellHintPanel } from "@/components/ui/SpellDisplay";
-import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
+import { creatureSpellSourceId, creatureTraitSourceId, isPositionalCreatureSourceId } from "./aiSourceIds";
 import { Character, Creature, RECOVERY_LABELS } from "./types";
 
 export type AiGlossary = Record<string, ReactNode>;
@@ -142,4 +142,29 @@ export function buildAiGlossaryByName(entity: Character | Creature): AiGlossary 
     if (baseKey && !(baseKey in glossary)) glossary[baseKey] = entry.hint;
   }
   return glossary;
+}
+
+/**
+ * Resolves a hint/availability lookup by `sourceId`, falling back to
+ * `nameKey` when the id doesn't match — except for a positional creature id
+ * (`isPositionalCreatureSourceId`), where the priority *flips*: that id
+ * shape is only trustworthy within the single request that generated it
+ * (see its own doc comment), so once a plan/reply naming one is persisted
+ * and re-rendered later, an id match can silently point at a *different*
+ * trait/spell after the creature's own `traits`/`spellcasting` changed,
+ * where the name a token/option carries is always the exact sheet text at
+ * generation time and never goes stale that way. A real sheet id (a
+ * character's `Feature`/`KnownSpell`/`Attack`/`Resource.id`) has no such
+ * expiry, so it keeps id-first priority as before.
+ */
+export function resolveAiHint<T>(
+  sourceId: string | null | undefined,
+  nameKey: string,
+  byId: Record<string, T>,
+  byName: Record<string, T>
+): T | undefined {
+  const idHint = sourceId ? byId[sourceId] : undefined;
+  const nameHint = byName[nameKey];
+  if (sourceId && isPositionalCreatureSourceId(sourceId)) return nameHint ?? idHint;
+  return idHint ?? nameHint;
 }

@@ -1,6 +1,6 @@
 import { ReactNode, useMemo } from "react";
 import { AiAvailability } from "@/lib/aiAvailability";
-import { AiGlossary } from "@/lib/aiGlossary";
+import { AiGlossary, resolveAiHint } from "@/lib/aiGlossary";
 import { CONDITION_INFO, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 import { parseSummaryTokens } from "@/lib/aiSummaryTokens";
 import { MASTERY_INFO } from "@/lib/masteryInfo";
@@ -35,28 +35,27 @@ import { HintPanel } from "./ui/HintPanel";
  * `universal`/`improvised` options have a `null` source_id and get no
  * sheet-based tooltip at all — there's nothing on the sheet to link to.
  *
- * `game_plan.summary` is free prose from the model but can reference sheet
- * abilities via `[[ability:<source_id>|<name>]]` tokens (see the prompt's
- * GAME PLAN SUMMARY section); `renderTokenizedText` (via `parseSummaryTokens`)
- * splits those out so each becomes the same `glossary`-backed tooltip as an
- * option name. The prompt only *teaches* the token syntax for the summary,
- * but the model has been observed reusing it verbatim inside an option's own
- * `description`/`conditions` too — those go through the exact same
- * `renderTokenizedText` path (not a plain-text-only one) specifically so a
- * stray `[[ability:...]]` never leaks to the user as raw, unparsed text
- * regardless of which field the model put it in.
+ * `game_plan.summary` (and an option's own `description`/`conditions`) is
+ * free prose from the model — every plain-text segment of it is scanned
+ * against this specific entity's own sheet term names (`glossaryByName`'s
+ * keys — every resource/feature/spell/attack/inventory item it has), the
+ * same way it's scanned for universal terms (conditions, ability scores,
+ * senses, exhaustion), Weapon Mastery property names, and universal action
+ * names, so a hint shows up next to any of these mentioned by their plain
+ * sheet-accurate name, with nothing extra for the model to produce.
  *
- * In practice the model is also inconsistent about which mentions it bothers
- * to wrap in a token at all — across several rounds of feedback, half the
- * ability names in a given summary would show up as plain untagged prose.
- * Rather than keep chasing the model's tagging behavior, every plain-text
- * segment (the summary, an option's description, and its conditions) is
- * *also* scanned against this specific entity's own sheet term names
- * (`glossaryByName`'s keys — every resource/feature/spell/attack/inventory
- * item it has), the same way it's already scanned for universal terms
- * (conditions, ability scores, senses, exhaustion) and Weapon Mastery
- * property names — so a hint shows up whether or not the model bothered to
- * tag that particular mention at all.
+ * The prompt used to also teach a `[[ability:<source_id>|<name>]]` bracket
+ * token for this (see `aiSummaryTokens.ts`'s own doc comment) — dropped
+ * after repeatedly chasing new ways the model would malform or invent a
+ * variant of that syntax (a stray shorthand bracket, an invented pseudo-
+ * namespace prefix, ...), each one a fresh way to leak raw unparsed text
+ * into a reply. The plain-text scan below already covered every mention the
+ * model didn't bother tagging (about half of them, in practice) just as
+ * reliably, so removing the token dropped a recurring bug source without
+ * losing real coverage. `renderTokenizedText`/`parseSummaryTokens` stay in
+ * place purely to keep rendering any already-persisted conversation history
+ * that still contains an old-style token correctly — nothing new is
+ * expected to produce one going forward.
  */
 
 const ABILITY_GLOSSARY: Record<string, string> = {
@@ -242,7 +241,11 @@ function renderTokenizedText(text: string, keyPrefix: string, glossary: AiGlossa
     // as `glossary` but keyed by name) catches it as long as the token's
     // `displayName` is the real sheet name, which has proven far more
     // reliable than an opaque id round-tripped through free generation.
-    const hint = glossary[token.sourceId] ?? glossaryByName[token.displayName.trim().toLowerCase()];
+    // `resolveAiHint` additionally flips that priority for a creature's
+    // positional trait/spell id, since a *persisted* message re-rendered
+    // later can have that id now pointing at a different trait entirely
+    // (see its own doc comment).
+    const hint = resolveAiHint(token.sourceId, token.displayName.trim().toLowerCase(), glossary, glossaryByName);
     return [
       hint ? (
         <InfoTooltip key={`${keyPrefix}-${i}`} inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
@@ -419,13 +422,13 @@ function OptionRow({
   availabilityByName: AiAvailability;
 }) {
   const nameKey = option.name.trim().toLowerCase();
-  // Same id-then-name fallback as `renderTokenizedText` — `option.source_id` is
-  // supposed to be an exact copy of the sheet entity's id, but a model that
-  // gets it wrong still reliably gets `name` right, so a lookup by name
-  // against the entity's own data (not just this response's other options)
-  // catches it either way.
-  const sheetHint =
-    option.kind === "sheet" ? (option.source_id ? glossary[option.source_id] : undefined) ?? glossaryByName[nameKey] : undefined;
+  // Same id-then-name fallback as `renderTokenizedText` (see `resolveAiHint`'s
+  // own doc comment for why a creature's positional trait/spell id flips
+  // that priority) — `option.source_id` is supposed to be an exact copy of
+  // the sheet entity's id, but a model that gets it wrong still reliably
+  // gets `name` right, so a lookup by name against the entity's own data
+  // (not just this response's other options) catches it either way.
+  const sheetHint = option.kind === "sheet" ? resolveAiHint(option.source_id, nameKey, glossary, glossaryByName) : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
   const name = hint ? (
@@ -436,7 +439,7 @@ function OptionRow({
     <strong>{option.name}</strong>
   );
   const availabilityText =
-    option.kind === "sheet" ? (option.source_id ? availability[option.source_id] : undefined) ?? availabilityByName[nameKey] : undefined;
+    option.kind === "sheet" ? resolveAiHint(option.source_id, nameKey, availability, availabilityByName) : undefined;
   const descriptionKey = option.source_id ?? option.name;
 
   return (
