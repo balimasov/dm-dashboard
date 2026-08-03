@@ -227,8 +227,8 @@ ACTION ORIGINS
 Each option must use one kind:
 
 - sheet: an ability, spell, attack, consumable item (see CONSUMABLE ITEMS),
-  monster action, legendary action, or lair action explicitly present in
-  the supplied sheet;
+  magic item (see MAGIC ITEMS), monster action, legendary action, or lair
+  action explicitly present in the supplied sheet;
 
 - universal: a generally available rules action such as Dash, Disengage,
   Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple, Shove, or
@@ -326,6 +326,7 @@ Never recommend:
 - a spell without a usable slot or its own remaining charge;
 - a feature with no remaining uses;
 - a consumable item with a quantity of 0 (see CONSUMABLE ITEMS);
+- a magic item at 0 charges, or with a quantity of 0 (see MAGIC ITEMS);
 - an action type that has already been spent;
 - an option that is definitely illegal in the supplied current state.
 
@@ -486,6 +487,37 @@ it never counts against the one-spell-slot-per-turn restriction in
 LEGALITY AND RESOURCES. It can still require concentration exactly like
 any other spell of that kind; apply the same concentration-conflict
 rules to it.
+
+MAGIC ITEMS
+
+Non-consumable magic gear — rings, wands, staves, rods, wondrous items,
+magic armor — is just as real an option as a consumable, spell, feature,
+or attack. It shows up in one of two places on the sheet:
+
+- an item-sourced entry in "Resources" (its own charge pool — recovery is
+  often "manual," recharging over time or on the DM's own ruling, not
+  necessarily tied to a rest);
+
+- the "Other magic items" list, for gear with a magical effect but no
+  separate charge pool of its own.
+
+Actively consider both alongside spells, features, attacks, and
+consumables when they'd help — do not surface one only when the DM asks
+about items specifically, and do not limit yourself to weapons/armor's
+passive bonuses (already folded into the sheet's AC/attack numbers) when
+an item's own description describes an active effect to use.
+
+Use the item's own supplied description for what it does, what it costs
+to activate, and any limitation stated there. Do not invent an effect,
+activation cost, or charge count for an item with no supplied
+description — mention that it exists but leave its effect out rather
+than guessing.
+
+An item-sourced Resource at 0 current charges, or a magic item with a
+quantity of 0, is unavailable this turn exactly like any other spent
+resource (see LEGALITY AND RESOURCES) — an unusual recovery method
+(manual/DM-adjudicated rather than a short/long rest) doesn't change
+that.
 
 WEAPON MASTERY
 

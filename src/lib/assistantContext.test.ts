@@ -141,6 +141,29 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[second-wind] Second Wind: 0/1 (recovers: Short Rest)");
   });
 
+  test("includes a resource's source and description — needed for an item-sourced charge pool (a magic item's own charges) to be usable at all, not just its bare name/count", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      resources: [
+        {
+          id: "item-0",
+          name: "Ferol's Staff of Acid",
+          current: 6,
+          max: 6,
+          recovery: "manual",
+          source: "Item",
+          description: "Expend 1 charge to cast Melf's Acid Arrow.",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain(
+      "[item-0] Ferol's Staff of Acid (Item): 6/6 (recovers: Manual) — Expend 1 charge to cast Melf's Acid Arrow."
+    );
+  });
+
   test("shows a spell's own charge pool when it has one, otherwise no charge suffix", () => {
     const character = makeCharacter({
       name: "Nyra",
@@ -244,6 +267,32 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[attack-0] Shortsword: +6 to hit, 1d6+3 piercing [Light, Finesse]");
   });
 
+  test("includes a magic weapon's own extra damage and its own rules text — neither reached the model before, only mastery and basic combat math did", () => {
+    const character = makeCharacter({
+      name: "Kessa",
+      attacks: [
+        {
+          id: "attack-0",
+          name: "Whisper of the Underdark",
+          attackType: "melee",
+          attackBonus: 8,
+          damage: "1d6+5",
+          damageType: "piercing",
+          properties: [],
+          proficient: true,
+          extraDamage: "+2d10 Poison",
+          description: "Once per turn, the wielder can force the target to make a DC 15 Constitution save or be Poisoned for 1 minute.",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain(
+      "[attack-0] Whisper of the Underdark: +8 to hit, 1d6+5 piercing + +2d10 Poison — Once per turn, the wielder can force the target to make a DC 15 Constitution save or be Poisoned for 1 minute."
+    );
+  });
+
   test("includes a weapon's mastery property and its mechanical effect, since the model has no other way to know it applies", () => {
     const character = makeCharacter({
       name: "Bram",
@@ -293,6 +342,64 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[potion-1] Potion of Healing (qty 2): Regain 2d4+2 hit points.");
     expect(context).toContain("[scroll-1] Scroll of Fireball (qty 0)");
     expect(context).not.toContain("Shield");
+  });
+
+  test("lists a non-consumable magic item (a ring, a wondrous item) with its own [id]/quantity/description — previously never reached the model at all", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [
+        {
+          id: "ring-1",
+          name: "Ring of Protection",
+          rarity: "Rare",
+          category: "Magic Item",
+          quantity: 1,
+          description: "While wearing this ring, you gain a +1 bonus to AC and saving throws.",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[ring-1] Ring of Protection (qty 1): While wearing this ring, you gain a +1 bonus to AC and saving throws.");
+  });
+
+  test("excludes a mundane (Common-rarity) non-weapon item from the magic items block", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [{ id: "cloak-1", name: "Traveler's Cloak", rarity: "Common", category: "Gear", quantity: 1 }],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).not.toContain("Traveler's Cloak");
+  });
+
+  test("excludes a magic weapon from the magic items block — it's already covered by its own Weapon attacks line, listing it twice would be redundant", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [{ id: "sword-1", name: "Flame Tongue", rarity: "Rare", category: "Weapon", quantity: 1, description: "Deals extra fire damage." }],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).not.toContain("Flame Tongue");
+  });
+
+  test("excludes a magic item from the magic items block when it's already charge-tracked as an item-sourced Resource, to avoid listing it twice", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      resources: [
+        { id: "item-0", name: "Ferol's Staff of Acid", current: 6, max: 6, recovery: "manual", source: "Item", description: "Casts Acid Arrow." },
+      ],
+      inventory: [{ id: "staff-1", name: "Ferol's Staff of Acid", rarity: "Rare", category: "Magic Item", quantity: 1, description: "Casts Acid Arrow." }],
+    });
+
+    const context = characterAssistantContext(character);
+
+    // Present once, via Resources (with its charge count) — not a second time via "Other magic items".
+    expect(context).toContain("[item-0] Ferol's Staff of Acid (Item): 6/6");
+    expect(context).not.toContain("Other magic items");
   });
 
   test("reports ability scores with their modifier, and saving throws with proficiency already folded in and marked", () => {

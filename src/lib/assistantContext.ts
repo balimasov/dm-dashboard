@@ -38,6 +38,14 @@ import { formatModifier } from "./format";
  * spells) rather than the *full* rules text — enough for the model to reason
  * about what an option actually does without ballooning the prompt with
  * complete spell descriptions.
+ *
+ * Magic items get their full supplied description, in whichever of three
+ * places actually carries their current state: a magic weapon's own rules
+ * text rides along on its "Weapon attacks" line; a charge-tracked item
+ * (a staff, a wand) is an item-sourced entry in "Resources"; anything else
+ * non-consumable (a ring, a wondrous item) gets its own "Other magic items"
+ * line. Each is mutually exclusive with the others for the same item, so
+ * nothing gets listed twice.
  */
 
 /**
@@ -141,7 +149,17 @@ export function characterAssistantContext(character: Character): string {
     lines.push("");
     lines.push("Resources (current/max):");
     for (const r of c.resources) {
-      lines.push(`- [${r.id}] ${r.name}: ${r.current}/${r.max} (recovers: ${RECOVERY_LABELS[r.recovery]})`);
+      // `source` ("Item", "Class", "Feat", "Pact Magic", ...) — worth
+      // showing specifically because a magic item's charge pool (e.g. a
+      // staff's own charges, `source: "Item"`) is a real option the
+      // assistant should actively reason about, not just a class feature
+      // wearing an unfamiliar name; `description` is what makes that
+      // possible at all — previously omitted here entirely, so a
+      // charge-tracked magic item's own rules text never reached the
+      // model, only its bare name and remaining count.
+      const source = r.source ? ` (${r.source})` : "";
+      const description = r.description ? ` — ${r.description}` : "";
+      lines.push(`- [${r.id}] ${r.name}${source}: ${r.current}/${r.max} (recovers: ${RECOVERY_LABELS[r.recovery]})${description}`);
     }
   }
 
@@ -215,8 +233,19 @@ export function characterAssistantContext(character: Character): string {
       // the TWO-WEAPON FIGHTING prompt section), which it has no other way
       // to detect from the flattened attack list.
       const properties = a.properties.length > 0 ? ` [${a.properties.join(", ")}]` : "";
+      // Extra damage a magic property grants on top of the weapon's own
+      // dice (e.g. a poisoned blade's "+2d10 Poison") — a separate
+      // structured fact from `damage`, previously dropped here entirely.
+      const extraDamage = a.extraDamage ? ` + ${a.extraDamage}` : "";
+      // A magic weapon's own rules text — anything beyond its named mastery
+      // property (a bonus on-hit effect, a triggered drawback, a bound
+      // spell) previously never reached the model at all, since only the
+      // structured combat-math fields above were sent; `mastery` alone
+      // covers the standard 2024 mastery properties, not a weapon's own
+      // custom magic.
+      const magicEffect = a.description ? ` — ${a.description}` : "";
       lines.push(
-        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${properties}${mastery}`
+        `- [${a.id}] ${a.name}: ${a.attackBonus >= 0 ? "+" : ""}${a.attackBonus} to hit, ${a.damage}${a.damageType ? ` ${a.damageType}` : ""}${extraDamage}${properties}${mastery}${magicEffect}`
       );
     }
   }
@@ -232,6 +261,31 @@ export function characterAssistantContext(character: Character): string {
     lines.push("");
     lines.push("Consumable items (potions, scrolls, and similar — quantity 0 means none left):");
     for (const item of consumables) {
+      lines.push(`- [${item.id}] ${item.name} (qty ${item.quantity})${item.description ? `: ${item.description}` : ""}`);
+    }
+  }
+
+  // Non-consumable magic gear (rings, wands/staves with no separate charge
+  // pool tracked, wondrous items, magic armor) — same "real usable option,
+  // not flavor text" reasoning as consumables above, previously never sent
+  // to the model at all. `rarity !== "Common"` is the actual "is this
+  // magical" signal, not `category === "Magic Item"` alone — a magic item
+  // can still be filed under "Armor"/"Gear" and would otherwise be missed.
+  // "Weapon" is excluded here: a wielded magic weapon already appears in
+  // "Weapon attacks" above with its own rules text, so repeating it here
+  // would just be a duplicate. Also excludes anything with a matching
+  // item-sourced Resource entry above (a charge-tracked item like a
+  // staff) — its charges *and* description already appear there; listing
+  // it again here with no charge info would be redundant and could read
+  // as a second, uncharged copy of the same item.
+  const itemResourceNames = new Set(c.resources.filter((r) => r.source === "Item").map((r) => r.name.trim().toLowerCase()));
+  const magicItems = c.inventory.filter(
+    (item) => item.category !== "Weapon" && item.category !== "Consumable" && item.rarity !== "Common" && !itemResourceNames.has(item.name.trim().toLowerCase())
+  );
+  if (magicItems.length > 0) {
+    lines.push("");
+    lines.push("Other magic items (worn/carried gear with a magical effect, no separate charge pool — quantity 0 means none left):");
+    for (const item of magicItems) {
       lines.push(`- [${item.id}] ${item.name} (qty ${item.quantity})${item.description ? `: ${item.description}` : ""}`);
     }
   }

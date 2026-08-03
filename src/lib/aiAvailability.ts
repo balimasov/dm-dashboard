@@ -38,8 +38,20 @@ function availabilityEntries(c: Character): AvailabilityEntry[] {
   // stackable item's remaining count — a Potion of Healing or Scroll of
   // Fireball the assistant recommends should show how many are left, same
   // as a spell's own charge pool does.
+  //
+  // Non-consumable magic gear (rings, wondrous items, magic armor —
+  // `assistantContext.ts`'s "Other magic items" block) gets the same
+  // treatment: weapons are excluded (a wielded magic weapon's own combat
+  // line already covers it) and so is anything with a matching
+  // item-sourced `Resource` entry (its charges are tracked — and filtered
+  // at 0 — there instead, see the loop above).
+  const itemResourceNames = new Set(c.resources.filter((r) => r.source === "Item").map((r) => r.name.trim().toLowerCase()));
   for (const item of c.inventory) {
-    if (item.category === "Consumable") entries.push({ id: item.id, name: item.name, label: `x${item.quantity}`, remaining: item.quantity });
+    if (item.category === "Consumable") {
+      entries.push({ id: item.id, name: item.name, label: `x${item.quantity}`, remaining: item.quantity });
+    } else if (item.category !== "Weapon" && item.rarity !== "Common" && !itemResourceNames.has(item.name.trim().toLowerCase())) {
+      entries.push({ id: item.id, name: item.name, label: `x${item.quantity}`, remaining: item.quantity });
+    }
   }
   return entries;
 }

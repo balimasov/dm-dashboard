@@ -134,6 +134,36 @@ describe("buildAiAvailability", () => {
     expect(availability["shield-1"]).toBeUndefined();
   });
 
+  test("formats a non-consumable magic item as 'x{quantity}', same as a consumable — but not a mundane (Common-rarity) item or a magic weapon (already covered via its own attack line)", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [
+        { id: "ring-1", name: "Ring of Protection", rarity: "Rare", category: "Magic Item", quantity: 1 },
+        { id: "cloak-1", name: "Traveler's Cloak", rarity: "Common", category: "Gear", quantity: 1 },
+        { id: "sword-1", name: "Flame Tongue", rarity: "Rare", category: "Weapon", quantity: 1 },
+      ],
+    });
+
+    const availability = buildAiAvailability(character);
+
+    expect(availability["ring-1"]).toBe("x1");
+    expect(availability["cloak-1"]).toBeUndefined();
+    expect(availability["sword-1"]).toBeUndefined();
+  });
+
+  test("omits a magic item that's already charge-tracked as an item-sourced Resource — that one shows its own charges instead, not a redundant 'x1'", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      resources: [{ id: "item-0", name: "Ferol's Staff of Acid", current: 6, max: 6, recovery: "manual", source: "Item" }],
+      inventory: [{ id: "staff-1", name: "Ferol's Staff of Acid", rarity: "Rare", category: "Magic Item", quantity: 1 }],
+    });
+
+    const availability = buildAiAvailability(character);
+
+    expect(availability["item-0"]).toBe("6/6 charges");
+    expect(availability["staff-1"]).toBeUndefined();
+  });
+
   test("returns an empty map for a creature, which has no current/max resource tracking", () => {
     const creature = makeCreature({ name: "Ogre" });
     expect(buildAiAvailability(creature)).toEqual({});
@@ -201,6 +231,28 @@ describe("buildAiZeroAvailability", () => {
     const character = makeCharacter({ name: "Nyra", knownSpells: [{ id: "s3", name: "Fire Bolt", level: 0, source: "Class" }] });
     const { ids } = buildAiZeroAvailability(character);
     expect(ids.has("s3")).toBe(false);
+  });
+
+  test("flags a non-consumable magic item at quantity 0 — dropped from a recommended plan the same way a spent consumable is", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [{ id: "ring-1", name: "Ring of Protection", rarity: "Rare", category: "Magic Item", quantity: 0 }],
+    });
+
+    const { ids, names } = buildAiZeroAvailability(character);
+    expect(ids.has("ring-1")).toBe(true);
+    expect(names.has("ring of protection")).toBe(true);
+  });
+
+  test("flags an item-sourced Resource (a magic item's own charges) at 0, matching the same rule any other spent resource gets", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      resources: [{ id: "item-0", name: "Ferol's Staff of Acid", current: 0, max: 6, recovery: "manual", source: "Item" }],
+    });
+
+    const { ids, names } = buildAiZeroAvailability(character);
+    expect(ids.has("item-0")).toBe(true);
+    expect(names.has("ferol's staff of acid")).toBe(true);
   });
 
   test("returns empty sets for a creature", () => {
