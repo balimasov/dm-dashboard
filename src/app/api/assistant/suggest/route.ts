@@ -301,6 +301,18 @@ against the acting character's or creature's current conditions:
 - If a condition says it can't speak, never return an option that needs a
   verbal spell component or speech.
 
+This applies identically to a condition tagged "(homebrew)" — a DM-defined
+custom condition, not one of the three bullets' named standard conditions.
+Read its supplied description literally, the same way exact supplied
+feature/resource text overrides general rules knowledge elsewhere (see
+SOURCE OF TRUTH), and derive whatever hard constraint it actually states
+even when the wording doesn't match a standard condition's — a forced
+target ("must attack the nearest creature") makes any option that picks a
+different target illegal; "can't cast spells" blocks every spell option
+even if it never uses the word "incapacitated"; and so on. Do not require
+a homebrew condition's text to match one of the three bullets above before
+treating it as a hard filter — apply what it actually says.
+
 A condition's other effects (disadvantage, automatic failure on specific
 saves, and similar) don't remove an option's legality by themselves — fold
 those into TACTICAL EVALUATION instead, and say so in the option's
@@ -310,17 +322,20 @@ It's fine for an always-shown category (see RESPONSE MODE) to end up with
 zero options when every option that category could offer is actually
 blocked this way — never include an illegal option just to fill it.
 
-When an active condition is meaningfully limiting this turn, actively look
-for and prioritize any legal option — sheet-based, universal (see
-UNIVERSAL ACTION TACTICS' Escape entry for Grappled/Restrained), or
-improvised — that would end the condition, reduce it, or let the character
-work around it this turn: standing up from Prone, attempting to break free
-of a Grapple or Restrained condition, a saving throw the condition itself
-grants at the start or end of a turn, a supplied spell/feature/item that
-removes or counters it, or simply choosing an option that doesn't need the
-blocked resource at all. When that's the best move available, say so
-explicitly in game_plan.summary rather than only implying it by which
-options are missing.
+When an active condition — standard or homebrew — is meaningfully limiting
+this turn, actively look for and prioritize any legal option — sheet-based,
+universal (see UNIVERSAL ACTION TACTICS' Escape entry for
+Grappled/Restrained), or improvised — that would end the condition, reduce
+it, or let the character work around it this turn: standing up from Prone,
+attempting to break free of a Grapple or Restrained condition, a saving
+throw the condition itself grants at the start or end of a turn, a supplied
+spell/feature/item that removes or counters it, or simply choosing an
+option that doesn't need the blocked resource at all. For a homebrew
+condition, check its own supplied description for an explicit way out (a
+saving throw, a duration, a trigger that ends it) and surface that too when
+it's there. When any of this is the best move available, say so explicitly
+in game_plan.summary rather than only implying it by which options are
+missing.
 
 Account for the tactical cost of spending a limited resource, especially
 when it is the last available use or highest remaining spell slot.
