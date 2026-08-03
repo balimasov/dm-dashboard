@@ -25,4 +25,11 @@ describe("getUniversalActionInfo", () => {
   test("doesn't false-positive on an unrelated word containing an action name as a substring", () => {
     expect(getUniversalActionInfo("Dashing Boots")).toBeUndefined();
   });
+
+  test("matches Escape, used to break free of a Grapple/Restrained condition", () => {
+    expect(getUniversalActionInfo("Escape")).toEqual({
+      title: "Escape",
+      description: expect.stringContaining("grapple"),
+    });
+  });
 });

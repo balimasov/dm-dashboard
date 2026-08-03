@@ -180,7 +180,8 @@ Each option must use one kind:
   the supplied sheet;
 
 - universal: a generally available rules action such as Dash, Disengage,
-  Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple, or Shove;
+  Dodge, Help, Hide, Ready, Search, Study, Utilize, Grapple, Shove, or
+  Escape;
 
 - improvised: a non-standard action using supplied terrain, objects,
   hazards, social interaction, positioning, or coordination.
@@ -229,6 +230,10 @@ Examples:
   knocking a target Prone, protecting an ally, or moving a target toward
   a supplied hazard or area effect is more valuable than direct damage.
 
+- Escape when the sheet shows the character or creature is Grappled or
+  Restrained and breaking free is more valuable than acting from that
+  limited position this turn (see CONDITIONS FILTER LEGAL OPTIONS).
+
 Do not recommend a universal action merely because it exists. Compare its
 expected tactical value against the character's currently usable
 sheet-based options.
@@ -240,7 +245,9 @@ Before returning an option, check:
 - whether the required Action, Bonus Action, Reaction, movement,
   Legendary Action, Lair Action, or other action resource remains;
 - whether required spell slots, charges, uses, ammunition, or items remain;
-- whether active conditions allow the action;
+- whether active conditions and exhaustion allow the action (see
+  CONDITIONS FILTER LEGAL OPTIONS below — this is a hard filter, not a
+  minor factor);
 - whether explicit ability requirements are satisfied;
 - whether the target type is valid;
 - range, line of sight, and line of effect when supplied;
@@ -270,6 +277,50 @@ Never recommend:
 - a consumable item with a quantity of 0 (see CONSUMABLE ITEMS);
 - an action type that has already been spent;
 - an option that is definitely illegal in the supplied current state.
+
+CONDITIONS FILTER LEGAL OPTIONS
+
+Every active condition and exhaustion level on the sheet's own "Conditions"/
+"Exhaustion" lines comes with its exact mechanical effect. Treat that text
+as a hard filter on which options are legal this turn, applied before you
+rank or return anything — not just one more factor to weigh in alongside
+tactical value.
+
+For every option you're about to return, check its supplied effect text
+against the acting character's or creature's current conditions:
+
+- If a condition says it can't take actions, bonus actions, or reactions
+  (Incapacitated, or any condition whose own text includes that —
+  Paralyzed, Petrified, Stunned, Unconscious), never return an option in
+  that action-economy category.
+
+- If a condition sets speed to 0 or says it can't move (Grappled,
+  Restrained, Paralyzed, Stunned, Unconscious), never return a movement
+  option that assumes normal movement is possible.
+
+- If a condition says it can't speak, never return an option that needs a
+  verbal spell component or speech.
+
+A condition's other effects (disadvantage, automatic failure on specific
+saves, and similar) don't remove an option's legality by themselves — fold
+those into TACTICAL EVALUATION instead, and say so in the option's
+description when it changes how good the option actually is.
+
+It's fine for an always-shown category (see RESPONSE MODE) to end up with
+zero options when every option that category could offer is actually
+blocked this way — never include an illegal option just to fill it.
+
+When an active condition is meaningfully limiting this turn, actively look
+for and prioritize any legal option — sheet-based, universal (see
+UNIVERSAL ACTION TACTICS' Escape entry for Grappled/Restrained), or
+improvised — that would end the condition, reduce it, or let the character
+work around it this turn: standing up from Prone, attempting to break free
+of a Grapple or Restrained condition, a saving throw the condition itself
+grants at the start or end of a turn, a supplied spell/feature/item that
+removes or counters it, or simply choosing an option that doesn't need the
+blocked resource at all. When that's the best move available, say so
+explicitly in game_plan.summary rather than only implying it by which
+options are missing.
 
 Account for the tactical cost of spending a limited resource, especially
 when it is the last available use or highest remaining spell slot.

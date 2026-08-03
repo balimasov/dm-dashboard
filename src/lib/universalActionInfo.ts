@@ -17,6 +17,7 @@ export const UNIVERSAL_ACTION_INFO: Record<string, string> = {
   utilize: "Use an object that requires an action to activate, operate, or otherwise employ.",
   grapple: "Make a Strength (Athletics) check contested by the target's Strength (Athletics) or Dexterity (Acrobatics) to grab and restrain it.",
   shove: "Make a Strength (Athletics) check contested by the target's Strength (Athletics) or Dexterity (Acrobatics) to knock it prone or push it 5 ft away.",
+  escape: "Make a Strength (Athletics) or Dexterity (Acrobatics) check contested by the grappler's escape DC to break free of a grapple or a similar restraining effect.",
 };
 
 /** Matches a universal action name at a word boundary inside `name` (e.g. "Dash" inside "Dash (Bonus Action)") and returns its title-cased key plus blurb, or `undefined` when `name` doesn't reference one of these actions. */
