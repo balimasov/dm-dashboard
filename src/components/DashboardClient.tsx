@@ -548,20 +548,42 @@ export function DashboardClient({
   );
 
   return (
-    <div className="mx-auto max-w-[1800px] px-4 pb-8">
+    <>
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
 
-      {/* `top-[58px]` = the global header's own rendered height (see
-          `layout.tsx`'s `sticky top-0` header) — sits flush below it instead
-          of guessing a Tailwind spacing step that might not match. Sticky
-          rather than living further down the page: Sync/Export/Settings are
-          reached constantly through a session, and scrolling back to the top
-          every time got old fast once Party Toolkit pushed everything below
-          out of view. Compact enough (just Sync + one kebab menu) to always
-          fit one row even at phone width, so unlike before this needs no
-          horizontal-scroll fallback for narrow viewports. */}
-      <div className="sticky top-[58px] z-20 mb-4 border-b border-slate-800 bg-slate-950 py-2">
-        <div className="flex flex-wrap items-center justify-end gap-2">
+      {/* Full-width outer bar (no `mx-auto max-w-[1800px] px-4` on this
+          element itself) with an inner content div that carries those
+          instead — the same two-layer shape `layout.tsx`'s own `<header>`
+          already uses for its sticky bar. Without that split, this being
+          nested directly inside the page's own `max-w-[1800px] px-4`
+          wrapper meant its background/border stopped 16px short of both
+          screen edges on every viewport (confirmed: a visible inset gap on
+          both mobile and desktop, not just wide desktop where the page's
+          own max-width is expected to leave side margins) instead of
+          reading as one continuous bar the way the header above it does.
+
+          `top-[57px]`, not `58px` — the header's own rendered height
+          measures exactly 58px, but its `bg-slate-950/80` +
+          `backdrop-blur` are semi-transparent by design, and stacking two
+          independently `sticky`-positioned elements edge-to-edge left a
+          hairline seam during scroll (subpixel rounding between the two
+          elements' own sticky offsets, a known interaction with
+          `backdrop-filter`) where whatever was scrolling underneath
+          peeked through for a frame. Overlapping this bar's opaque
+          background 1px up into the header's own last pixel row (this bar
+          is `z-20`, above the header's `z-10`, so it simply paints over
+          that row) closes the seam without needing to measure anything at
+          runtime.
+
+          Sticky rather than living further down the page: Sync/Export/
+          Settings are reached constantly through a session, and scrolling
+          back to the top every time got old fast once Party Toolkit
+          pushed everything below out of view. Compact enough (just Sync +
+          one kebab menu) to always fit one row even at phone width, so
+          unlike before this needs no horizontal-scroll fallback for
+          narrow viewports. */}
+      <div className="sticky top-[57px] z-20 mb-4 border-b border-slate-800 bg-slate-950">
+        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
           {lastSyncedAt && (
             <>
               {/* Full text on desktop, where there's room to spare... */}
@@ -629,6 +651,7 @@ export function DashboardClient({
         </div>
       </div>
 
+      <div className="mx-auto max-w-[1800px] px-4 pb-8">
       <div id="section-campaign" className="scroll-mt-[130px]">
         <CollapsibleSection
           title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
@@ -885,6 +908,7 @@ export function DashboardClient({
       )}
 
       {journalOpen && <CampaignJournalModal campaignId={campaign.id} role={role} onClose={() => setJournalOpen(false)} />}
-    </div>
+      </div>
+    </>
   );
 }
