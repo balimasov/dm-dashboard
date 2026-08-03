@@ -2,6 +2,7 @@
 
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
 import { ResizeGripIcon } from "./icons";
@@ -122,6 +123,7 @@ export function FloatingPanel({
   initialHeight?: number;
 }) {
   const isDesktop = useDesktopViewport();
+  const visualViewport = useVisualViewport();
   const titleId = useId();
   // Lazy initializer runs once, after mount in practice (this component is
   // only ever rendered once its caller's "open" state flips true, never
@@ -150,11 +152,21 @@ export function FloatingPanel({
   const resizeStart = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   if (!isDesktop) {
+    // Sized against `visualViewport` (the real visible area) rather than
+    // plain `top`/`bottom` insets (the full, keyboard-obscured layout
+    // viewport) whenever it's available — see `useVisualViewport`'s own
+    // doc comment for why a plain-CSS sheet visibly jumps/resizes as the
+    // on-screen keyboard opens and closes. Falls back to the old static
+    // inset before the effect's first run and on a browser with no
+    // `visualViewport` support at all.
+    const mobileStyle = visualViewport
+      ? { top: visualViewport.offsetTop + EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, height: visualViewport.height - 2 * EDGE_MARGIN }
+      : { top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN };
     return (
       <div
         role="dialog"
         aria-labelledby={titleId}
-        style={{ top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN }}
+        style={mobileStyle}
         className="fixed z-[45] flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
