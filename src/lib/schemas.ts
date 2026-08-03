@@ -38,7 +38,11 @@ const resourceSchema = z.object({
 const customConditionSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(60),
-  description: z.string().max(500).optional(),
+  // Real-world custom conditions get copied straight from a monster's stat
+  // block (e.g. a dragon's multi-paragraph "Malevolent Presence") — 500 was
+  // silently truncating a paste like that well before the DM even reached
+  // the end of it.
+  description: z.string().max(2000).optional(),
 });
 
 const spellSlotLevelSchema = z.object({

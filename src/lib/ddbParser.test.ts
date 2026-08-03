@@ -359,6 +359,24 @@ describe("inventory item type/weight/cost", () => {
   });
 });
 
+describe("custom conditions survive a sync", () => {
+  test("a previously added custom condition is still present after syncing fresh D&D Beyond data — not a D&D Beyond concept, so nothing here computes it, but the sync must not silently drop it either", () => {
+    const raw = JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, "esmeralda-bard.json"), "utf8"));
+    const existing = load("esmeralda-bard");
+    const withCustom: Character = {
+      ...existing,
+      combat: {
+        ...existing.combat,
+        customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }],
+      },
+    };
+
+    const resynced = parseDdbCharacter(raw, withCustom);
+
+    expect(resynced.combat.customConditions).toEqual([{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }]);
+  });
+});
+
 describe("regression baseline — every fixture parses without throwing and has sane shape", () => {
   const fixtures = fs.readdirSync(FIXTURES_DIR).map((f) => f.replace(/\.json$/, ""));
 

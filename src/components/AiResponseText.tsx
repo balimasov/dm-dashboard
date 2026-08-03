@@ -420,6 +420,7 @@ function OptionRow({
   sheetTermsRe,
   availability,
   availabilityByName,
+  flagged,
 }: {
   option: AiOption;
   isBest: boolean;
@@ -428,6 +429,8 @@ function OptionRow({
   sheetTermsRe: RegExp | null;
   availability: AiAvailability;
   availabilityByName: AiAvailability;
+  /** This option's name matches an entry in the entity's own `flaggedAbilities`/`flaggedTraits` — same 🔥 the card's `ReminderBadge` already shows for it, prefixed here so a DM scanning the plan spots "the thing I told myself to remember" without cross-checking the card. */
+  flagged: boolean;
 }) {
   const nameKey = option.name.trim().toLowerCase();
   // Same id-then-name fallback as `renderTokenizedText` (see `resolveAiHint`'s
@@ -439,12 +442,13 @@ function OptionRow({
   const sheetHint = option.kind === "sheet" ? resolveAiHint(option.source_id, nameKey, glossary, glossaryByName) : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
+  const displayName = flagged ? `🔥 ${option.name}` : option.name;
   const name = hint ? (
     <InfoTooltip inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
-      <strong>{option.name}</strong>
+      <strong>{displayName}</strong>
     </InfoTooltip>
   ) : (
-    <strong>{option.name}</strong>
+    <strong>{displayName}</strong>
   );
   const availabilityText =
     option.kind === "sheet" ? resolveAiHint(option.source_id, nameKey, availability, availabilityByName) : undefined;
@@ -486,12 +490,15 @@ export function AiResponseText({
   glossaryByName = {},
   availability = {},
   availabilityByName = {},
+  flaggedNames = new Set<string>(),
 }: {
   response: AiTacticalResponse;
   glossary?: AiGlossary;
   glossaryByName?: AiGlossary;
   availability?: AiAvailability;
   availabilityByName?: AiAvailability;
+  /** Names from the entity's own `flaggedAbilities`/`flaggedTraits` (same reminder-flag data `reminders.tsx`'s 🔥 card badge uses) — an option whose name matches gets the same flame prefix, see `OptionRow`. */
+  flaggedNames?: Set<string>;
 }) {
   const grouped = groupOptionsByCategory(response.options);
   const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
@@ -526,6 +533,7 @@ export function AiResponseText({
                     sheetTermsRe={sheetTermsRe}
                     availability={availability}
                     availabilityByName={availabilityByName}
+                    flagged={flaggedNames.has(option.name)}
                   />
                 ))}
               </ul>

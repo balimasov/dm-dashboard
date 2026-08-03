@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { CustomCondition } from "@/lib/types";
 import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel } from "./conditionHints";
 import { inputCls } from "./Field";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
-import { ExhaustionIcon, ConcentrationIcon } from "./icons";
+import { ExhaustionIcon, ConcentrationIcon, PencilIcon, PlusIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
 function ExhaustionPanel({ level }: { level: number }) {
@@ -175,31 +176,110 @@ function ConcentrationToggleRow({ active, onToggle }: { active: boolean; onToggl
         </span>
       </InfoTooltip>
       <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${active ? "bg-violet-500" : "bg-slate-700"}`}>
+        {/* `left-0.5` is an explicit base position, not left implicit/auto —
+            an absolutely positioned element with no `left` set falls back to
+            its "static position", which measured out 2px further right than
+            intended here, leaving the "on" knob flush against the track's
+            own right edge with zero margin (clipped into the rounded curve)
+            instead of the same 2px inset the "off" state has on the left.
+            Pinning an explicit base removes that ambiguity; `translate-x-3`
+            (12px) now covers exactly the track's remaining travel distance
+            (28px track − 2px left inset − 2px right inset − 12px knob). */}
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${active ? "translate-x-3.5" : "translate-x-0.5"}`}
+          className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${active ? "translate-x-3" : "translate-x-0"}`}
         />
       </span>
     </button>
   );
 }
 
-function CustomConditionRow({ condition, onRemove }: { condition: CustomCondition; onRemove?: () => void }) {
+/**
+ * Renaming/re-describing an existing custom condition reuses this same row
+ * rather than a separate dialog — pencil icon flips it into the exact same
+ * name+description fields `AddCustomConditionForm` uses, seeded from the
+ * current values fresh on every entry into edit mode (not just on mount),
+ * so a cancelled edit never leaks into the next attempt.
+ */
+function CustomConditionRow({
+  condition,
+  onSave,
+  onRemove,
+}: {
+  condition: CustomCondition;
+  onSave?: (next: CustomCondition) => void;
+  onRemove?: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(condition.name);
+  const [description, setDescription] = useState(condition.description ?? "");
+
+  function startEditing() {
+    setName(condition.name);
+    setDescription(condition.description ?? "");
+    setEditing(true);
+  }
+
+  function save() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onSave?.({ ...condition, name: trimmed, description: description.trim() || undefined });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="space-y-1.5 rounded-md border border-dashed border-sky-700 bg-slate-950 p-2">
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="State name"
+          maxLength={60}
+          className={`${inputCls} w-full`}
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What it does mechanically"
+          rows={5}
+          maxLength={2000}
+          className={`${inputCls} w-full resize-y`}
+        />
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={() => setEditing(false)} className="text-xs font-semibold text-slate-400 hover:text-slate-200">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={!name.trim()}
+            className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-slate-200">{condition.name}</p>
         {condition.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{condition.description}</p>}
       </div>
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={`Remove ${condition.name}`}
-          className="shrink-0 text-slate-600 hover:text-red-400"
-        >
-          ✕
-        </button>
-      )}
+      <div className="flex shrink-0 items-center gap-2">
+        {onSave && (
+          <button type="button" onClick={startEditing} aria-label={`Edit ${condition.name}`} className="text-slate-600 hover:text-sky-400">
+            <PencilIcon className="h-3 w-3" />
+          </button>
+        )}
+        {onRemove && (
+          <button type="button" onClick={onRemove} aria-label={`Remove ${condition.name}`} className="text-slate-600 hover:text-red-400">
+            ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -247,9 +327,9 @@ function AddCustomConditionForm({ onAdd }: { onAdd: (condition: CustomCondition)
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="What it does mechanically"
-        rows={2}
-        maxLength={500}
-        className={`${inputCls} w-full resize-none`}
+        rows={5}
+        maxLength={2000}
+        className={`${inputCls} w-full resize-y`}
       />
       <button
         type="button"
@@ -306,6 +386,8 @@ function StatusPopover({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  useEscapeToClose(() => setOpen(false), open);
+
   function toggleCondition(name: string) {
     if (!onConditionsChange) return;
     const next = conditions.includes(name) ? conditions.filter((c) => c !== name) : [...conditions, name];
@@ -321,10 +403,14 @@ function StatusPopover({
         aria-expanded={open}
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
       >
-        +
+        {/* SVG, not a plain "+" glyph — a text character's optical center
+            depends on the font actually rendering it, which drifted visibly
+            off `justify-center`'s true center on desktop (fine on mobile,
+            different font stack) since nothing here pins its glyph metrics. */}
+        <PlusIcon className="h-3 w-3" />
       </button>
       {open && (
-        <div className={`absolute left-1/2 top-full z-10 mt-2 w-72 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
+        <div className={`absolute left-1/2 top-full z-10 mt-2 w-80 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
           {onToggleConcentration && <ConcentrationToggleRow active={Boolean(concentrating)} onToggle={onToggleConcentration} />}
           {onExhaustionChange && (
             <div>
@@ -363,6 +449,7 @@ function StatusPopover({
                 <CustomConditionRow
                   key={c.id}
                   condition={c}
+                  onSave={(next) => onCustomConditionsChange(customConditions.map((x) => (x.id === next.id ? next : x)))}
                   onRemove={() => onCustomConditionsChange(customConditions.filter((x) => x.id !== c.id))}
                 />
               ))}
@@ -415,16 +502,9 @@ function StatusBadges({
 
   return (
     <>
-      {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
-      {visibleCustom.map((c) => (
-        <CustomConditionBadge key={c.id} condition={c} />
-      ))}
-      {visibleStandard.map((condition, index) => (
-        <ConditionBadge key={condition} condition={condition} index={index} />
-      ))}
-      {(overflowCustom.length > 0 || overflowStandard.length > 0) && (
-        <OverflowBadge conditions={overflowStandard} customConditions={overflowCustom} />
-      )}
+      {/* Trigger renders first (leftmost) always — a fixed anchor point for
+          where to click, rather than drifting right as more badges appear
+          next to it. */}
       {showTrigger && (
         <StatusPopover
           conditions={conditions}
@@ -436,6 +516,16 @@ function StatusBadges({
           onExhaustionChange={onExhaustionChange}
           onCustomConditionsChange={onCustomConditionsChange}
         />
+      )}
+      {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
+      {visibleCustom.map((c) => (
+        <CustomConditionBadge key={c.id} condition={c} />
+      ))}
+      {visibleStandard.map((condition, index) => (
+        <ConditionBadge key={condition} condition={condition} index={index} />
+      ))}
+      {(overflowCustom.length > 0 || overflowStandard.length > 0) && (
+        <OverflowBadge conditions={overflowStandard} customConditions={overflowCustom} />
       )}
     </>
   );

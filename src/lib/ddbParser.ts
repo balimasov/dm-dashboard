@@ -95,6 +95,11 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
       passiveInsight: computePassiveSkill(wisMod, profBonus, "insight", mods),
       conditions,
       exhaustion,
+      // Not a D&D Beyond concept at all, so there's nothing here to compute
+      // from `data` — carried over unchanged from `existing`, or it would
+      // silently vanish on every sync (this whole `combat` object replaces
+      // the old one wholesale, not a deep merge).
+      customConditions: existing.combat?.customConditions,
       deathSaves:
         hp <= 0
           ? {

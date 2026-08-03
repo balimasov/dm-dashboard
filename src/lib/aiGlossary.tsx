@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { CreatureAbilityHintPanel } from "@/components/CreatureAbilitiesPanel";
 import { AttackHintPanel } from "@/components/ui/AttackDisplay";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
+import { CustomConditionHintPanel } from "@/components/ui/conditionHints";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
 import { SpellHintPanel } from "@/components/ui/SpellDisplay";
 import { creatureSpellSourceId, creatureTraitSourceId, isPositionalCreatureSourceId } from "./aiSourceIds";
@@ -63,6 +64,15 @@ function characterGlossaryEntries(c: Character): GlossaryEntry[] {
       hint: <ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />,
     });
   }
+  // A custom condition has no `conditionInfo.ts` entry — without registering
+  // it here too, mentioning it by name in the assistant's own reply (which
+  // it will: the condition's description is right there in its context, see
+  // `assistantContext.ts`) got no hover hint at all, unlike every standard
+  // condition (`UNIVERSAL_TERMS` in `AiResponseText.tsx`) and everything
+  // else on the sheet.
+  for (const cc of c.combat.customConditions ?? []) {
+    entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
+  }
   return entries;
 }
 
@@ -81,6 +91,10 @@ function creatureGlossaryEntries(cr: Creature): GlossaryEntry[] {
         });
       });
     });
+  }
+  // Same reasoning as `characterGlossaryEntries`'s own custom-conditions loop.
+  for (const cc of cr.customConditions ?? []) {
+    entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
   }
   return entries;
 }

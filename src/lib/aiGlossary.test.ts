@@ -117,6 +117,29 @@ describe("buildAiGlossary / buildAiGlossaryByName", () => {
     expect(buildAiGlossaryByName(character)["reckless attack"]).toBeDefined();
   });
 
+  test("keys a character's custom condition by id and by name, so it gets the same hover hint treatment a standard condition does", () => {
+    const character = makeCharacter({
+      name: "Ragnar",
+      combat: {
+        ...makeCharacter({ name: "x" }).combat,
+        customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }],
+      },
+    });
+
+    expect(buildAiGlossary(character)["cb"]).toBeDefined();
+    expect(buildAiGlossaryByName(character)["chardal's madness"]).toBeDefined();
+  });
+
+  test("keys a creature's custom condition the same way", () => {
+    const creature = makeCreature({
+      name: "Jerun",
+      customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }],
+    });
+
+    expect(buildAiGlossary(creature)["cb"]).toBeDefined();
+    expect(buildAiGlossaryByName(creature)["chardal's madness"]).toBeDefined();
+  });
+
   test("returns an empty glossary for a creature with no traits/spellcasting", () => {
     const creature = makeCreature({ name: "Wolf" });
 

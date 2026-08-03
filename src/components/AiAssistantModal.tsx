@@ -82,6 +82,7 @@ function PlanCard({
   glossaryByName,
   availability,
   availabilityByName,
+  flaggedNames,
 }: {
   message: Extract<AssistantChatMessage, { kind: "plan" }>;
   isLatest: boolean;
@@ -92,6 +93,7 @@ function PlanCard({
   glossaryByName: ReturnType<typeof buildAiGlossary>;
   availability: ReturnType<typeof buildAiAvailability>;
   availabilityByName: ReturnType<typeof buildAiAvailability>;
+  flaggedNames: Set<string>;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -117,6 +119,7 @@ function PlanCard({
               glossaryByName={glossaryByName}
               availability={availability}
               availabilityByName={availabilityByName}
+              flaggedNames={flaggedNames}
             />
           </div>
         )}
@@ -211,6 +214,16 @@ export function AiAssistantModal({
   const glossaryByName = useMemo(() => buildAiGlossaryByName(entity), [entity]);
   const availability = useMemo(() => buildAiAvailability(entity), [entity]);
   const availabilityByName = useMemo(() => buildAiAvailabilityByName(entity), [entity]);
+  // Same `flaggedAbilities`/`flaggedTraits` name-matching convention
+  // `reminders.tsx` uses for the card's own 🔥 badge — an option the model
+  // lists that's also flagged gets the same flame prefix here, done
+  // app-side against data we already know exactly, rather than asking the
+  // model to somehow infer which of its own suggested options the DM
+  // happens to have flagged.
+  const flaggedNames = useMemo(
+    () => new Set("className" in entity ? (entity.flaggedAbilities ?? []) : (entity.flaggedTraits ?? [])),
+    [entity]
+  );
 
   const [situation, setSituation] = useState("");
   const [messages, setMessages] = useState<AssistantChatMessage[]>([]);
@@ -389,6 +402,7 @@ export function AiAssistantModal({
                 glossaryByName={glossaryByName}
                 availability={availability}
                 availabilityByName={availabilityByName}
+                flaggedNames={flaggedNames}
               />
             ) : (
               <div className="flex flex-col gap-2">
