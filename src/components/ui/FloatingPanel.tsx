@@ -2,6 +2,7 @@
 
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
+import { useFrontZIndex } from "@/hooks/useFrontZIndex";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
@@ -12,6 +13,14 @@ const MIN_WIDTH = 440;
 const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
 const STORAGE_PREFIX = "floating-panel:";
+/** Default base tier — see `zIndexClassName`'s own doc comment for what it sits between. Used as the fallback when a caller's class doesn't parse (should never happen with the only two literal values this prop is ever given). */
+const DEFAULT_BASE_Z = 45;
+
+/** Pulls the numeric base out of a `"z-[45]"`-shaped Tailwind class — the only two literal values `zIndexClassName` is ever given (see the component doc comment) — so `useFrontZIndex` can key its per-tier stacking order on the actual number rather than the class string. */
+function parseBaseZ(zIndexClassName: string): number {
+  const match = zIndexClassName.match(/\[(\d+)\]/);
+  return match ? Number(match[1]) : DEFAULT_BASE_Z;
+}
 
 /**
  * The header's own action cluster (an optional caller action, e.g. "clear
@@ -101,6 +110,16 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * value `Modal`'s own `zIndexClassName` escape hatch and `Toast.tsx` already
  * use for exactly this "stacked on top of an open modal" case.
  *
+ * `zIndexClassName`'s number is only the *floor* for this instance's actual
+ * z-index — `useFrontZIndex` adds a small per-instance offset on top so
+ * multiple simultaneously open panels of the same tier (e.g. "Ask AI" on
+ * several different party members at once) stack by which one most recently
+ * claimed the front, not by where their owning `CharacterCard`/`CreatureCard`
+ * happens to sit in the party row (confirmed bug: opening a panel on an
+ * earlier card than an already-open one rendered it underneath, purely from
+ * DOM order, since every instance shared the exact same literal z-index).
+ *
+
  * No `aria-modal` (defaults to non-modal) since, unlike `Modal`, this
  * doesn't make the rest of the page inert — a screen reader user can still
  * reach content behind it.
@@ -136,6 +155,7 @@ export function FloatingPanel({
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
   const titleId = useId();
+  const { zIndex, bringToFront } = useFrontZIndex(parseBaseZ(zIndexClassName));
   // Lazy initializer runs once, after mount in practice (this component is
   // only ever rendered once its caller's "open" state flips true, never
   // during the initial SSR pass).
@@ -177,8 +197,9 @@ export function FloatingPanel({
       <div
         role="dialog"
         aria-labelledby={titleId}
-        style={mobileStyle}
-        className={`fixed ${zIndexClassName} flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40`}
+        onPointerDownCapture={bringToFront}
+        style={{ ...mobileStyle, zIndex }}
+        className="fixed flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
           <h2 id={titleId} className={MODAL_TITLE_CLS}>
@@ -257,8 +278,9 @@ export function FloatingPanel({
     <div
       role="dialog"
       aria-labelledby={titleId}
-      style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
-      className={`fixed ${zIndexClassName} flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40`}
+      onPointerDownCapture={bringToFront}
+      style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height, zIndex }}
+      className="fixed flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
     >
       <div
         onPointerDown={onHeaderPointerDown}

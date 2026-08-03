@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { buildAiAvailability, buildAiAvailabilityByName } from "@/lib/aiAvailability";
 import { parseJsonOrThrow } from "@/lib/apiClient";
@@ -82,7 +82,6 @@ function PlanCard({
   glossaryByName,
   availability,
   availabilityByName,
-  flaggedNames,
 }: {
   message: Extract<AssistantChatMessage, { kind: "plan" }>;
   isLatest: boolean;
@@ -93,7 +92,6 @@ function PlanCard({
   glossaryByName: ReturnType<typeof buildAiGlossary>;
   availability: ReturnType<typeof buildAiAvailability>;
   availabilityByName: ReturnType<typeof buildAiAvailability>;
-  flaggedNames: Set<string>;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -119,7 +117,6 @@ function PlanCard({
               glossaryByName={glossaryByName}
               availability={availability}
               availabilityByName={availabilityByName}
-              flaggedNames={flaggedNames}
             />
           </div>
         )}
@@ -155,17 +152,15 @@ function ReplyBubble({
   message,
   glossary,
   glossaryByName,
-  flaggedNames,
 }: {
   message: Extract<AssistantChatMessage, { kind: "reply" }>;
   glossary: ReturnType<typeof buildAiGlossary>;
   glossaryByName: ReturnType<typeof buildAiGlossary>;
-  flaggedNames: Set<string>;
 }) {
   return (
     <div className="flex max-w-[92%] flex-col">
       <div className="rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
-        <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} flaggedNames={flaggedNames} />
+        <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} />
       </div>
       <BubbleTimestamp createdAt={message.createdAt} align="left" />
     </div>
@@ -216,16 +211,6 @@ export function AiAssistantModal({
   const glossaryByName = useMemo(() => buildAiGlossaryByName(entity), [entity]);
   const availability = useMemo(() => buildAiAvailability(entity), [entity]);
   const availabilityByName = useMemo(() => buildAiAvailabilityByName(entity), [entity]);
-  // Same `flaggedAbilities`/`flaggedTraits` name-matching convention
-  // `reminders.tsx` uses for the card's own 🔥 badge — an option the model
-  // lists that's also flagged gets the same flame prefix here, done
-  // app-side against data we already know exactly, rather than asking the
-  // model to somehow infer which of its own suggested options the DM
-  // happens to have flagged.
-  const flaggedNames = useMemo(
-    () => new Set("className" in entity ? (entity.flaggedAbilities ?? []) : (entity.flaggedTraits ?? [])),
-    [entity]
-  );
 
   const [situation, setSituation] = useState("");
   const [messages, setMessages] = useState<AssistantChatMessage[]>([]);
@@ -268,21 +253,49 @@ export function AiAssistantModal({
 
   // While a request is in flight (a pending "ask" bubble, or the generic
   // "Thinking..." spinner for a plan), scroll to the feed's actual bottom so
-  // that placeholder is visible.
-  useEffect(() => {
+  // that placeholder is visible. `useLayoutEffect`, not `useEffect` — see
+  // the next effect's own comment for why both of these need to run before
+  // paint, and in the same before-paint pass relative to each other.
+  useLayoutEffect(() => {
     feedEndRef.current?.scrollIntoView({ block: "end" });
   }, [loading, pendingAsk]);
 
-  // Once a new message actually lands, scroll *its own top* into view
-  // instead — for a short reply this looks the same as scrolling to the
-  // bottom, but for a plan card it means landing on the header/summary
-  // instead of buried past the full option list. Runs after the effect
-  // above in the same commit (React runs effects in declaration order), so
-  // this is the one that wins when a message arrives in the same update
-  // that clears `loading`.
-  useEffect(() => {
-    if (messages.length > 0) lastMessageRef.current?.scrollIntoView({ block: "start" });
-  }, [messages.length]);
+  // True once this panel instance has done its first "land somewhere in the
+  // feed" scroll — the *initial* history load also bumps `messages.length`
+  // from 0, but that case should land on the actual END of the past
+  // conversation (continuing a reopened chat where it left off), not the
+  // *top* of the last message the way a message arriving mid-session
+  // should (see below). Conflating the two used to scroll every re-opened
+  // panel to the top of its last message instead of its end — on mobile,
+  // visible as a jump right after the panel mounted (a `useEffect` runs
+  // after the browser already painted the pre-scroll frame), landing
+  // somewhere that wasn't the end of the conversation the DM expected.
+  const didInitialScrollRef = useRef(false);
+
+  // `useLayoutEffect`, not `useEffect` — runs before the browser paints, so
+  // the panel opens already scrolled to its landing spot instead of
+  // flashing the unscrolled top-of-feed frame first and snapping a moment
+  // later (the same reasoning `useVisualViewport`'s own lazy initializer
+  // uses to avoid a comparable double-layout flicker on open). Also has to
+  // stay a layout effect rather than mix with the plain-`useEffect` version
+  // the effect above used to be — layout effects always run before passive
+  // ones regardless of declaration order, which would silently invert which
+  // of the two scrolls "wins" when a new message arrives in the same commit
+  // that also clears `loading` (this one needs to run *after* the one
+  // above, in the same before-paint pass, to still win that race).
+  useLayoutEffect(() => {
+    if (!messagesLoaded || messages.length === 0) return;
+    if (!didInitialScrollRef.current) {
+      didInitialScrollRef.current = true;
+      feedEndRef.current?.scrollIntoView({ block: "end" });
+      return;
+    }
+    // A new message actually landed during this session — scroll *its own
+    // top* into view instead: for a short reply this looks the same as
+    // scrolling to the bottom, but for a plan card it means landing on the
+    // header/summary instead of buried past the full option list.
+    lastMessageRef.current?.scrollIntoView({ block: "start" });
+  }, [messages.length, messagesLoaded]);
 
   // Grows the bar with the text instead of scrolling inside a fixed-height
   // box — matches the single-line "chat input" feel up until someone actually
@@ -404,12 +417,11 @@ export function AiAssistantModal({
                 glossaryByName={glossaryByName}
                 availability={availability}
                 availabilityByName={availabilityByName}
-                flaggedNames={flaggedNames}
               />
             ) : (
               <div className="flex flex-col gap-2">
                 {msg.query && <UserBubble text={msg.query} createdAt={msg.createdAt} />}
-                <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} flaggedNames={flaggedNames} />
+                <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} />
               </div>
             )}
           </div>
