@@ -78,7 +78,7 @@ function renderPlan(optionName: string, flaggedNames?: Set<string>): string {
 describe("AiResponseText — flagged-ability flame prefix", () => {
   test("prefixes an option's name with 🔥 when it matches an entry in flaggedNames, done app-side rather than left for the model to know about", () => {
     const html = renderPlan("Reckless Attack", new Set(["Reckless Attack"]));
-    expect(html).toContain("🔥 Reckless Attack");
+    expect(html).toContain("🔥Reckless Attack");
   });
 
   test("leaves an unflagged option's name alone", () => {

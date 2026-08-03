@@ -97,7 +97,7 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("Level 2: 2/2");
   });
 
-  test("includes a custom condition's own description in place of the standard lookup, listed before standard conditions", () => {
+  test("lists a custom condition by bare name only, even when it has a description — the model was echoing the raw description back verbatim otherwise — listed before standard conditions", () => {
     const character = makeCharacter({
       name: "Ragnar",
       combat: {
@@ -125,23 +125,10 @@ describe("characterAssistantContext", () => {
     const customIndex = context.indexOf("- Chardal's Madness");
     const standardIndex = context.indexOf("- Poisoned");
 
-    expect(context).toContain(
-      "- Chardal's Madness: Attacks the nearest creature, allies included, unless it succeeds a DC 15 Wisdom save."
-    );
+    expect(context).toContain("- Chardal's Madness");
+    expect(context).not.toContain("Attacks the nearest creature");
     expect(customIndex).toBeGreaterThan(-1);
     expect(customIndex).toBeLessThan(standardIndex);
-  });
-
-  test("shows a custom condition's bare name when it has no description yet", () => {
-    const character = makeCharacter({
-      name: "Ragnar",
-      combat: { ...makeCharacter({ name: "x" }).combat, customConditions: [{ id: "cb", name: "Chardal's Madness" }] },
-    });
-
-    const context = characterAssistantContext(character);
-
-    expect(context).toContain("- Chardal's Madness");
-    expect(context).not.toContain("- Chardal's Madness:");
   });
 
   test("marks a used-up resource as 0 of its max, not omitted", () => {
@@ -468,7 +455,7 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("Concentrating on a spell right now");
   });
 
-  test("includes a creature's custom condition with its own description", () => {
+  test("lists a creature's custom condition by bare name only, not its description", () => {
     const creature = makeCreature({
       name: "Jerun",
       customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature, allies included." }],
@@ -476,7 +463,8 @@ describe("creatureAssistantContext", () => {
 
     const context = creatureAssistantContext(creature);
 
-    expect(context).toContain("- Chardal's Madness: Attacks the nearest creature, allies included.");
+    expect(context).toContain("- Chardal's Madness");
+    expect(context).not.toContain("Attacks the nearest creature");
   });
 
   test("passes a creature's free-text Senses line through unstructured", () => {

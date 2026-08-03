@@ -42,20 +42,29 @@ import { formatModifier } from "./format";
 
 /**
  * Builds the "Conditions:" block shared by `characterAssistantContext`/
- * `creatureAssistantContext` — a homebrew `CustomCondition` gets the exact
- * same "name: mechanical effect" treatment a standard one does (its own
- * `description`, in place of the `getConditionInfo` lookup a standard
- * condition has), never left as a bare name the model has to reason about
- * blind. Custom states are listed first — see `StatusRail.tsx`'s own
- * "custom badges render first" comment for the matching reasoning: a
- * standard condition is common knowledge even without its blurb, a homebrew
- * one isn't.
+ * `creatureAssistantContext`. A standard condition gets its exact mechanical
+ * effect appended (`getConditionInfo`'s short blurb) — a homebrew
+ * `CustomCondition` gets *only* its bare name, deliberately not its
+ * `description` too: an early version included it here, and the model
+ * reliably just echoed the whole thing back verbatim in its own reply
+ * (confirmed — a DM-pasted multi-paragraph monster ability came straight
+ * back out in the chat bubble). The name alone is still enough for the
+ * model to know the state is active and mention it by name; the actual
+ * description is one hover away on the card's own badge (`StatusRail.tsx`)
+ * and on any mention of the name in the model's reply (`aiGlossary.tsx`
+ * registers it there too) — no need to also spend prompt budget staging it
+ * for the model to potentially quote back.
+ *
+ * Custom states are listed first — see `StatusRail.tsx`'s own "custom
+ * badges render first" comment for the matching reasoning: a standard
+ * condition is common knowledge even without its blurb, a homebrew one
+ * isn't.
  */
 function conditionLines(conditions: string[], customConditions: CustomCondition[]): string[] {
   if (conditions.length === 0 && customConditions.length === 0) return [];
   const lines = ["Conditions:"];
   for (const custom of customConditions) {
-    lines.push(`- ${custom.name}${custom.description ? `: ${custom.description}` : ""}`);
+    lines.push(`- ${custom.name}`);
   }
   for (const condition of conditions) {
     const effect = getConditionInfo(condition);

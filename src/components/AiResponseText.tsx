@@ -442,7 +442,9 @@ function OptionRow({
   const sheetHint = option.kind === "sheet" ? resolveAiHint(option.source_id, nameKey, glossary, glossaryByName) : undefined;
   const universalInfo = option.kind === "universal" ? getUniversalActionInfo(option.name) : undefined;
   const hint = sheetHint ?? (universalInfo ? <HintPanel title={universalInfo.title} description={universalInfo.description} /> : undefined);
-  const displayName = flagged ? `🔥 ${option.name}` : option.name;
+  // No space after the emoji — it already renders with enough of its own
+  // trailing whitespace that an explicit space on top read as an odd gap.
+  const displayName = flagged ? `🔥${option.name}` : option.name;
   const name = hint ? (
     <InfoTooltip inline className={INLINE_HINT_ALIGN_CLS} panel={hint}>
       <strong>{displayName}</strong>

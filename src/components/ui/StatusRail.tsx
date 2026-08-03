@@ -37,7 +37,10 @@ function ExhaustionPanel({ level }: { level: number }) {
  * fully inset) so it reads as a floating marker without eating into the
  * 16px content padding where the header/text actually starts.
  */
-const STATUS_BADGE_SIZE = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
+const STATUS_BADGE_SIZE = "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
+
+/** Every badge's `InfoTooltip` trigger gets this instead of relying on its default inline-block-hugging-the-text sizing — without it, only the 1-2 glyphs inside the circle were actually hoverable/tappable, not the circle itself (confirmed: the badge visually reads as one round unit, but most of its area did nothing on hover). `absolute inset-0` fills the badge's own `relative` box regardless of the trigger's `inline-block` vs `flex` display tug-of-war that a plain sizing className would risk. */
+const BADGE_HINT_TRIGGER_CLS = "absolute inset-0 flex items-center justify-center";
 
 /**
  * Condition badges cycle through a curated, well-spaced set of hues by
@@ -75,7 +78,7 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
         } as React.CSSProperties
       }
     >
-      <InfoTooltip panel={<ConditionHintPanel condition={condition} />}>
+      <InfoTooltip panel={<ConditionHintPanel condition={condition} />} className={BADGE_HINT_TRIGGER_CLS}>
         {condition.trim().slice(0, 2).toUpperCase()}
       </InfoTooltip>
     </span>
@@ -98,7 +101,10 @@ function CustomConditionBadge({ condition }: { condition: CustomCondition }) {
         } as React.CSSProperties
       }
     >
-      <InfoTooltip panel={<CustomConditionHintPanel name={condition.name} description={condition.description} />}>
+      <InfoTooltip
+        panel={<CustomConditionHintPanel name={condition.name} description={condition.description} />}
+        className={BADGE_HINT_TRIGGER_CLS}
+      >
         {condition.name.trim().slice(0, 2).toUpperCase()}
       </InfoTooltip>
     </span>
@@ -107,8 +113,8 @@ function CustomConditionBadge({ condition }: { condition: CustomCondition }) {
 
 function ExhaustionBadge({ level }: { level: number }) {
   return (
-    <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500 relative`}>
-      <InfoTooltip panel={<ExhaustionPanel level={level} />}>
+    <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500`}>
+      <InfoTooltip panel={<ExhaustionPanel level={level} />} className={BADGE_HINT_TRIGGER_CLS}>
         <ExhaustionIcon className="h-[18px] w-[18px] text-red-300" />
       </InfoTooltip>
       <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold leading-none text-white">
@@ -138,7 +144,12 @@ export const CONCENTRATION_HINT_TEXT = (
 function OverflowBadge({ conditions, customConditions = [] }: { conditions: string[]; customConditions?: CustomCondition[] }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
-      <InfoTooltip panel={<ConditionsListHintPanel conditions={conditions} customConditions={customConditions} />}>•••</InfoTooltip>
+      <InfoTooltip
+        panel={<ConditionsListHintPanel conditions={conditions} customConditions={customConditions} />}
+        className={BADGE_HINT_TRIGGER_CLS}
+      >
+        •••
+      </InfoTooltip>
     </span>
   );
 }
@@ -401,13 +412,26 @@ function StatusPopover({
         onClick={() => setOpen((o) => !o)}
         aria-label="Manage states and concentration"
         aria-expanded={open}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
+        className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
       >
-        {/* SVG, not a plain "+" glyph — a text character's optical center
-            depends on the font actually rendering it, which drifted visibly
-            off `justify-center`'s true center on desktop (fine on mobile,
-            different font stack) since nothing here pins its glyph metrics. */}
-        <PlusIcon className="h-3 w-3" />
+        {/* `disableTap` — this button already has its own onClick (toggling
+            the popover); without it, a tap on a touch screen would fight
+            between opening this hint and opening the popover instead. Hover/
+            focus still show it on desktop, same as `ConcentrationToggleRow`'s
+            own label hint. */}
+        <InfoTooltip
+          hoverOnly
+          disableTap
+          panel={<p>Concentration, exhaustion, and conditions — standard and custom.</p>}
+          className={BADGE_HINT_TRIGGER_CLS}
+        >
+          {/* SVG, not a plain "+" glyph — a text character's optical center
+              depends on the font actually rendering it, which drifted
+              visibly off `justify-center`'s true center on desktop (fine on
+              mobile, different font stack) since nothing here pins its
+              glyph metrics. */}
+          <PlusIcon className="h-3 w-3" />
+        </InfoTooltip>
       </button>
       {open && (
         <div className={`absolute left-1/2 top-full z-10 mt-2 w-80 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
