@@ -155,15 +155,17 @@ function ReplyBubble({
   message,
   glossary,
   glossaryByName,
+  flaggedNames,
 }: {
   message: Extract<AssistantChatMessage, { kind: "reply" }>;
   glossary: ReturnType<typeof buildAiGlossary>;
   glossaryByName: ReturnType<typeof buildAiGlossary>;
+  flaggedNames: Set<string>;
 }) {
   return (
     <div className="flex max-w-[92%] flex-col">
       <div className="rounded-2xl rounded-bl-sm border border-slate-800 bg-slate-900/70 px-3 py-2">
-        <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} />
+        <AiChatReply text={message.reply} glossary={glossary} glossaryByName={glossaryByName} flaggedNames={flaggedNames} />
       </div>
       <BubbleTimestamp createdAt={message.createdAt} align="left" />
     </div>
@@ -407,7 +409,7 @@ export function AiAssistantModal({
             ) : (
               <div className="flex flex-col gap-2">
                 {msg.query && <UserBubble text={msg.query} createdAt={msg.createdAt} />}
-                <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} />
+                <ReplyBubble message={msg} glossary={glossary} glossaryByName={glossaryByName} flaggedNames={flaggedNames} />
               </div>
             )}
           </div>

@@ -18,8 +18,8 @@ import { AiChatReply, AiResponseText } from "./AiResponseText";
  * class in the static HTML) — rather than re-testing each vocabulary's own
  * lookup table (`conditionInfo.ts`/`masteryInfo.ts`/... already do that).
  */
-function renderReply(text: string, glossaryByName: AiGlossary = {}): string {
-  return renderToStaticMarkup(createElement(AiChatReply, { text, glossaryByName }));
+function renderReply(text: string, glossaryByName: AiGlossary = {}, flaggedNames?: Set<string>): string {
+  return renderToStaticMarkup(createElement(AiChatReply, { text, glossaryByName, flaggedNames }));
 }
 
 function hintCount(html: string): number {
@@ -53,9 +53,9 @@ describe("AiChatReply term-layer scan", () => {
   });
 });
 
-function makeResponse(optionName: string): AiTacticalResponse {
+function makeResponse(optionName: string, summary = "Do the thing."): AiTacticalResponse {
   return {
-    game_plan: { summary: "Do the thing." },
+    game_plan: { summary },
     options: [
       {
         category: "action",
@@ -71,8 +71,8 @@ function makeResponse(optionName: string): AiTacticalResponse {
   };
 }
 
-function renderPlan(optionName: string, flaggedNames?: Set<string>): string {
-  return renderToStaticMarkup(createElement(AiResponseText, { response: makeResponse(optionName), flaggedNames }));
+function renderPlan(optionName: string, flaggedNames?: Set<string>, summary?: string): string {
+  return renderToStaticMarkup(createElement(AiResponseText, { response: makeResponse(optionName, summary), flaggedNames }));
 }
 
 describe("AiResponseText — flagged-ability flame prefix", () => {
@@ -89,6 +89,23 @@ describe("AiResponseText — flagged-ability flame prefix", () => {
 
   test("defaults to no flame prefix at all when flaggedNames is omitted", () => {
     const html = renderPlan("Reckless Attack");
+    expect(html).not.toContain("🔥");
+  });
+
+  test("also flame-prefixes a flagged name mentioned in the game plan summary, not just in a matching option's own name", () => {
+    const html = renderPlan("Dash", new Set(["Reckless Attack"]), "Open with Reckless Attack for the extra damage.");
+    expect(html).toContain("🔥Reckless Attack");
+  });
+});
+
+describe("AiChatReply — flagged-ability flame prefix", () => {
+  test("flame-prefixes a flagged name mentioned in an ordinary chat reply", () => {
+    const html = renderReply("You should use Reckless Attack this turn.", {}, new Set(["Reckless Attack"]));
+    expect(html).toContain("🔥Reckless Attack");
+  });
+
+  test("leaves the reply alone when no name matches", () => {
+    const html = renderReply("You should use Reckless Attack this turn.", {}, new Set(["Something Else"]));
     expect(html).not.toContain("🔥");
   });
 });

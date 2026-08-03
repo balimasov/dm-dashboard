@@ -44,18 +44,15 @@ import { formatModifier } from "./format";
  * Builds the "Conditions:" block shared by `characterAssistantContext`/
  * `creatureAssistantContext`. A standard condition gets its exact mechanical
  * effect appended (`getConditionInfo`'s short blurb) — a homebrew
- * `CustomCondition` gets its own supplied `description` the same way,
- * tagged "(homebrew)" so the model can tell it apart from a standard
- * condition's blurb. An earlier version withheld the description entirely,
- * because an even earlier version that *did* include it saw the model
- * reliably echo the whole thing back verbatim in its own reply (confirmed —
- * a DM-pasted multi-paragraph monster ability came straight back out in the
- * chat bubble) — but that traded away the model's ability to reason about
- * what the condition actually does (e.g. whether it currently restricts an
- * action), which the DM needs it to do. Restored the description and moved
- * the actual fix to the prompt instead: `HOMEBREW_CONDITION_RULE` in
- * `route.ts` explicitly tells the model to use this text for reasoning
- * without quoting it back.
+ * `CustomCondition` gets its own supplied `description` the same way, tagged
+ * "(homebrew)" so the model can tell it apart from a standard condition's
+ * blurb. An earlier version withheld the description entirely after
+ * observing the model echo it back verbatim in a reply; that traded away the
+ * model's ability to reason about what the condition actually does (e.g.
+ * whether it currently restricts an action), which the DM needs it to do
+ * more than it needs the model to never quote a description. Restored
+ * without adding a prompt instruction against quoting it — the description
+ * is ordinary supplied context now, the same as any other sheet text.
  *
  * Custom states are listed first — see `StatusRail.tsx`'s own "custom
  * badges render first" comment for the matching reasoning: a standard

@@ -149,6 +149,39 @@ function buildSheetTermsRegex(glossaryByName: AiGlossary): RegExp | null {
 }
 
 /**
+ * Same longest-first/word-boundary shape as `buildSheetTermsRegex`, built
+ * from `flaggedAbilities`/`flaggedTraits` instead of the sheet glossary —
+ * used to flame-prefix a flagged ability/spell/trait wherever its name is
+ * mentioned in free-form prose (`game_plan.summary`, a chat reply), not just
+ * in `OptionRow`'s own structured `option.name` (see `flagText` below).
+ * Case-sensitive, not `gi` — the prompt requires every sheet name be
+ * preserved exactly as supplied, so an exact-case match is both sufficient
+ * and avoids flagging an unrelated word that only coincidentally shares a
+ * flagged name's spelling in a different case.
+ */
+function buildFlaggedTermsRegex(flaggedNames: Set<string>): RegExp | null {
+  const terms = Array.from(flaggedNames).filter((term) => term.length > 0);
+  if (terms.length === 0) return null;
+  const pattern = terms
+    .map(escapeRegExp)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  return new RegExp(`\\b(${pattern})\\b`, "g");
+}
+
+/**
+ * Inserts the same no-space 🔥 prefix `OptionRow` uses, in front of every
+ * mention of a flagged name in a run of plain prose — the emoji sits outside
+ * whatever hint-wrapped span `scanTermLayers` builds next for that same word
+ * (it's a non-word character, so it never breaks the `\b` boundary the hint
+ * layers match on), so a flagged sheet term still gets both the flame and
+ * its usual hover hint.
+ */
+function flagText(text: string, flaggedRe: RegExp | null): string {
+  return flaggedRe ? text.replace(flaggedRe, "🔥$1") : text;
+}
+
+/**
  * One vocabulary pass for `scanTermLayers` below: `regex` isolates this
  * layer's own terms (`null` skips the layer entirely — see
  * `buildSheetTermsRegex`'s own doc comment for why that has to be an option
@@ -222,9 +255,15 @@ function plainTextTermLayers(glossaryByName: AiGlossary, sheetTermsRe: RegExp | 
   ];
 }
 
-/** A run of plain text (a summary paragraph, or an option's description) — see `plainTextTermLayers` for the vocabulary order. */
-function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiGlossary = {}, sheetTermsRe: RegExp | null = null) {
-  return scanTermLayers(text, keyPrefix, plainTextTermLayers(glossaryByName, sheetTermsRe));
+/** A run of plain text (a summary paragraph, or an option's description) — see `plainTextTermLayers` for the vocabulary order. `flaggedRe` (see `buildFlaggedTermsRegex`) flame-prefixes any flagged name before the term layers run. */
+function renderPlainSegment(
+  text: string,
+  keyPrefix: string,
+  glossaryByName: AiGlossary = {},
+  sheetTermsRe: RegExp | null = null,
+  flaggedRe: RegExp | null = null
+) {
+  return scanTermLayers(flagText(text, flaggedRe), keyPrefix, plainTextTermLayers(glossaryByName, sheetTermsRe));
 }
 
 /**
@@ -239,9 +278,16 @@ function renderPlainSegment(text: string, keyPrefix: string, glossaryByName: AiG
  * name. Renders every field through the same tolerant path rather than
  * trying to keep tightening the prompt to prevent it.
  */
-function renderTokenizedText(text: string, keyPrefix: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
+function renderTokenizedText(
+  text: string,
+  keyPrefix: string,
+  glossary: AiGlossary,
+  glossaryByName: AiGlossary,
+  sheetTermsRe: RegExp | null,
+  flaggedRe: RegExp | null = null
+) {
   return parseSummaryTokens(text).flatMap<ReactNode>((token, i) => {
-    if (token.type === "text") return renderPlainSegment(token.text, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe);
+    if (token.type === "text") return renderPlainSegment(token.text, `${keyPrefix}-${i}`, glossaryByName, sheetTermsRe, flaggedRe);
     // The token's own `source_id` occasionally doesn't match anything —
     // the model sometimes garbles or re-derives an id when writing
     // free-form prose. `glossaryByName` (built straight from the entity's
@@ -289,14 +335,21 @@ const LIST_ITEM_RE = /^-\s+/;
  * line left every item after the first one glued onto the same bullet as
  * plain trailing text instead of getting its own.
  */
-function renderReplyBlock(block: string, keyPrefix: string, glossary: AiGlossary, glossaryByName: AiGlossary, sheetTermsRe: RegExp | null) {
+function renderReplyBlock(
+  block: string,
+  keyPrefix: string,
+  glossary: AiGlossary,
+  glossaryByName: AiGlossary,
+  sheetTermsRe: RegExp | null,
+  flaggedRe: RegExp | null = null
+) {
   const lines = block
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
   if (!lines.some((l) => LIST_ITEM_RE.test(l))) {
     return (
-      <p key={keyPrefix}>{renderTokenizedText(block, keyPrefix, glossary, glossaryByName, sheetTermsRe)}</p>
+      <p key={keyPrefix}>{renderTokenizedText(block, keyPrefix, glossary, glossaryByName, sheetTermsRe, flaggedRe)}</p>
     );
   }
   return (
@@ -308,10 +361,10 @@ function renderReplyBlock(block: string, keyPrefix: string, glossary: AiGlossary
         return isListItem ? (
           <div key={lineKey} className="flex gap-2">
             <span className="mt-0.5 shrink-0 text-slate-600">•</span>
-            <p className="flex-1">{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe)}</p>
+            <p className="flex-1">{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe, flaggedRe)}</p>
           </div>
         ) : (
-          <p key={lineKey}>{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe)}</p>
+          <p key={lineKey}>{renderTokenizedText(content, lineKey, glossary, glossaryByName, sheetTermsRe, flaggedRe)}</p>
         );
       })}
     </div>
@@ -343,15 +396,19 @@ export function AiChatReply({
   text,
   glossary = {},
   glossaryByName = {},
+  flaggedNames = new Set<string>(),
 }: {
   text: string;
   glossary?: AiGlossary;
   glossaryByName?: AiGlossary;
+  /** Same reminder-flagged name set `AiResponseText` uses for `OptionRow` — flame-prefixes a mention of a flagged ability/spell/trait anywhere in this chat reply's own prose, not just in a structured plan's option list. */
+  flaggedNames?: Set<string>;
 }) {
   const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
+  const flaggedRe = useMemo(() => buildFlaggedTermsRegex(flaggedNames), [flaggedNames]);
   return (
     <div className="flex flex-col gap-2 text-sm leading-relaxed text-slate-300">
-      {splitParagraphs(text).map((block, i) => renderReplyBlock(block, `reply-${i}`, glossary, glossaryByName, sheetTermsRe))}
+      {splitParagraphs(text).map((block, i) => renderReplyBlock(block, `reply-${i}`, glossary, glossaryByName, sheetTermsRe, flaggedRe))}
     </div>
   );
 }
@@ -418,6 +475,7 @@ function OptionRow({
   glossary,
   glossaryByName,
   sheetTermsRe,
+  flaggedRe,
   availability,
   availabilityByName,
   flagged,
@@ -427,6 +485,8 @@ function OptionRow({
   glossary: AiGlossary;
   glossaryByName: AiGlossary;
   sheetTermsRe: RegExp | null;
+  /** Flags a mention of any *other* flagged ability inside this option's own description/conditions prose (see `buildFlaggedTermsRegex`) — separate from `flagged` below, which is this option's *own* name. */
+  flaggedRe: RegExp | null;
   availability: AiAvailability;
   availabilityByName: AiAvailability;
   /** This option's name matches an entry in the entity's own `flaggedAbilities`/`flaggedTraits` — same 🔥 the card's `ReminderBadge` already shows for it, prefixed here so a DM scanning the plan spots "the thing I told myself to remember" without cross-checking the card. */
@@ -467,7 +527,7 @@ function OptionRow({
             {isBest && <OptionBadge tone="best">Best</OptionBadge>}
             {option.kind === "improvised" && <OptionBadge tone="improvised">DM ruling</OptionBadge>}
           </span>
-          : {renderTokenizedText(option.description, `desc-${descriptionKey}`, glossary, glossaryByName, sheetTermsRe)}
+          : {renderTokenizedText(option.description, `desc-${descriptionKey}`, glossary, glossaryByName, sheetTermsRe, flaggedRe)}
         </p>
         {option.status === "conditional" && option.conditions.length > 0 && (
           <div className={`mt-1.5 flex flex-col gap-1 rounded-r-md border-l-2 border-slate-700 px-2.5 py-1.5 ${FAINT_TINT_CLS}`}>
@@ -475,7 +535,7 @@ function OptionRow({
               {option.conditions.map((condition, i) => (
                 <li key={i} className="flex gap-1.5">
                   <span className="mt-0.5 shrink-0 text-slate-600">•</span>
-                  <span>{renderTokenizedText(condition, `cond-${descriptionKey}-${i}`, glossary, glossaryByName, sheetTermsRe)}</span>
+                  <span>{renderTokenizedText(condition, `cond-${descriptionKey}-${i}`, glossary, glossaryByName, sheetTermsRe, flaggedRe)}</span>
                 </li>
               ))}
             </ul>
@@ -499,17 +559,18 @@ export function AiResponseText({
   glossaryByName?: AiGlossary;
   availability?: AiAvailability;
   availabilityByName?: AiAvailability;
-  /** Names from the entity's own `flaggedAbilities`/`flaggedTraits` (same reminder-flag data `reminders.tsx`'s 🔥 card badge uses) — an option whose name matches gets the same flame prefix, see `OptionRow`. */
+  /** Names from the entity's own `flaggedAbilities`/`flaggedTraits` (same reminder-flag data `reminders.tsx`'s 🔥 card badge uses) — an option whose name matches gets the same flame prefix, see `OptionRow`. Also flame-prefixes any mention of one of these names inside the plan's own free prose (game plan summary, option descriptions/conditions), not just a matching `option.name` itself. */
   flaggedNames?: Set<string>;
 }) {
   const grouped = groupOptionsByCategory(response.options);
   const sheetTermsRe = useMemo(() => buildSheetTermsRegex(glossaryByName), [glossaryByName]);
+  const flaggedRe = useMemo(() => buildFlaggedTermsRegex(flaggedNames), [flaggedNames]);
 
   return (
     <div className="flex flex-col gap-3">
       <div className={`flex flex-col gap-2 rounded-lg px-3 py-2 text-sm leading-relaxed text-slate-300 ${FAINT_TINT_CLS}`}>
         {splitParagraphs(response.game_plan.summary).map((paragraph, i) => (
-          <p key={i}>{renderTokenizedText(paragraph, `sum-${i}`, glossary, glossaryByName, sheetTermsRe)}</p>
+          <p key={i}>{renderTokenizedText(paragraph, `sum-${i}`, glossary, glossaryByName, sheetTermsRe, flaggedRe)}</p>
         ))}
       </div>
       {CATEGORY_ORDER.map((category) => {
@@ -533,6 +594,7 @@ export function AiResponseText({
                     glossary={glossary}
                     glossaryByName={glossaryByName}
                     sheetTermsRe={sheetTermsRe}
+                    flaggedRe={flaggedRe}
                     availability={availability}
                     availabilityByName={availabilityByName}
                     flagged={flaggedNames.has(option.name)}
