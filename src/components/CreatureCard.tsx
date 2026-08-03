@@ -81,9 +81,11 @@ export function CreatureCard({
         conditions={creature.conditions}
         exhaustion={creature.exhaustion}
         concentrating={Boolean(creature.concentrating)}
+        customConditions={creature.customConditions ?? []}
         onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
         onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
         onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
+        onCustomConditionsChange={onUpdate ? (customConditions) => onUpdate(creature.id, { customConditions }) : undefined}
       />
 
       <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />

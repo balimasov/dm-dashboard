@@ -270,7 +270,11 @@ export function CharacterDetailsModal({
             conditions={c.combat.conditions}
             exhaustion={c.combat.exhaustion}
             concentrating={Boolean(c.concentrating)}
+            customConditions={c.combat.customConditions ?? []}
             onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
+            onCustomConditionsChange={
+              onUpdate ? (customConditions) => onUpdate(c.id, { combat: { ...c.combat, customConditions } }) : undefined
+            }
           />
 
           <div className="flex items-start gap-3">

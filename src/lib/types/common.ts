@@ -122,3 +122,23 @@ export interface QuickNote {
   text: string;
   createdAt: string;
 }
+
+/**
+ * A homebrew condition/state with its own name and description — for
+ * anything the standard D&D condition list (`conditionInfo.ts`) doesn't
+ * cover: a dragon's fear-roar-induced madness, a story curse, a
+ * campaign-specific status effect. Shown on the card the same way a standard
+ * condition is (its own badge on `StatusRail`, added/removed from the same
+ * popover), and its `description` is sent to the AI assistant's context the
+ * same way a standard condition's `conditionInfo.ts` blurb is — the model
+ * never has to reason about a custom condition "blind". Shared by `Character`
+ * (nested in `CombatState`) and `Creature` (flat on the object), same
+ * convention as `conditions`/`exhaustion` already being duplicated across
+ * both rather than factored into one shared "combat state" type.
+ */
+export interface CustomCondition {
+  id: string;
+  name: string;
+  /** Optional only for the moment right after typing a name and before filling this in — an empty description still renders and still gets sent to the AI, just with nothing beyond the bare name. */
+  description?: string;
+}

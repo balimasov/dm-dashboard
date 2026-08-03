@@ -74,9 +74,11 @@ export function CreatureDetailsModal({
             conditions={creature.conditions}
             exhaustion={creature.exhaustion}
             concentrating={Boolean(creature.concentrating)}
+            customConditions={creature.customConditions ?? []}
             onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
             onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
             onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
+            onCustomConditionsChange={onUpdate ? (customConditions) => onUpdate(creature.id, { customConditions }) : undefined}
           />
 
           <div className="flex items-start gap-3">

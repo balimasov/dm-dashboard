@@ -1,4 +1,4 @@
-import { AbilityScores, QuickNote, SkillName } from "./common";
+import { AbilityScores, CustomCondition, QuickNote, SkillName } from "./common";
 import { Attack, Currency, InventoryItem } from "./item";
 
 export type RecoveryType =
@@ -176,6 +176,8 @@ export interface CombatState {
   passiveInsight: number;
   conditions: string[];
   exhaustion: number;
+  /** Homebrew states with their own name/description — see `CustomCondition`'s own doc comment. Optional/absent, not defaulted to `[]`, for characters saved before this field existed. */
+  customConditions?: CustomCondition[];
   deathSaves?: {
     successes: number;
     failures: number;
@@ -239,8 +241,7 @@ export interface Character {
    * tried before and removed, since which spell is being concentrated on
    * isn't reliably exposed by the API). Just a plain reminder flag: players
    * routinely forget they're concentrating, so the whole card gets a violet
-   * ring/tint when this is set, toggled via a button in the card's Spells
-   * section.
+   * ring/tint when this is set, toggled via `StatusRail`'s states popover.
    */
   concentrating?: boolean;
   dndBeyondUrl?: string;

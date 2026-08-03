@@ -1,4 +1,4 @@
-import { Character, Creature, RECOVERY_LABELS, SKILL_LABELS, STAT_ORDER } from "./types";
+import { Character, Creature, CustomCondition, RECOVERY_LABELS, SKILL_LABELS, STAT_ORDER } from "./types";
 import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
 import { getMasteryInfo } from "./masteryInfo";
 import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
@@ -39,6 +39,30 @@ import { formatModifier } from "./format";
  * about what an option actually does without ballooning the prompt with
  * complete spell descriptions.
  */
+
+/**
+ * Builds the "Conditions:" block shared by `characterAssistantContext`/
+ * `creatureAssistantContext` — a homebrew `CustomCondition` gets the exact
+ * same "name: mechanical effect" treatment a standard one does (its own
+ * `description`, in place of the `getConditionInfo` lookup a standard
+ * condition has), never left as a bare name the model has to reason about
+ * blind. Custom states are listed first — see `StatusRail.tsx`'s own
+ * "custom badges render first" comment for the matching reasoning: a
+ * standard condition is common knowledge even without its blurb, a homebrew
+ * one isn't.
+ */
+function conditionLines(conditions: string[], customConditions: CustomCondition[]): string[] {
+  if (conditions.length === 0 && customConditions.length === 0) return [];
+  const lines = ["Conditions:"];
+  for (const custom of customConditions) {
+    lines.push(`- ${custom.name}${custom.description ? `: ${custom.description}` : ""}`);
+  }
+  for (const condition of conditions) {
+    const effect = getConditionInfo(condition);
+    lines.push(`- ${condition}${effect ? `: ${effect}` : ""}`);
+  }
+  return lines;
+}
 export function characterAssistantContext(character: Character): string {
   const c = character;
   const lines: string[] = [];
@@ -50,13 +74,7 @@ export function characterAssistantContext(character: Character): string {
   if (c.senses.length > 0) {
     lines.push(`Senses: ${c.senses.map((s) => `${s.name} ${s.range} ft`).join(", ")}`);
   }
-  if (c.combat.conditions.length > 0) {
-    lines.push("Conditions:");
-    for (const condition of c.combat.conditions) {
-      const effect = getConditionInfo(condition);
-      lines.push(`- ${condition}${effect ? `: ${effect}` : ""}`);
-    }
-  }
+  lines.push(...conditionLines(c.combat.conditions, c.combat.customConditions ?? []));
   if (c.combat.exhaustion > 0) {
     const effect = getExhaustionEffect(c.combat.exhaustion);
     lines.push(
@@ -235,7 +253,8 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
       `${t.name} (${[t.race, t.className].filter(Boolean).join(" ")}, level ${t.level})`,
       `HP ${t.combat.hp}/${t.combat.maxHp}${t.combat.tempHp ? ` (+${t.combat.tempHp} temp)` : ""}`,
     ];
-    if (t.combat.conditions.length > 0) parts.push(`conditions: ${t.combat.conditions.join(", ")}`);
+    const conditionNames = [...(t.combat.customConditions ?? []).map((cc) => cc.name), ...t.combat.conditions];
+    if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     if (t.combat.exhaustion > 0) parts.push(`exhaustion ${t.combat.exhaustion}`);
     if (t.concentrating) parts.push("concentrating");
 
@@ -295,7 +314,8 @@ export function companionsContext(creatures: Creature[], ownerId: string): strin
       // flight" gets wrongly concluded despite a flying mount being summoned.
       `Speed ${cr.speedDetail || `${cr.speed}ft`}`,
     ];
-    if (cr.conditions.length > 0) parts.push(`conditions: ${cr.conditions.join(", ")}`);
+    const conditionNames = [...(cr.customConditions ?? []).map((cc) => cc.name), ...cr.conditions];
+    if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     lines.push(`- ${parts.join(" | ")}`);
   }
   return lines.join("\n");
@@ -332,13 +352,7 @@ export function creatureAssistantContext(creature: Creature, ownerName?: string)
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speedDetail || `${cr.speed}ft`}`
   );
   if (cr.senses) lines.push(`Senses: ${cr.senses}`);
-  if (cr.conditions.length > 0) {
-    lines.push("Conditions:");
-    for (const condition of cr.conditions) {
-      const effect = getConditionInfo(condition);
-      lines.push(`- ${condition}${effect ? `: ${effect}` : ""}`);
-    }
-  }
+  lines.push(...conditionLines(cr.conditions, cr.customConditions ?? []));
   if (cr.exhaustion > 0) {
     const effect = getExhaustionEffect(cr.exhaustion);
     lines.push(

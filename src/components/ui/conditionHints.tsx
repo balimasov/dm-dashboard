@@ -1,3 +1,4 @@
+import { CustomCondition } from "@/lib/types";
 import { getConditionInfo } from "@/lib/conditionInfo";
 
 /**
@@ -20,10 +21,34 @@ export function ConditionHintPanel({ condition }: { condition: string }) {
   );
 }
 
-/** Stacked list of `ConditionHintPanel`s — for a hint that names more than one condition at once (`StatusRail`'s overflow badge). */
-export function ConditionsListHintPanel({ conditions }: { conditions: string[] }) {
+/**
+ * Same shape as `ConditionHintPanel`, for a homebrew `CustomCondition` —
+ * there's no `conditionInfo.ts` lookup for these, so the description comes
+ * straight from the condition itself (the same text that also gets sent to
+ * the AI assistant, see `assistantContext.ts`).
+ */
+export function CustomConditionHintPanel({ name, description }: { name: string; description?: string }) {
+  return (
+    <p>
+      <span className="font-semibold text-slate-100">{name}</span>
+      {description ? `: ${description}` : ""}
+    </p>
+  );
+}
+
+/** Stacked list of `ConditionHintPanel`s (and, when present, `CustomConditionHintPanel`s first) — for a hint that names more than one condition at once (`StatusRail`'s overflow badge). */
+export function ConditionsListHintPanel({
+  conditions,
+  customConditions = [],
+}: {
+  conditions: string[];
+  customConditions?: CustomCondition[];
+}) {
   return (
     <div className="space-y-1.5">
+      {customConditions.map((c) => (
+        <CustomConditionHintPanel key={c.id} name={c.name} description={c.description} />
+      ))}
       {conditions.map((condition) => (
         <ConditionHintPanel key={condition} condition={condition} />
       ))}

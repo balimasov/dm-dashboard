@@ -97,6 +97,53 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("Level 2: 2/2");
   });
 
+  test("includes a custom condition's own description in place of the standard lookup, listed before standard conditions", () => {
+    const character = makeCharacter({
+      name: "Ragnar",
+      combat: {
+        hp: 20,
+        maxHp: 20,
+        tempHp: 0,
+        ac: 15,
+        speed: 30,
+        passivePerception: 10,
+        passiveInvestigation: 10,
+        passiveInsight: 10,
+        conditions: ["Poisoned"],
+        exhaustion: 0,
+        customConditions: [
+          {
+            id: "cb",
+            name: "Chardal's Madness",
+            description: "Attacks the nearest creature, allies included, unless it succeeds a DC 15 Wisdom save.",
+          },
+        ],
+      },
+    });
+
+    const context = characterAssistantContext(character);
+    const customIndex = context.indexOf("- Chardal's Madness");
+    const standardIndex = context.indexOf("- Poisoned");
+
+    expect(context).toContain(
+      "- Chardal's Madness: Attacks the nearest creature, allies included, unless it succeeds a DC 15 Wisdom save."
+    );
+    expect(customIndex).toBeGreaterThan(-1);
+    expect(customIndex).toBeLessThan(standardIndex);
+  });
+
+  test("shows a custom condition's bare name when it has no description yet", () => {
+    const character = makeCharacter({
+      name: "Ragnar",
+      combat: { ...makeCharacter({ name: "x" }).combat, customConditions: [{ id: "cb", name: "Chardal's Madness" }] },
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("- Chardal's Madness");
+    expect(context).not.toContain("- Chardal's Madness:");
+  });
+
   test("marks a used-up resource as 0 of its max, not omitted", () => {
     const character = makeCharacter({
       name: "Bram",
@@ -421,6 +468,17 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("Concentrating on a spell right now");
   });
 
+  test("includes a creature's custom condition with its own description", () => {
+    const creature = makeCreature({
+      name: "Jerun",
+      customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature, allies included." }],
+    });
+
+    const context = creatureAssistantContext(creature);
+
+    expect(context).toContain("- Chardal's Madness: Attacks the nearest creature, allies included.");
+  });
+
   test("passes a creature's free-text Senses line through unstructured", () => {
     const creature = makeCreature({ name: "Owlbear", senses: "Darkvision 60 ft., Passive Perception 13" });
     const context = creatureAssistantContext(creature);
@@ -509,6 +567,18 @@ describe("partyTeammatesContext", () => {
     expect(context).toContain("limited-use spells: Healing Word 1/2");
   });
 
+  test("includes a teammate's custom condition name alongside standard ones", () => {
+    const self = makeCharacter({ name: "Nyra" });
+    const teammate = makeCharacter({
+      name: "Durgin",
+      combat: { ...self.combat, conditions: ["Poisoned"], customConditions: [{ id: "cb", name: "Chardal's Madness" }] },
+    });
+
+    const context = partyTeammatesContext([self, teammate], self.id);
+
+    expect(context).toContain("conditions: Chardal's Madness, Poisoned");
+  });
+
   test("omits a hidden character from the summary", () => {
     const self = makeCharacter({ name: "Nyra" });
     const hidden = makeCharacter({ name: "NPC Ally", hidden: true });
@@ -570,6 +640,17 @@ describe("companionsContext", () => {
     const mount = makeCreature({ name: "Warhorse", ownerCharacterId: "char-1", conditions: ["Prone"] });
     const context = companionsContext([mount], "char-1");
     expect(context).toContain("conditions: Prone");
+  });
+
+  test("includes a companion's custom condition name alongside standard ones", () => {
+    const mount = makeCreature({
+      name: "Warhorse",
+      ownerCharacterId: "char-1",
+      conditions: ["Prone"],
+      customConditions: [{ id: "cb", name: "Chardal's Madness" }],
+    });
+    const context = companionsContext([mount], "char-1");
+    expect(context).toContain("conditions: Chardal's Madness, Prone");
   });
 
   test("omits a creature owned by someone else, or hidden, or with no owner at all", () => {

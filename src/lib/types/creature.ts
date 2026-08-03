@@ -1,4 +1,4 @@
-import { AbilityScores, QuickNote } from "./common";
+import { AbilityScores, CustomCondition, QuickNote } from "./common";
 
 /**
  * One damage roll a trait's attack deals — a single attack can deal several
@@ -307,7 +307,9 @@ export interface Creature {
   spellcasting?: CreatureSpellcasting;
   conditions: string[];
   exhaustion: number;
-  /** Same convention as `Character.concentrating` — a spellcasting enemy/NPC/companion concentrating on a spell is exactly the kind of thing worth a save-or-lose reminder mid-combat, same as a player forgetting their own. Manually toggled via the same `StatusRail` badge and ring the character card uses. */
+  /** Same convention as `Character.customConditions` — see that field's doc comment on `CustomCondition`. */
+  customConditions?: CustomCondition[];
+  /** Same convention as `Character.concentrating` — a spellcasting enemy/NPC/companion concentrating on a spell is exactly the kind of thing worth a save-or-lose reminder mid-combat, same as a player forgetting their own. Manually toggled via the same `StatusRail` popover and card ring the character card uses. */
   concentrating?: boolean;
   /** Same shape as `CombatState.deathSaves` — only meaningful once `hp` hits 0, tracked separately so stabilizing and dropping again doesn't require guessing a reset. */
   deathSaves?: { successes: number; failures: number };

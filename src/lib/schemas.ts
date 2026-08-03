@@ -35,6 +35,12 @@ const resourceSchema = z.object({
   description: z.string().optional(),
 });
 
+const customConditionSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(60),
+  description: z.string().max(500).optional(),
+});
+
 const spellSlotLevelSchema = z.object({
   level: z.number(),
   current: z.number(),
@@ -159,6 +165,7 @@ const combatStateSchema = z.object({
   passiveInsight: z.number(),
   conditions: z.array(z.string()),
   exhaustion: z.number(),
+  customConditions: z.array(customConditionSchema).optional(),
   deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
 });
 
@@ -353,6 +360,7 @@ export const creatureUpdateSchema = z
     spellcasting: creatureSpellcastingSchema.nullable().optional(),
     conditions: z.array(z.string()),
     exhaustion: z.number(),
+    customConditions: z.array(customConditionSchema).optional(),
     concentrating: z.boolean().optional(),
     deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
     ownerCharacterId: z.string().nullable().optional(),

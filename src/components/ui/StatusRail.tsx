@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
+import { CustomCondition } from "@/lib/types";
 import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
-import { ConditionHintPanel, ConditionsListHintPanel } from "./conditionHints";
+import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel } from "./conditionHints";
+import { inputCls } from "./Field";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { ExhaustionIcon, ConcentrationIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
@@ -13,7 +15,10 @@ function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);
   return (
     <div className="space-y-2">
-      <p>{EXHAUSTION_RULES_TEXT}</p>
+      {/* Same "bold name: description" shape `ConditionHintPanel` uses for every standard condition — the level lives inside the bold part since it's what the name refers to, not extra detail tacked on after the colon (that's what the "Right now" line below is for). */}
+      <p>
+        <span className="font-semibold text-slate-100">Exhaustion (level {level})</span>: {EXHAUSTION_RULES_TEXT}
+      </p>
       {effect && (
         <p className="border-t border-slate-700 pt-2 font-semibold text-amber-300">
           Right now (level {level}): −{effect.d20Penalty} to d20 rolls, speed −{effect.speedPenalty} ft.
@@ -42,6 +47,17 @@ const STATUS_BADGE_SIZE = "flex h-9 w-9 shrink-0 items-center justify-center rou
  */
 export const CONDITION_HUES = [16, 48, 80, 112, 144, 176, 208, 320];
 
+/**
+ * One fixed hue for every custom/homebrew condition badge — deliberately NOT
+ * cycled like `CONDITION_HUES`, since there's no risk of two *different*
+ * custom conditions needing to be told apart from each other the same way
+ * simultaneous standard conditions do (the dashed border plus the hover name
+ * already does that). Chosen clear of every other badge color already in
+ * use: every value in `CONDITION_HUES`, violet (concentration's card ring),
+ * and red (exhaustion).
+ */
+const CUSTOM_CONDITION_HUE = 190;
+
 function ConditionBadge({ condition, index }: { condition: string; index: number }) {
   const hue = CONDITION_HUES[index % CONDITION_HUES.length];
   return (
@@ -65,6 +81,29 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
   );
 }
 
+/** Same pulsing-glow badge shape as `ConditionBadge`, plus a dashed border — the second, always-on signal (color alone isn't enough at a glance) that this is a homebrew state, not one of the 14 standard D&D conditions. */
+function CustomConditionBadge({ condition }: { condition: CustomCondition }) {
+  return (
+    <span
+      className={`${STATUS_BADGE_SIZE} status-ring-dynamic border-dashed text-[10px] font-bold`}
+      style={
+        {
+          borderColor: `hsl(${CUSTOM_CONDITION_HUE}, 70%, 55%)`,
+          color: `hsl(${CUSTOM_CONDITION_HUE}, 80%, 78%)`,
+          "--glow-1": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 55%, 0.55)`,
+          "--glow-2": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 50%, 0.3)`,
+          "--glow-3": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 55%, 0.95)`,
+          "--glow-4": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 50%, 0.6)`,
+        } as React.CSSProperties
+      }
+    >
+      <InfoTooltip panel={<CustomConditionHintPanel name={condition.name} description={condition.description} />}>
+        {condition.name.trim().slice(0, 2).toUpperCase()}
+      </InfoTooltip>
+    </span>
+  );
+}
+
 function ExhaustionBadge({ level }: { level: number }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500 relative`}>
@@ -82,7 +121,10 @@ function ExhaustionBadge({ level }: { level: number }) {
  * Rules blurb shared with `VitalsPanel.tsx`'s own read-only Concentration
  * dot (`CONDITION_HUES` above is the same cross-file-constant convention) —
  * bolded term + what it actually does, not just a restatement of the UI's
- * own on/off state, which is all either hint used to say.
+ * own on/off state, which is all either hint used to say. Also reused as
+ * the hover hint on the Concentration toggle inside the states popover (see
+ * `ConcentrationToggleRow`) now that concentration is no longer its own
+ * standalone badge.
  */
 export const CONCENTRATION_HINT_TEXT = (
   <p>
@@ -91,8 +133,28 @@ export const CONCENTRATION_HINT_TEXT = (
   </p>
 );
 
-function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
-  const sizeCls = active ? "h-9 w-9" : "h-6 w-6";
+/** Placeholder icon for the overflow badge — a plain ellipsis, standing in for whatever custom art replaces it later. */
+function OverflowBadge({ conditions, customConditions = [] }: { conditions: string[]; customConditions?: CustomCondition[] }) {
+  return (
+    <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
+      <InfoTooltip panel={<ConditionsListHintPanel conditions={conditions} customConditions={customConditions} />}>•••</InfoTooltip>
+    </span>
+  );
+}
+
+/**
+ * Concentration's on/off switch, now living inside the states popover
+ * instead of its own always-visible badge — the card's passive
+ * `concentrating-ring` border tint (set directly from `concentrating` at
+ * `CharacterCard`/`CreatureCard`'s root, entirely independent of this rail)
+ * still tells every viewer at a glance whether it's active, so moving the
+ * *toggle* control off the rail doesn't lose that passive signal. Wraps the
+ * label in the same `CONCENTRATION_HINT_TEXT` hover hint the old badge used
+ * — `disableTap` since the label sits inside this row's own click target
+ * (the whole row toggles, not just the switch), same reasoning as every
+ * other `InfoTooltip` nested inside its own clickable parent.
+ */
+function ConcentrationToggleRow({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
   return (
     <button
       type="button"
@@ -100,59 +162,137 @@ function ConcentrationBadge({ active, onToggle }: { active: boolean; onToggle?: 
       onClick={onToggle}
       aria-pressed={active}
       aria-label="Toggle Concentration"
-      className={`flex ${sizeCls} shrink-0 items-center justify-center rounded-full border-2 bg-slate-950 transition-all ${
+      className={`flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
         active
-          ? "concentrating-ring border-violet-500 text-violet-300"
-          : "border-slate-700 text-slate-600 hover:border-violet-700 hover:text-violet-400"
+          ? "border-violet-500 bg-violet-500/10 text-violet-300"
+          : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
       }`}
     >
-      <InfoTooltip
-        hoverOnly
-        disableTap
-        desktopOnly
-        panel={
-          <div className="space-y-2">
-            {CONCENTRATION_HINT_TEXT}
-            <p className="border-t border-slate-700 pt-2 text-slate-400">
-              Currently {active ? "on" : "off"} — click to toggle.
-            </p>
-          </div>
-        }
-      >
-        <ConcentrationIcon className={active ? "h-[21px] w-[21px]" : "h-[15px] w-[15px]"} />
+      <InfoTooltip hoverOnly disableTap panel={CONCENTRATION_HINT_TEXT}>
+        <span className="flex items-center gap-1.5">
+          <ConcentrationIcon className="h-3.5 w-3.5 shrink-0" />
+          Concentration
+        </span>
       </InfoTooltip>
+      <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${active ? "bg-violet-500" : "bg-slate-700"}`}>
+        <span
+          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${active ? "translate-x-3.5" : "translate-x-0.5"}`}
+        />
+      </span>
     </button>
   );
 }
 
-/** Placeholder icon for the overflow badge — a plain ellipsis, standing in for whatever custom art replaces it later. */
-function OverflowBadge({ conditions }: { conditions: string[] }) {
+function CustomConditionRow({ condition, onRemove }: { condition: CustomCondition; onRemove?: () => void }) {
   return (
-    <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
-      <InfoTooltip panel={<ConditionsListHintPanel conditions={conditions} />}>•••</InfoTooltip>
-    </span>
+    <div className="flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold text-slate-200">{condition.name}</p>
+        {condition.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{condition.description}</p>}
+      </div>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${condition.name}`}
+          className="shrink-0 text-slate-600 hover:text-red-400"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+let customConditionUid = 0;
+/** Same throwaway-unique-enough convention as `EditCharacterModal.tsx`'s own `nextId` — never persisted anywhere as a display value, only as a React key and the id a later remove-click matches against. */
+function nextCustomConditionId(): string {
+  customConditionUid += 1;
+  return `custom-${Date.now()}-${customConditionUid}`;
+}
+
+function AddCustomConditionForm({ onAdd }: { onAdd: (condition: CustomCondition) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-sky-400 hover:underline">
+        + Add custom state
+      </button>
+    );
+  }
+
+  function submit() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onAdd({ id: nextCustomConditionId(), name: trimmed, description: description.trim() || undefined });
+    setName("");
+    setDescription("");
+    setOpen(false);
+  }
+
+  return (
+    <div className="space-y-1.5 border-t border-dashed border-slate-700 pt-2">
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="State name"
+        maxLength={60}
+        className={`${inputCls} w-full`}
+      />
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="What it does mechanically"
+        rows={2}
+        maxLength={500}
+        className={`${inputCls} w-full resize-none`}
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!name.trim()}
+        className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+      >
+        Add
+      </button>
+    </div>
   );
 }
 
 /**
- * The only entry point for adding a condition or raising/lowering
- * exhaustion — neither has any other inline editing surface anywhere in the
- * app (only a free-text "Conditions" field and a 0-6 number input on the
- * full edit page). Deliberately generic (plain string/number props and
- * callbacks, no `Character`/`Creature` import) so wiring it into
- * `CharacterCard` later is just passing the same two callbacks `CreatureCard`
- * already does.
+ * The single entry point for everything on this rail that isn't purely
+ * read-only: concentration, exhaustion, standard D&D conditions, and custom
+ * states — one popover shared by `CharacterCard` and `CreatureCard` rather
+ * than each having its own editing surface. Concentration and custom states
+ * show up for both callers (whichever pass `onToggleConcentration`/
+ * `onCustomConditionsChange`); the standard-conditions pill grid only
+ * appears for a caller that also passes `onConditionsChange` — today that's
+ * `CreatureCard`/`CreatureDetailsModal` only, since a Character's standard
+ * conditions come from D&D Beyond sync (or the free-text field on its full
+ * edit page) rather than manual pill-toggling here.
  */
-function AddStatusBadge({
+function StatusPopover({
   conditions,
   exhaustion,
+  concentrating,
+  customConditions,
+  onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
+  onCustomConditionsChange,
 }: {
   conditions: string[];
   exhaustion: number;
+  concentrating?: boolean;
+  customConditions: CustomCondition[];
+  onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
+  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -177,14 +317,15 @@ function AddStatusBadge({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Add condition or set exhaustion"
+        aria-label="Manage states and concentration"
         aria-expanded={open}
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
       >
         +
       </button>
       {open && (
-        <div className={`absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
+        <div className={`absolute left-1/2 top-full z-10 mt-2 w-72 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
+          {onToggleConcentration && <ConcentrationToggleRow active={Boolean(concentrating)} onToggle={onToggleConcentration} />}
           {onExhaustionChange && (
             <div>
               <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>
@@ -215,51 +356,85 @@ function AddStatusBadge({
               </div>
             </div>
           )}
+          {onCustomConditionsChange && (
+            <div className="space-y-1.5">
+              <p className={MICRO_LABEL_CLS}>Custom states</p>
+              {customConditions.map((c) => (
+                <CustomConditionRow
+                  key={c.id}
+                  condition={c}
+                  onRemove={() => onCustomConditionsChange(customConditions.filter((x) => x.id !== c.id))}
+                />
+              ))}
+              <AddCustomConditionForm onAdd={(c) => onCustomConditionsChange([...customConditions, c])} />
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-/** Total badge slots (concentration + exhaustion + conditions + the overflow/add badges) a card has room for before it gets crowded. */
+/** Total badge slots (exhaustion + conditions/custom-states + the overflow/popover-trigger badges) a card has room for before it gets crowded. Concentration no longer counts here — see `ConcentrationToggleRow`'s own doc comment. */
 const MAX_BADGES = 6;
 
 function StatusBadges({
   conditions,
   exhaustion,
   concentrating,
+  customConditions,
   onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
+  onCustomConditionsChange,
 }: {
   conditions: string[];
   exhaustion: number;
   concentrating?: boolean;
+  customConditions: CustomCondition[];
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
+  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
 }) {
-  const showAdd = Boolean(onConditionsChange || onExhaustionChange);
-  const fixedCount = (concentrating !== undefined ? 1 : 0) + (exhaustion > 0 ? 1 : 0) + (showAdd ? 1 : 0);
+  const showTrigger = Boolean(onConditionsChange || onExhaustionChange || onCustomConditionsChange || onToggleConcentration);
+  const fixedCount = (exhaustion > 0 ? 1 : 0) + (showTrigger ? 1 : 0);
   const availableForConditions = MAX_BADGES - fixedCount;
-  const overflowing = conditions.length > availableForConditions;
-  const visibleConditions = overflowing ? conditions.slice(0, Math.max(0, availableForConditions - 1)) : conditions;
-  const overflowConditions = overflowing ? conditions.slice(visibleConditions.length) : [];
+
+  // Custom states go first when slots run short — a standard condition
+  // (Poisoned, Prone...) is common knowledge even reduced to "•••" in the
+  // overflow badge, where a homebrew one losing its only visible badge loses
+  // the one on-card cue that it's active at all.
+  const totalCount = customConditions.length + conditions.length;
+  const overflowing = totalCount > availableForConditions;
+  const visibleSlots = overflowing ? Math.max(0, availableForConditions - 1) : availableForConditions;
+  const visibleCustom = customConditions.slice(0, visibleSlots);
+  const visibleStandard = conditions.slice(0, Math.max(0, visibleSlots - visibleCustom.length));
+  const overflowCustom = customConditions.slice(visibleCustom.length);
+  const overflowStandard = conditions.slice(visibleStandard.length);
 
   return (
     <>
-      {concentrating !== undefined && <ConcentrationBadge active={concentrating} onToggle={onToggleConcentration} />}
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
-      {visibleConditions.map((condition, index) => (
+      {visibleCustom.map((c) => (
+        <CustomConditionBadge key={c.id} condition={c} />
+      ))}
+      {visibleStandard.map((condition, index) => (
         <ConditionBadge key={condition} condition={condition} index={index} />
       ))}
-      {overflowConditions.length > 0 && <OverflowBadge conditions={overflowConditions} />}
-      {showAdd && (
-        <AddStatusBadge
+      {(overflowCustom.length > 0 || overflowStandard.length > 0) && (
+        <OverflowBadge conditions={overflowStandard} customConditions={overflowCustom} />
+      )}
+      {showTrigger && (
+        <StatusPopover
           conditions={conditions}
           exhaustion={exhaustion}
+          concentrating={concentrating}
+          customConditions={customConditions}
+          onToggleConcentration={onToggleConcentration}
           onConditionsChange={onConditionsChange}
           onExhaustionChange={onExhaustionChange}
+          onCustomConditionsChange={onCustomConditionsChange}
         />
       )}
     </>
@@ -270,17 +445,21 @@ export function StatusRail({
   conditions,
   exhaustion,
   concentrating,
+  customConditions,
   onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
+  onCustomConditionsChange,
 }: {
   conditions: string[];
   exhaustion: number;
-  /** Omit entirely to hide the Concentration badge — pass it (characters and creatures both can) whenever the caller tracks concentration at all. */
+  /** Only affects the card's passive `concentrating-ring` border tint now — omit entirely when the caller doesn't track concentration at all. Pass `onToggleConcentration` (whether or not this is set) to also show the toggle in the popover. */
   concentrating?: boolean;
+  customConditions: CustomCondition[];
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
+  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
 }) {
   return (
     // Straddles the *top* border (row, centered, shifted up by half its own
@@ -306,9 +485,11 @@ export function StatusRail({
         conditions={conditions}
         exhaustion={exhaustion}
         concentrating={concentrating}
+        customConditions={customConditions}
         onToggleConcentration={onToggleConcentration}
         onConditionsChange={onConditionsChange}
         onExhaustionChange={onExhaustionChange}
+        onCustomConditionsChange={onCustomConditionsChange}
       />
     </div>
   );
