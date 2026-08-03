@@ -562,18 +562,21 @@ export function DashboardClient({
           own max-width is expected to leave side margins) instead of
           reading as one continuous bar the way the header above it does.
 
+          `bg-slate-950/80 backdrop-blur` — the exact same translucency the
+          header above uses, not the fully opaque `bg-slate-950` this bar
+          had before. The two bars being visually inconsistent (one
+          see-through and blurred, the other a flat solid block directly
+          under it) read as a seam/discontinuity even once they were
+          perfectly pixel-aligned — matching the treatment removes that
+          contrast instead of just chasing the alignment further.
+
           `top-[57px]`, not `58px` — the header's own rendered height
-          measures exactly 58px, but its `bg-slate-950/80` +
-          `backdrop-blur` are semi-transparent by design, and stacking two
-          independently `sticky`-positioned elements edge-to-edge left a
-          hairline seam during scroll (subpixel rounding between the two
-          elements' own sticky offsets, a known interaction with
-          `backdrop-filter`) where whatever was scrolling underneath
-          peeked through for a frame. Overlapping this bar's opaque
-          background 1px up into the header's own last pixel row (this bar
-          is `z-20`, above the header's `z-10`, so it simply paints over
-          that row) closes the seam without needing to measure anything at
-          runtime.
+          measures exactly 58px; overlapping this bar 1px up into the
+          header's own last pixel row (this bar is `z-20`, above the
+          header's `z-10`, so it simply paints over that row) is cheap
+          insurance against a subpixel gap between two independently
+          `sticky`-positioned elements during scroll, without needing to
+          measure anything at runtime.
 
           Sticky rather than living further down the page: Sync/Export/
           Settings are reached constantly through a session, and scrolling
@@ -582,7 +585,7 @@ export function DashboardClient({
           one kebab menu) to always fit one row even at phone width, so
           unlike before this needs no horizontal-scroll fallback for
           narrow viewports. */}
-      <div className="sticky top-[57px] z-20 mb-4 border-b border-slate-800 bg-slate-950">
+      <div className="sticky top-[57px] z-20 mb-4 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
         <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
           {lastSyncedAt && (
             <>
