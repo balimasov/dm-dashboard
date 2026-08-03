@@ -502,15 +502,14 @@ export function updateCreature(id: string, updates: NullableCreatureUpdates): Cr
     id: existing.id,
     hpHistory,
     // A creature saved before this field existed has neither timestamp —
-    // `existing.createdAt` alone would stay permanently undefined, which
-    // made `CreatureTimestampStatus` fall back to `updatedAt` and label
-    // every future edit "Created" instead of "Edited" (no `createdAt` to
-    // differ from). Backfilling from whatever timestamp we DO have on
-    // record — the creature's last known `updatedAt`, or `now` if it has
-    // neither — anchors `createdAt` on this update so every edit after this
-    // one reads correctly; reusing the single `now` for both fields in the
-    // "neither exists yet" case keeps them equal so this first tracked edit
-    // still shows as "Created", same as a brand-new creature would.
+    // `existing.createdAt` alone would stay permanently undefined, losing
+    // the distinction between "never edited" and "edited" for good.
+    // Backfilling from whatever timestamp we DO have on record — the
+    // creature's last known `updatedAt`, or `now` if it has neither —
+    // anchors `createdAt` on this update so every edit after this one keeps
+    // that distinction correctly; reusing the single `now` for both fields
+    // in the "neither exists yet" case keeps them equal, same as a
+    // brand-new creature would have.
     createdAt: existing.createdAt ?? existing.updatedAt ?? now,
     updatedAt: now,
   };

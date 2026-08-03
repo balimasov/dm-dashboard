@@ -83,15 +83,23 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * required, not optional, so a second caller down the line can't
  * accidentally collide with this one's saved geometry via a shared default.
  *
- * `z-[45]` — above `SectionNavRail`'s `z-30` and the bottom-corner FABs'
- * `z-40` (both ambient chrome the panel's default top-right spawn spot and
- * drag range can genuinely overlap; a resize/drag handle silently eaten by
- * one of those was a real bug here, not a hypothetical), but still below
- * `Modal`'s default `z-50`: a real modal opened while this panel is up (e.g.
- * editing a different character) should still land on top of it, backdrop
- * and all — this panel losing focus underneath that backdrop is the same
- * behavior a docked/pinned tool window would have against an app's own
- * dialogs.
+ * `zIndexClassName` defaults to `z-[45]` — above `SectionNavRail`'s `z-30`
+ * and the bottom-corner FABs' `z-40` (both ambient chrome the panel's
+ * default top-right spawn spot and drag range can genuinely overlap; a
+ * resize/drag handle silently eaten by one of those was a real bug here, not
+ * a hypothetical), but still below `Modal`'s default `z-50`: a real modal
+ * opened *afterward*, while this panel is already up (e.g. editing a
+ * different character), should still land on top of it, backdrop and all —
+ * this panel losing focus underneath that backdrop is the same behavior a
+ * docked/pinned tool window would have against an app's own dialogs.
+ *
+ * A caller that opens this panel from *inside* an already-open `Modal` (e.g.
+ * `CharacterDetailsModal`'s own "Ask AI" pill) needs the opposite ordering —
+ * the panel is the newer, just-opened thing there, so it must render above
+ * that enclosing modal's `z-50` backdrop, not disappear behind it. Such a
+ * caller passes `zIndexClassName="z-[60]"`, the same nested-above-a-modal
+ * value `Modal`'s own `zIndexClassName` escape hatch and `Toast.tsx` already
+ * use for exactly this "stacked on top of an open modal" case.
  *
  * No `aria-modal` (defaults to non-modal) since, unlike `Modal`, this
  * doesn't make the rest of the page inert — a screen reader user can still
@@ -112,6 +120,7 @@ export function FloatingPanel({
   storageKey,
   initialWidth = 480,
   initialHeight = 560,
+  zIndexClassName = "z-[45]",
 }: {
   title: ReactNode;
   /** Optional extra icon buttons (e.g. a "clear conversation" trash icon) rendered between the title and the close button — `AiAssistantModal` is this component's only caller so far, but the slot itself is generic. */
@@ -121,6 +130,8 @@ export function FloatingPanel({
   storageKey: string;
   initialWidth?: number;
   initialHeight?: number;
+  /** Overrides the panel's stacking order — see the component doc comment above for when a caller needs `z-[60]` instead of the default. */
+  zIndexClassName?: string;
 }) {
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
@@ -167,7 +178,7 @@ export function FloatingPanel({
         role="dialog"
         aria-labelledby={titleId}
         style={mobileStyle}
-        className="fixed z-[45] flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+        className={`fixed ${zIndexClassName} flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40`}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
           <h2 id={titleId} className={MODAL_TITLE_CLS}>
@@ -247,7 +258,7 @@ export function FloatingPanel({
       role="dialog"
       aria-labelledby={titleId}
       style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
-      className="fixed z-[45] flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+      className={`fixed ${zIndexClassName} flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40`}
     >
       <div
         onPointerDown={onHeaderPointerDown}

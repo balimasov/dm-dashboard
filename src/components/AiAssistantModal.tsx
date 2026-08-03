@@ -197,11 +197,14 @@ export function AiAssistantModal({
   target,
   entity,
   onClose,
+  zIndexClassName,
 }: {
   name: string;
   target: Target;
   entity: Character | Creature;
   onClose: () => void;
+  /** Forwarded to `FloatingPanel` — see its own doc comment. Callers opening this from inside an already-open `Modal` (the details modals' own "Ask AI" pill) pass `"z-[60]"` so the panel lands above that modal's backdrop instead of behind it. */
+  zIndexClassName?: string;
 }) {
   useEscapeToClose(onClose);
   const glossary = useMemo(() => buildAiGlossary(entity), [entity]);
@@ -350,6 +353,7 @@ export function AiAssistantModal({
     <FloatingPanel
       onClose={onClose}
       storageKey="ai-assistant"
+      zIndexClassName={zIndexClassName}
       title={
         <span className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 shrink-0 text-sky-400" />

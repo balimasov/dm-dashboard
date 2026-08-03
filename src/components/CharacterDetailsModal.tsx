@@ -660,6 +660,10 @@ export function CharacterDetailsModal({
         target={{ campaignId: c.campaignId, characterId: c.id }}
         entity={c}
         onClose={() => setAiOpen(false)}
+        // Opened from inside this already-open Modal (z-50) via the "Ask AI"
+        // pill above — needs to land above it, not behind it. See
+        // `FloatingPanel`'s own doc comment.
+        zIndexClassName="z-[60]"
       />
     )}
     </>

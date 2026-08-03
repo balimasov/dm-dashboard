@@ -12,7 +12,6 @@ import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { AskAiPill } from "./ui/AskAiPill";
 import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
-import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -89,34 +88,26 @@ export function CreatureCard({
 
       <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
 
-      {/* Created/edited timestamp (left) + kebab actions menu (right) share
-          one row — same placement as `CharacterCard`'s own sync+actions row,
-          just with a last-edited stamp standing in for the D&D Beyond sync
-          line a creature has no equivalent of. */}
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
-        </div>
-        {/* Cluster sits right next to the kebab (own tighter `gap-1.5`, vs.
-            the row's own `gap-3` to the timestamp block) — same convention
-            as `CharacterCard`'s equivalent row, including the reminder badge
-            (conditional) going before the always-present AI pill. */}
-        <div className="flex shrink-0 items-center gap-1.5">
-          <ReminderBadge
-            group={creatureReminders(creature)}
-            onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
-          />
-          <AskAiPill onClick={() => setAiOpen(true)} />
-          <EntityActionsMenu
-            onEdit={() => setEditOpen(true)}
-            name={creature.name}
-            hidden={creature.hidden}
-            onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
-            onDuplicate={onDuplicate}
-            onShowHpHistory={() => setHpHistoryOpen(true)}
-            onRemove={onRemove ? () => onRemove(creature.id) : undefined}
-          />
-        </div>
+      {/* Reminder badge (conditional) + AI pill + kebab, right-aligned — no
+          left-side content here: a creature has no D&D Beyond sync date, and
+          its created/edited timestamp turned out not to be worth the row
+          space (removed rather than replaced with something else). Same
+          cluster/order as `CharacterCard`'s equivalent row. */}
+      <div className="flex items-center justify-end gap-1.5">
+        <ReminderBadge
+          group={creatureReminders(creature)}
+          onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+        />
+        <AskAiPill onClick={() => setAiOpen(true)} />
+        <EntityActionsMenu
+          onEdit={() => setEditOpen(true)}
+          name={creature.name}
+          hidden={creature.hidden}
+          onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+          onDuplicate={onDuplicate}
+          onShowHpHistory={() => setHpHistoryOpen(true)}
+          onRemove={onRemove ? () => onRemove(creature.id) : undefined}
+        />
       </div>
 
       <CreatureStatBlock creature={creature} onUpdate={onUpdate} />

@@ -325,14 +325,13 @@ export interface Creature {
   /**
    * Server-stamped in `createCreature`/`updateCreature` (`db.ts`) — never
    * accepted from a client request body (absent from `creatureUpdateSchema`),
-   * so a PATCH can't backdate either one. A creature has no external source
-   * to sync with the way a D&D Beyond-linked `Character` does, so this pair
-   * fills that same card row with the DM's own last-edited record instead;
-   * `CreatureTimestampStatus` shows only `updatedAt` (labeled "Edited") once
-   * it differs from `createdAt`, otherwise falls back to `createdAt`
-   * (labeled "Created") — never both at once. Optional (not backfilled) so
-   * creatures saved before this field existed simply render nothing here,
-   * same convention as `Character.dndBeyondUrl` being absent.
+   * so a PATCH can't backdate either one. Not currently surfaced anywhere in
+   * the UI (the card/details-modal "last edited" display that used to read
+   * this pair was removed as adding no real value) — kept stamped regardless,
+   * since it's DM-facing record-keeping data a future feature may still want.
+   * Optional (not backfilled) so creatures saved before this field existed
+   * simply have neither, same convention as `Character.dndBeyondUrl` being
+   * absent.
    */
   createdAt?: string;
   updatedAt?: string;

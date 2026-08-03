@@ -52,10 +52,10 @@ export function DdbSyncStatus({
           moment a reminder got flagged, shifting the HP bar and everything
           below it down. The link stays on one line and fully legible
           (`shrink-0`); the actual sync date moves into a hover/tap hint on a
-          fixed-width clock icon (same icon `CreatureTimestampStatus` uses)
-          rather than sitting in the row as plain text — a date long enough
-          to need truncating was exactly the thing that used to disappear
-          first once the AI pill and a reminder badge were both present. */}
+          fixed-width clock icon rather than sitting in the row as plain
+          text — a date long enough to need truncating was exactly the thing
+          that used to disappear first once the AI pill and a reminder badge
+          were both present. */}
       <div className="flex items-center gap-1.5 text-xs leading-none">
         <a
           href={dndBeyondUrl}
