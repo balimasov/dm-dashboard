@@ -1,5 +1,6 @@
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
-import { ExternalLinkIcon } from "./icons";
+import { ClockIcon, ExternalLinkIcon } from "./icons";
 
 /**
  * Single shared block for a character's D&D Beyond link/sync state — used
@@ -45,13 +46,16 @@ export function DdbSyncStatus({
         </div>
       )}
       {/* `flex-nowrap` deliberately, not `flex-wrap` — this row's parent
-          shrinks whenever a sibling (the "🔥 N" reminder badge, the kebab
-          menu) takes up more of the shared row's width, and letting this
-          wrap to a second line grew the *whole card* taller the moment a
-          reminder got flagged, shifting the HP bar and everything below it
-          down. The link and sync button always stay on one line and fully
-          legible (`shrink-0`); only the trailing timestamp — the least
-          essential part — truncates first when room gets tight. */}
+          shrinks whenever a sibling (the "🔥 N" reminder badge, the AI pill,
+          the kebab menu) takes up more of the shared row's width, and
+          letting this wrap to a second line grew the *whole card* taller the
+          moment a reminder got flagged, shifting the HP bar and everything
+          below it down. The link stays on one line and fully legible
+          (`shrink-0`); the actual sync date moves into a hover/tap hint on a
+          fixed-width clock icon (same icon `CreatureTimestampStatus` uses)
+          rather than sitting in the row as plain text — a date long enough
+          to need truncating was exactly the thing that used to disappear
+          first once the AI pill and a reminder badge were both present. */}
       <div className="flex items-center gap-1.5 text-xs leading-none">
         <a
           href={dndBeyondUrl}
@@ -61,14 +65,25 @@ export function DdbSyncStatus({
         >
           D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
         </a>
-        {syncing ? (
-          <span className="min-w-0 truncate text-sky-400">Syncing...</span>
-        ) : (
-          lastSyncedAt && (
-            <span className="min-w-0 truncate text-slate-500">
-              <SyncTimestamp iso={lastSyncedAt} />
-            </span>
-          )
+        {(syncing || lastSyncedAt) && (
+          <InfoTooltip
+            hoverOnly
+            panel={
+              <p>
+                {syncing ? (
+                  "Syncing with D&D Beyond…"
+                ) : (
+                  lastSyncedAt && (
+                    <>
+                      Last synced <SyncTimestamp iso={lastSyncedAt} />
+                    </>
+                  )
+                )}
+              </p>
+            }
+          >
+            <ClockIcon className={`h-3 w-3 shrink-0 text-slate-500 ${syncing ? "animate-spin" : ""}`} />
+          </InfoTooltip>
         )}
       </div>
       {error && <p className="text-xs text-amber-400">{error}</p>}
