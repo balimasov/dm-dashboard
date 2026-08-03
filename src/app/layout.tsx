@@ -68,6 +68,21 @@ export default async function RootLayout({
                 </div>
               )}
             </div>
+            {/* Empty by default — a page can portal extra sticky content
+                here (see `DashboardClient`'s own Sync/Journal/⋮ toolbar via
+                `createPortal`) so it renders as part of THIS SAME
+                translucent/blurred `<header>` instead of a second,
+                independently `sticky`-positioned element stacked directly
+                underneath it. Two adjacent elements each running their own
+                `backdrop-filter: blur` can show a visible seam right at
+                their shared edge — confirmed even after their positions
+                and translucency were made pixel-identical, an inherent
+                characteristic of stacking two separate blur regions next
+                to a busy scrolling background, not something fixable by
+                aligning them more precisely. Anything that needs to look
+                like part of the header has to physically live inside this
+                one element instead. */}
+            <div id="header-extra-slot" />
           </header>
           <main className="flex-1">{children}</main>
           <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   KeyboardSensor,
@@ -55,6 +56,33 @@ import {
   CreatureCategory,
 } from "@/lib/types";
 import { UserRole } from "@/lib/auth";
+
+/**
+ * `layout.tsx`'s `#header-extra-slot` — read via `useSyncExternalStore`
+ * rather than `useState`+`useEffect`, because this component renders
+ * during SSR (it's not conditionally mounted client-side only, unlike
+ * `FloatingPanel`/`InfoTooltip`'s own portal targets): a lazy `useState`
+ * initializer that reads `document.getElementById` directly returns `null`
+ * on the server (no `document` there) but the *real* element immediately
+ * on the client's very first render (hydration itself runs in the
+ * browser, where `document` already exists) — a same-first-render
+ * server/client mismatch, exactly the case React's own hydration-mismatch
+ * warning calls out. `useSyncExternalStore`'s separate server/client
+ * snapshot getters are the React-documented way to read a browser-only
+ * value like this without that mismatch: the server snapshot is `null`
+ * (matching what the server actually rendered — nothing portaled), and the
+ * client snapshot briefly disagreeing is exactly what this hook exists to
+ * reconcile safely. No subscription needed — the slot element itself
+ * never changes after the initial server-rendered HTML lands, so the
+ * `subscribe` function is a no-op.
+ */
+const noopSubscribe = () => () => {};
+function getHeaderSlotSnapshot(): HTMLElement | null {
+  return document.getElementById("header-extra-slot");
+}
+function getHeaderSlotServerSnapshot(): null {
+  return null;
+}
 
 /** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
 function CampaignLogo({ campaign }: { campaign: Campaign }) {
@@ -429,6 +457,14 @@ export function DashboardClient({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rosterTab, setRosterTab] = useState<RosterTab | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
+  // The global header's own extension point (`layout.tsx`'s `#header-extra-slot`)
+  // — the Sync/Journal/⋮ toolbar below portals into it instead of rendering
+  // as its own separately `sticky`+`backdrop-blur`'d element, so it reads
+  // as part of the same header instead of a second block with a visible
+  // seam where the two independent blur regions meet. See
+  // `getHeaderSlotSnapshot`'s own comment above for why this is
+  // `useSyncExternalStore`, not a plain lazy `useState`.
+  const headerSlot = useSyncExternalStore(noopSubscribe, getHeaderSlotSnapshot, getHeaderSlotServerSnapshot);
 
   // A player has no Settings modal to open at all — guarded here too (not
   // just by hiding every button that calls this), so nothing short of
@@ -547,114 +583,89 @@ export function DashboardClient({
     [isDm]
   );
 
-  return (
-    <>
-      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
-
-      {/* Full-width outer bar (no `mx-auto max-w-[1800px] px-4` on this
-          element itself) with an inner content div that carries those
-          instead — the same two-layer shape `layout.tsx`'s own `<header>`
-          already uses for its sticky bar. Without that split, this being
-          nested directly inside the page's own `max-w-[1800px] px-4`
-          wrapper meant its background/border stopped 16px short of both
-          screen edges on every viewport (confirmed: a visible inset gap on
-          both mobile and desktop, not just wide desktop where the page's
-          own max-width is expected to leave side margins) instead of
-          reading as one continuous bar the way the header above it does.
-
-          `bg-slate-950/80 backdrop-blur` — the exact same translucency the
-          header above uses, not the fully opaque `bg-slate-950` this bar
-          had before. The two bars being visually inconsistent (one
-          see-through and blurred, the other a flat solid block directly
-          under it) read as a seam/discontinuity even once they were
-          perfectly pixel-aligned — matching the treatment removes that
-          contrast instead of just chasing the alignment further.
-
-          `top-[57px]`, not `58px` — the header's own rendered height
-          measures exactly 58px; overlapping this bar 1px up into the
-          header's own last pixel row (this bar is `z-20`, above the
-          header's `z-10`, so it simply paints over that row) is cheap
-          insurance against a subpixel gap between two independently
-          `sticky`-positioned elements during scroll, without needing to
-          measure anything at runtime.
-
-          Sticky rather than living further down the page: Sync/Export/
-          Settings are reached constantly through a session, and scrolling
-          back to the top every time got old fast once Party Toolkit
-          pushed everything below out of view. Compact enough (just Sync +
-          one kebab menu) to always fit one row even at phone width, so
-          unlike before this needs no horizontal-scroll fallback for
-          narrow viewports. */}
-      <div className="sticky top-[57px] z-20 mb-4 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
-          {lastSyncedAt && (
-            <>
-              {/* Full text on desktop, where there's room to spare... */}
-              <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-                Synced <SyncTimestamp iso={lastSyncedAt} />
-              </span>
-              {/* ...a tap/hover-able clock icon on mobile instead of hiding this
-                  entirely — otherwise there's no way at all on a phone to tell
-                  when the party last synced. */}
-              <span className="sm:hidden">
-                <InfoTooltip
-                  hoverOnly
-                  panel={
-                    <p>
-                      Synced <SyncTimestamp iso={lastSyncedAt} />
-                    </p>
-                  }
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
-                    <ClockIcon className="h-4 w-4" />
-                  </span>
-                </InfoTooltip>
-              </span>
-            </>
-          )}
-          {linkedCharacters.length > 0 && (
-            <div className="shrink-0">
-              <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
-            </div>
-          )}
-          {/* Quick Note/Journal are shared by both roles now — a DM's Quick
-              Note still lands in their own private journal, a player's
-              lands in the shared Party journal, and the full Journal modal
-              shows each role only the tab(s) it's allowed to see. */}
-          <QuickNoteButton campaignId={campaign.id} />
-          <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
-            <NoteIcon className="h-4 w-4" />
-          </IconFab>
-          {/* A player has nothing in this menu — Export dumps the whole
-              campaign (including the enemies/NPCs/notes this role otherwise
-              never sees), and Settings has no reduced view of its own — so
-              the menu itself is skipped rather than left open with an empty
-              or half-working dropdown. */}
-          {isDm && (
-            <MoreMenu>
-              <a
-                href={`/api/campaigns/${campaign.id}/export`}
-                title="Download this campaign (and its characters/creatures) as JSON"
-                className={MORE_MENU_ITEM_CLASS}
+  // Portaled into `layout.tsx`'s `#header-extra-slot` (see `headerSlot`'s
+  // own comment above) instead of rendered as its own separately
+  // `sticky`+`backdrop-blur`'d block — physically part of the header
+  // element now, not a second block sitting flush under it, so there's no
+  // seam between two independent blur regions to chase. Its own
+  // `mx-auto max-w-[1800px] px-4` mirrors the header's logo/logout row
+  // immediately above it, so both rows line up.
+  const toolbar = (
+    <div className="border-t border-slate-800">
+      <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
+        {lastSyncedAt && (
+          <>
+            {/* Full text on desktop, where there's room to spare... */}
+            <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
+              Synced <SyncTimestamp iso={lastSyncedAt} />
+            </span>
+            {/* ...a tap/hover-able clock icon on mobile instead of hiding this
+                entirely — otherwise there's no way at all on a phone to tell
+                when the party last synced. */}
+            <span className="sm:hidden">
+              <InfoTooltip
+                hoverOnly
+                panel={
+                  <p>
+                    Synced <SyncTimestamp iso={lastSyncedAt} />
+                  </p>
+                }
               >
-                <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                Export
-              </a>
-              <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
-                <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                Characters &amp; Creatures
-              </button>
-              <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
-                <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                Settings
-              </button>
-            </MoreMenu>
-          )}
-          <CampaignLogo campaign={campaignState} />
-        </div>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
+                  <ClockIcon className="h-4 w-4" />
+                </span>
+              </InfoTooltip>
+            </span>
+          </>
+        )}
+        {linkedCharacters.length > 0 && (
+          <div className="shrink-0">
+            <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+          </div>
+        )}
+        {/* Quick Note/Journal are shared by both roles now — a DM's Quick
+            Note still lands in their own private journal, a player's
+            lands in the shared Party journal, and the full Journal modal
+            shows each role only the tab(s) it's allowed to see. */}
+        <QuickNoteButton campaignId={campaign.id} />
+        <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
+          <NoteIcon className="h-4 w-4" />
+        </IconFab>
+        {/* A player has nothing in this menu — Export dumps the whole
+            campaign (including the enemies/NPCs/notes this role otherwise
+            never sees), and Settings has no reduced view of its own — so
+            the menu itself is skipped rather than left open with an empty
+            or half-working dropdown. */}
+        {isDm && (
+          <MoreMenu>
+            <a
+              href={`/api/campaigns/${campaign.id}/export`}
+              title="Download this campaign (and its characters/creatures) as JSON"
+              className={MORE_MENU_ITEM_CLASS}
+            >
+              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Export
+            </a>
+            <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
+              <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Characters &amp; Creatures
+            </button>
+            <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
+              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Settings
+            </button>
+          </MoreMenu>
+        )}
+        <CampaignLogo campaign={campaignState} />
       </div>
+    </div>
+  );
 
-      <div className="mx-auto max-w-[1800px] px-4 pb-8">
+  return (
+    <div className="mx-auto max-w-[1800px] px-4 pt-4 pb-8">
+      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
+      {headerSlot && createPortal(toolbar, headerSlot)}
+
       <div id="section-campaign" className="scroll-mt-[130px]">
         <CollapsibleSection
           title={<SectionTitle emoji="📜" label={`Campaign: "${campaignState.name}"`} />}
@@ -911,7 +922,6 @@ export function DashboardClient({
       )}
 
       {journalOpen && <CampaignJournalModal campaignId={campaign.id} role={role} onClose={() => setJournalOpen(false)} />}
-      </div>
-    </>
+    </div>
   );
 }
