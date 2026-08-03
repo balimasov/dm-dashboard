@@ -57,6 +57,33 @@ recognizes every one of these terms directly from plain text (both
 sheet-supplied names and general D&D vocabulary) and adds the matching
 hover-hint on its own; a bracket only breaks that instead of helping it.`;
 
+/**
+ * Shared verbatim between `SYSTEM_PROMPT` and `ASK_SYSTEM_PROMPT` for the
+ * same reason `ABILITY_MENTION_RULE` is above. An earlier version of the
+ * supplied context withheld a homebrew condition's description entirely,
+ * because giving the model that text made it echo it back verbatim in a
+ * reply (confirmed — a DM-pasted multi-paragraph monster ability came
+ * straight back out in the chat bubble). The description is supplied again
+ * (see `conditionLines` in `assistantContext.ts`) since the model needs it
+ * to reason correctly about what the condition currently does; this rule is
+ * the actual fix for the verbatim-echo problem, so withholding the text
+ * again isn't necessary.
+ */
+const HOMEBREW_CONDITION_RULE = `A condition tagged "(homebrew)" in the supplied state is not one of the
+standard 2024 rules conditions — it is a custom condition defined for this
+campaign, together with its own supplied mechanical description.
+
+Use that description the same way exact supplied feature/resource text
+overrides general rules knowledge elsewhere (see SOURCE OF TRUTH) — to
+reason correctly about what the condition currently does: whether it
+restricts an action, imposes disadvantage, forces a save, ends under some
+trigger, and so on.
+
+Never paste or closely paraphrase that description at length. Refer to the
+condition by its plain name; only when its effect actually matters for the
+answer, summarize the relevant part in one short phrase of your own words
+instead of reproducing the supplied text.`;
+
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
 Analyze the supplied character or creature sheet, current state,
@@ -370,6 +397,10 @@ LEGALITY AND RESOURCES. It can still require concentration exactly like
 any other spell of that kind; apply the same concentration-conflict
 rules to it.
 
+HOMEBREW CONDITIONS
+
+${HOMEBREW_CONDITION_RULE}
+
 WEAPON MASTERY
 
 When a weapon attack's sheet entry lists a mastery property, apply it: the
@@ -625,6 +656,10 @@ SOURCE OF TRUTH
   present on the supplied sheet. For a general rules question, answer from
   the official 2024 rules; if a rule is genuinely table-dependent or
   ambiguous, say so briefly rather than inventing a confident specific.
+
+HOMEBREW CONDITIONS
+
+${HOMEBREW_CONDITION_RULE}
 
 CONTEXT
 

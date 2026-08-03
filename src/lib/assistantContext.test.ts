@@ -97,7 +97,7 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("Level 2: 2/2");
   });
 
-  test("lists a custom condition by bare name only, even when it has a description — the model was echoing the raw description back verbatim otherwise — listed before standard conditions", () => {
+  test("lists a custom condition with its description tagged '(homebrew)' — needed so the model can reason about its mechanical effect — listed before standard conditions", () => {
     const character = makeCharacter({
       name: "Ragnar",
       combat: {
@@ -125,8 +125,7 @@ describe("characterAssistantContext", () => {
     const customIndex = context.indexOf("- Chardal's Madness");
     const standardIndex = context.indexOf("- Poisoned");
 
-    expect(context).toContain("- Chardal's Madness");
-    expect(context).not.toContain("Attacks the nearest creature");
+    expect(context).toContain("- Chardal's Madness (homebrew): Attacks the nearest creature, allies included");
     expect(customIndex).toBeGreaterThan(-1);
     expect(customIndex).toBeLessThan(standardIndex);
   });
@@ -455,7 +454,7 @@ describe("creatureAssistantContext", () => {
     expect(context).toContain("Concentrating on a spell right now");
   });
 
-  test("lists a creature's custom condition by bare name only, not its description", () => {
+  test("lists a creature's custom condition with its description tagged '(homebrew)'", () => {
     const creature = makeCreature({
       name: "Jerun",
       customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature, allies included." }],
@@ -463,8 +462,7 @@ describe("creatureAssistantContext", () => {
 
     const context = creatureAssistantContext(creature);
 
-    expect(context).toContain("- Chardal's Madness");
-    expect(context).not.toContain("Attacks the nearest creature");
+    expect(context).toContain("- Chardal's Madness (homebrew): Attacks the nearest creature, allies included.");
   });
 
   test("passes a creature's free-text Senses line through unstructured", () => {

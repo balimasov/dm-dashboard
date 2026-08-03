@@ -39,8 +39,22 @@ function ExhaustionPanel({ level }: { level: number }) {
  */
 const STATUS_BADGE_SIZE = "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
 
-/** Every badge's `InfoTooltip` trigger gets this instead of relying on its default inline-block-hugging-the-text sizing — without it, only the 1-2 glyphs inside the circle were actually hoverable/tappable, not the circle itself (confirmed: the badge visually reads as one round unit, but most of its area did nothing on hover). `absolute inset-0` fills the badge's own `relative` box regardless of the trigger's `inline-block` vs `flex` display tug-of-war that a plain sizing className would risk. */
-const BADGE_HINT_TRIGGER_CLS = "absolute inset-0 flex items-center justify-center";
+/**
+ * Every badge's `InfoTooltip` trigger gets this instead of relying on its
+ * default inline-block-hugging-the-text sizing — without it, only the 1-2
+ * glyphs inside the circle were actually hoverable/tappable, not the circle
+ * itself (confirmed: the badge visually reads as one round unit, but most of
+ * its area did nothing on hover). `absolute inset-0` fills the badge's own
+ * `relative` box, but that box then has to center its own children itself
+ * (it's no longer a small inline-block the badge's own `flex items-center
+ * justify-center` can center as a unit) — `flex!` is Tailwind v4's trailing-
+ * `!important` syntax, required because `InfoTooltip`'s outer span hardcodes
+ * `inline-block`; both classes set `display`, Tailwind's cascade order (not
+ * className string order) silently picked `inline-block` without it,
+ * collapsing the icon/text to the box's top-left corner (confirmed broken in
+ * production).
+ */
+const BADGE_HINT_TRIGGER_CLS = "absolute inset-0 flex! items-center justify-center";
 
 /**
  * Condition badges cycle through a curated, well-spaced set of hues by

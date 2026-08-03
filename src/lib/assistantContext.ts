@@ -44,16 +44,18 @@ import { formatModifier } from "./format";
  * Builds the "Conditions:" block shared by `characterAssistantContext`/
  * `creatureAssistantContext`. A standard condition gets its exact mechanical
  * effect appended (`getConditionInfo`'s short blurb) — a homebrew
- * `CustomCondition` gets *only* its bare name, deliberately not its
- * `description` too: an early version included it here, and the model
- * reliably just echoed the whole thing back verbatim in its own reply
- * (confirmed — a DM-pasted multi-paragraph monster ability came straight
- * back out in the chat bubble). The name alone is still enough for the
- * model to know the state is active and mention it by name; the actual
- * description is one hover away on the card's own badge (`StatusRail.tsx`)
- * and on any mention of the name in the model's reply (`aiGlossary.tsx`
- * registers it there too) — no need to also spend prompt budget staging it
- * for the model to potentially quote back.
+ * `CustomCondition` gets its own supplied `description` the same way,
+ * tagged "(homebrew)" so the model can tell it apart from a standard
+ * condition's blurb. An earlier version withheld the description entirely,
+ * because an even earlier version that *did* include it saw the model
+ * reliably echo the whole thing back verbatim in its own reply (confirmed —
+ * a DM-pasted multi-paragraph monster ability came straight back out in the
+ * chat bubble) — but that traded away the model's ability to reason about
+ * what the condition actually does (e.g. whether it currently restricts an
+ * action), which the DM needs it to do. Restored the description and moved
+ * the actual fix to the prompt instead: `HOMEBREW_CONDITION_RULE` in
+ * `route.ts` explicitly tells the model to use this text for reasoning
+ * without quoting it back.
  *
  * Custom states are listed first — see `StatusRail.tsx`'s own "custom
  * badges render first" comment for the matching reasoning: a standard
@@ -64,7 +66,7 @@ function conditionLines(conditions: string[], customConditions: CustomCondition[
   if (conditions.length === 0 && customConditions.length === 0) return [];
   const lines = ["Conditions:"];
   for (const custom of customConditions) {
-    lines.push(`- ${custom.name}`);
+    lines.push(`- ${custom.name} (homebrew)${custom.description ? `: ${custom.description}` : ""}`);
   }
   for (const condition of conditions) {
     const effect = getConditionInfo(condition);
