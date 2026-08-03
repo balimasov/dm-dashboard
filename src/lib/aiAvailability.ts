@@ -2,7 +2,8 @@ import { Character, Creature } from "./types";
 
 export type AiAvailability = Record<string, string>;
 
-type AvailabilityEntry = { id: string; name: string; label: string };
+/** `remaining` is the raw current count behind `label`'s formatted text — kept alongside it so a caller can filter on "is this actually 0" without re-parsing the label string. */
+type AvailabilityEntry = { id: string; name: string; label: string; remaining: number };
 
 function ordinal(n: number): string {
   const mod100 = n % 100;
@@ -21,16 +22,16 @@ function ordinal(n: number): string {
 
 function availabilityEntries(c: Character): AvailabilityEntry[] {
   const entries: AvailabilityEntry[] = [];
-  for (const r of c.resources) entries.push({ id: r.id, name: r.name, label: `${r.current}/${r.max} charges` });
+  for (const r of c.resources) entries.push({ id: r.id, name: r.name, label: `${r.current}/${r.max} charges`, remaining: r.current });
   for (const f of c.features) {
-    if (f.max != null) entries.push({ id: f.id, name: f.name, label: `${f.current}/${f.max} charges` });
+    if (f.max != null) entries.push({ id: f.id, name: f.name, label: `${f.current}/${f.max} charges`, remaining: f.current ?? 0 });
   }
   for (const s of c.knownSpells) {
     if (s.max != null) {
-      entries.push({ id: s.id, name: s.name, label: `${s.current}/${s.max} charges` });
+      entries.push({ id: s.id, name: s.name, label: `${s.current}/${s.max} charges`, remaining: s.current ?? 0 });
     } else if (s.level > 0) {
       const slot = c.spellSlots.find((sl) => sl.level === s.level);
-      if (slot) entries.push({ id: s.id, name: s.name, label: `${ordinal(s.level)} lvl, ${slot.current}/${slot.max} slots` });
+      if (slot) entries.push({ id: s.id, name: s.name, label: `${ordinal(s.level)} lvl, ${slot.current}/${slot.max} slots`, remaining: slot.current });
     }
   }
   // Same "x{quantity}" convention `InventoryOverview.tsx` already uses for a
@@ -38,7 +39,7 @@ function availabilityEntries(c: Character): AvailabilityEntry[] {
   // Fireball the assistant recommends should show how many are left, same
   // as a spell's own charge pool does.
   for (const item of c.inventory) {
-    if (item.category === "Consumable") entries.push({ id: item.id, name: item.name, label: `x${item.quantity}` });
+    if (item.category === "Consumable") entries.push({ id: item.id, name: item.name, label: `x${item.quantity}`, remaining: item.quantity });
   }
   return entries;
 }
@@ -72,4 +73,30 @@ export function buildAiAvailabilityByName(entity: Character | Creature): AiAvail
   const availability: AiAvailability = {};
   for (const entry of availabilityEntries(entity)) availability[entry.name.trim().toLowerCase()] = entry.label;
   return availability;
+}
+
+/**
+ * The `source_id`s and lowercased names of every limited-use option that's
+ * *actually* at 0 remaining right now — used server-side (`route.ts`) to
+ * drop an option the model returned anyway despite the prompt's own "never
+ * recommend a feature with no remaining uses" rule (confirmed happening in
+ * practice: the model has recommended a bonus-action feature sitting at
+ * "0/2 charges" the sheet itself supplied). Same id-then-name matching
+ * shape as `resolveAiHint`/`buildAiAvailability` above, computed from this
+ * exact data rather than trusted to the model, for the same reason
+ * `buildAiAvailability`'s own doc comment gives: this is real state the app
+ * already has, not something worth leaving to chance. A creature has no
+ * current/max tracking (see `buildAiAvailability`'s doc comment), so this
+ * is always empty for one — nothing to filter there.
+ */
+export function buildAiZeroAvailability(entity: Character | Creature): { ids: Set<string>; names: Set<string> } {
+  if (!("className" in entity)) return { ids: new Set(), names: new Set() };
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  for (const entry of availabilityEntries(entity)) {
+    if (entry.remaining > 0) continue;
+    ids.add(entry.id);
+    names.add(entry.name.trim().toLowerCase());
+  }
+  return { ids, names };
 }

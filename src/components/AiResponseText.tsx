@@ -580,7 +580,7 @@ export function AiResponseText({
         const meta = CATEGORY_META[category];
         return (
           <div key={category}>
-            <h4 className="flex items-center gap-2 pt-1 text-sm font-semibold text-sky-300 first:pt-0">
+            <h4 className="flex items-center gap-2 pt-1 text-base font-bold text-sky-300 first:pt-0">
               <span>{meta.emoji}</span>
               {meta.label}
             </h4>

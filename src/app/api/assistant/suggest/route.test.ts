@@ -259,6 +259,101 @@ describe("POST /api/assistant/suggest", () => {
     expect(body.messages[1].content).toContain("Owned/commanded by: Lilith");
   });
 
+  test("drops a sheet option the model recommended anyway despite it being at 0 remaining charges", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(
+      makeCharacter({
+        name: "Elowen",
+        features: [
+          {
+            id: "feature-0",
+            name: "Innate Sorcery",
+            source: "Class",
+            group: "bonusAction",
+            originType: "class",
+            current: 0,
+            max: 2,
+            recovery: "long-rest",
+          },
+        ],
+      })
+    );
+    const planWithSpentOption = {
+      game_plan: { summary: "Fall back and use a cantrip instead." },
+      options: [
+        {
+          category: "bonus_action",
+          source_id: "feature-0",
+          name: "Innate Sorcery",
+          kind: "sheet",
+          priority: "best",
+          status: "available",
+          description: "Unleash your innate magic.",
+          conditions: [],
+        },
+        {
+          category: "action",
+          source_id: null,
+          name: "Dash",
+          kind: "universal",
+          priority: "alternative",
+          status: "available",
+          description: "Move further away.",
+          conditions: [],
+        },
+      ],
+    };
+    vi.mocked(fetchWithRetry).mockResolvedValue(openAiSuccess(planWithSpentOption));
+
+    const res = await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan" }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const names = json.message.plan.options.map((o: { name: string }) => o.name);
+    expect(names).not.toContain("Innate Sorcery");
+    expect(names).toContain("Dash");
+  });
+
+  test("keeps a sheet option that still has remaining charges", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(
+      makeCharacter({
+        name: "Elowen",
+        features: [
+          {
+            id: "feature-0",
+            name: "Innate Sorcery",
+            source: "Class",
+            group: "bonusAction",
+            originType: "class",
+            current: 1,
+            max: 2,
+            recovery: "long-rest",
+          },
+        ],
+      })
+    );
+    const plan = {
+      game_plan: { summary: "Unleash your innate magic." },
+      options: [
+        {
+          category: "bonus_action",
+          source_id: "feature-0",
+          name: "Innate Sorcery",
+          kind: "sheet",
+          priority: "best",
+          status: "available",
+          description: "Unleash your innate magic.",
+          conditions: [],
+        },
+      ],
+    };
+    vi.mocked(fetchWithRetry).mockResolvedValue(openAiSuccess(plan));
+
+    const res = await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan" }));
+    const json = await res.json();
+    expect(json.message.plan.options.map((o: { name: string }) => o.name)).toContain("Innate Sorcery");
+  });
+
   test("skips a second model call for the exact same question, but still logs a fresh conversation turn", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));

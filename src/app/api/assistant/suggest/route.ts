@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodType } from "zod";
 import { AI_REPLY_JSON_SCHEMA, AI_TACTICAL_RESPONSE_JSON_SCHEMA } from "@/lib/aiOptionContract";
+import { buildAiZeroAvailability } from "@/lib/aiAvailability";
 import { assistantCacheKey, getCachedAssistantResponse, setCachedAssistantResponse } from "@/lib/assistantResponseCache";
 import { characterAssistantContext, companionsContext, creatureAssistantContext, partyTeammatesContext } from "@/lib/assistantContext";
 import { parseJsonBody } from "@/lib/apiRoute";
@@ -14,8 +15,8 @@ import {
   listCreatures,
 } from "@/lib/db";
 import { fetchWithRetry } from "@/lib/fetchWithRetry";
-import { AiReply, aiReplySchema, AiTacticalResponse, aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
-import { AssistantQueryEntityKind } from "@/lib/types";
+import { AiOption, AiReply, aiReplySchema, AiTacticalResponse, aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
+import { AssistantQueryEntityKind, Character } from "@/lib/types";
 
 const LOG_PREFIX = "[assistant/suggest]";
 
@@ -907,8 +908,14 @@ export async function POST(req: Request) {
   let name: string;
   let context: string;
   let selfCharacterId: string | undefined;
+  // Kept in the outer scope (not just inside the `if` below) so the "plan"
+  // branch further down can re-check the model's own returned options
+  // against this exact character's real resource counts — see
+  // `buildAiZeroAvailability`'s own doc comment for why that's necessary
+  // even with the prompt's own "never recommend a spent resource" rule.
+  let character: Character | undefined;
   if (characterId) {
-    const character = getCharacter(characterId);
+    character = getCharacter(characterId) ?? undefined;
     if (!character || character.campaignId !== campaignId) {
       return NextResponse.json({ error: "Character not found." }, { status: 404 });
     }
@@ -1006,6 +1013,25 @@ user_request: ${situation || "(none)"}`;
       if (!result.ok) return result.error;
       setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
+    }
+    // The prompt tells the model never to recommend a spent resource, but
+    // it has been observed doing it anyway (a bonus-action feature sitting
+    // at "0/2 charges" the sheet itself supplied) — dropped here from real
+    // data rather than trusted to the model, same reasoning as
+    // `buildAiZeroAvailability`'s own doc comment. Runs on both a cache hit
+    // and a fresh call, since the bug is in what the model returned, not in
+    // when it was generated. Creature options never hit this (see
+    // `buildAiZeroAvailability` — no current/max tracking to check against).
+    if (character) {
+      const zero = buildAiZeroAvailability(character);
+      const plan = contentResult.data as AiTacticalResponse;
+      plan.options = plan.options.filter((option: AiOption) => {
+        if (option.kind !== "sheet") return true;
+        const nameKey = option.name.trim().toLowerCase();
+        const isZero = (option.source_id && zero.ids.has(option.source_id)) || zero.names.has(nameKey);
+        if (isZero) console.warn(`${LOG_PREFIX} dropped zero-availability option "${option.name}" the model returned anyway`);
+        return !isZero;
+      });
     }
   }
 

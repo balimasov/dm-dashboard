@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildAiAvailability, buildAiAvailabilityByName } from "./aiAvailability";
+import { buildAiAvailability, buildAiAvailabilityByName, buildAiZeroAvailability } from "./aiAvailability";
 import { Character, Creature } from "./types";
 
 function makeCharacter(overrides: Partial<Character> & { name: string }): Character {
@@ -152,5 +152,60 @@ describe("buildAiAvailabilityByName", () => {
 
   test("returns an empty map for a creature", () => {
     expect(buildAiAvailabilityByName(makeCreature({ name: "Ogre" }))).toEqual({});
+  });
+});
+
+describe("buildAiZeroAvailability", () => {
+  test("flags a feature at 0/max charges by id and by lowercased name, used to drop a model-recommended option that's actually spent", () => {
+    const character = makeCharacter({
+      name: "Elowen",
+      features: [
+        { id: "f1", name: "Innate Sorcery", source: "Class", group: "bonusAction", originType: "class", current: 0, max: 2, recovery: "long-rest" },
+      ],
+    });
+
+    const { ids, names } = buildAiZeroAvailability(character);
+    expect(ids.has("f1")).toBe(true);
+    expect(names.has("innate sorcery")).toBe(true);
+  });
+
+  test("doesn't flag a feature that still has remaining charges", () => {
+    const character = makeCharacter({
+      name: "Elowen",
+      features: [
+        { id: "f1", name: "Innate Sorcery", source: "Class", group: "bonusAction", originType: "class", current: 1, max: 2, recovery: "long-rest" },
+      ],
+    });
+
+    const { ids, names } = buildAiZeroAvailability(character);
+    expect(ids.has("f1")).toBe(false);
+    expect(names.has("innate sorcery")).toBe(false);
+  });
+
+  test("flags a consumable item at quantity 0 and a spell level with no slots left", () => {
+    const character = makeCharacter({
+      name: "Bram",
+      inventory: [{ id: "potion-1", name: "Potion of Healing", rarity: "Common", category: "Consumable", quantity: 0 }],
+      knownSpells: [{ id: "s1", name: "Fireball", level: 3, source: "Class" }],
+      spellSlots: [{ level: 3, current: 0, max: 2 }],
+    });
+
+    const { ids, names } = buildAiZeroAvailability(character);
+    expect(ids.has("potion-1")).toBe(true);
+    expect(names.has("potion of healing")).toBe(true);
+    expect(ids.has("s1")).toBe(true);
+    expect(names.has("fireball")).toBe(true);
+  });
+
+  test("never flags a cantrip (unlimited use)", () => {
+    const character = makeCharacter({ name: "Nyra", knownSpells: [{ id: "s3", name: "Fire Bolt", level: 0, source: "Class" }] });
+    const { ids } = buildAiZeroAvailability(character);
+    expect(ids.has("s3")).toBe(false);
+  });
+
+  test("returns empty sets for a creature", () => {
+    const { ids, names } = buildAiZeroAvailability(makeCreature({ name: "Ogre" }));
+    expect(ids.size).toBe(0);
+    expect(names.size).toBe(0);
   });
 });
