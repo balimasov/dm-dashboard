@@ -20,10 +20,12 @@ import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from 
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
+import { characterReminders } from "@/lib/reminders";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { EditCharacterModal } from "./EditCharacterModal";
 import { SkillPanel } from "./SkillPanel";
+import { AskAiPill } from "./ui/AskAiPill";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { DamageInfoList } from "./ui/DamageInfoList";
@@ -49,6 +51,7 @@ import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { RecoveryBadge } from "./ui/RecoveryBadge";
+import { ReminderBadge } from "./ui/ReminderBadge";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
 import { Modal } from "./ui/Modal";
@@ -286,10 +289,12 @@ export function CharacterDetailsModal({
           : "border-slate-800 bg-slate-950"
       }`}
     >
-        {/* Sync (left) + kebab actions menu (right) share one row, level with
-            each other — keeps the menu off the header row above, where it
-            would crowd the Heroic Inspiration star at that row's right
-            edge. */}
+        {/* Sync (left) + reminder badge/AI pill/kebab (right) share one row,
+            level with each other — keeps the cluster off the header row
+            above, where it would crowd the Heroic Inspiration star at that
+            row's right edge. Same chips, same order, as the compact card's
+            own row (`CharacterCard`) — this modal is a superset of the card,
+            not a different view of the same actions. */}
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <DdbSyncStatus
@@ -300,16 +305,22 @@ export function CharacterDetailsModal({
               error={syncError}
             />
           </div>
-          <EntityActionsMenu
-            onEdit={() => setEditOpen(true)}
-            name={c.name}
-            hidden={c.hidden}
-            onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
-            onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
-            syncing={syncing}
-            onAskAi={() => setAiOpen(true)}
-            onRemove={onRemove ? () => onRemove(c.id) : undefined}
-          />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <ReminderBadge
+              group={characterReminders(c)}
+              onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
+            />
+            <AskAiPill onClick={() => setAiOpen(true)} />
+            <EntityActionsMenu
+              onEdit={() => setEditOpen(true)}
+              name={c.name}
+              hidden={c.hidden}
+              onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+              onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
+              syncing={syncing}
+              onRemove={onRemove ? () => onRemove(c.id) : undefined}
+            />
+          </div>
         </div>
 
         {/* Combat state — same block as the main card (no divider above it, matching the card's own spacing between this and the sync block), so this modal is a superset of it rather than a different view. */}

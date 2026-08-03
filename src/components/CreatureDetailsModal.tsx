@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
+import { creatureReminders } from "@/lib/reminders";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { EditCreatureModal } from "./EditCreatureModal";
+import { AskAiPill } from "./ui/AskAiPill";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { IconButton } from "./ui/IconButton";
 import { Modal } from "./ui/Modal";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
+import { ReminderBadge } from "./ui/ReminderBadge";
 import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -93,24 +96,32 @@ export function CreatureDetailsModal({
           : "border-slate-800 bg-slate-950"
       }`}
     >
-        {/* Created/edited timestamp (left) + kebab actions menu (right) share
-            one row — same placement as `CharacterDetailsModal`'s own
-            sync+actions row, just with a last-edited stamp standing in for
-            the D&D Beyond sync line a creature has no equivalent of. */}
+        {/* Created/edited timestamp (left) + reminder badge/AI pill/kebab
+            (right) share one row — same placement, chips, and order as
+            `CharacterDetailsModal`'s own sync+actions row, just with a
+            last-edited stamp standing in for the D&D Beyond sync line a
+            creature has no equivalent of. Same cluster as the compact card's
+            own row (`CreatureCard`) — this modal is a superset of the card. */}
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
           </div>
-          <EntityActionsMenu
-            onEdit={() => setEditOpen(true)}
-            name={creature.name}
-            hidden={creature.hidden}
-            onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
-            onDuplicate={onDuplicate}
-            onShowHpHistory={() => setHpHistoryOpen(true)}
-            onAskAi={() => setAiOpen(true)}
-            onRemove={onRemove ? () => onRemove(creature.id) : undefined}
-          />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <ReminderBadge
+              group={creatureReminders(creature)}
+              onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+            />
+            <AskAiPill onClick={() => setAiOpen(true)} />
+            <EntityActionsMenu
+              onEdit={() => setEditOpen(true)}
+              name={creature.name}
+              hidden={creature.hidden}
+              onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+              onDuplicate={onDuplicate}
+              onShowHpHistory={() => setHpHistoryOpen(true)}
+              onRemove={onRemove ? () => onRemove(creature.id) : undefined}
+            />
+          </div>
         </div>
 
         <CreatureStatBlock creature={creature} onUpdate={onUpdate} />

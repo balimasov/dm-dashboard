@@ -1,7 +1,7 @@
 "use client";
 
 import { confirmRemoveFromCampaign } from "@/lib/confirm";
-import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, SparklesIcon, TrashIcon } from "./icons";
+import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
 /**
@@ -25,7 +25,6 @@ export function EntityActionsMenu({
   syncing,
   onDuplicate,
   onShowHpHistory,
-  onAskAi,
   onRemove,
   variant = "plain",
 }: {
@@ -37,8 +36,6 @@ export function EntityActionsMenu({
   syncing?: boolean;
   onDuplicate?: () => void;
   onShowHpHistory?: () => void;
-  /** Opens `AiAssistantModal` — "what can this character/creature do right now," given their current spell slots/charges/HP/conditions. */
-  onAskAi?: () => void;
   onRemove?: () => void;
   variant?: "boxed" | "plain";
 }) {
@@ -64,12 +61,6 @@ export function EntityActionsMenu({
         <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onShowHpHistory}>
           <ClockIcon className="h-4 w-4 shrink-0" />
           HP History
-        </button>
-      )}
-      {onAskAi && (
-        <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onAskAi}>
-          <SparklesIcon className="h-4 w-4 shrink-0" />
-          Ask AI
         </button>
       )}
       {onToggleHidden && (
