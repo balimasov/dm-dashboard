@@ -539,7 +539,7 @@ export function AiAssistantModal({
           </div>
         )}
         {photoError && <p className={INLINE_ERROR_CLS}>{photoError}</p>}
-        <div className="flex items-end gap-1.5 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-1.5 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+        <div className="flex items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-1.5 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
           <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
           <IconButton
             onClick={() => photoInputRef.current?.click()}
@@ -547,7 +547,6 @@ export function AiAssistantModal({
             tone="muted"
             aria-label="Attach a photo of the battlefield"
             title="Attach a photo of the battlefield (experimental)"
-            className="mb-0.5"
           >
             <ImageIcon className="h-4 w-4" />
           </IconButton>

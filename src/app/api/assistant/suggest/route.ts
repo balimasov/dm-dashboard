@@ -81,9 +81,13 @@ size or the photo's framing/zoom.
 
 Read positions, distances, terrain, and cover from the photo by counting
 grid squares between miniatures and features, not by eyeballing raw
-pixel distances in the image — a square directly adjacent is 5 ft, two
-squares away is 10 ft, and so on, exactly like a supplied numeric
-distance elsewhere in this prompt.
+pixel distances in the image. Count distance along the shortest path
+through the grid between two points, in squares — straight and diagonal
+movement cost the same, so crossing one square, in any direction
+(including diagonally), is 5 ft: a square directly adjacent, orthogonally
+or diagonally, is 5 ft; two squares away by the shortest grid path is
+10 ft; and so on, exactly like a supplied numeric distance elsewhere in
+this prompt.
 
 A photo can be affected by camera angle, lighting, glare, and a miniature
 partly hiding another miniature or the grid line beneath it. Treat a
