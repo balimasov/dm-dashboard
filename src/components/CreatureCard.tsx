@@ -10,6 +10,7 @@ import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { AskAiPill } from "./ui/AskAiPill";
 import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { CreatureTimestampStatus } from "./ui/CreatureTimestampStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
@@ -96,14 +97,16 @@ export function CreatureCard({
         <div className="min-w-0 flex-1">
           <CreatureTimestampStatus createdAt={creature.createdAt} updatedAt={creature.updatedAt} />
         </div>
-        {/* Badge sits right next to the kebab (own tighter `gap-1.5`, vs.
+        {/* Cluster sits right next to the kebab (own tighter `gap-1.5`, vs.
             the row's own `gap-3` to the timestamp block) — same convention
-            as `CharacterCard`'s equivalent row. */}
+            as `CharacterCard`'s equivalent row, including the reminder badge
+            (conditional) going before the always-present AI pill. */}
         <div className="flex shrink-0 items-center gap-1.5">
           <ReminderBadge
             group={creatureReminders(creature)}
             onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
           />
+          <AskAiPill onClick={() => setAiOpen(true)} />
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}
             name={creature.name}
@@ -111,7 +114,6 @@ export function CreatureCard({
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
             onDuplicate={onDuplicate}
             onShowHpHistory={() => setHpHistoryOpen(true)}
-            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}
           />
         </div>

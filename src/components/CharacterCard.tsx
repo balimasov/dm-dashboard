@@ -26,6 +26,7 @@ import {
   SPEED_HINT_PANEL,
   VULNERABLE_HINT_PANEL,
 } from "./ui/combatStatHints";
+import { AskAiPill } from "./ui/AskAiPill";
 import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
@@ -106,15 +107,19 @@ export function CharacterCard({
             error={syncError}
           />
         </div>
-        {/* Badge sits right next to the kebab (its own small `gap-1.5`,
+        {/* Cluster sits right next to the kebab (its own small `gap-1.5`,
             tighter than the row's own `gap-3` to the sync block) rather than
             centered in the leftover space between the two — reads as part
-            of the same corner of controls instead of floating mid-row. */}
+            of the same corner of controls instead of floating mid-row. The
+            reminder badge (conditional) goes before the always-present AI
+            pill, which stays immediately next to the kebab either way — see
+            `AskAiPill`'s doc comment. */}
         <div className="flex shrink-0 items-center gap-1.5">
           <ReminderBadge
             group={characterReminders(c)}
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
           />
+          <AskAiPill onClick={() => setAiOpen(true)} />
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}
             name={c.name}
@@ -122,7 +127,6 @@ export function CharacterCard({
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
             onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
             syncing={syncing}
-            onAskAi={() => setAiOpen(true)}
             onRemove={onRemove ? () => onRemove(c.id) : undefined}
           />
         </div>
