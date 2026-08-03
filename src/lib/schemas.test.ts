@@ -447,6 +447,43 @@ describe("assistantSuggestSchema", () => {
     const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", intent: "chat" });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a JPEG data URL as image", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      image: `data:image/jpeg;base64,${"A".repeat(100)}`,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an image that isn't a JPEG data URL — the frontend always re-encodes through canvas before sending, so anything else is unexpected", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      image: `data:image/png;base64,${"A".repeat(100)}`,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an oversized image payload", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      image: `data:image/jpeg;base64,${"A".repeat(4_000_001)}`,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts intent \"ask\" with an attached image and no typed situation — the photo alone is enough to ask about", () => {
+    const result = assistantSuggestSchema.safeParse({
+      campaignId: "campaign-1",
+      characterId: "char-1",
+      intent: "ask",
+      image: `data:image/jpeg;base64,${"A".repeat(100)}`,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("aiOptionSchema / aiTacticalResponseSchema", () => {

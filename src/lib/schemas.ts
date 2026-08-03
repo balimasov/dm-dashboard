@@ -462,11 +462,31 @@ export const assistantSuggestSchema = z
      * text, so this always lines up with whether `situation` is present.
      */
     response_mode: z.enum(["overview", "focused"]).default("overview"),
+    /**
+     * An optional photo of the physical battle map, sent to the model as a
+     * vision input alongside the usual text context (see the prompt's
+     * BATTLEFIELD PHOTO section in `route.ts`) — experimental, not
+     * persisted anywhere (`db.ts`'s `assistant_messages` table has no field
+     * for it; only a plain-text marker survives into `situation`/`query`,
+     * see `AiAssistantModal`'s own comment). Always a JPEG data URL:
+     * `AiAssistantModal` re-encodes whatever image format the DM picked
+     * through a `<canvas>` before ever sending it, both to bound the
+     * payload size (an unresized phone photo can be several MB) and so the
+     * server only ever has to validate one format. The 4,000,000-char cap
+     * is generous headroom over that resized size, not the primary size
+     * control — it exists purely so a malformed/oversized body fails fast
+     * with a clear 400 instead of being handed to `fetch` as-is.
+     */
+    image: z
+      .string()
+      .max(4_000_000)
+      .regex(/^data:image\/jpeg;base64,/)
+      .optional(),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",
   })
-  .refine((data) => data.intent !== "ask" || Boolean(data.situation?.trim()), {
+  .refine((data) => data.intent !== "ask" || Boolean(data.situation?.trim()) || Boolean(data.image), {
     message: "situation is required when intent is \"ask\".",
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { buildAiAvailability, buildAiAvailabilityByName } from "@/lib/aiAvailability";
 import { parseJsonOrThrow } from "@/lib/apiClient";
@@ -12,11 +12,51 @@ import { CollapseChevron } from "./ui/CollapseChevron";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
 import { AI_CHIP_CLS } from "./ui/containerStyles";
-import { SendIcon, SparklesIcon, TrashOutlineIcon } from "./ui/icons";
+import { ImageIcon, SendIcon, SparklesIcon, TrashOutlineIcon } from "./ui/icons";
 import { Spinner } from "./ui/Spinner";
 import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
 type Target = { campaignId: string; characterId: string } | { campaignId: string; creatureId: string };
+
+/**
+ * Longest edge a battlefield photo gets downscaled to before it's ever sent
+ * anywhere — a phone camera photo can easily be 3000-4000px/several MB,
+ * which is both slow to upload and mostly wasted resolution for reading a
+ * grid of 5-ft squares. Re-encoded to JPEG regardless of the original
+ * format (HEIC, PNG, whatever the phone produced) so the server only ever
+ * has to validate one shape (see `assistantSuggestSchema`'s own comment).
+ */
+const BATTLEFIELD_PHOTO_MAX_DIMENSION = 1280;
+const BATTLEFIELD_PHOTO_JPEG_QUALITY = 0.72;
+
+/** Downscales/re-encodes an arbitrary image file to a bounded-size JPEG data URL via an offscreen `<canvas>` — see `BATTLEFIELD_PHOTO_MAX_DIMENSION`'s own comment for why. */
+function resizeBattlefieldPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, BATTLEFIELD_PHOTO_MAX_DIMENSION / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas isn't supported in this browser."));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", BATTLEFIELD_PHOTO_JPEG_QUALITY));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Couldn't read that image."));
+    };
+    img.src = objectUrl;
+  });
+}
 
 /**
  * The canned follow-up questions shown under the latest plan card. Each has
@@ -226,8 +266,17 @@ export function AiAssistantModal({
   // clears it, since a rebuilt plan's own `query` is shown inside its
   // `GivenBox` instead, not as a bubble.
   const [pendingAsk, setPendingAsk] = useState<{ text: string; createdAt: string } | null>(null);
+  // Experimental "recognize the battlefield from a photo" input — a JPEG
+  // data URL once a file is picked and resized (see `resizeBattlefieldPhoto`),
+  // sent as `image` alongside the usual text context and cleared the moment
+  // a message actually goes out (see `submit`). Never persisted: only a
+  // plain-text marker survives into the conversation history, not the photo
+  // itself (see `submit`'s own comment).
+  const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
   // The most recently appended message's own wrapper (see the `.map` below)
   // — scrolled to its *top* when a new one arrives (see the effect below),
@@ -314,10 +363,23 @@ export function AiAssistantModal({
     // call for the exact same question — the buttons below are also
     // disabled while loading, this covers the Enter-key path too.
     if (loading) return;
+    // A battlefield photo isn't persisted anywhere (see `assistantSuggestSchema`'s
+    // own comment) — this plain-text marker is what actually survives into
+    // `situation`/the conversation history's `query`, so a DM scrolling back
+    // through past turns can still see a photo was part of the question,
+    // even though the bytes themselves are long gone.
+    const photoNote = attachedPhoto ? "📷 Photo of the battlefield attached." : "";
+    const combinedText = [photoNote, text].filter(Boolean).join("\n\n");
     setLoading(true);
     setError(null);
-    setPendingAsk(intent === "ask" ? { text, createdAt: new Date().toISOString() } : null);
+    setPendingAsk(intent === "ask" ? { text: combinedText, createdAt: new Date().toISOString() } : null);
+    // Keyed on the DM's own typed note, not `combinedText` — attaching a
+    // photo with no typed request is still "what's my best move," the same
+    // "overview" mode an empty bar already gets; only *typed* text narrows
+    // it to "focused."
     const responseMode = text ? "focused" : "overview";
+    const image = attachedPhoto;
+    setAttachedPhoto(null);
     fetch("/api/assistant/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -325,7 +387,8 @@ export function AiAssistantModal({
         ...target,
         intent,
         ...(intent === "plan" ? { response_mode: responseMode } : {}),
-        ...(text ? { situation: text } : {}),
+        ...(combinedText ? { situation: combinedText } : {}),
+        ...(image ? { image } : {}),
       }),
     })
       .then((res) => parseJsonOrThrow<{ message: AssistantChatMessage }>(res, "The AI assistant couldn't answer right now."))
@@ -348,6 +411,20 @@ export function AiAssistantModal({
     if (!text) return;
     setSituation("");
     submit("ask", text);
+  }
+
+  function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow picking the exact same file again later
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    setPhotoError(null);
+    resizeBattlefieldPhoto(file)
+      .then(setAttachedPhoto)
+      .catch(() => setPhotoError("Couldn't read that image."));
   }
 
   function onDeleteHistory() {
@@ -448,7 +525,32 @@ export function AiAssistantModal({
       </div>
 
       <div className="flex shrink-0 flex-col gap-2 border-t border-slate-800 pt-3">
-        <div className="flex items-end gap-2 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-4 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+        {/* Experimental battlefield-photo attach — see `resizeBattlefieldPhoto`'s
+            own comment. Only ever one photo at a time, cleared the moment a
+            message actually sends (see `submit`). */}
+        {attachedPhoto && (
+          <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/40 p-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a locally resized data URL, not a remote asset next/image would optimize */}
+            <img src={attachedPhoto} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+            <p className="flex-1 truncate text-xs text-slate-400">Battlefield photo attached</p>
+            <IconButton onClick={() => setAttachedPhoto(null)} aria-label="Remove photo" title="Remove photo">
+              ✕
+            </IconButton>
+          </div>
+        )}
+        {photoError && <p className={INLINE_ERROR_CLS}>{photoError}</p>}
+        <div className="flex items-end gap-1.5 rounded-2xl border border-slate-800 bg-slate-950 py-1.5 pl-1.5 pr-1.5 focus-within:border-sky-600 focus-within:ring-2 focus-within:ring-sky-600/30">
+          <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+          <IconButton
+            onClick={() => photoInputRef.current?.click()}
+            disabled={loading}
+            tone="muted"
+            aria-label="Attach a photo of the battlefield"
+            title="Attach a photo of the battlefield (experimental)"
+            className="mb-0.5"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </IconButton>
           <textarea
             ref={textareaRef}
             autoFocus

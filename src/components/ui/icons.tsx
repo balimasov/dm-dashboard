@@ -257,6 +257,17 @@ export function SendIcon({ className }: { className?: string }) {
   );
 }
 
+/** A picture-frame-plus-mountain glyph — `AiAssistantModal`'s "attach a battlefield photo" trigger. */
+export function ImageIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor" stroke="none" />
+      <path d="M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.12 0L4 19" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Diagonal resize-grip glyph — two parallel strokes toward a corner, `FloatingPanel`'s bottom-right resize handle. */
 export function ResizeGripIcon({ className }: { className?: string }) {
   return (

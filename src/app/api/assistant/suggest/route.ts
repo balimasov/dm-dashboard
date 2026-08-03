@@ -58,6 +58,48 @@ recognizes every one of these terms directly from plain text (both
 sheet-supplied names and general D&D vocabulary) and adds the matching
 hover-hint on its own; a bracket only breaks that instead of helping it.`;
 
+/**
+ * Shared verbatim between `SYSTEM_PROMPT` and `ASK_SYSTEM_PROMPT` for the
+ * same reason `ABILITY_MENTION_RULE` is above. Experimental feature: the DM
+ * can attach a photo instead of (or alongside) describing the battlefield in
+ * text — see `AiAssistantModal`'s attach button and `image` in
+ * `assistantSuggestSchema`. Told explicitly that it's almost always a photo
+ * of a *physical* tabletop, not a VTT screenshot, because the model has no
+ * other way to know that a huge amount of shared training-data intuition
+ * about tokens/grids/fog-of-war on Roll20-style digital maps doesn't apply
+ * here — a real photo has camera angle, lighting, and minis physically
+ * occluding the grid lines under them, none of which a digital screenshot
+ * would.
+ */
+const BATTLEFIELD_PHOTO_RULE = `When battlefield_photo is "attached", an image is included with this
+request — almost always a photo of a physical tabletop battle map with
+miniatures on it, taken with a phone camera, not a digital screenshot.
+
+Physical battle maps are marked with a square grid. Each grid square is
+5 feet, the standard D&D scale, regardless of the map's real physical
+size or the photo's framing/zoom.
+
+Read positions, distances, terrain, and cover from the photo by counting
+grid squares between miniatures and features, not by eyeballing raw
+pixel distances in the image — a square directly adjacent is 5 ft, two
+squares away is 10 ft, and so on, exactly like a supplied numeric
+distance elsewhere in this prompt.
+
+A photo can be affected by camera angle, lighting, glare, and a miniature
+partly hiding another miniature or the grid line beneath it. Treat a
+position, distance, or line-of-sight read from the photo as your best
+reading of it, not a certainty the way an explicitly supplied numeric
+value would be — say so in game_plan.summary (or the reply, for a direct
+question) when that uncertainty could actually change the recommendation,
+the same way missing battlefield information already gets flagged
+elsewhere in this prompt.
+
+When user_request also describes the scene in text, the photo and the
+text describe the same moment — use both together. If they appear to
+disagree (e.g. the text says an enemy is out of range but the photo's
+grid suggests otherwise), say so rather than silently picking one over
+the other.`;
+
 const SYSTEM_PROMPT = `You are a tactical tabletop RPG assistant for Dungeons & Dragons.
 
 Analyze the supplied character or creature sheet, current state,
@@ -98,6 +140,10 @@ SOURCE OF TRUTH
   source_id. Never invent or transform an ID. If you cannot find an exact
   matching [id] for an ability you're about to mention, it isn't on the
   sheet — leave it out.
+
+BATTLEFIELD PHOTO
+
+${BATTLEFIELD_PHOTO_RULE}
 
 RESPONSE MODE
 
@@ -693,6 +739,10 @@ SOURCE OF TRUTH
   the official 2024 rules; if a rule is genuinely table-dependent or
   ambiguous, say so briefly rather than inventing a confident specific.
 
+BATTLEFIELD PHOTO
+
+${BATTLEFIELD_PHOTO_RULE}
+
 CONTEXT
 
 - previous_summary, when supplied, is the most recent turn of this same
@@ -804,13 +854,22 @@ type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextRespon
  * paths differ only in which prompt, JSON Schema, and zod schema they use;
  * everything else (retry/timeout via `fetchWithRetry`, refusal/malformed/
  * validation-failure handling and logging) is identical.
+ *
+ * `image` (a JPEG data URL — see `assistantSuggestSchema`'s own doc comment)
+ * switches the user message's `content` from a plain string to OpenAI's
+ * multi-part vision shape (a text part plus an `image_url` part) — the
+ * standard way to attach an image to a chat-completions request. Omitted
+ * entirely (plain string) when there's no photo, both because it's the
+ * simpler shape and because sending an empty/absent image part to a model
+ * that doesn't need it is pure waste.
  */
 async function callAssistantModel<T>(
   systemPrompt: string,
   userContent: string,
   jsonSchema: object,
   schemaName: string,
-  responseSchema: ZodType<T>
+  responseSchema: ZodType<T>,
+  image?: string
 ): Promise<ModelCallResult<T>> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -819,6 +878,13 @@ async function callAssistantModel<T>(
       error: NextResponse.json({ error: "The AI assistant isn't configured yet — ask your DM to set OPENAI_API_KEY." }, { status: 500 }),
     };
   }
+
+  const userMessageContent = image
+    ? [
+        { type: "text", text: userContent },
+        { type: "image_url", image_url: { url: image } },
+      ]
+    : userContent;
 
   let upstream: Response;
   try {
@@ -831,7 +897,7 @@ async function callAssistantModel<T>(
         response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
+          { role: "user", content: userMessageContent },
         ],
       }),
     });
@@ -896,7 +962,7 @@ async function callAssistantModel<T>(
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode, intent } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, intent, image } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -965,22 +1031,27 @@ ${context}
 
 output_language: ${OUTPUT_LANGUAGE}
 previous_summary: ${previousContext || "(none)"}
+battlefield_photo: ${image ? "attached" : "not attached"}
 user_request: ${situation}`;
 
     // Keyed on the exact context text (and previous_summary), so re-asking
     // the exact same question seconds later (nothing on the sheet changed)
-    // skips a second paid LLM call — see `assistantResponseCache.ts`. The
-    // *conversation record* is still always created fresh below, even on a
-    // cache hit: the chat log's whole point is showing what was actually
-    // asked/answered, not deduplicating visible turns.
-    const cacheKey = assistantCacheKey(entityId, "ask", "ask", situation, context, previousContext);
-    const cached = getCachedAssistantResponse<AiReply>(cacheKey);
+    // skips a second paid LLM call — see `assistantResponseCache.ts`. Never
+    // cached at all when a photo is attached: hashing the full base64
+    // payload into the key would be wasteful, and two requests that happen
+    // to share the same typed text but attach two different photos of two
+    // different battlefield moments must never collide on one cached
+    // answer. The *conversation record* is still always created fresh
+    // below, even on a cache hit: the chat log's whole point is showing
+    // what was actually asked/answered, not deduplicating visible turns.
+    const cacheKey = image ? null : assistantCacheKey(entityId, "ask", "ask", situation, context, previousContext);
+    const cached = cacheKey ? getCachedAssistantResponse<AiReply>(cacheKey) : undefined;
     if (cached) {
       contentResult = { ok: true, data: cached };
     } else {
-      const result = await callAssistantModel(ASK_SYSTEM_PROMPT, userContent, AI_REPLY_JSON_SCHEMA, "DndAssistantReply", aiReplySchema);
+      const result = await callAssistantModel(ASK_SYSTEM_PROMPT, userContent, AI_REPLY_JSON_SCHEMA, "DndAssistantReply", aiReplySchema, image);
       if (!result.ok) return result.error;
-      setCachedAssistantResponse(cacheKey, result.data);
+      if (cacheKey) setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
     }
   } else {
@@ -996,10 +1067,12 @@ ${context}
 
 response_mode: ${response_mode}
 output_language: ${OUTPUT_LANGUAGE}
+battlefield_photo: ${image ? "attached" : "not attached"}
 user_request: ${situation || "(none)"}`;
 
-    const cacheKey = assistantCacheKey(entityId, "plan", response_mode, situation, context);
-    const cached = getCachedAssistantResponse<AiTacticalResponse>(cacheKey);
+    // See the "ask" branch above for why a photo bypasses the cache entirely.
+    const cacheKey = image ? null : assistantCacheKey(entityId, "plan", response_mode, situation, context);
+    const cached = cacheKey ? getCachedAssistantResponse<AiTacticalResponse>(cacheKey) : undefined;
     if (cached) {
       contentResult = { ok: true, data: cached };
     } else {
@@ -1008,10 +1081,11 @@ user_request: ${situation || "(none)"}`;
         userContent,
         AI_TACTICAL_RESPONSE_JSON_SCHEMA,
         "DndTacticalResponse",
-        aiTacticalResponseSchema
+        aiTacticalResponseSchema,
+        image
       );
       if (!result.ok) return result.error;
-      setCachedAssistantResponse(cacheKey, result.data);
+      if (cacheKey) setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
     }
     // The prompt tells the model never to recommend a spent resource, but

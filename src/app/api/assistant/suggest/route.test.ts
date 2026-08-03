@@ -367,6 +367,54 @@ describe("POST /api/assistant/suggest", () => {
     expect(db.createAssistantMessage).toHaveBeenCalledTimes(2);
   });
 
+  const TEST_IMAGE = "data:image/jpeg;base64,AAAA";
+
+  test("sends an attached battlefield photo as a vision content part alongside the text, and flags it in the prompt", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    vi.mocked(fetchWithRetry).mockResolvedValue(openAiSuccess(VALID_PLAN));
+
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", image: TEST_IMAGE }));
+
+    const [, init] = vi.mocked(fetchWithRetry).mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    const userMessage = body.messages[1];
+    expect(userMessage.content).toEqual([
+      { type: "text", text: expect.stringContaining("battlefield_photo: attached") },
+      { type: "image_url", image_url: { url: TEST_IMAGE } },
+    ]);
+  });
+
+  test("sends plain string content (no image part) when no photo is attached", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    vi.mocked(fetchWithRetry).mockResolvedValue(openAiSuccess(VALID_PLAN));
+
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan" }));
+
+    const [, init] = vi.mocked(fetchWithRetry).mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(typeof body.messages[1].content).toBe("string");
+    expect(body.messages[1].content).toContain("battlefield_photo: not attached");
+  });
+
+  test("never caches a request with an attached photo — two otherwise-identical requests each call the model", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    // A fresh `Response` per call, not `mockResolvedValue` — a `Response`
+    // body can only be read (`.json()`) once, and this test is the first
+    // one where `fetchWithRetry` is genuinely expected to fire twice for
+    // the same mocked return value (every other double-`POST` test relies
+    // on the cache to skip the second call entirely).
+    vi.mocked(fetchWithRetry).mockImplementation(() => Promise.resolve(openAiSuccess(VALID_REPLY)));
+
+    const body = { campaignId: "camp", characterId: "char-1", intent: "ask", situation: "what should I do?", image: TEST_IMAGE };
+    await POST(postRequest(body));
+    await POST(postRequest(body));
+
+    expect(fetchWithRetry).toHaveBeenCalledTimes(2);
+  });
+
   test("surfaces the model's own refusal message", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
