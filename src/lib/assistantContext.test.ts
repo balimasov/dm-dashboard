@@ -220,6 +220,28 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[f1] Extra Attack: You can attack twice, instead of once, whenever you take the Attack action.");
   });
 
+  test("includes an action-economy feature's own description, e.g. a feat-granted bonus action the model can't infer from its name alone", () => {
+    const character = makeCharacter({
+      name: "Ragnar",
+      features: [
+        {
+          id: "feature-3",
+          name: "Hew",
+          source: "Great Weapon Master",
+          group: "bonusAction",
+          originType: "feat",
+          description: "Immediately after you score a Critical Hit with a Melee weapon or reduce a creature to 0 Hit Points with one, you can make one attack with the same weapon as a Bonus Action.",
+        },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain(
+      "[feature-3] (bonusAction) Hew — Immediately after you score a Critical Hit with a Melee weapon or reduce a creature to 0 Hit Points with one, you can make one attack with the same weapon as a Bonus Action."
+    );
+  });
+
   test("includes a spell's casting time/range/damage/DC detail alongside its level", () => {
     const character = makeCharacter({
       name: "Nyra",

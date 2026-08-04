@@ -169,7 +169,8 @@ export function characterAssistantContext(character: Character): string {
     lines.push("Features/traits usable via action economy:");
     for (const f of usableFeatures) {
       const charge = f.max != null ? ` [${f.current}/${f.max}, recovers: ${RECOVERY_LABELS[f.recovery!]}]` : "";
-      lines.push(`- [${f.id}] (${f.group}) ${f.name}${charge}`);
+      const description = f.description ? ` — ${f.description}` : "";
+      lines.push(`- [${f.id}] (${f.group}) ${f.name}${charge}${description}`);
     }
   }
 
