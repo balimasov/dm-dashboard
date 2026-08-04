@@ -44,6 +44,19 @@ const ASK_ASSISTANT_MODEL = "gpt-5.4-mini";
 const ASK_ASSISTANT_TEMPERATURE = 0.4;
 
 /**
+ * `fetchWithRetry`'s own default (45s) is tuned for `ASK_ASSISTANT_MODEL`'s
+ * fast, conversational replies — too tight for `PLAN_ASSISTANT_MODEL`, a
+ * reasoning-tier model that can genuinely take over a minute to think
+ * through a full tactical plan. Left at the fast default, a legitimate
+ * (if slow) plan response gets aborted mid-flight and surfaces to the DM as
+ * "The AI assistant is taking too long to respond" even though the model
+ * would have answered given more time. Ask keeps the fast budget since its
+ * model doesn't need the extra room.
+ */
+const PLAN_ASSISTANT_TIMEOUT_MS = 120_000;
+const ASK_ASSISTANT_TIMEOUT_MS = 45_000;
+
+/**
  * The app has no language switch (see CLAUDE.md — chat and every AI reply
  * are always Ukrainian regardless of code/UI language), so this is a plain
  * constant, not a per-request/per-campaign setting. Named here rather than
@@ -928,6 +941,11 @@ type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextRespon
  * explicitly pass `undefined` — the field is left out of the request body
  * entirely in that case, rather than sending a value the model would 400 on.
  *
+ * `timeoutMs` is likewise required per call site, not left to
+ * `fetchWithRetry`'s own default — see `PLAN_ASSISTANT_TIMEOUT_MS`/
+ * `ASK_ASSISTANT_TIMEOUT_MS`'s own doc comment for why the two intents need
+ * different budgets.
+ *
  * `image` (a JPEG data URL — see `assistantSuggestSchema`'s own doc comment)
  * switches the user message's `content` from a plain string to OpenAI's
  * multi-part vision shape (a text part plus an `image_url` part) — the
@@ -944,6 +962,7 @@ async function callAssistantModel<T>(
   responseSchema: ZodType<T>,
   model: string,
   temperature: number | undefined,
+  timeoutMs: number,
   image?: string
 ): Promise<ModelCallResult<T>> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -963,19 +982,23 @@ async function callAssistantModel<T>(
 
   let upstream: Response;
   try {
-    upstream = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        ...(temperature !== undefined ? { temperature } : {}),
-        response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessageContent },
-        ],
-      }),
-    });
+    upstream = await fetchWithRetry(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          ...(temperature !== undefined ? { temperature } : {}),
+          response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessageContent },
+          ],
+        }),
+      },
+      { timeoutMs }
+    );
   } catch (err) {
     const timedOut = err instanceof DOMException && err.name === "TimeoutError";
     console.error(`${LOG_PREFIX} upstream request failed after retries`, err);
@@ -1132,6 +1155,7 @@ user_request: ${situation}`;
         aiReplySchema,
         ASK_ASSISTANT_MODEL,
         ASK_ASSISTANT_TEMPERATURE,
+        ASK_ASSISTANT_TIMEOUT_MS,
         image
       );
       if (!result.ok) return result.error;
@@ -1168,6 +1192,7 @@ user_request: ${situation || "(none)"}`;
         aiTacticalResponseSchema,
         PLAN_ASSISTANT_MODEL,
         undefined,
+        PLAN_ASSISTANT_TIMEOUT_MS,
         image
       );
       if (!result.ok) return result.error;

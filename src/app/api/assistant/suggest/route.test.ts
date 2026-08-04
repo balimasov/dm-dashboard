@@ -220,6 +220,21 @@ describe("POST /api/assistant/suggest", () => {
     expect(JSON.parse((askInit as RequestInit).body as string).temperature).toBe(0.4);
   });
 
+  test("gives a plan a longer timeout budget than an ask, since the reasoning-tier model genuinely takes longer to respond", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview" }));
+    const [, , planOptions] = vi.mocked(fetchWithRetry).mock.calls[0];
+    expect(planOptions).toEqual({ timeoutMs: 120_000 });
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_REPLY));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "ask", situation: "why?" }));
+    const [, , askOptions] = vi.mocked(fetchWithRetry).mock.calls[1];
+    expect(askOptions).toEqual({ timeoutMs: 45_000 });
+  });
+
   test("returns a reply message on success for an ask, and derives previous_summary from the last plan", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
