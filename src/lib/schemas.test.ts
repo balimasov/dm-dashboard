@@ -487,12 +487,17 @@ describe("assistantSuggestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts every reasoning_effort level PLAN_ASSISTANT_MODEL supports, and omitting it entirely", () => {
-    for (const level of ["none", "low", "medium", "high", "xhigh", "max"]) {
+  it("accepts every reasoning_effort level the picker exposes, and omitting it entirely", () => {
+    for (const level of ["none", "low", "medium", "high"]) {
       const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", reasoning_effort: level });
       expect(result.success).toBe(true);
     }
     expect(assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1" }).success).toBe(true);
+  });
+
+  it("rejects a reasoning_effort level beyond what the picker exposes", () => {
+    const result = assistantSuggestSchema.safeParse({ campaignId: "campaign-1", characterId: "char-1", reasoning_effort: "xhigh" });
+    expect(result.success).toBe(false);
   });
 
   it("rejects an unknown reasoning_effort", () => {

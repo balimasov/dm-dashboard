@@ -12,25 +12,95 @@ import { AiChatReply, AiResponseText } from "./AiResponseText";
 import { CollapseChevron } from "./ui/CollapseChevron";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
-import { AI_CHIP_CLS } from "./ui/containerStyles";
+import { AI_CHIP_CLS, POPOVER_SHELL_CLS } from "./ui/containerStyles";
 import { ImageIcon, SendIcon, SparklesIcon, TrashOutlineIcon } from "./ui/icons";
-import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
 import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS } from "./ui/typography";
 
+const REASONING_EFFORT_LABELS: Record<AiReasoningEffort, string> = {
+  none: "None",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+const REASONING_EFFORT_DESCRIPTIONS: Record<AiReasoningEffort, string> = {
+  none: "Fastest, no deep reasoning",
+  low: "Quick, light check",
+  medium: "Balanced (default)",
+  high: "Most careful, slower",
+};
+
 /**
- * Experimental — lets the DM compare "Suggest move" plan quality/speed
- * across `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) supported
- * `reasoning_effort` levels from the UI instead of guessing from outside.
- * `""` means "don't send the field, let the model use its own default."
- * Irrelevant to "Ask" (that model doesn't support the parameter at all —
- * see `route.ts`'s own comment), so `submit()` only includes it for
- * `intent: "plan"`.
+ * Compact pill + popover living inside the composer's own row (same spot a
+ * ChatGPT-style model/effort picker sits relative to its text input) —
+ * lets the DM compare "Suggest move" plan quality/speed across
+ * `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) `reasoning_effort` levels.
+ * Only ever read by `submit()`'s `intent: "plan"` branch — "Ask" runs on a
+ * different model that doesn't support the parameter at all (see
+ * `route.ts`'s own comment) — hence the "Suggest move only" line in the
+ * popover itself rather than a generic label on the collapsed pill.
+ *
+ * Same outside-click-to-close shape as `SelectMenu`, but not built on that
+ * component: this popover opens *upward* (it sits at the bottom of the
+ * panel) and shows a heading plus a per-option description, neither of
+ * which `SelectMenu`'s generic single-line list supports.
  */
-const REASONING_EFFORT_OPTIONS: SelectMenuOption<AiReasoningEffort | "">[] = [
-  { value: "", label: "Default" },
-  ...AI_REASONING_EFFORT_LEVELS.map((level) => ({ value: level, label: level })),
-];
+function ReasoningEffortPicker({ value, onChange }: { value: AiReasoningEffort; onChange: (value: AiReasoningEffort) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        title="Reasoning effort — Suggest move only"
+        className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-2.5 text-xs font-semibold text-slate-300 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      >
+        {REASONING_EFFORT_LABELS[value]}
+        <span className="text-slate-500">▾</span>
+      </button>
+      {open && (
+        <div className={`absolute bottom-full right-0 z-10 mb-1.5 w-52 py-1 ${POPOVER_SHELL_CLS}`}>
+          <div className="px-3 py-1.5">
+            <p className="text-xs font-semibold text-slate-300">Reasoning effort</p>
+            <p className="text-[11px] text-slate-500">Suggest move only</p>
+          </div>
+          <div className="my-1 h-px bg-slate-800" />
+          {AI_REASONING_EFFORT_LEVELS.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => {
+                onChange(level);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-slate-800 ${
+                level === value ? "text-sky-400" : "text-slate-300"
+              }`}
+            >
+              <span>
+                <span className="block">{REASONING_EFFORT_LABELS[level]}</span>
+                <span className="block text-[11px] text-slate-500">{REASONING_EFFORT_DESCRIPTIONS[level]}</span>
+              </span>
+              {level === value && <span aria-hidden="true">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Target = { campaignId: string; characterId: string } | { campaignId: string; creatureId: string };
 
@@ -309,8 +379,8 @@ export function AiAssistantModal({
   const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
-  // See `REASONING_EFFORT_OPTIONS`'s own comment — experimental, Suggest-move-only.
-  const [reasoningEffort, setReasoningEffort] = useState<AiReasoningEffort | "">("");
+  // See `ReasoningEffortPicker`'s own comment — Suggest-move-only.
+  const [reasoningEffort, setReasoningEffort] = useState<AiReasoningEffort>("medium");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -424,7 +494,7 @@ export function AiAssistantModal({
         ...target,
         intent,
         ...(intent === "plan" ? { response_mode: responseMode } : {}),
-        ...(intent === "plan" && reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
+        ...(intent === "plan" ? { reasoning_effort: reasoningEffort } : {}),
         ...(combinedText ? { situation: combinedText } : {}),
         ...(image ? { image } : {}),
       }),
@@ -608,6 +678,7 @@ export function AiAssistantModal({
             maxLength={500}
             className="max-h-24 flex-1 resize-none bg-transparent py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
           />
+          <ReasoningEffortPicker value={reasoningEffort} onChange={setReasoningEffort} />
         </div>
         {/* Both actions are always on screen, even for the very first
             message — a fresh conversation isn't necessarily starting with
@@ -648,13 +719,6 @@ export function AiAssistantModal({
           <b className="font-semibold text-slate-400">Suggest move:</b> leave note empty for the best move, or add
           details to factor in.
         </p>
-        {/* Experimental — see `REASONING_EFFORT_OPTIONS`'s own comment. Only
-            affects "Suggest move" (plan), so it's grouped with that hint
-            above rather than sitting between the two action buttons. */}
-        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
-          <span>Reasoning effort (experimental):</span>
-          <SelectMenu value={reasoningEffort} onChange={setReasoningEffort} options={REASONING_EFFORT_OPTIONS} className="w-24" />
-        </div>
       </div>
     </FloatingPanel>
   );

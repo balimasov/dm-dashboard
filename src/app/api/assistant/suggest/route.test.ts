@@ -265,9 +265,9 @@ describe("POST /api/assistant/suggest", () => {
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
     vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
 
-    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview", reasoning_effort: "xhigh" }));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview", reasoning_effort: "high" }));
 
-    expect(db.createAssistantMessage).toHaveBeenCalledWith(expect.objectContaining({ reasoningEffort: "xhigh" }));
+    expect(db.createAssistantMessage).toHaveBeenCalledWith(expect.objectContaining({ reasoningEffort: "high" }));
   });
 
   test("never reuses a cached plan across two different reasoning_effort levels for the identical situation — each gets its own fresh model call", async () => {

@@ -438,13 +438,14 @@ export const journalEntryCreateSchema = z.object({
  * correct even if its local state was never populated (a fresh page load).
  */
 /**
- * `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) own supported values for its
- * `reasoning_effort` request parameter, low to high. Exported so
- * `AiAssistantModal`'s experimental selector (letting the DM compare plan
- * quality/speed across levels instead of guessing from outside) and this
- * schema always agree on the exact set without duplicating it by hand.
+ * The subset of `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) supported
+ * `reasoning_effort` values exposed to the DM, low to high — the model
+ * itself also accepts "xhigh"/"max", but `AiAssistantModal`'s picker only
+ * surfaces these four (default "medium") to keep the choice quick to make.
+ * Exported so that picker and this schema always agree on the exact set
+ * without duplicating it by hand.
  */
-export const AI_REASONING_EFFORT_LEVELS = ["none", "low", "medium", "high", "xhigh", "max"] as const;
+export const AI_REASONING_EFFORT_LEVELS = ["none", "low", "medium", "high"] as const;
 export type AiReasoningEffort = (typeof AI_REASONING_EFFORT_LEVELS)[number];
 
 export const assistantSuggestSchema = z
