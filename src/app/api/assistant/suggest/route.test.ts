@@ -190,6 +190,21 @@ describe("POST /api/assistant/suggest", () => {
     );
   });
 
+  test("sends the stronger model for a plan and the regular one for an ask", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview" }));
+    const [, planInit] = vi.mocked(fetchWithRetry).mock.calls[0];
+    expect(JSON.parse((planInit as RequestInit).body as string).model).toBe("gpt-5.6-terra");
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_REPLY));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "ask", situation: "why?" }));
+    const [, askInit] = vi.mocked(fetchWithRetry).mock.calls[1];
+    expect(JSON.parse((askInit as RequestInit).body as string).model).toBe("gpt-5.4-mini");
+  });
+
   test("returns a reply message on success for an ask, and derives previous_summary from the last plan", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));

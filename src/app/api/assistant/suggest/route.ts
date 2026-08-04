@@ -20,8 +20,16 @@ import { AssistantQueryEntityKind, Character } from "@/lib/types";
 
 const LOG_PREFIX = "[assistant/suggest]";
 
-/** The one OpenAI model this route calls — named here instead of inline so swapping it (or reading it from an env var later) is a one-line change, not a search through `callAssistantModel`'s body. */
-const ASSISTANT_MODEL = "gpt-5.4-mini";
+/**
+ * "Suggest move" gets the stronger model — it's the harder reasoning task
+ * (legality across resources/conditions/charges, a strict multi-rule JSON
+ * shape) — while "Ask" stays on the cheaper/faster one, since it's mostly
+ * conversational. Named here instead of inline so swapping either (or
+ * reading them from an env var later) is a one-line change, not a search
+ * through `callAssistantModel`'s body.
+ */
+const PLAN_ASSISTANT_MODEL = "gpt-5.6-terra";
+const ASK_ASSISTANT_MODEL = "gpt-5.4-mini";
 
 /** Low enough to keep rules-heavy tactical output consistent turn to turn, high enough to still vary phrasing — tuned empirically, not derived from anything. */
 const ASSISTANT_TEMPERATURE = 0.4;
@@ -898,9 +906,12 @@ type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextRespon
 
 /**
  * Shared upstream-call/validate/log plumbing for both intents — the two
- * paths differ only in which prompt, JSON Schema, and zod schema they use;
- * everything else (retry/timeout via `fetchWithRetry`, refusal/malformed/
- * validation-failure handling and logging) is identical.
+ * paths differ only in which prompt, JSON Schema, zod schema, and model they
+ * use (see `PLAN_ASSISTANT_MODEL`/`ASK_ASSISTANT_MODEL`); everything else
+ * (retry/timeout via `fetchWithRetry`, refusal/malformed/validation-failure
+ * handling and logging) is identical. `model` is a required argument rather
+ * than defaulted here, so a call site can never silently end up on the
+ * wrong intent's model by omission.
  *
  * `image` (a JPEG data URL — see `assistantSuggestSchema`'s own doc comment)
  * switches the user message's `content` from a plain string to OpenAI's
@@ -916,6 +927,7 @@ async function callAssistantModel<T>(
   jsonSchema: object,
   schemaName: string,
   responseSchema: ZodType<T>,
+  model: string,
   image?: string
 ): Promise<ModelCallResult<T>> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -939,7 +951,7 @@ async function callAssistantModel<T>(
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: ASSISTANT_MODEL,
+        model,
         temperature: ASSISTANT_TEMPERATURE,
         response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
         messages: [
@@ -1096,7 +1108,15 @@ user_request: ${situation}`;
     if (cached) {
       contentResult = { ok: true, data: cached };
     } else {
-      const result = await callAssistantModel(ASK_SYSTEM_PROMPT, userContent, AI_REPLY_JSON_SCHEMA, "DndAssistantReply", aiReplySchema, image);
+      const result = await callAssistantModel(
+        ASK_SYSTEM_PROMPT,
+        userContent,
+        AI_REPLY_JSON_SCHEMA,
+        "DndAssistantReply",
+        aiReplySchema,
+        ASK_ASSISTANT_MODEL,
+        image
+      );
       if (!result.ok) return result.error;
       if (cacheKey) setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
@@ -1129,6 +1149,7 @@ user_request: ${situation || "(none)"}`;
         AI_TACTICAL_RESPONSE_JSON_SCHEMA,
         "DndTacticalResponse",
         aiTacticalResponseSchema,
+        PLAN_ASSISTANT_MODEL,
         image
       );
       if (!result.ok) return result.error;
