@@ -1131,6 +1131,13 @@ export async function POST(req: Request) {
     : undefined;
 
   let contentResult: ModelCallResult<unknown>;
+  // How long the actual upstream model call took — shown next to the
+  // timestamp in `AiAssistantModal`'s "Suggested move" header so the DM can
+  // compare latency across `reasoning_effort` levels. Left `undefined` on a
+  // cache hit: there's no model call to time, and showing a near-zero
+  // duration there would misrepresent the model's own latency rather than
+  // reflect it.
+  let durationMs: number | undefined;
   if (intent === "ask") {
     const userContent = `${name}'s current sheet:
 
@@ -1156,6 +1163,7 @@ user_request: ${situation}`;
     if (cached) {
       contentResult = { ok: true, data: cached };
     } else {
+      const startedAt = Date.now();
       const result = await callAssistantModel(
         ASK_SYSTEM_PROMPT,
         userContent,
@@ -1168,6 +1176,7 @@ user_request: ${situation}`;
         undefined,
         image
       );
+      durationMs = Date.now() - startedAt;
       if (!result.ok) return result.error;
       if (cacheKey) setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
@@ -1194,6 +1203,7 @@ user_request: ${situation || "(none)"}`;
     if (cached) {
       contentResult = { ok: true, data: cached };
     } else {
+      const startedAt = Date.now();
       const result = await callAssistantModel(
         SYSTEM_PROMPT,
         userContent,
@@ -1206,6 +1216,7 @@ user_request: ${situation || "(none)"}`;
         reasoning_effort,
         image
       );
+      durationMs = Date.now() - startedAt;
       if (!result.ok) return result.error;
       if (cacheKey) setCachedAssistantResponse(cacheKey, result.data);
       contentResult = result;
@@ -1241,6 +1252,7 @@ user_request: ${situation || "(none)"}`;
           query: situation!,
           kind: "reply",
           reply: (contentResult.data as AiReply).reply,
+          durationMs,
         })
       : createAssistantMessage({
           campaignId,
@@ -1251,6 +1263,7 @@ user_request: ${situation || "(none)"}`;
           kind: "plan",
           responseMode: response_mode,
           plan: contentResult.data as AiTacticalResponse,
+          durationMs,
         });
 
   return NextResponse.json({ message: chatMessage });

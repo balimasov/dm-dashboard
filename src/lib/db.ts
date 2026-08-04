@@ -821,6 +821,7 @@ export function createAssistantMessage(
         kind: "plan";
         responseMode: "overview" | "focused";
         plan: AiTacticalResponse;
+        durationMs?: number;
       }
     | {
         campaignId: string;
@@ -830,6 +831,7 @@ export function createAssistantMessage(
         query: string;
         kind: "reply";
         reply: AiReply["reply"];
+        durationMs?: number;
       }
 ): AssistantChatMessage {
   const db = getDb();

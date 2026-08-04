@@ -101,6 +101,11 @@ export const QUICK_QUESTIONS: { emoji: string; label: string; query: string }[] 
   },
 ];
 
+/** "(4.2s)" next to the "Suggested move" header's timestamp — see `AssistantChatMessage.durationMs`'s own doc comment for what it measures and when it's absent. */
+function formatDuration(durationMs: number): string {
+  return `(${(durationMs / 1000).toFixed(1)}s)`;
+}
+
 function historyQueryParams(target: Target): string {
   const params = new URLSearchParams({ campaignId: target.campaignId });
   if ("characterId" in target) params.set("characterId", target.characterId);
@@ -162,7 +167,10 @@ function PlanCard({
             <SparklesIcon className="h-3 w-3 shrink-0" />
             Suggested move
           </span>
-          <span className="text-xs text-slate-500">{formatSyncTimestamp(message.createdAt)}</span>
+          <span className="text-xs text-slate-500">
+            {formatSyncTimestamp(message.createdAt)}
+            {message.durationMs !== undefined && ` ${formatDuration(message.durationMs)}`}
+          </span>
         </button>
         {!collapsed && (
           <div className="flex flex-col gap-3 border-t border-sky-900/40 p-3">

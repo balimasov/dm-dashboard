@@ -12,6 +12,15 @@ interface AssistantChatMessageBase {
   /** The DM's free-text question, empty for a plain "Підказати хід"/"Оновити план" ask with no extra details. */
   query: string;
   createdAt: string;
+  /**
+   * How long the upstream model call actually took, in milliseconds —
+   * shown next to `createdAt` in `AiAssistantModal`'s "Suggested move"
+   * header so the DM can compare latency across the assistant's
+   * `reasoning_effort` levels. `undefined` on a cache hit (see
+   * `route.ts`'s own comment) or for any message persisted before this
+   * field existed.
+   */
+  durationMs?: number;
 }
 
 /**

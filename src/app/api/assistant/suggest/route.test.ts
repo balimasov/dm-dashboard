@@ -437,6 +437,20 @@ describe("POST /api/assistant/suggest", () => {
     expect(db.createAssistantMessage).toHaveBeenCalledTimes(2);
   });
 
+  test("records how long the model call actually took on a fresh response, but leaves it out entirely on a cache hit", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    vi.mocked(fetchWithRetry).mockResolvedValue(openAiSuccess(VALID_REPLY));
+
+    const body = { campaignId: "camp", characterId: "char-1", intent: "ask", situation: "how much HP do I have?" };
+    await POST(postRequest(body));
+    await POST(postRequest(body));
+
+    expect(db.createAssistantMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ durationMs: expect.any(Number) }));
+    const secondCallArg = vi.mocked(db.createAssistantMessage).mock.calls[1][0];
+    expect(secondCallArg.durationMs).toBeUndefined();
+  });
+
   const TEST_IMAGE = "data:image/jpeg;base64,AAAA";
 
   test("sends an attached battlefield photo as a vision content part alongside the text, and flags it in the prompt", async () => {
