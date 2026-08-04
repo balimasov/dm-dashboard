@@ -31,8 +31,17 @@ const LOG_PREFIX = "[assistant/suggest]";
 const PLAN_ASSISTANT_MODEL = "gpt-5.6-terra";
 const ASK_ASSISTANT_MODEL = "gpt-5.4-mini";
 
-/** Low enough to keep rules-heavy tactical output consistent turn to turn, high enough to still vary phrasing — tuned empirically, not derived from anything. */
-const ASSISTANT_TEMPERATURE = 0.4;
+/**
+ * Ask-only. Low enough to keep replies consistent turn to turn, high enough
+ * to still vary phrasing — tuned empirically, not derived from anything.
+ * `PLAN_ASSISTANT_MODEL` is a reasoning-tier model that rejects any
+ * `temperature` override outright ("Only the default (1) value is
+ * supported") — the plan call site passes `undefined` instead of this
+ * constant, and `callAssistantModel` omits the field from the request body
+ * entirely when it gets `undefined`, rather than sending a value the model
+ * would reject.
+ */
+const ASK_ASSISTANT_TEMPERATURE = 0.4;
 
 /**
  * The app has no language switch (see CLAUDE.md — chat and every AI reply
@@ -906,12 +915,18 @@ type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextRespon
 
 /**
  * Shared upstream-call/validate/log plumbing for both intents — the two
- * paths differ only in which prompt, JSON Schema, zod schema, and model they
- * use (see `PLAN_ASSISTANT_MODEL`/`ASK_ASSISTANT_MODEL`); everything else
- * (retry/timeout via `fetchWithRetry`, refusal/malformed/validation-failure
- * handling and logging) is identical. `model` is a required argument rather
- * than defaulted here, so a call site can never silently end up on the
- * wrong intent's model by omission.
+ * paths differ only in which prompt, JSON Schema, zod schema, model, and
+ * temperature they use (see `PLAN_ASSISTANT_MODEL`/`ASK_ASSISTANT_MODEL`);
+ * everything else (retry/timeout via `fetchWithRetry`, refusal/malformed/
+ * validation-failure handling and logging) is identical. `model` is a
+ * required argument rather than defaulted here, so a call site can never
+ * silently end up on the wrong intent's model by omission.
+ *
+ * `temperature` is `number | undefined` rather than optional-with-a-default
+ * for the same reason: a reasoning-tier model (`PLAN_ASSISTANT_MODEL`)
+ * rejects any override of its own default outright, so that call site must
+ * explicitly pass `undefined` — the field is left out of the request body
+ * entirely in that case, rather than sending a value the model would 400 on.
  *
  * `image` (a JPEG data URL — see `assistantSuggestSchema`'s own doc comment)
  * switches the user message's `content` from a plain string to OpenAI's
@@ -928,6 +943,7 @@ async function callAssistantModel<T>(
   schemaName: string,
   responseSchema: ZodType<T>,
   model: string,
+  temperature: number | undefined,
   image?: string
 ): Promise<ModelCallResult<T>> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -952,7 +968,7 @@ async function callAssistantModel<T>(
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
-        temperature: ASSISTANT_TEMPERATURE,
+        ...(temperature !== undefined ? { temperature } : {}),
         response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
         messages: [
           { role: "system", content: systemPrompt },
@@ -1115,6 +1131,7 @@ user_request: ${situation}`;
         "DndAssistantReply",
         aiReplySchema,
         ASK_ASSISTANT_MODEL,
+        ASK_ASSISTANT_TEMPERATURE,
         image
       );
       if (!result.ok) return result.error;
@@ -1150,6 +1167,7 @@ user_request: ${situation || "(none)"}`;
         "DndTacticalResponse",
         aiTacticalResponseSchema,
         PLAN_ASSISTANT_MODEL,
+        undefined,
         image
       );
       if (!result.ok) return result.error;

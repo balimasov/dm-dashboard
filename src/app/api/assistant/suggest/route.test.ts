@@ -205,6 +205,21 @@ describe("POST /api/assistant/suggest", () => {
     expect(JSON.parse((askInit as RequestInit).body as string).model).toBe("gpt-5.4-mini");
   });
 
+  test("omits temperature for a plan (the reasoning-tier model rejects any override) but still sends it for an ask", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview" }));
+    const [, planInit] = vi.mocked(fetchWithRetry).mock.calls[0];
+    expect(JSON.parse((planInit as RequestInit).body as string)).not.toHaveProperty("temperature");
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_REPLY));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "ask", situation: "why?" }));
+    const [, askInit] = vi.mocked(fetchWithRetry).mock.calls[1];
+    expect(JSON.parse((askInit as RequestInit).body as string).temperature).toBe(0.4);
+  });
+
   test("returns a reply message on success for an ask, and derives previous_summary from the last plan", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
