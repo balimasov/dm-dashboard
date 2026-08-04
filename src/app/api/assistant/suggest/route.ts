@@ -175,6 +175,17 @@ When response_mode is "focused":
 - include movement, reactions, universal actions, or improvised actions
   only when they support the requested goal.
 
+PRIORITY IS SCOPED PER CATEGORY
+
+Assign priority independently within each category (action, bonus_action,
+movement, reaction, legendary_action, lair_action, no_action_needed) — not
+once across the whole response. A turn normally combines one Action pick
+with one Bonus Action pick (and often Movement or a Reaction) at the same
+time, so every category that has a usable sheet option needs its own single
+"best" pick, not just one "best" total. Rank "alternative" and "available"
+the same way, scoped to their own category, not against options from a
+different category.
+
 GAME PLAN SUMMARY
 
 game_plan.summary is the main tactical explanation shown at the top
