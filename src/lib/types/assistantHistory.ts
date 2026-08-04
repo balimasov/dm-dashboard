@@ -1,4 +1,4 @@
-import type { AiReply, AiTacticalResponse } from "../schemas";
+import type { AiReasoningEffort, AiReply, AiTacticalResponse } from "../schemas";
 
 export type AssistantQueryEntityKind = "character" | "creature";
 
@@ -38,5 +38,20 @@ interface AssistantChatMessageBase {
  * conversational answer from "Запитати", with no option list to repeat.
  */
 export type AssistantChatMessage =
-  | (AssistantChatMessageBase & { kind: "plan"; responseMode: "overview" | "focused"; plan: AiTacticalResponse })
+  | (AssistantChatMessageBase & {
+      kind: "plan";
+      responseMode: "overview" | "focused";
+      plan: AiTacticalResponse;
+      /**
+       * The `reasoning_effort` override actually used for this response, if
+       * the DM picked one from `AiAssistantModal`'s experimental selector —
+       * shown next to `durationMs` in the "Suggested move" header so the DM
+       * can tell which effort tier produced which plan/timing when
+       * scrolling back through history. `undefined` when the DM left it on
+       * "Default" (the request never sent the field, so the model used its
+       * own default) or for any message persisted before this field
+       * existed.
+       */
+      reasoningEffort?: AiReasoningEffort;
+    })
   | (AssistantChatMessageBase & { kind: "reply"; reply: AiReply["reply"] });

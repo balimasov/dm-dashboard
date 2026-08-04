@@ -23,7 +23,7 @@ import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
 import { nullsToUndefined } from "./nullsToUndefined";
 import { demoCharacters } from "./mockData";
 import { formatSessionTitle } from "./journal";
-import type { AiReply, AiTacticalResponse } from "./schemas";
+import type { AiReasoningEffort, AiReply, AiTacticalResponse } from "./schemas";
 
 // `DATA_DIR` lets a Railway (or any host's) persistent volume live at
 // whatever path it was actually mounted at — without it, the sqlite file
@@ -822,6 +822,7 @@ export function createAssistantMessage(
         responseMode: "overview" | "focused";
         plan: AiTacticalResponse;
         durationMs?: number;
+        reasoningEffort?: AiReasoningEffort;
       }
     | {
         campaignId: string;

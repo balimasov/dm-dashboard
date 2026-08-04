@@ -260,6 +260,31 @@ describe("POST /api/assistant/suggest", () => {
     expect(JSON.parse((planInit as RequestInit).body as string)).not.toHaveProperty("reasoning_effort");
   });
 
+  test("persists the reasoning_effort used on the plan's own conversation record, so the DM can tell which tier produced it later", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview", reasoning_effort: "xhigh" }));
+
+    expect(db.createAssistantMessage).toHaveBeenCalledWith(expect.objectContaining({ reasoningEffort: "xhigh" }));
+  });
+
+  test("never reuses a cached plan across two different reasoning_effort levels for the identical situation — each gets its own fresh model call", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    // A fresh `Response` per call — both calls here are genuinely expected
+    // to hit the model (see the "never caches with a photo" test's own
+    // comment for why `mockResolvedValue` alone would break on this).
+    vi.mocked(fetchWithRetry).mockImplementation(() => Promise.resolve(openAiSuccess(VALID_PLAN)));
+
+    const body = { campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview" };
+    await POST(postRequest({ ...body, reasoning_effort: "low" }));
+    await POST(postRequest({ ...body, reasoning_effort: "high" }));
+
+    expect(fetchWithRetry).toHaveBeenCalledTimes(2);
+  });
+
   test("returns a reply message on success for an ask, and derives previous_summary from the last plan", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));

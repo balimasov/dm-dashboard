@@ -101,9 +101,19 @@ export const QUICK_QUESTIONS: { emoji: string; label: string; query: string }[] 
   },
 ];
 
-/** "(4.2s)" next to the "Suggested move" header's timestamp — see `AssistantChatMessage.durationMs`'s own doc comment for what it measures and when it's absent. */
-function formatDuration(durationMs: number): string {
-  return `(${(durationMs / 1000).toFixed(1)}s)`;
+/**
+ * "(4.2s, high)" next to the "Suggested move" header's timestamp — lets the
+ * DM tell which `reasoning_effort` tier produced which timing/plan when
+ * scrolling back through history (see `AssistantChatMessage.durationMs`/
+ * `.reasoningEffort`'s own doc comments for what each measures and when
+ * they're absent). Either piece can be missing on its own (an older message
+ * predating one of the two fields), so this joins whatever's actually
+ * present rather than assuming both always travel together; returns "" —
+ * not even a pair of empty parens — when neither is.
+ */
+function formatSuggestedMoveMeta(durationMs?: number, reasoningEffort?: string): string {
+  const parts = [durationMs !== undefined ? `${(durationMs / 1000).toFixed(1)}s` : null, reasoningEffort ?? null].filter(Boolean);
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 }
 
 function historyQueryParams(target: Target): string {
@@ -169,7 +179,7 @@ function PlanCard({
           </span>
           <span className="text-xs text-slate-500">
             {formatSyncTimestamp(message.createdAt)}
-            {message.durationMs !== undefined && ` ${formatDuration(message.durationMs)}`}
+            {formatSuggestedMoveMeta(message.durationMs, message.reasoningEffort)}
           </span>
         </button>
         {!collapsed && (

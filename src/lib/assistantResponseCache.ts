@@ -41,6 +41,14 @@ const store = new Map<string, CacheEntry>();
  * part of the key for the same reason: it's real input the model
  * conditions its answer on, so a follow-up and a plain repeat of the same
  * question must never collide on the same cache entry.
+ *
+ * `reasoningEffort` (plan only — see `route.ts`'s own comment) is part of
+ * the key for the same reason as everything else here: it's a real input
+ * that changes what the model actually returns, not just bookkeeping. Left
+ * out of the key, a DM comparing effort levels by re-asking the identical
+ * situation seconds apart would silently get back the *first* level's
+ * cached answer relabeled as the second — exactly defeating the comparison
+ * this parameter exists for.
  */
 export function assistantCacheKey(
   entityId: string,
@@ -48,10 +56,11 @@ export function assistantCacheKey(
   mode: string,
   situation: string | undefined,
   context: string,
-  previousContext?: string
+  previousContext?: string,
+  reasoningEffort?: string
 ): string {
   return createHash("sha256")
-    .update(`${entityId} ${intent} ${mode} ${situation ?? ""} ${previousContext ?? ""} ${context}`)
+    .update(`${entityId} ${intent} ${mode} ${situation ?? ""} ${previousContext ?? ""} ${context} ${reasoningEffort ?? ""}`)
     .digest("hex");
 }
 

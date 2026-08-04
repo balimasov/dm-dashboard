@@ -38,6 +38,12 @@ describe("assistantCacheKey", () => {
     // answer may no longer be legal or optimal.
     expect(assistantCacheKey("char-1", "plan", "overview", undefined, "sheet text, HP 3/20")).not.toBe(base);
   });
+
+  test("produces a different key for a different reasoning_effort — comparing effort levels for the identical situation must never collide on one cached answer", () => {
+    const base = assistantCacheKey("char-1", "plan", "overview", undefined, "sheet text", undefined, "low");
+    expect(assistantCacheKey("char-1", "plan", "overview", undefined, "sheet text", undefined, "high")).not.toBe(base);
+    expect(assistantCacheKey("char-1", "plan", "overview", undefined, "sheet text", undefined, undefined)).not.toBe(base);
+  });
 });
 
 describe("getCachedAssistantResponse / setCachedAssistantResponse", () => {

@@ -1036,7 +1036,15 @@ async function callAssistantModel<T>(
     };
   }
 
-  const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[] } = await upstream.json();
+  const json: { choices?: { message?: { content?: string | null; refusal?: string | null } }[]; usage?: unknown } = await upstream.json();
+  // `usage` is left loosely typed (`unknown`) rather than given a shape —
+  // this just relays whatever the upstream API actually returned (a
+  // reasoning-tier model's usage typically breaks out a reasoning-token
+  // count under some provider-specific key) so it's visible in server logs
+  // for verifying `reasoningEffort` actually changes what the model does,
+  // rather than only its wall-clock latency (`durationMs`), which is also
+  // affected by network/queueing noise unrelated to the model itself.
+  console.log(`${LOG_PREFIX} model call finished`, { model, reasoningEffort, usage: json.usage });
   const message = json.choices?.[0]?.message;
   if (message?.refusal) {
     console.error(`${LOG_PREFIX} model refused`, message.refusal);
@@ -1198,7 +1206,9 @@ battlefield_photo: ${image ? "attached" : "not attached"}
 user_request: ${situation || "(none)"}`;
 
     // See the "ask" branch above for why a photo bypasses the cache entirely.
-    const cacheKey = image ? null : assistantCacheKey(entityId, "plan", response_mode, situation, context);
+    // `reasoning_effort` is part of the key too — see `assistantCacheKey`'s
+    // own comment on why.
+    const cacheKey = image ? null : assistantCacheKey(entityId, "plan", response_mode, situation, context, undefined, reasoning_effort);
     const cached = cacheKey ? getCachedAssistantResponse<AiTacticalResponse>(cacheKey) : undefined;
     if (cached) {
       contentResult = { ok: true, data: cached };
@@ -1264,6 +1274,7 @@ user_request: ${situation || "(none)"}`;
           responseMode: response_mode,
           plan: contentResult.data as AiTacticalResponse,
           durationMs,
+          reasoningEffort: reasoning_effort,
         });
 
   return NextResponse.json({ message: chatMessage });
