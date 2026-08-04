@@ -437,6 +437,16 @@ export const journalEntryCreateSchema = z.object({
  * (`listAssistantMessages`), which is both simpler for the frontend and
  * correct even if its local state was never populated (a fresh page load).
  */
+/**
+ * `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) own supported values for its
+ * `reasoning_effort` request parameter, low to high. Exported so
+ * `AiAssistantModal`'s experimental selector (letting the DM compare plan
+ * quality/speed across levels instead of guessing from outside) and this
+ * schema always agree on the exact set without duplicating it by hand.
+ */
+export const AI_REASONING_EFFORT_LEVELS = ["none", "low", "medium", "high", "xhigh", "max"] as const;
+export type AiReasoningEffort = (typeof AI_REASONING_EFFORT_LEVELS)[number];
+
 export const assistantSuggestSchema = z
   .object({
     campaignId: z.string().min(1),
@@ -483,6 +493,15 @@ export const assistantSuggestSchema = z
       .max(4_000_000)
       .regex(/^data:image\/jpeg;base64,/)
       .optional(),
+    /**
+     * Experimental, `intent: "plan"` only — lets the DM override
+     * `PLAN_ASSISTANT_MODEL`'s reasoning effort from `AiAssistantModal`'s
+     * own selector to compare plan quality/speed across levels. `route.ts`
+     * ignores it entirely for `intent: "ask"` (that model doesn't support
+     * the parameter at all); omitted means "let the model use its own
+     * default."
+     */
+    reasoning_effort: z.enum(AI_REASONING_EFFORT_LEVELS).optional(),
   })
   .refine((data) => Boolean(data.characterId) !== Boolean(data.creatureId), {
     message: "Provide exactly one of characterId or creatureId.",

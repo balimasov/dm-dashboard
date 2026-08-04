@@ -15,7 +15,7 @@ import {
   listCreatures,
 } from "@/lib/db";
 import { fetchWithRetry } from "@/lib/fetchWithRetry";
-import { AiOption, AiReply, aiReplySchema, AiTacticalResponse, aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
+import { AiOption, AiReasoningEffort, AiReply, aiReplySchema, AiTacticalResponse, aiTacticalResponseSchema, assistantSuggestSchema } from "@/lib/schemas";
 import { AssistantQueryEntityKind, Character } from "@/lib/types";
 
 const LOG_PREFIX = "[assistant/suggest]";
@@ -946,6 +946,13 @@ type ModelCallResult<T> = { ok: true; data: T } | { ok: false; error: NextRespon
  * `ASK_ASSISTANT_TIMEOUT_MS`'s own doc comment for why the two intents need
  * different budgets.
  *
+ * `reasoningEffort` is the DM's optional override from `AiAssistantModal`'s
+ * experimental selector (`assistantSuggestSchema`'s `reasoning_effort`) —
+ * `route.ts`'s ask call site always passes `undefined` regardless of what
+ * the client sent, since `ASK_ASSISTANT_MODEL` doesn't support the
+ * parameter at all; only the plan call site forwards it. Omitted from the
+ * request body when `undefined`, same convention as `temperature`.
+ *
  * `image` (a JPEG data URL — see `assistantSuggestSchema`'s own doc comment)
  * switches the user message's `content` from a plain string to OpenAI's
  * multi-part vision shape (a text part plus an `image_url` part) — the
@@ -963,6 +970,7 @@ async function callAssistantModel<T>(
   model: string,
   temperature: number | undefined,
   timeoutMs: number,
+  reasoningEffort: AiReasoningEffort | undefined,
   image?: string
 ): Promise<ModelCallResult<T>> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -990,6 +998,7 @@ async function callAssistantModel<T>(
         body: JSON.stringify({
           model,
           ...(temperature !== undefined ? { temperature } : {}),
+          ...(reasoningEffort !== undefined ? { reasoning_effort: reasoningEffort } : {}),
           response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema: jsonSchema } },
           messages: [
             { role: "system", content: systemPrompt },
@@ -1060,7 +1069,7 @@ async function callAssistantModel<T>(
 export async function POST(req: Request) {
   const parsed = await parseJsonBody(req, assistantSuggestSchema);
   if ("error" in parsed) return parsed.error;
-  const { campaignId, characterId, creatureId, situation, response_mode, intent, image } = parsed.data;
+  const { campaignId, characterId, creatureId, situation, response_mode, intent, image, reasoning_effort } = parsed.data;
 
   const campaign = getCampaign(campaignId);
   if (!campaign) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
@@ -1156,6 +1165,7 @@ user_request: ${situation}`;
         ASK_ASSISTANT_MODEL,
         ASK_ASSISTANT_TEMPERATURE,
         ASK_ASSISTANT_TIMEOUT_MS,
+        undefined,
         image
       );
       if (!result.ok) return result.error;
@@ -1193,6 +1203,7 @@ user_request: ${situation || "(none)"}`;
         PLAN_ASSISTANT_MODEL,
         undefined,
         PLAN_ASSISTANT_TIMEOUT_MS,
+        reasoning_effort,
         image
       );
       if (!result.ok) return result.error;

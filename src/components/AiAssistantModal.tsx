@@ -6,6 +6,7 @@ import { buildAiAvailability, buildAiAvailabilityByName } from "@/lib/aiAvailabi
 import { parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary, buildAiGlossaryByName } from "@/lib/aiGlossary";
 import { formatSyncTimestamp } from "@/lib/format";
+import { AI_REASONING_EFFORT_LEVELS, AiReasoningEffort } from "@/lib/schemas";
 import { AssistantChatMessage, Character, Creature } from "@/lib/types";
 import { AiChatReply, AiResponseText } from "./AiResponseText";
 import { CollapseChevron } from "./ui/CollapseChevron";
@@ -13,8 +14,23 @@ import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
 import { AI_CHIP_CLS } from "./ui/containerStyles";
 import { ImageIcon, SendIcon, SparklesIcon, TrashOutlineIcon } from "./ui/icons";
+import { SelectMenu, SelectMenuOption } from "./ui/SelectMenu";
 import { Spinner } from "./ui/Spinner";
 import { EMPTY_STATE_CLS, INLINE_ERROR_CLS, MUTED_BODY_CLS } from "./ui/typography";
+
+/**
+ * Experimental — lets the DM compare "Suggest move" plan quality/speed
+ * across `PLAN_ASSISTANT_MODEL`'s (`gpt-5.6-terra`) supported
+ * `reasoning_effort` levels from the UI instead of guessing from outside.
+ * `""` means "don't send the field, let the model use its own default."
+ * Irrelevant to "Ask" (that model doesn't support the parameter at all —
+ * see `route.ts`'s own comment), so `submit()` only includes it for
+ * `intent: "plan"`.
+ */
+const REASONING_EFFORT_OPTIONS: SelectMenuOption<AiReasoningEffort | "">[] = [
+  { value: "", label: "Default" },
+  ...AI_REASONING_EFFORT_LEVELS.map((level) => ({ value: level, label: level })),
+];
 
 type Target = { campaignId: string; characterId: string } | { campaignId: string; creatureId: string };
 
@@ -275,6 +291,9 @@ export function AiAssistantModal({
   const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
+  // See `REASONING_EFFORT_OPTIONS`'s own comment — experimental, Suggest-move-only.
+  const [reasoningEffort, setReasoningEffort] = useState<AiReasoningEffort | "">("");
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
@@ -387,6 +406,7 @@ export function AiAssistantModal({
         ...target,
         intent,
         ...(intent === "plan" ? { response_mode: responseMode } : {}),
+        ...(intent === "plan" && reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
         ...(combinedText ? { situation: combinedText } : {}),
         ...(image ? { image } : {}),
       }),
@@ -610,6 +630,13 @@ export function AiAssistantModal({
           <b className="font-semibold text-slate-400">Suggest move:</b> leave note empty for the best move, or add
           details to factor in.
         </p>
+        {/* Experimental — see `REASONING_EFFORT_OPTIONS`'s own comment. Only
+            affects "Suggest move" (plan), so it's grouped with that hint
+            above rather than sitting between the two action buttons. */}
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+          <span>Reasoning effort (experimental):</span>
+          <SelectMenu value={reasoningEffort} onChange={setReasoningEffort} options={REASONING_EFFORT_OPTIONS} className="w-24" />
+        </div>
       </div>
     </FloatingPanel>
   );

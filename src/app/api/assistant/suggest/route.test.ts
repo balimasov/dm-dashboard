@@ -235,6 +235,31 @@ describe("POST /api/assistant/suggest", () => {
     expect(askOptions).toEqual({ timeoutMs: 45_000 });
   });
 
+  test("forwards the DM's reasoning_effort override to a plan request, and ignores it entirely for an ask (the ask model doesn't support the parameter)", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview", reasoning_effort: "high" }));
+    const [, planInit] = vi.mocked(fetchWithRetry).mock.calls[0];
+    expect(JSON.parse((planInit as RequestInit).body as string).reasoning_effort).toBe("high");
+
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_REPLY));
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "ask", situation: "why?", reasoning_effort: "high" }));
+    const [, askInit] = vi.mocked(fetchWithRetry).mock.calls[1];
+    expect(JSON.parse((askInit as RequestInit).body as string)).not.toHaveProperty("reasoning_effort");
+  });
+
+  test("omits reasoning_effort for a plan when the DM didn't override it — the model uses its own default", async () => {
+    vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
+    vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
+    vi.mocked(fetchWithRetry).mockResolvedValueOnce(openAiSuccess(VALID_PLAN));
+
+    await POST(postRequest({ campaignId: "camp", characterId: "char-1", intent: "plan", response_mode: "overview" }));
+    const [, planInit] = vi.mocked(fetchWithRetry).mock.calls[0];
+    expect(JSON.parse((planInit as RequestInit).body as string)).not.toHaveProperty("reasoning_effort");
+  });
+
   test("returns a reply message on success for an ask, and derives previous_summary from the last plan", async () => {
     vi.mocked(db.getCampaign).mockReturnValue(makeCampaign());
     vi.mocked(db.getCharacter).mockReturnValue(makeCharacter({ name: "Elowen" }));
