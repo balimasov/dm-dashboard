@@ -389,6 +389,15 @@ export const CREATURE_IMPORT_FIELDS: CreatureFieldSpec[] = [
     example: "Find Steed",
     includeInTemplate: true,
   },
+  {
+    key: "referenceUrl",
+    section: "Прив'язка до персонажа",
+    kind: "string",
+    required: false,
+    doc: "Необов'язкове посилання на істоту (сторінка D&D Beyond, вікі тощо) — відкривається кнопкою на картці.",
+    example: "https://www.dndbeyond.com/monsters/...",
+    includeInTemplate: true,
+  },
 ];
 
 export const CREATURE_IMPORT_SECTIONS = [

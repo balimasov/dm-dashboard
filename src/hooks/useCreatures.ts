@@ -38,6 +38,7 @@ export interface AddCreatureInput {
   spellcasting?: CreatureSpellcasting;
   ownerCharacterId?: string;
   source?: string;
+  referenceUrl?: string;
   templateId?: string;
 }
 
@@ -104,6 +105,7 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
         traits: source.traits,
         ownerCharacterId: source.ownerCharacterId,
         source: source.source,
+        referenceUrl: source.referenceUrl,
       });
     },
     [addCreature]

@@ -369,6 +369,7 @@ export const creatureUpdateSchema = z
     deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
     ownerCharacterId: z.string().nullable().optional(),
     source: z.string().nullable().optional(),
+    referenceUrl: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
     quickNotes: z.array(quickNoteSchema).optional(),
     flaggedTraits: z.array(z.string()).optional(),

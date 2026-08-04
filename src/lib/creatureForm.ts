@@ -80,6 +80,7 @@ export function creatureToFormValue(creature: Creature): CreatureFormValue {
     spellcastingGroups: spellGroupsToFormValue(creature.spellcasting?.spellGroups),
     ownerCharacterId: creature.ownerCharacterId ?? "",
     source: creature.source ?? "",
+    referenceUrl: creature.referenceUrl ?? "",
     notes: creature.notes ?? "",
   };
 }
@@ -181,6 +182,7 @@ export function formValueToCreatureUpdates(value: CreatureFormValue): Partial<Cr
     spellcasting: buildSpellcastingOrClear(value),
     ownerCharacterId: value.ownerCharacterId || null,
     source: value.source || null,
+    referenceUrl: value.referenceUrl || null,
     notes: value.notes || null,
   } as Partial<Creature>;
 }
@@ -219,6 +221,7 @@ export function formValueToAddCreatureInput(value: CreatureFormValue, templateId
     spellcasting: buildSpellcasting(value),
     ownerCharacterId: value.ownerCharacterId || undefined,
     source: value.source || undefined,
+    referenceUrl: value.referenceUrl || undefined,
     templateId,
   };
 }

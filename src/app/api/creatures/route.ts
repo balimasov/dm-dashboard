@@ -156,6 +156,7 @@ export async function POST(req: Request) {
     exhaustion: 0,
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
     source: typeof body?.source === "string" ? body.source : undefined,
+    referenceUrl: typeof body?.referenceUrl === "string" ? body.referenceUrl : undefined,
   });
 
   return NextResponse.json(creature, { status: 201 });

@@ -317,6 +317,15 @@ export interface Creature {
   ownerCharacterId?: string;
   /** How it entered play, e.g. "Find Steed", "Wild Shape", "Familiar". */
   source?: string;
+  /**
+   * An arbitrary link the DM can set to open this creature's own reference
+   * page — a monster's D&D Beyond entry, a wiki article, anything relevant.
+   * Unlike `Character.dndBeyondUrl`, this never drives a sync (a creature
+   * has no importer to sync from); it's purely a bookmark shown on the card
+   * and in the details modal, same spot as the character card's D&D Beyond
+   * link.
+   */
+  referenceUrl?: string;
   notes?: string;
   /** Same convention as `Character.quickNotes` — short reminders added/edited/removed straight from the dashboard card, separate from the long-form `notes` field above. */
   quickNotes?: QuickNote[];

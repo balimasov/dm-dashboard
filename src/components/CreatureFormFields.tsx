@@ -57,6 +57,7 @@ export interface CreatureFormValue {
   spellcastingGroups: Array<{ label: string; spells: string }>;
   ownerCharacterId: string;
   source: string;
+  referenceUrl: string;
   notes: string;
 }
 
@@ -96,6 +97,7 @@ export function emptyCreatureFormValue(): CreatureFormValue {
     spellcastingGroups: [],
     ownerCharacterId: "",
     source: "",
+    referenceUrl: "",
     notes: "",
   };
 }
@@ -239,6 +241,15 @@ export function CreatureFormFields({
             <input className={`${inputCls} w-full`} value={value.source} onChange={(e) => onChange({ source: e.target.value })} />
           </Field>
         </div>
+        <Field label="Reference Link" hint="Optional — a D&D Beyond page, wiki article, or any other link the DM can open from the card.">
+          <input
+            className={`${inputCls} w-full`}
+            type="url"
+            placeholder="https://..."
+            value={value.referenceUrl}
+            onChange={(e) => onChange({ referenceUrl: e.target.value })}
+          />
+        </Field>
       </section>
 
       {/* Combat */}

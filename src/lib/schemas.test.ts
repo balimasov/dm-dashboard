@@ -128,6 +128,7 @@ describe("creatureUpdateSchema", () => {
     deathSaves: { successes: 0, failures: 0 },
     ownerCharacterId: "demo-lilith",
     source: "Find Steed",
+    referenceUrl: "https://www.dndbeyond.com/monsters/otherworldly-steed",
     notes: "Summoned mount.",
     quickNotes: [{ id: "qn-1", text: "Watch its HP", createdAt: "2026-07-05T10:00:00.000Z" }],
     flaggedTraits: ["Life Bond"],
@@ -176,6 +177,7 @@ describe("creatureUpdateSchema", () => {
       spellcasting: null,
       ownerCharacterId: null,
       source: null,
+      referenceUrl: null,
       notes: null,
     });
     expect(result.success).toBe(true);
