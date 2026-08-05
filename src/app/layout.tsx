@@ -81,8 +81,26 @@ export default async function RootLayout({
                 to a busy scrolling background, not something fixable by
                 aligning them more precisely. Anything that needs to look
                 like part of the header has to physically live inside this
-                one element instead. */}
-            <div id="header-extra-slot" />
+                one element instead.
+
+                `min-h-[53px]` (border-t 1px + toolbar row's own `py-2` 16px
+                + its `h-9` buttons' 36px) reserves that toolbar's real
+                height up front, while authenticated — a portal can't put
+                anything here until the client has hydrated and mounted the
+                page that owns it, so this slot is *always* empty in the
+                actual server-rendered HTML. Left at its natural height
+                (auto), every single load — reload, pull-to-refresh —
+                visibly grew the header by this exact amount the instant
+                the toolbar portaled in, shoving all page content down in
+                one abrupt jump (confirmed empirically: the transition is a
+                single-frame step, never a gradual one, no matter how long
+                it takes to arrive). Reserving the space up front makes that
+                content pop in *within* a footprint that was already there,
+                instead of the footprint itself changing size. Scoped to
+                `authenticated` rather than applied unconditionally — the
+                public login page never portals anything here and doesn't
+                need the extra height. */}
+            <div id="header-extra-slot" className={authenticated ? "min-h-[53px]" : undefined} />
           </header>
           <main className="flex-1">{children}</main>
           <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
