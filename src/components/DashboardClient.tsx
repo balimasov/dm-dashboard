@@ -589,9 +589,12 @@ export function DashboardClient({
   // element now, not a second block sitting flush under it, so there's no
   // seam between two independent blur regions to chase. Its own
   // `mx-auto max-w-[1800px] px-4` mirrors the header's logo/logout row
-  // immediately above it, so both rows line up.
+  // immediately above it, so both rows line up. `header-toolbar-fade-in`
+  // (globals.css) softens this toolbar's unavoidable pop-in — the slot's
+  // own reserved height stops it from shoving content down, but it still
+  // arrives in a single frame with nothing to smooth that out otherwise.
   const toolbar = (
-    <div className="border-t border-slate-800">
+    <div className="header-toolbar-fade-in border-t border-slate-800">
       <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
         {lastSyncedAt && (
           <>
