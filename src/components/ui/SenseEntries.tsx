@@ -1,5 +1,14 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { getSenseInfo } from "@/lib/senseInfo";
+import { BlindsightIcon, DarkvisionIcon, TremorsenseIcon, TruesightIcon } from "./icons";
+
+/** Same "small muted icon before the label" convention `IconStat` uses for AC/Speed/Initiative/Prof — keyed by the same lowercased name `getSenseInfo` already looks up, so an unrecognized/homebrew sense name just renders without one instead of erroring. */
+const SENSE_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
+  darkvision: DarkvisionIcon,
+  blindsight: BlindsightIcon,
+  tremorsense: TremorsenseIcon,
+  truesight: TruesightIcon,
+};
 
 /**
  * The flex-wrap row of named senses (Darkvision: 60 ft, Blindsight: 30 ft...)
@@ -14,9 +23,11 @@ export function SenseEntries({ senses }: { senses: Array<{ name: string; range: 
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300">
       {senses.map((s) => {
         const info = getSenseInfo(s.name);
+        const Icon = SENSE_ICONS[s.name.trim().toLowerCase()];
         const nameLabel = <span className="text-slate-500">{s.name}:</span>;
         return (
-          <span key={s.name} className="flex items-baseline gap-1">
+          <span key={s.name} className="flex items-center gap-1">
+            {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
             {info ? <InfoTooltip panel={<p>{info}</p>}>{nameLabel}</InfoTooltip> : nameLabel}
             <span>{s.range} ft</span>
           </span>

@@ -276,3 +276,79 @@ export function ResizeGripIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Crescent moon — Darkvision, one of the four named-sense icons before `SenseEntries`' own entries (same "small icon before the label" shape `IconStat` already uses for AC/Speed/Initiative/Prof). */
+export function DarkvisionIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Ripples out from a center point — Blindsight, "senses the area without relying on sight" reads better as an omnidirectional ping than an eye glyph would. */
+export function BlindsightIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="5.5" strokeDasharray="2.2 2.4" />
+      <circle cx="12" cy="12" r="9.5" strokeDasharray="2.4 2.8" />
+    </svg>
+  );
+}
+
+/** A pulse/seismograph line — Tremorsense, detecting via ground vibration rather than sight. */
+export function TremorsenseIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M2 17h4l2-6 3 10 3-14 2 10h6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** An eye with a small sparkle — Truesight, deliberately not the plain `EyeIcon` (already means "toggle visibility" elsewhere) — the sparkle is what reads as "sees the true, magically-hidden form" instead of just "sees." */
+export function TruesightIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="2.2" />
+      <path d="M19 3.5l.55 1.3L21 5.35l-1.45.55L19 7.25l-.55-1.35L17 5.35l1.45-.55z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/**
+ * Same shield outline `ShieldIcon` (AC) already uses, each with a different
+ * inner glyph — Resist/Vulnerable/Immune all read as "a shield's outcome
+ * against incoming damage" this way instead of three unrelated pictograms:
+ * a chevron pointing the direction damage moves (down = reduced, up =
+ * amplified), a checkmark for "blocked entirely."
+ */
+export function ResistIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 10l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** See `ResistIcon`'s own doc comment — the same shield, chevron pointing up (damage amplified). */
+export function VulnerableIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 13l3-3 3 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** See `ResistIcon`'s own doc comment — the same shield, a checkmark (damage blocked entirely). */
+export function ImmuneIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
