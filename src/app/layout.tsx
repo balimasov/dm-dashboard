@@ -6,6 +6,7 @@ import packageJson from "../../package.json";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import { TimezoneProvider } from "@/components/TimezoneProvider";
 import { TimezoneSync } from "@/components/TimezoneSync";
+import { IconFab } from "@/components/ui/IconFab";
 import { AUTH_COOKIE_NAME, isValidSession } from "@/lib/auth";
 import { TZ_COOKIE_NAME } from "@/lib/timezone";
 import { logout } from "@/app/login/actions";
@@ -42,16 +43,18 @@ export default async function RootLayout({
               {authenticated && (
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:order-last">
                   <form action={logout}>
-                    <button
-                      type="submit"
-                      aria-label="Log out"
-                      title="Log out"
-                      className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                    >
+                    {/* `IconFab` — same bordered/sized/hover recipe as the
+                        toolbar's own Journal/kebab buttons it now sits right
+                        next to on desktop, instead of a smaller, borderless
+                        button that used to read as a visually different
+                        control before the two rows merged. `type="submit"`
+                        overrides `IconFab`'s own hardcoded `type="button"` —
+                        it comes later in the prop spread, and this is still
+                        a real form submit (the `logout` server action). */}
+                    <IconFab type="submit" aria-label="Log out" title="Log out">
                       <svg
                         viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
+                        className="h-4 w-4"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -63,7 +66,7 @@ export default async function RootLayout({
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                       </svg>
-                    </button>
+                    </IconFab>
                   </form>
                 </div>
               )}

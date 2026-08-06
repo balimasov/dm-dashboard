@@ -14,7 +14,6 @@ import { AskAiPill } from "./ui/AskAiPill";
 import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
 import { CreatureReferenceLink } from "./ui/CreatureReferenceLink";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
-import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { StatusRail } from "./ui/StatusRail";
 
@@ -23,10 +22,10 @@ import { StatusRail } from "./ui/StatusRail";
  * creatures (a Find Steed mount, a Wild Shape form, a familiar...) — same
  * combat-stat/tooltip/flame-flag conventions as the character card, but no
  * skills/spells/inventory. Clicking the header opens `CreatureDetailsModal`
- * (same gesture as `CharacterHeader`); `onUpdate` drives inline HP editing,
- * the flame-flag toggle on traits/actions, and quick notes. "Edit" links to
- * a dedicated `/creatures/[id]/edit` page (same convention as `CharacterCard`
- * 's own Edit link), `onRemove` deletes it, `onDuplicate` clones it (see
+ * (same gesture as `CharacterHeader`); `onUpdate` drives inline HP editing
+ * and the flame-flag toggle on traits/actions. "Edit" links to a dedicated
+ * `/creatures/[id]/edit` page (same convention as `CharacterCard`'s own Edit
+ * link), `onRemove` deletes it, `onDuplicate` clones it (see
  * `useCreatures.duplicateCreature`).
  *
  * Deliberately shorter than the modal: Traits/Actions/Bonus Actions/
@@ -36,9 +35,10 @@ import { StatusRail } from "./ui/StatusRail";
  * several creature cards open side by side, that tail end of the stat block
  * was pushing cards tall enough that it got hard to tell which card's HP/
  * traits belonged to which name at a glance. Both still show in full in
- * `CreatureDetailsModal` (one click away via the header); Quick Notes stay
- * on the card since those are the short, glanceable reminders the whole
- * point of a compact card is to surface.
+ * `CreatureDetailsModal` (one click away via the header). Quick Notes are
+ * hidden here too for now (same reasoning, kept only in the modal) — worth
+ * revisiting if that turns out to lose a real workflow, not a permanent
+ * removal.
  */
 export function CreatureCard({
   creature,
@@ -70,7 +70,7 @@ export function CreatureCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-3 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
+      className={`relative flex flex-col gap-3.5 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
         isDragging
           ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
           : creature.concentrating
@@ -120,12 +120,6 @@ export function CreatureCard({
       </div>
 
       <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />
-
-      <QuickNotesSection
-        notes={creature.quickNotes ?? []}
-        onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
-        compact
-      />
 
       {detailsOpen && (
         <CreatureDetailsModal

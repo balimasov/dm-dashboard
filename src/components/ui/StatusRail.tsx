@@ -9,7 +9,7 @@ import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/li
 import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel } from "./conditionHints";
 import { inputCls } from "./Field";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
-import { ExhaustionIcon, ConcentrationIcon, PencilIcon, PlusIcon } from "./icons";
+import { ExhaustionIcon, ConcentrationIcon, EyeIcon, EyeOffIcon, PencilIcon, PlusIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
 function ExhaustionPanel({ level }: { level: number }) {
@@ -228,10 +228,13 @@ function ConcentrationToggleRow({ active, onToggle }: { active: boolean; onToggl
 function CustomConditionRow({
   condition,
   onSave,
+  onToggleDisabled,
   onRemove,
 }: {
   condition: CustomCondition;
   onSave?: (next: CustomCondition) => void;
+  /** Flips `disabled` without touching name/description — the reversible alternative to `onRemove` for "not right now, but I'll want this again." */
+  onToggleDisabled?: () => void;
   onRemove?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -287,13 +290,31 @@ function CustomConditionRow({
     );
   }
 
+  const disabled = Boolean(condition.disabled);
+
   return (
-    <div className="flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2">
+    <div
+      className={`flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2 ${disabled ? "opacity-50" : ""}`}
+    >
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold text-slate-200">{condition.name}</p>
+        <p className="text-xs font-semibold text-slate-200">
+          {condition.name}
+          {disabled && <span className="ml-1.5 text-[10px] font-normal uppercase tracking-wide text-slate-500">Off</span>}
+        </p>
         {condition.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{condition.description}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        {onToggleDisabled && (
+          <button
+            type="button"
+            onClick={onToggleDisabled}
+            aria-label={disabled ? `Enable ${condition.name}` : `Disable ${condition.name}`}
+            title={disabled ? "Enable" : "Disable"}
+            className="text-slate-600 hover:text-sky-400"
+          >
+            {disabled ? <EyeIcon className="h-3 w-3" /> : <EyeOffIcon className="h-3 w-3" />}
+          </button>
+        )}
         {onSave && (
           <button type="button" onClick={startEditing} aria-label={`Edit ${condition.name}`} className="text-slate-600 hover:text-sky-400">
             <PencilIcon className="h-3 w-3" />
@@ -488,6 +509,9 @@ function StatusPopover({
                   key={c.id}
                   condition={c}
                   onSave={(next) => onCustomConditionsChange(customConditions.map((x) => (x.id === next.id ? next : x)))}
+                  onToggleDisabled={() =>
+                    onCustomConditionsChange(customConditions.map((x) => (x.id === c.id ? { ...x, disabled: !x.disabled } : x)))
+                  }
                   onRemove={() => onCustomConditionsChange(customConditions.filter((x) => x.id !== c.id))}
                 />
               ))}
@@ -526,16 +550,23 @@ function StatusBadges({
   const fixedCount = (exhaustion > 0 ? 1 : 0) + (showTrigger ? 1 : 0);
   const availableForConditions = MAX_BADGES - fixedCount;
 
+  // A disabled custom condition stays in `customConditions` (so the popover
+  // can still list/re-enable it) but shouldn't get a floating badge — that's
+  // the whole point of "disable" over "remove". `StatusPopover` below still
+  // gets the *full*, unfiltered array so its own editable list keeps showing
+  // every condition regardless of on/off state.
+  const activeCustomConditions = customConditions.filter((c) => !c.disabled);
+
   // Custom states go first when slots run short — a standard condition
   // (Poisoned, Prone...) is common knowledge even reduced to "•••" in the
   // overflow badge, where a homebrew one losing its only visible badge loses
   // the one on-card cue that it's active at all.
-  const totalCount = customConditions.length + conditions.length;
+  const totalCount = activeCustomConditions.length + conditions.length;
   const overflowing = totalCount > availableForConditions;
   const visibleSlots = overflowing ? Math.max(0, availableForConditions - 1) : availableForConditions;
-  const visibleCustom = customConditions.slice(0, visibleSlots);
+  const visibleCustom = activeCustomConditions.slice(0, visibleSlots);
   const visibleStandard = conditions.slice(0, Math.max(0, visibleSlots - visibleCustom.length));
-  const overflowCustom = customConditions.slice(visibleCustom.length);
+  const overflowCustom = activeCustomConditions.slice(visibleCustom.length);
   const overflowStandard = conditions.slice(visibleStandard.length);
 
   return (

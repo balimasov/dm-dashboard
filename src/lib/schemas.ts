@@ -43,6 +43,7 @@ const customConditionSchema = z.object({
   // silently truncating a paste like that well before the DM even reached
   // the end of it.
   description: z.string().max(2000).optional(),
+  disabled: z.boolean().optional(),
 });
 
 const spellSlotLevelSchema = z.object({

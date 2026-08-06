@@ -38,7 +38,6 @@ import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 import { NotesSection } from "./ui/NotesSection";
-import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SubHeading } from "./ui/SubHeading";
 import { AbilityScoreBox } from "./ui/AbilityScoreBox";
@@ -75,7 +74,7 @@ export function CharacterCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-3 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
+      className={`relative flex flex-col gap-3.5 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
         isDragging
           ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
           : c.concentrating
@@ -280,12 +279,6 @@ export function CharacterCard({
       )}
 
       <NotesSection notes={c.notes} compact />
-
-      <QuickNotesSection
-        notes={c.quickNotes ?? []}
-        onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
-        compact
-      />
 
       {detailsOpen && (
         <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} onRemove={onRemove} />

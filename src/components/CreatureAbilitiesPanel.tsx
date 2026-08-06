@@ -227,9 +227,12 @@ function groupTraits(traits: CreatureTrait[]) {
 export function CreatureAbilitiesPanel({
   creature,
   onUpdate,
+  compact = false,
 }: {
   creature: Creature;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  /** Passed straight through to `SectionDivider` — see its own doc comment. */
+  compact?: boolean;
 }) {
   const flaggedTraits = creature.flaggedTraits ?? [];
   function toggleFlag(name: string) {
@@ -252,7 +255,7 @@ export function CreatureAbilitiesPanel({
   if (tabs.length === 0) return null;
 
   return (
-    <SectionDivider>
+    <SectionDivider compact={compact}>
       <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
       {currentTab === "traits" && (

@@ -92,7 +92,7 @@ export function CreatureDetailsModal({
           </div>
         </>
       }
-      panelClassName={`relative my-4 w-full max-w-lg gap-4 p-4 shadow-2xl shadow-black/40 ${
+      panelClassName={`relative my-4 w-full max-w-lg gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
         creature.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
@@ -124,16 +124,18 @@ export function CreatureDetailsModal({
           </div>
         </div>
 
-        <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
-        <CreatureAbilitiesPanel creature={creature} onUpdate={onUpdate} />
+        <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />
+        <CreatureAbilitiesPanel creature={creature} onUpdate={onUpdate} compact />
 
         <NotesSection
           notes={creature.notes ?? ""}
           onChange={onUpdate ? (notes) => onUpdate(creature.id, { notes }) : undefined}
+          compact
         />
         <QuickNotesSection
           notes={creature.quickNotes ?? []}
           onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
+          compact
         />
     </Modal>
 

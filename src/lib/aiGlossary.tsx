@@ -71,6 +71,7 @@ function characterGlossaryEntries(c: Character): GlossaryEntry[] {
   // condition (`UNIVERSAL_TERMS` in `AiResponseText.tsx`) and everything
   // else on the sheet.
   for (const cc of c.combat.customConditions ?? []) {
+    if (cc.disabled) continue;
     entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
   }
   return entries;
@@ -94,6 +95,7 @@ function creatureGlossaryEntries(cr: Creature): GlossaryEntry[] {
   }
   // Same reasoning as `characterGlossaryEntries`'s own custom-conditions loop.
   for (const cc of cr.customConditions ?? []) {
+    if (cc.disabled) continue;
     entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
   }
   return entries;

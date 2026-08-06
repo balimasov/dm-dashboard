@@ -141,4 +141,6 @@ export interface CustomCondition {
   name: string;
   /** Optional only for the moment right after typing a name and before filling this in — an empty description still renders and still gets sent to the AI, just with nothing beyond the bare name. */
   description?: string;
+  /** Temporarily off without deleting it — the only other way to stop a custom state from being "active" used to be removing it outright, losing its name/description for next time it's needed. `undefined`/`false` (the default for every already-persisted condition, from before this field existed) means active, same as `Character.hidden`'s convention. */
+  disabled?: boolean;
 }

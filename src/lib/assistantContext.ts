@@ -68,9 +68,13 @@ import { formatModifier } from "./format";
  * isn't.
  */
 function conditionLines(conditions: string[], customConditions: CustomCondition[]): string[] {
-  if (conditions.length === 0 && customConditions.length === 0) return [];
+  // A disabled custom condition is off, not gone — see its own doc comment
+  // — so it shouldn't read as currently affecting the character/creature
+  // here any more than it shows a badge on the card.
+  const active = customConditions.filter((c) => !c.disabled);
+  if (conditions.length === 0 && active.length === 0) return [];
   const lines = ["Conditions:"];
-  for (const custom of customConditions) {
+  for (const custom of active) {
     lines.push(`- ${custom.name} (homebrew)${custom.description ? `: ${custom.description}` : ""}`);
   }
   for (const condition of conditions) {
@@ -316,7 +320,7 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
       `${t.name} (${[t.race, t.className].filter(Boolean).join(" ")}, level ${t.level})`,
       `HP ${t.combat.hp}/${t.combat.maxHp}${t.combat.tempHp ? ` (+${t.combat.tempHp} temp)` : ""}`,
     ];
-    const conditionNames = [...(t.combat.customConditions ?? []).map((cc) => cc.name), ...t.combat.conditions];
+    const conditionNames = [...(t.combat.customConditions ?? []).filter((cc) => !cc.disabled).map((cc) => cc.name), ...t.combat.conditions];
     if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     if (t.combat.exhaustion > 0) parts.push(`exhaustion ${t.combat.exhaustion}`);
     if (t.concentrating) parts.push("concentrating");
@@ -377,7 +381,7 @@ export function companionsContext(creatures: Creature[], ownerId: string): strin
       // flight" gets wrongly concluded despite a flying mount being summoned.
       `Speed ${cr.speedDetail || `${cr.speed}ft`}`,
     ];
-    const conditionNames = [...(cr.customConditions ?? []).map((cc) => cc.name), ...cr.conditions];
+    const conditionNames = [...(cr.customConditions ?? []).filter((cc) => !cc.disabled).map((cc) => cc.name), ...cr.conditions];
     if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     lines.push(`- ${parts.join(" | ")}`);
   }

@@ -287,7 +287,7 @@ export function CharacterDetailsModal({
           </div>
         </>
       }
-      panelClassName={`relative my-4 w-full max-w-lg gap-4 p-4 shadow-2xl shadow-black/40 ${
+      panelClassName={`relative my-4 w-full max-w-lg gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
         c.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
@@ -371,7 +371,7 @@ export function CharacterDetailsModal({
         </div>
 
         {/* Senses — same block as the main card. */}
-        <SectionDivider>
+        <SectionDivider compact>
           <SubHeading>Senses</SubHeading>
           <div className="grid grid-cols-3 gap-1.5">
             <Pill panel={PASSIVE_PERCEPTION_HINT_PANEL}>
@@ -392,7 +392,7 @@ export function CharacterDetailsModal({
         </SectionDivider>
 
         {/* Ability Scores — same block as the main card (Stats + Saving Throws merged, see `AbilityScoreBox`'s own doc comment). */}
-        <SectionDivider>
+        <SectionDivider compact>
           <SubHeading>Ability Scores</SubHeading>
           <div className="grid grid-cols-6 gap-1.5">
             {STAT_ORDER.map((key) => {
@@ -452,7 +452,7 @@ export function CharacterDetailsModal({
         />
 
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
-        <SectionDivider>
+        <SectionDivider compact>
           <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {allSkills.map((skill) => {
@@ -479,7 +479,7 @@ export function CharacterDetailsModal({
             "how topped-up is this character" before diving into the
             Features/Spells tabs below (which don't otherwise show it). */}
         {averageOverallPercent(c.resources, c.spellSlots) !== null && (
-          <SectionDivider>
+          <SectionDivider compact>
             <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
           </SectionDivider>
         )}
@@ -495,7 +495,7 @@ export function CharacterDetailsModal({
             just like a spell or feature — it then surfaces in `RemindersPanel`
             the same way. */}
         {tabs.length > 0 && (
-          <SectionDivider>
+          <SectionDivider compact>
             <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
             {currentTab === "weapons" && (
@@ -647,10 +647,11 @@ export function CharacterDetailsModal({
         {/* Notes/Quick Notes — same fields as the compact card, but Notes is
             editable here (save-on-blur) instead of read-only; the edit page
             remains an option too, this is just the faster path mid-session. */}
-        <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} />
+        <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
         <QuickNotesSection
           notes={c.quickNotes ?? []}
           onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
+          compact
         />
     </Modal>
 
