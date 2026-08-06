@@ -74,9 +74,12 @@ function CreatureSkillPanel({ skill }: { skill: ParsedCreatureSkill }) {
 export function CreatureStatBlock({
   creature,
   onUpdate,
+  compact = false,
 }: {
   creature: Creature;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
+  /** Passed straight through to each `SectionDivider` — see its own doc comment. `CreatureCard` passes it, `CreatureDetailsModal` doesn't. */
+  compact?: boolean;
 }) {
   const isDown = creature.hp <= 0;
   const skills = parseCreatureSkills(creature.skills);
@@ -152,7 +155,7 @@ export function CreatureStatBlock({
         </div>
       </div>
 
-      <SectionDivider>
+      <SectionDivider compact={compact}>
         <SubHeading>Senses</SubHeading>
         <div className="grid grid-cols-3 gap-1.5">
           <Pill panel={CREATURE_PASSIVE_PERCEPTION_HINT_PANEL}>
@@ -173,7 +176,7 @@ export function CreatureStatBlock({
       </SectionDivider>
 
       {/* Ability Scores — merged Stats + Saving Throws, same recipe as `CharacterCard`/`CharacterDetailsModal` (see `AbilityScoreBox`'s own doc comment). Highlight here means "this save differs from the raw ability modifier" rather than "has a saving-throw proficiency" — a stat block often lists non-proficient saves that still deviate (situational bonuses, legendary resistances), so anything other than the plain modifier is worth calling out. */}
-      <SectionDivider>
+      <SectionDivider compact={compact}>
         <SubHeading>Ability Scores</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
@@ -228,7 +231,7 @@ export function CreatureStatBlock({
       />
 
       {skills.length > 0 && (
-        <SectionDivider>
+        <SectionDivider compact={compact}>
           <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {skills.map((skill, index) => (

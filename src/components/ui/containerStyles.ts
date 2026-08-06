@@ -25,17 +25,28 @@ export const DIM_ROW_CARD_CLS = "rounded-lg border border-slate-800 bg-slate-900
 
 /**
  * Base recipe shared by `ToolkitCard`'s own shell and `CharacterCard`/
- * `CreatureCard`'s outer card — border weight/rounding/padding/shadow are
+ * `CreatureCard`'s outer card — border weight/rounding/shadow are
  * identical, but each still renders its own JSX rather than one calling the
  * other: `ToolkitCard` has 10 existing consumers needing none of
  * `CharacterCard`/`CreatureCard`'s extra needs (`relative` positioning for
- * `StatusRail`'s badge rail, a forced `flex flex-col gap-4` layout, a
+ * `StatusRail`'s badge rail, a forced `flex flex-col` layout, a
  * conditional concentration-ring border/bg swap), and adding those as
  * opt-in props to an already-widely-used component for the sake of one new
  * caller risked destabilizing it. Naming just the shared literal avoids
  * that risk while still keeping "one recipe, one name".
+ *
+ * Padding is deliberately NOT part of this shared literal (each caller adds
+ * its own `p-*`) — `CharacterCard`/`CreatureCard` tightened theirs to `p-3.5`
+ * to claw back vertical room, and appending a second padding utility after
+ * this constant in the same template string wouldn't reliably win anyway:
+ * Tailwind resolves same-specificity utility collisions by each utility's
+ * position in the *generated* stylesheet (build/scan order), not by where
+ * it sits in a JSX template literal, so a caller's own `p-3.5` tacked on
+ * after this string could just as easily lose to `ToolkitCard`'s `p-4`
+ * depending on scan order — confirmed the only reliable fix is not to have
+ * two conflicting padding utilities in play for the same element at all.
  */
-export const ENTITY_CARD_BASE_CLS = "rounded-xl border p-4 shadow-lg shadow-black/20";
+export const ENTITY_CARD_BASE_CLS = "rounded-xl border shadow-lg shadow-black/20";
 
 /**
  * "Popover-shell" — a floating dropdown/menu panel anchored off a trigger

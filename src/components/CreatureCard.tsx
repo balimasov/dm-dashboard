@@ -70,7 +70,7 @@ export function CreatureCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
+      className={`relative flex flex-col gap-3 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
         isDragging
           ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
           : creature.concentrating
@@ -119,11 +119,12 @@ export function CreatureCard({
         </div>
       </div>
 
-      <CreatureStatBlock creature={creature} onUpdate={onUpdate} />
+      <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />
 
       <QuickNotesSection
         notes={creature.quickNotes ?? []}
         onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
+        compact
       />
 
       {detailsOpen && (

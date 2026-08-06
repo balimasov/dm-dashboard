@@ -29,9 +29,12 @@ import { SubHeading } from "./SubHeading";
 export function NotesSection({
   notes,
   onChange,
+  compact = false,
 }: {
   notes: string;
   onChange?: (notes: string) => void;
+  /** Passed straight through to `SectionDivider` — see its own doc comment. */
+  compact?: boolean;
 }) {
   const html = ensureNotesHtml(notes);
   const [editing, setEditing] = useState(false);
@@ -41,7 +44,7 @@ export function NotesSection({
   if (!onChange) {
     if (isEmpty) return null;
     return (
-      <SectionDivider>
+      <SectionDivider compact={compact}>
         <SubHeading>Notes</SubHeading>
         <div className="notes-editor-content text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: html }} />
       </SectionDivider>
@@ -60,7 +63,7 @@ export function NotesSection({
 
   if (editing) {
     return (
-      <SectionDivider>
+      <SectionDivider compact={compact}>
         <SubHeading>Notes</SubHeading>
         <NotesEditor value={draft} onChange={setDraft} placeholder="Add notes..." autoFocus />
         <div className="mt-2 flex justify-end gap-2 text-sm">
@@ -76,14 +79,14 @@ export function NotesSection({
   }
 
   return (
-    <SectionDivider className="group relative">
+    <SectionDivider compact={compact} className="group relative">
       <SubHeading>Notes</SubHeading>
       <IconButton
         tone="muted"
         onClick={startEditing}
         aria-label="Edit notes"
         title="Edit notes"
-        className="absolute right-0 top-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+        className={`absolute right-0 ${compact ? "top-2" : "top-3"} opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100`}
       >
         <PencilIcon className="h-3.5 w-3.5" />
       </IconButton>

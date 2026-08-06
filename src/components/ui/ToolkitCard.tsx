@@ -15,7 +15,7 @@ export function ToolkitCard({
   children: ReactNode;
 }) {
   return (
-    <div className={`${ENTITY_CARD_BASE_CLS} border-slate-800 bg-slate-900/60`}>
+    <div className={`${ENTITY_CARD_BASE_CLS} p-4 border-slate-800 bg-slate-900/60`}>
       {title != null && (
         <div className="mb-2 flex items-center justify-between gap-3">
           {collapsible ? (

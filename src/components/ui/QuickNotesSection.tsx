@@ -79,9 +79,12 @@ function QuickNoteRow({
 export function QuickNotesSection({
   notes,
   onChange,
+  compact = false,
 }: {
   notes: QuickNote[];
   onChange?: (notes: QuickNote[]) => void;
+  /** Passed straight through to `SectionDivider` — see its own doc comment. */
+  compact?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
@@ -108,7 +111,7 @@ export function QuickNotesSection({
   }
 
   return (
-    <SectionDivider>
+    <SectionDivider compact={compact}>
       <div className="mb-1.5 flex items-center justify-between">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
         {onChange && (

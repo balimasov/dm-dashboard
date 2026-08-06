@@ -33,14 +33,14 @@ export default async function RootLayout({
           <TimezoneSync />
           <GlobalLoadingIndicator />
           <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-            <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-x-2 gap-y-2 px-4 py-3">
-              <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-slate-100">
+            <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-x-2 gap-y-2 px-4 py-3">
+              <Link href="/" className="mr-auto flex shrink-0 items-center gap-2 font-semibold text-slate-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset, no need for next/image here */}
                 <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
                 DM Dashboard
               </Link>
               {authenticated && (
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:order-last">
                   <form action={logout}>
                     <button
                       type="submit"
@@ -67,40 +67,58 @@ export default async function RootLayout({
                   </form>
                 </div>
               )}
-            </div>
-            {/* Empty by default — a page can portal extra sticky content
-                here (see `DashboardClient`'s own Sync/Journal/⋮ toolbar via
-                `createPortal`) so it renders as part of THIS SAME
-                translucent/blurred `<header>` instead of a second,
-                independently `sticky`-positioned element stacked directly
-                underneath it. Two adjacent elements each running their own
-                `backdrop-filter: blur` can show a visible seam right at
-                their shared edge — confirmed even after their positions
-                and translucency were made pixel-identical, an inherent
-                characteristic of stacking two separate blur regions next
-                to a busy scrolling background, not something fixable by
-                aligning them more precisely. Anything that needs to look
-                like part of the header has to physically live inside this
-                one element instead.
+              {/* Empty by default — a page can portal extra sticky content
+                  here (see `DashboardClient`'s own Sync/Journal/⋮ toolbar via
+                  `createPortal`) so it renders as part of THIS SAME
+                  translucent/blurred `<header>` instead of a second,
+                  independently `sticky`-positioned element stacked directly
+                  underneath it. Two adjacent elements each running their own
+                  `backdrop-filter: blur` can show a visible seam right at
+                  their shared edge — confirmed even after their positions
+                  and translucency were made pixel-identical, an inherent
+                  characteristic of stacking two separate blur regions next
+                  to a busy scrolling background, not something fixable by
+                  aligning them more precisely. Anything that needs to look
+                  like part of the header has to physically live inside this
+                  one element instead.
 
-                `min-h-[53px]` (border-t 1px + toolbar row's own `py-2` 16px
-                + its `h-9` buttons' 36px) reserves that toolbar's real
-                height up front, while authenticated — a portal can't put
-                anything here until the client has hydrated and mounted the
-                page that owns it, so this slot is *always* empty in the
-                actual server-rendered HTML. Left at its natural height
-                (auto), every single load — reload, pull-to-refresh —
-                visibly grew the header by this exact amount the instant
-                the toolbar portaled in, shoving all page content down in
-                one abrupt jump (confirmed empirically: the transition is a
-                single-frame step, never a gradual one, no matter how long
-                it takes to arrive). Reserving the space up front makes that
-                content pop in *within* a footprint that was already there,
-                instead of the footprint itself changing size. Scoped to
-                `authenticated` rather than applied unconditionally — the
-                public login page never portals anything here and doesn't
-                need the extra height. */}
-            <div id="header-extra-slot" className={authenticated ? "min-h-[53px]" : undefined} />
+                  Lives *inside* this same flex-wrap row (not a separate
+                  block below it) so it merges onto the brand+logout row
+                  whenever there's enough width, instead of always costing
+                  its own full row: `w-full` forces it onto its own line on
+                  narrow (mobile) viewports — nothing else fits next to a
+                  100%-wide flex item, so it still wraps below brand+logout
+                  exactly like before — while `sm:w-auto` lets it size to its
+                  own content and simply take the remaining space on that
+                  same line once there's room, which desktop widths always
+                  have. `sm:order-last` on the logout button (not on this
+                  slot) is what keeps it *last* — this slot and logout are
+                  siblings in source order (slot after logout) so mobile's
+                  wrap grouping stays [brand, logout] / [slot] unchanged;
+                  reordering only logout at `sm:` moves it visually past the
+                  now-inline toolbar without touching how anything wraps.
+
+                  `min-h-[53px]` (border-t 1px + toolbar row's own `py-2`
+                  16px + its `h-9` buttons' 36px) reserves that toolbar's
+                  real height up front on mobile, where it's still its own
+                  row — a portal can't put anything here until the client
+                  has hydrated, so this slot is *always* empty in the actual
+                  server-rendered HTML, and left at its natural height,
+                  every load visibly grew the header by this amount the
+                  instant the toolbar portaled in (confirmed empirically:
+                  always a single-frame step, not gradual). Dropped at `sm:`
+                  — merged into the brand+logout row there, so hydration
+                  only adds a few buttons to a row whose height was already
+                  set by that row's own content, not a whole new row
+                  popping in; no reservation needed to prevent a jump that
+                  no longer happens. Scoped to `authenticated` rather than
+                  unconditional — the public login page never portals
+                  anything here and doesn't need any of this. */}
+              <div
+                id="header-extra-slot"
+                className={authenticated ? "w-full min-h-[53px] sm:w-auto sm:min-h-0" : undefined}
+              />
+            </div>
           </header>
           <main className="flex-1">{children}</main>
           <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">

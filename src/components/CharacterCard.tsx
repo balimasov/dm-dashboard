@@ -75,7 +75,7 @@ export function CharacterCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-4 ${ENTITY_CARD_BASE_CLS} ${
+      className={`relative flex flex-col gap-3 p-3.5 ${ENTITY_CARD_BASE_CLS} ${
         isDragging
           ? "z-20 border-sky-500 bg-slate-900/60 shadow-2xl shadow-black/40"
           : c.concentrating
@@ -180,7 +180,7 @@ export function CharacterCard({
       </div>
 
       {/* Senses */}
-      <SectionDivider>
+      <SectionDivider compact>
         <SubHeading>Senses</SubHeading>
         <div className="grid grid-cols-3 gap-1.5">
           <Pill panel={PASSIVE_PERCEPTION_HINT_PANEL}>
@@ -205,7 +205,7 @@ export function CharacterCard({
       </SectionDivider>
 
       {/* Ability Scores — merged Stats + Saving Throws (see `AbilityScoreBox`'s own doc comment) */}
-      <SectionDivider>
+      <SectionDivider compact>
         <SubHeading>Ability Scores</SubHeading>
         <div className="grid grid-cols-6 gap-1.5">
           {STAT_ORDER.map((key) => {
@@ -250,7 +250,7 @@ export function CharacterCard({
 
       {/* Skills */}
       {cardSkills.length > 0 && (
-        <SectionDivider>
+        <SectionDivider compact>
           <SubHeading>Skills</SubHeading>
           <div className="flex flex-wrap gap-1.5">
             {cardSkills.map((skill) => {
@@ -274,16 +274,17 @@ export function CharacterCard({
           SubHeading here — the label sits inside the same hover/click hint
           trigger as the bar and counts below it). */}
       {(c.resources.length > 0 || c.spellSlots.length > 0 || c.spellcasting) && (
-        <SectionDivider>
+        <SectionDivider compact>
           <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
         </SectionDivider>
       )}
 
-      <NotesSection notes={c.notes} />
+      <NotesSection notes={c.notes} compact />
 
       <QuickNotesSection
         notes={c.quickNotes ?? []}
         onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
+        compact
       />
 
       {detailsOpen && (

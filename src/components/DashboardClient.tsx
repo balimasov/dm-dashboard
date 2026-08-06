@@ -587,80 +587,84 @@ export function DashboardClient({
   // own comment above) instead of rendered as its own separately
   // `sticky`+`backdrop-blur`'d block — physically part of the header
   // element now, not a second block sitting flush under it, so there's no
-  // seam between two independent blur regions to chase. Its own
-  // `mx-auto max-w-[1800px] px-4` mirrors the header's logo/logout row
-  // immediately above it, so both rows line up. `header-toolbar-fade-in`
-  // (globals.css) softens this toolbar's unavoidable pop-in — the slot's
-  // own reserved height stops it from shoving content down, but it still
-  // arrives in a single frame with nothing to smooth that out otherwise.
+  // seam between two independent blur regions to chase. The slot itself now
+  // lives *inside* the header's own `mx-auto max-w-[1800px] px-4` row (see
+  // its doc comment in `layout.tsx`), so this no longer needs its own copy
+  // of that centering/padding — on mobile it's still visually a second row
+  // (the slot forces that via `w-full`), on `sm:`+ it's just another inline
+  // item sharing the brand+logout row. `border-t`/`pt-2` only apply on
+  // mobile, where a divider above a genuine second row still reads as one;
+  // inline on desktop it would just be a stray horizontal line floating
+  // mid-row. `header-toolbar-fade-in` (globals.css) softens this toolbar's
+  // unavoidable pop-in — mobile's slot reservation stops it from shoving
+  // content down there, but it still arrives in a single frame with nothing
+  // to smooth that out otherwise.
   const toolbar = (
-    <div className="header-toolbar-fade-in border-t border-slate-800">
-      <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-end gap-2 px-4 py-2">
-        {lastSyncedAt && (
-          <>
-            {/* Full text on desktop, where there's room to spare... */}
-            <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-              Synced <SyncTimestamp iso={lastSyncedAt} />
-            </span>
-            {/* ...a tap/hover-able clock icon on mobile instead of hiding this
-                entirely — otherwise there's no way at all on a phone to tell
-                when the party last synced. */}
-            <span className="sm:hidden">
-              <InfoTooltip
-                hoverOnly
-                panel={
-                  <p>
-                    Synced <SyncTimestamp iso={lastSyncedAt} />
-                  </p>
-                }
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
-                  <ClockIcon className="h-4 w-4" />
-                </span>
-              </InfoTooltip>
-            </span>
-          </>
-        )}
-        {linkedCharacters.length > 0 && (
-          <div className="shrink-0">
-            <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
-          </div>
-        )}
-        {/* Quick Note/Journal are shared by both roles now — a DM's Quick
-            Note still lands in their own private journal, a player's
-            lands in the shared Party journal, and the full Journal modal
-            shows each role only the tab(s) it's allowed to see. */}
-        <QuickNoteButton campaignId={campaign.id} />
-        <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
-          <NoteIcon className="h-4 w-4" />
-        </IconFab>
-        {/* A player has nothing in this menu — Export dumps the whole
-            campaign (including the enemies/NPCs/notes this role otherwise
-            never sees), and Settings has no reduced view of its own — so
-            the menu itself is skipped rather than left open with an empty
-            or half-working dropdown. */}
-        {isDm && (
-          <MoreMenu>
-            <a
-              href={`/api/campaigns/${campaign.id}/export`}
-              title="Download this campaign (and its characters/creatures) as JSON"
-              className={MORE_MENU_ITEM_CLASS}
+    <div className="header-toolbar-fade-in flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-2 sm:border-t-0 sm:pt-0">
+      {lastSyncedAt && (
+        <>
+          {/* Full text on desktop, where there's room to spare... */}
+          <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
+            Synced <SyncTimestamp iso={lastSyncedAt} />
+          </span>
+          {/* ...a tap/hover-able clock icon on mobile instead of hiding this
+              entirely — otherwise there's no way at all on a phone to tell
+              when the party last synced. */}
+          <span className="sm:hidden">
+            <InfoTooltip
+              hoverOnly
+              panel={
+                <p>
+                  Synced <SyncTimestamp iso={lastSyncedAt} />
+                </p>
+              }
             >
-              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Export
-            </a>
-            <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
-              <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Characters &amp; Creatures
-            </button>
-            <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
-              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Settings
-            </button>
-          </MoreMenu>
-        )}
-        <CampaignLogo campaign={campaignState} />
-      </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
+                <ClockIcon className="h-4 w-4" />
+              </span>
+            </InfoTooltip>
+          </span>
+        </>
+      )}
+      {linkedCharacters.length > 0 && (
+        <div className="shrink-0">
+          <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+        </div>
+      )}
+      {/* Quick Note/Journal are shared by both roles now — a DM's Quick
+          Note still lands in their own private journal, a player's
+          lands in the shared Party journal, and the full Journal modal
+          shows each role only the tab(s) it's allowed to see. */}
+      <QuickNoteButton campaignId={campaign.id} />
+      <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
+        <NoteIcon className="h-4 w-4" />
+      </IconFab>
+      {/* A player has nothing in this menu — Export dumps the whole
+          campaign (including the enemies/NPCs/notes this role otherwise
+          never sees), and Settings has no reduced view of its own — so
+          the menu itself is skipped rather than left open with an empty
+          or half-working dropdown. */}
+      {isDm && (
+        <MoreMenu>
+          <a
+            href={`/api/campaigns/${campaign.id}/export`}
+            title="Download this campaign (and its characters/creatures) as JSON"
+            className={MORE_MENU_ITEM_CLASS}
+          >
+            <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Export
+          </a>
+          <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
+            <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Characters &amp; Creatures
+          </button>
+          <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
+            <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Settings
+          </button>
+        </MoreMenu>
+      )}
+      <CampaignLogo campaign={campaignState} />
     </div>
   );
 
