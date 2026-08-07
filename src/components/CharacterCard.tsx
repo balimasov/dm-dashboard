@@ -67,7 +67,19 @@ export function CharacterCard({
   // skills — a DM scanning the card wants "what is this character good at,"
   // not the half-credit list too. The full picture (every skill, including
   // these) still lives one click away in CharacterDetailsModal.
-  const cardSkills = c.skillProficiencies.filter((skill) => !skill.halfProficiency);
+  //
+  // A skill whose *only* modifier is a flat `bonus` (e.g. a subclass feature
+  // adding a second ability's modifier to one skill, no proficiency behind
+  // it) is excluded here too, for the same "what is this character good at"
+  // reason — training/expertise/advantage all say something about the
+  // character, a stacked flat number alone doesn't read as that on a
+  // glance-at-a-card. A skill that has training *and* a bonus (e.g. real
+  // proficiency plus that same stacked bonus) still shows, bonus included in
+  // its number — only `bonus` alone isn't sufficient reason to appear.
+  // `CharacterDetailsModal` still lists all 18 regardless (untouched).
+  const cardSkills = c.skillProficiencies.filter(
+    (skill) => !skill.halfProficiency && (skill.proficient || skill.expertise || skill.advantage)
+  );
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
 
   return (
