@@ -318,44 +318,42 @@ export function TruesightIcon({ className }: { className?: string }) {
 }
 
 /**
- * Same shield outline `ShieldIcon` (AC) already uses, each with a different
- * inner glyph — Resist/Vulnerable/Immune all read as "a shield's outcome
- * against incoming damage" this way instead of three unrelated pictograms.
- * The first version used a small chevron pointing down (resist) vs. up
- * (vulnerable) — at the ~14px this actually renders at, "chevron pointing
- * slightly different ways" was too subtle a difference to tell apart at a
- * glance (confirmed: that was the actual complaint). Reworked so the three
- * inner glyphs are different *shapes*, not just different *orientations* of
- * the same shape: a full arrow (resist — damage flows away/down), a jagged
- * crack (vulnerable — the shield itself is breached), a checkmark (immune —
- * nothing gets through). A zigzag crack and a straight arrow read apart
- * instantly even shrunk down; two mirrored chevrons didn't.
+ * Same circle outline, three completely different glyphs inside — Resist/
+ * Vulnerable/Immune. Two earlier versions both put the differentiating mark
+ * inside a `ShieldIcon` (AC) outline: first a chevron pointing down vs. up,
+ * then a full arrow vs. a jagged crack. Both still shared the shield as the
+ * dominant silhouette, and a shield reads as "this is about AC" before
+ * anyone registers what's inside it — that's what actually needed fixing,
+ * not just making the inner glyph bigger. These three glyphs (−, +, a
+ * diagonal slash) have nothing in common with each other or with `AC`'s
+ * shield, so there's no shared silhouette left to compete with the mark
+ * that actually carries the meaning.
  */
 export function ResistIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 8v6.5M9.3 12l2.7 2.7 2.7-2.7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12h8" strokeLinecap="round" />
     </svg>
   );
 }
 
-/** See `ResistIcon`'s own doc comment — the same shield, a jagged crack through it (the shield is breached, damage gets through worse). */
+/** See `ResistIcon`'s own doc comment — same circle, a plus (damage amplified). */
 export function VulnerableIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M13.6 6.5l-3.2 5 2.6 1-3.2 5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v8M8 12h8" strokeLinecap="round" />
     </svg>
   );
 }
 
-/** See `ResistIcon`'s own doc comment — the same shield, a checkmark (damage blocked entirely). */
+/** See `ResistIcon`'s own doc comment — same circle, a diagonal slash (the universal "blocked entirely" mark). */
 export function ImmuneIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.8 5.8l12.4 12.4" strokeLinecap="round" />
     </svg>
   );
 }
