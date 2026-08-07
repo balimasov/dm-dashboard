@@ -1,6 +1,6 @@
 {
   "name": "dm-dashboard",
-  "version": "1.102.6",
+  "version": "1.102.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
