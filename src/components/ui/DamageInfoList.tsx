@@ -7,11 +7,21 @@ export interface DamageInfoEntry {
   panel: React.ReactNode;
 }
 
-/** Same "small muted icon before the label" convention `IconStat`/`SenseEntries` use — keyed by the exact label string every caller already passes. "Condition Immunities" (creature-only) has no icon of its own, deliberately: it's a different kind of immunity (conditions, not damage) than the shield glyph below reads as. */
+/**
+ * Same "small muted icon before the label" convention `IconStat`/
+ * `SenseEntries` use — keyed by the exact label string every caller already
+ * passes. "Condition Immunities" (creature-only) shares `ImmuneIcon` with
+ * plain "Immune" — both are "nothing gets through" at the same generic
+ * circle-slash mark; that reuse only became sensible once `ImmuneIcon`
+ * stopped being a shield with a checkmark (which specifically read as a
+ * *damage* outcome) and became a plain "blocked" glyph with no damage-only
+ * connotation of its own.
+ */
 const DAMAGE_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
   Resist: ResistIcon,
   Immune: ImmuneIcon,
   Vulnerable: VulnerableIcon,
+  "Condition Immunities": ImmuneIcon,
 };
 
 /**
