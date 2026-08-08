@@ -56,6 +56,16 @@ export function DownloadIcon({ className }: { className?: string }) {
   );
 }
 
+/** Same arrow-plus-tray shape as `DownloadIcon` above, flipped upward — kept as its own icon rather than a `rotate-180` on `DownloadIcon`, since a straight rotation would also flip the tray, which needs to stay the same side up in both directions. */
+export function UploadIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 21V9m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function GearIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>

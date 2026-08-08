@@ -17,6 +17,7 @@ import {
   JournalEntryAudience,
   JournalSession,
   JournalSessionSummary,
+  QuickLink,
 } from "./types";
 import type { UserRole } from "./auth";
 import { extractDndBeyondCharacterId } from "./dndBeyondUrl";
@@ -253,6 +254,199 @@ export function deleteCampaign(id: string): void {
     db.prepare("DELETE FROM campaigns WHERE id = ?").run(id);
   });
   transaction();
+}
+
+// Every other id in this file is `${prefix}-${Date.now()}` — fine when
+// exactly one row is created per request, but `duplicateCampaign`/
+// `importCampaign` below insert a whole campaign's worth of rows in a single
+// synchronous transaction, where `Date.now()` alone can repeat across
+// several of them. The counter suffix guarantees uniqueness within one such
+// batch without changing the convention for every other single-row creator.
+let batchIdCounter = 0;
+function freshId(prefix: string): string {
+  batchIdCounter += 1;
+  return `${prefix}-${Date.now()}-${batchIdCounter}`;
+}
+
+/**
+ * Full deep copy for a fresh campaign — new ids throughout (campaign,
+ * characters, creatures), never shared references, so editing the copy (or
+ * the original) afterward can never bleed into the other the way it would
+ * if a character row were simply reassigned to a second `campaignId`.
+ * Journal is deliberately NOT carried over: a duplicate is meant as a
+ * reusable template/one-shot starting point (same roster, same notes/quick
+ * links), and the source campaign's session log wouldn't make sense
+ * attached to a campaign that hasn't been played yet — see `importCampaign`
+ * below for the restore case, which does carry it over.
+ */
+export function duplicateCampaign(
+  sourceId: string
+): { campaign: Campaign; characters: Character[]; creatures: Creature[] } | null {
+  const source = getCampaign(sourceId);
+  if (!source) return null;
+  const db = getDb();
+
+  const run = db.transaction(() => {
+    const newCampaignId = freshId("campaign");
+    const campaign: Campaign = { ...source, id: newCampaignId, name: `${source.name} (Copy)`, createdAt: new Date().toISOString() };
+    const maxCampaignPosition = db.prepare("SELECT MAX(position) AS maxPosition FROM campaigns").get() as {
+      maxPosition: number | null;
+    };
+    db.prepare("INSERT INTO campaigns (id, position, data) VALUES (?, ?, ?)").run(
+      campaign.id,
+      (maxCampaignPosition.maxPosition ?? -1) + 1,
+      JSON.stringify(campaign)
+    );
+
+    // Tracked so a companion's `ownerCharacterId` below can follow its owner
+    // to the owner's own fresh id, instead of pointing at a character that
+    // only exists back in the source campaign.
+    const characterIdMap = new Map<string, string>();
+    const characters = listCharacters(sourceId).map((character, index) => {
+      const copy: Character = { ...character, id: freshId("char"), campaignId: newCampaignId };
+      characterIdMap.set(character.id, copy.id);
+      db.prepare("INSERT INTO characters (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        index,
+        JSON.stringify(copy)
+      );
+      return copy;
+    });
+
+    const now = new Date().toISOString();
+    const creatures = listCreatures(sourceId).map((creature, index) => {
+      const copy: Creature = {
+        ...creature,
+        id: freshId("creature"),
+        campaignId: newCampaignId,
+        ownerCharacterId: creature.ownerCharacterId ? characterIdMap.get(creature.ownerCharacterId) : creature.ownerCharacterId,
+        createdAt: now,
+        updatedAt: now,
+      };
+      db.prepare("INSERT INTO creatures (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        index,
+        JSON.stringify(copy)
+      );
+      return copy;
+    });
+
+    return { campaign, characters, creatures };
+  });
+
+  return run();
+}
+
+/**
+ * Restores a campaign from its own `GET /api/campaigns/[id]/export` output
+ * (`docs/campaign-export-format.md`) — always as a brand-new campaign with
+ * fresh ids throughout, never overwriting an existing one, so importing the
+ * same backup file twice just produces two campaigns rather than erroring
+ * or clobbering. Journal IS carried over here (unlike `duplicateCampaign`'s
+ * deliberate omission above) since a restore is meant to bring back
+ * everything the export captured, including session history.
+ * `ownerCharacterId` and journal-entry `sessionId` are remapped through the
+ * fresh ids the same way `duplicateCampaign` remaps `ownerCharacterId`, so
+ * cross-references inside the import survive even though every id in it is
+ * being replaced. Fields the schema didn't validate (everything past the
+ * envelope — see `campaignImportSchema`'s own doc comment) pass straight
+ * through via the object spreads below, same trust boundary as a hand-typed
+ * character/creature already saved through the normal edit forms.
+ */
+export function importCampaign(payload: {
+  campaign: { name: string; notes?: string; logoUrl?: string; quickLinks?: QuickLink[]; createdAt?: string };
+  characters?: Character[];
+  creatures?: Creature[];
+  journalSessions?: JournalSession[];
+  journalEntries?: JournalEntry[];
+}): { campaign: Campaign; characters: Character[]; creatures: Creature[] } {
+  const db = getDb();
+
+  const run = db.transaction(() => {
+    const newCampaignId = freshId("campaign");
+    const campaign: Campaign = {
+      id: newCampaignId,
+      name: payload.campaign.name,
+      notes: payload.campaign.notes ?? "",
+      createdAt: payload.campaign.createdAt ?? new Date().toISOString(),
+      ...(payload.campaign.logoUrl ? { logoUrl: payload.campaign.logoUrl } : {}),
+      ...(payload.campaign.quickLinks ? { quickLinks: payload.campaign.quickLinks } : {}),
+    };
+    const maxCampaignPosition = db.prepare("SELECT MAX(position) AS maxPosition FROM campaigns").get() as {
+      maxPosition: number | null;
+    };
+    db.prepare("INSERT INTO campaigns (id, position, data) VALUES (?, ?, ?)").run(
+      campaign.id,
+      (maxCampaignPosition.maxPosition ?? -1) + 1,
+      JSON.stringify(campaign)
+    );
+
+    const characterIdMap = new Map<string, string>();
+    const characters = (payload.characters ?? []).map((character, index) => {
+      const copy: Character = { ...character, id: freshId("char"), campaignId: newCampaignId };
+      characterIdMap.set(character.id, copy.id);
+      db.prepare("INSERT INTO characters (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        index,
+        JSON.stringify(copy)
+      );
+      return copy;
+    });
+
+    const now = new Date().toISOString();
+    const creatures = (payload.creatures ?? []).map((creature, index) => {
+      const copy: Creature = {
+        ...creature,
+        id: freshId("creature"),
+        campaignId: newCampaignId,
+        ownerCharacterId: creature.ownerCharacterId ? characterIdMap.get(creature.ownerCharacterId) : creature.ownerCharacterId,
+        createdAt: creature.createdAt ?? now,
+        updatedAt: now,
+      };
+      db.prepare("INSERT INTO creatures (id, campaign_id, position, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        index,
+        JSON.stringify(copy)
+      );
+      return copy;
+    });
+
+    const sessionIdMap = new Map<string, string>();
+    (payload.journalSessions ?? []).forEach((session) => {
+      const copy: JournalSession = { ...session, id: freshId("journal-session"), campaignId: newCampaignId };
+      sessionIdMap.set(session.id, copy.id);
+      db.prepare("INSERT INTO journal_sessions (id, campaign_id, date_key, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        copy.dateKey,
+        JSON.stringify(copy)
+      );
+    });
+
+    // A journal entry whose session didn't make it into this import (a
+    // malformed or hand-edited export) has nowhere valid to attach — skipped
+    // rather than inserted with a dangling `sessionId`, which would crash
+    // the journal UI the first time it tried to resolve that session.
+    (payload.journalEntries ?? []).forEach((entry) => {
+      const newSessionId = sessionIdMap.get(entry.sessionId);
+      if (!newSessionId) return;
+      const copy: JournalEntry = { ...entry, id: freshId("journal-entry"), campaignId: newCampaignId, sessionId: newSessionId };
+      db.prepare("INSERT INTO journal_entries (id, campaign_id, session_id, data) VALUES (?, ?, ?, ?)").run(
+        copy.id,
+        copy.campaignId,
+        copy.sessionId,
+        JSON.stringify(copy)
+      );
+    });
+
+    return { campaign, characters, creatures };
+  });
+
+  return run();
 }
 
 export function listCharacters(campaignId: string): Character[] {

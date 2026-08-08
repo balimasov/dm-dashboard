@@ -396,6 +396,29 @@ export const characterCreateSchema = z.object({
 });
 
 /**
+ * POST `/api/campaigns/import` — the same envelope `GET
+ * /api/campaigns/[id]/export` produces (`docs/campaign-export-format.md`).
+ * Deliberately loose: that document's whole point is that `campaign`,
+ * `characters`, and `creatures` are "the exact same objects the app already
+ * uses internally," which grows new fields over time without changing shape
+ * — re-declaring every `Character`/`Creature` field here would duplicate
+ * `characterUpdateSchema`/`creatureUpdateSchema` and immediately start
+ * drifting from them. This only checks the envelope's own shape (the right
+ * containers, a name to show before anything is created) and lets
+ * `.passthrough()` carry every other field straight through to
+ * `importCampaign` in `db.ts` — the same defense `rowToCharacter`/
+ * `rowToCreature` already provide for a row saved by an older version of
+ * this app covers a row that arrived via import instead.
+ */
+export const campaignImportSchema = z.object({
+  campaign: z.object({ name: z.string().trim().min(1, "Imported campaign is missing a name.") }).passthrough(),
+  characters: z.array(z.object({ id: z.string() }).passthrough()).optional(),
+  creatures: z.array(z.object({ id: z.string() }).passthrough()).optional(),
+  journalSessions: z.array(z.object({ id: z.string() }).passthrough()).optional(),
+  journalEntries: z.array(z.object({ id: z.string(), sessionId: z.string() }).passthrough()).optional(),
+});
+
+/**
  * POST `/api/journal/entries`. `sessionId` optional — omitted, the route
  * auto-resolves the campaign's current session (Quick Note's path); given,
  * it attaches to that exact session instead (the full Journal modal's
