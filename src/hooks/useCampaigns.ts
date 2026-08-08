@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { Campaign, CampaignSummary, Character, Creature } from "@/lib/types";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
 
-/** Shape both `duplicateCampaign` and `importCampaign` get back from their respective routes — the new campaign plus everything copied/restored into it, of which only `characters.length` is actually needed here (for the fresh row's `characterCount`). */
+/** Shape both `duplicateCampaign` and `importCampaign` get back from their respective routes — the new campaign plus everything copied/restored into it, of which only the array lengths are actually needed here (for the fresh row's `characterCount`/`creatureCount`). */
 type CampaignBundle = { campaign: Campaign; characters: Character[]; creatures: Creature[] };
 
 export function useCampaigns(initialCampaigns: CampaignSummary[]) {
@@ -18,7 +18,7 @@ export function useCampaigns(initialCampaigns: CampaignSummary[]) {
         body: JSON.stringify(input),
       });
       const campaign = await parseJsonOrThrow<Campaign>(res, "Failed to create campaign.");
-      setCampaigns((prev) => [...prev, { ...campaign, characterCount: 0 }]);
+      setCampaigns((prev) => [...prev, { ...campaign, characterCount: 0, creatureCount: 0 }]);
       return campaign;
     },
     []
@@ -42,8 +42,8 @@ export function useCampaigns(initialCampaigns: CampaignSummary[]) {
   /** Full server-side deep copy (see `duplicateCampaign` in `db.ts`) — the request itself does all the work, this just appends the result once it comes back rather than optimistically guessing at a roster it hasn't fetched. */
   const duplicateCampaign = useCallback(async (id: string): Promise<Campaign> => {
     const res = await apiFetch(`/api/campaigns/${id}/duplicate`, { method: "POST" });
-    const { campaign, characters } = await parseJsonOrThrow<CampaignBundle>(res, "Failed to duplicate campaign.");
-    setCampaigns((prev) => [...prev, { ...campaign, characterCount: characters.length }]);
+    const { campaign, characters, creatures } = await parseJsonOrThrow<CampaignBundle>(res, "Failed to duplicate campaign.");
+    setCampaigns((prev) => [...prev, { ...campaign, characterCount: characters.length, creatureCount: creatures.length }]);
     return campaign;
   }, []);
 
@@ -54,8 +54,8 @@ export function useCampaigns(initialCampaigns: CampaignSummary[]) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const { campaign, characters } = await parseJsonOrThrow<CampaignBundle>(res, "Failed to import campaign.");
-    setCampaigns((prev) => [...prev, { ...campaign, characterCount: characters.length }]);
+    const { campaign, characters, creatures } = await parseJsonOrThrow<CampaignBundle>(res, "Failed to import campaign.");
+    setCampaigns((prev) => [...prev, { ...campaign, characterCount: characters.length, creatureCount: creatures.length }]);
     return campaign;
   }, []);
 

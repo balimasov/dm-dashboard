@@ -16,7 +16,8 @@ export interface QuickLink {
   url: string;
 }
 
-/** A campaign plus its roster size — used for the campaigns list, where showing a count doesn't require loading every character. */
+/** A campaign plus its roster size — used for the campaigns list, where showing a count doesn't require loading every character or creature. */
 export interface CampaignSummary extends Campaign {
   characterCount: number;
+  creatureCount: number;
 }

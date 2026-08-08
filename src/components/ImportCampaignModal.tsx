@@ -79,7 +79,7 @@ export function ImportCampaignModal({
 
   return (
     <Modal onClose={onClose} title="Import Campaign">
-      <p className={MUTED_LABEL_CLS}>Same file the Export Campaign action downloads — a full campaign backup, or one shared by another DM.</p>
+      <p className={MUTED_LABEL_CLS}>Import a .json file you saved earlier from any campaign&apos;s Export Campaign action.</p>
 
       {!parsed ? (
         <div
@@ -140,7 +140,11 @@ export function ImportCampaignModal({
       {parseError && <p className="text-sm text-red-400">{parseError}</p>}
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
+        {/* `variant="ghost"`, not `outline` — same Cancel-next-to-solid-action
+            footer convention `EditCharacterModal`/`EditCreatureModal` already
+            use, not the bordered look (which is for a secondary action that
+            competes for attention, not a dismiss). */}
+        <Button type="button" variant="ghost" onClick={onClose} className="px-4 py-2 text-sm">
           Cancel
         </Button>
         <Button type="button" onClick={handleImport} disabled={!parsed || importing}>

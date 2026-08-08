@@ -248,7 +248,11 @@ export function CampaignFormModal({
   useScrollLock();
 
   function close() {
-    onClose(current ? { ...current, characterCount: charactersState.characters.length } : undefined);
+    onClose(
+      current
+        ? { ...current, characterCount: charactersState.characters.length, creatureCount: creaturesState.creatures.length }
+        : undefined
+    );
   }
 
   useEscapeToClose(close);
@@ -264,7 +268,7 @@ export function CampaignFormModal({
     setError(null);
     try {
       const created = await actions.addCampaign({ name: trimmed, notes, logoUrl });
-      setCurrent({ ...created, characterCount: 0 });
+      setCurrent({ ...created, characterCount: 0, creatureCount: 0 });
       setRosterOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign.");

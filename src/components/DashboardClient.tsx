@@ -908,7 +908,7 @@ export function DashboardClient({
       {settingsOpen && (
         <CampaignDataProvider value={{ charactersState, creaturesState }}>
           <CampaignFormModal
-            campaign={{ ...campaignState, characterCount: characters.length }}
+            campaign={{ ...campaignState, characterCount: characters.length, creatureCount: creatures.length }}
             actions={{ updateCampaign: patchCampaign }}
             onClose={closeSettings}
           />

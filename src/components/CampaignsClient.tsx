@@ -138,7 +138,8 @@ function CampaignRow({
           {campaign.name}
         </Link>
         <p className={MUTED_BODY_CLS}>
-          {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"}
+          {campaign.characterCount} {campaign.characterCount === 1 ? "character" : "characters"} ·{" "}
+          {campaign.creatureCount} {campaign.creatureCount === 1 ? "creature" : "creatures"}
         </p>
       </div>
       {(onEdit || onRemove) && (
@@ -147,8 +148,14 @@ function CampaignRow({
               they all size consistently against the popover's own
               content-driven width — "Export Campaign" is the widest label
               here, longer than `MoreMenu`'s `min-w-[9rem]` default fits on
-              one line otherwise. */}
-          <MoreMenu label="Campaign actions" variant="plain">
+              one line otherwise. `portal` — without it, an open panel on one
+              row rendered in-flow at `z-30` inside that row's own (unstacked)
+              `<li>`, and the *next* row's `<li>` — later in DOM order, also
+              unstacked — still painted its own kebab trigger on top of the
+              panel's lower portion. Same fix `EntityActionsMenu` already
+              uses for character/creature cards in a list, for the same
+              reason. */}
+          <MoreMenu label="Campaign actions" portal variant="plain">
             <a href={`/api/campaigns/${campaign.id}/export`} className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
               <DownloadIcon className="h-4 w-4 shrink-0" />
               Export Campaign

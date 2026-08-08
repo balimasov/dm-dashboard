@@ -195,17 +195,29 @@ function rowToCharacter(row: { data: string }): Character {
   };
 }
 
+/**
+ * `COUNT(DISTINCT ...)` on both, not plain `COUNT`, because joining
+ * `characters` AND `creatures` in the same query multiplies rows (a
+ * campaign with 3 characters and 2 creatures produces 3×2 = 6 joined rows
+ * before `GROUP BY` collapses them back to one) — a plain `COUNT(ch.id)`
+ * would count each character once per creature instead of once overall.
+ */
 export function listCampaigns(): CampaignSummary[] {
   const rows = getDb()
     .prepare(
-      `SELECT c.data AS data, COUNT(ch.id) AS characterCount
+      `SELECT c.data AS data, COUNT(DISTINCT ch.id) AS characterCount, COUNT(DISTINCT cr.id) AS creatureCount
        FROM campaigns c
        LEFT JOIN characters ch ON ch.campaign_id = c.id
+       LEFT JOIN creatures cr ON cr.campaign_id = c.id
        GROUP BY c.id
        ORDER BY c.position ASC`
     )
-    .all() as Array<{ data: string; characterCount: number }>;
-  return rows.map((row) => ({ ...(JSON.parse(row.data) as Campaign), characterCount: row.characterCount }));
+    .all() as Array<{ data: string; characterCount: number; creatureCount: number }>;
+  return rows.map((row) => ({
+    ...(JSON.parse(row.data) as Campaign),
+    characterCount: row.characterCount,
+    creatureCount: row.creatureCount,
+  }));
 }
 
 export function getCampaign(id: string): Campaign | null {
