@@ -42,7 +42,6 @@ import { EntityActionsMenu } from "@/components/ui/EntityActionsMenu";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { inputCls } from "@/components/ui/Field";
-import { SelectMenu } from "@/components/ui/SelectMenu";
 import {
   EMPTY_STATE_CLS,
   FORM_SECTION_HEADING_CLS,
@@ -54,13 +53,54 @@ import {
 /** Reports one add/import attempt's outcome up to the shared toast in `CreatureRosterEditor` — success or failure, same convention as the sync-summary toast on the dashboard. */
 type ResultReporter = (message: string, variant: "success" | "error") => void;
 
+type CreatureAddMode = "search" | "import" | "manual";
+
+const ADD_MODE_OPTIONS: Array<{ mode: CreatureAddMode; icon: string; label: string; sub: string }> = [
+  { mode: "search", icon: "🔍", label: "Search SRD", sub: "Free bestiary" },
+  { mode: "import", icon: "📄", label: "Import File", sub: ".yaml stat block" },
+  { mode: "manual", icon: "✏️", label: "Add Manually", sub: "Blank stat block" },
+];
+
+/**
+ * First step of adding a creature — three equally-weighted cards instead of
+ * the old dropdown that only ever offered Search/Import and read as a
+ * skippable setting rather than the actual entry point. Manual add used to
+ * only be reachable as a link buried inside a *failed* search (`"Add it
+ * anyway"`) — now it's a full peer, reachable in one click same as the
+ * other two, without needing to search-and-fail first.
+ */
+function AddCreatureModePicker({ onPick }: { onPick: (mode: CreatureAddMode) => void }) {
+  return (
+    <div>
+      <p className="mb-3 text-sm text-slate-300">How do you want to add this creature?</p>
+      <div className="grid grid-cols-3 gap-2.5">
+        {ADD_MODE_OPTIONS.map((o) => (
+          <button
+            key={o.mode}
+            type="button"
+            onClick={() => onPick(o.mode)}
+            className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2 py-4 text-center hover:border-sky-600 hover:bg-slate-800"
+          >
+            <span className="text-2xl">{o.icon}</span>
+            <span className="text-sm font-semibold text-slate-200">{o.label}</span>
+            <span className={MUTED_LABEL_CLS}>{o.sub}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Deliberately minimal, same weight as the character roster's "paste a
- * D&D Beyond link" add step — search for the general name, pick a match (or
- * add it blank if nothing's found), done. No stat-block form shown here at
- * all; the full stat block is filled in afterwards via the creature's own
- * edit modal (the pencil icon on its row below), same as a character's
- * details are edited via its own modal rather than inline in this list.
+ * D&D Beyond link" add step — search for the general name, pick a match,
+ * done. No stat-block form shown here at all; the full stat block is
+ * filled in afterwards via the creature's own edit modal (the pencil icon
+ * on its row below), same as a character's details are edited via its own
+ * modal rather than inline in this list. A search that turns up nothing
+ * isn't a dead end — `AddManuallyPanel`/`ImportCreaturePanel` are the other
+ * two equally-weighted ways in, one "← Choose a different way" click away
+ * (see `CreatureRosterEditor`'s own mode picker).
  *
  * Search results are lightweight previews (name/type/size/CR) — a popular
  * query can return upwards of a hundred creature hits, so the full stat
@@ -76,7 +116,7 @@ function AddCreaturePanel({
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Bestiary template ids already present in this campaign's roster — lets a search hit show "(Added)" instead of leaving no trace of a creature the DM already added a minute ago (e.g. while adding several different hits from one search). */
   addedTemplateIds: Set<string>;
-  /** Current value of the shared category selector rendered above this panel — applied to whatever gets added, whether resolved from a search hit or added blank via "Add it anyway". */
+  /** Current value of the shared category selector rendered above this panel — applied to whatever gets added. */
   category: CreatureCategory;
   onResult: ResultReporter;
 }) {
@@ -85,11 +125,10 @@ function AddCreaturePanel({
   const [searched, setSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [results, setResults] = useState<CreatureSearchHit[]>([]);
-  // Which single row is in flight — a hit's own id, or "manual" for the
-  // no-results "Add it anyway" fallback — rather than one shared flag, so
-  // adding one hit doesn't relabel every other "Add" button in the list as
-  // "Adding...". Still non-null (and so disabling every button) for the
-  // whole request, to avoid firing a second add before the first resolves.
+  // A hit's own id — so adding one hit doesn't relabel every other "Add"
+  // button in the list as "Adding...". Still non-null (and so disabling
+  // every button) for the whole request, to avoid firing a second add
+  // before the first resolves.
   const [addingId, setAddingId] = useState<string | null>(null);
 
   async function handleSearch() {
@@ -130,27 +169,6 @@ function AddCreaturePanel({
     } finally {
       setAddingId(null);
     }
-  }
-
-  async function addManual() {
-    const trimmed = query.trim();
-    if (!trimmed) return;
-    setAddingId("manual");
-    try {
-      await onAdd({ ...formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }), category });
-      onResult(`Added "${trimmed}" as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`, "success");
-      reset();
-    } catch {
-      onResult(`Failed to add "${trimmed}".`, "error");
-    } finally {
-      setAddingId(null);
-    }
-  }
-
-  function reset() {
-    setQuery("");
-    setResults([]);
-    setSearched(false);
   }
 
   return (
@@ -205,18 +223,70 @@ function AddCreaturePanel({
       )}
       {searched && results.length === 0 && (
         <p className={EMPTY_STATE_CLS}>
-          No matches for &quot;{query.trim()}&quot; — likely not free SRD content (e.g. a Monster Manual exclusive).{" "}
-          <button
-            type="button"
-            onClick={addManual}
-            disabled={addingId !== null}
-            className="text-sky-400 hover:underline disabled:opacity-50"
-          >
-            {addingId === "manual" ? "Adding..." : "Add it anyway"}
-          </button>
-          , then fill in its stat block via its own edit modal.
+          No matches for &quot;{query.trim()}&quot; — likely not free SRD content (e.g. a Monster Manual exclusive).
+          Try Add Manually or Import File instead.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * The bare "just give it a name" path — for a creature that isn't free SRD
+ * content and isn't worth writing out a full YAML file for either (most
+ * homebrew NPCs, a one-off monster). Adds a blank stat block under the
+ * typed name, same as `AddCreaturePanel`'s search used to fall back to
+ * before manual add became its own equally-weighted panel; the full stat
+ * block is filled in afterwards via the creature's own edit modal.
+ */
+function AddManuallyPanel({
+  onAdd,
+  category,
+  onResult,
+}: {
+  onAdd: (input: AddCreatureInput) => Promise<Creature>;
+  /** Applied to whatever gets added. */
+  category: CreatureCategory;
+  onResult: ResultReporter;
+}) {
+  const [name, setName] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  async function handleAdd() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setAdding(true);
+    try {
+      await onAdd({ ...formValueToAddCreatureInput({ ...emptyCreatureFormValue(), templateName: trimmed }), category });
+      onResult(`Added "${trimmed}" as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`, "success");
+      setName("");
+    } catch {
+      onResult(`Failed to add "${trimmed}".`, "error");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <input
+          className={`flex-1 ${inputCls}`}
+          placeholder="e.g. Riverside Bandit"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+        />
+        <Button type="button" onClick={handleAdd} disabled={!name.trim() || adding}>
+          {adding ? "Adding..." : "Add"}
+        </Button>
+      </div>
+      <p className={MUTED_LABEL_CLS}>Adds a blank stat block — fill in AC, HP, stats etc. via its own Edit form after.</p>
     </div>
   );
 }
@@ -307,10 +377,6 @@ function ImportCreaturePanel({
 
   return (
     <div className="space-y-3">
-      <button type="button" onClick={downloadTemplate} className="text-sm text-sky-400 hover:underline">
-        Download template (.yaml)
-      </button>
-
       {/* One bordered box instead of an "Upload file..." button sitting
           above a separate textarea — those read as two competing ways in,
           when they're really just two ways to fill this one box (typed/
@@ -375,9 +441,18 @@ function ImportCreaturePanel({
         </ul>
       )}
 
-      <Button type="button" onClick={handleImport} disabled={!text.trim() || importing}>
-        {importing ? "Importing..." : "Import"}
-      </Button>
+      {/* Template link moved down next to Import, deliberately not up by the
+          mode picker's own "← Choose a different way" — the two were
+          crowding each other as two small text links stacked right on top
+          of one another. */}
+      <div className="flex items-center justify-between gap-3">
+        <button type="button" onClick={downloadTemplate} className="text-sm text-sky-400 hover:underline">
+          Download template (.yaml)
+        </button>
+        <Button type="button" onClick={handleImport} disabled={!text.trim() || importing}>
+          {importing ? "Importing..." : "Import"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -519,36 +594,45 @@ export function CreatureRosterEditor({
     creatures.map((c) => c.templateId).filter((id): id is string => Boolean(id))
   );
 
-  const [addMode, setAddMode] = useState<"search" | "import">("search");
+  // `null` shows the mode picker; picking a card commits to one of the
+  // three add panels below, with a "← Choose a different way" link back to
+  // `null`. Deliberately never reset back to `null` after a successful add
+  // (see each panel's own `onAdd` handler) — the DM stays on whichever
+  // panel they picked so adding several creatures in a row via the same
+  // method doesn't mean re-choosing a method every time.
+  const [addMode, setAddMode] = useState<CreatureAddMode | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
+  const onAddResult = (message: string, variant: "success" | "error") => setToast({ message, variant });
 
   return (
     <div>
-      <div className="mb-3">
-        <SelectMenu
-          value={addMode}
-          onChange={setAddMode}
-          options={[
-            { value: "search", label: "🔍 Search SRD" },
-            { value: "import", label: "📄 Import from file" },
-          ]}
-        />
+      <div className="mb-5">
+        {addMode === null ? (
+          <AddCreatureModePicker onPick={setAddMode} />
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setAddMode(null)}
+              className="mb-3 text-sm text-slate-400 hover:text-slate-200"
+            >
+              ← Choose a different way
+            </button>
+            {addMode === "search" && (
+              <AddCreaturePanel
+                onAdd={addCreature}
+                addedTemplateIds={addedTemplateIds}
+                category={category}
+                onResult={onAddResult}
+              />
+            )}
+            {addMode === "import" && (
+              <ImportCreaturePanel onAdd={addCreature} characters={characters} category={category} onResult={onAddResult} />
+            )}
+            {addMode === "manual" && <AddManuallyPanel onAdd={addCreature} category={category} onResult={onAddResult} />}
+          </>
+        )}
       </div>
-      {addMode === "search" ? (
-        <AddCreaturePanel
-          onAdd={addCreature}
-          addedTemplateIds={addedTemplateIds}
-          category={category}
-          onResult={(message, variant) => setToast({ message, variant })}
-        />
-      ) : (
-        <ImportCreaturePanel
-          onAdd={addCreature}
-          characters={characters}
-          category={category}
-          onResult={(message, variant) => setToast({ message, variant })}
-        />
-      )}
       {toast && <Toast message={toast.message} variant={toast.variant} onDismiss={() => setToast(null)} />}
 
       <h3 className={`mb-3 mt-5 ${FORM_SECTION_HEADING_CLS}`}>Added Creatures</h3>
