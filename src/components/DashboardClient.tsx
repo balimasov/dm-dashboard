@@ -342,7 +342,7 @@ function CreatureCategorySection({
   storageKey: string;
   initialOpen: boolean;
   onUpdate: (id: string, updates: Partial<Creature>) => void;
-  onDuplicate: (creature: Creature) => void;
+  onDuplicate: (creature: Creature, count: number) => void;
   onClearHpHistory: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd?: () => void;
@@ -395,7 +395,7 @@ function CreatureCategorySection({
                       owner={owner}
                       characters={characters}
                       onUpdate={onUpdate}
-                      onDuplicate={() => onDuplicate(creature)}
+                      onDuplicate={(count) => onDuplicate(creature, count)}
                       onClearHpHistory={onClearHpHistory}
                       onRemove={onRemove}
                       dragEnabled={dragEnabled}
@@ -649,10 +649,10 @@ export function DashboardClient({
           <a
             href={`/api/campaigns/${campaign.id}/export`}
             title="Download this campaign (and its characters/creatures) as JSON"
-            className={MORE_MENU_ITEM_CLASS}
+            className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
           >
             <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            Export
+            Export Campaign
           </a>
           <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
             <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />

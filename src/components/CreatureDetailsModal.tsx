@@ -49,7 +49,7 @@ export function CreatureDetailsModal({
   characters: Character[];
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
-  onDuplicate?: () => void;
+  onDuplicate?: (count: number) => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
 }) {

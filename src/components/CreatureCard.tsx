@@ -54,7 +54,7 @@ export function CreatureCard({
   owner?: Character;
   characters: Character[];
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
-  onDuplicate?: () => void;
+  onDuplicate?: (count: number) => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
   /** Reordering is DM-only, matching `/api/creatures/reorder` — a player still sees the same card, just without the drag affordance on its header. */

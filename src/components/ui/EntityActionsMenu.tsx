@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
+
+/** Upper bound on the inline duplicate-count stepper — well past any real encounter's need for one more of the same creature, just there so the +/- pair can't be held down into something absurd. */
+const MAX_DUPLICATE_COUNT = 20;
 
 /**
  * Kebab-triggered Sync/Edit/Duplicate/HP History/Hide/Remove menu shared by
@@ -34,11 +38,17 @@ export function EntityActionsMenu({
   onToggleHidden?: () => void;
   onSync?: () => void;
   syncing?: boolean;
-  onDuplicate?: () => void;
+  onDuplicate?: (count: number) => void;
   onShowHpHistory?: () => void;
   onRemove?: () => void;
   variant?: "boxed" | "plain";
 }) {
+  // Local to this menu instance, not the entity — always starts (and resets
+  // back to) 1, the same "click Duplicate, get one copy" behavior as before
+  // this stepper existed. Raising it only changes the *next* click's count;
+  // it's a one-shot modifier on the action, not a sticky preference.
+  const [duplicateCount, setDuplicateCount] = useState(1);
+
   return (
     <MoreMenu label="Actions" portal variant={variant}>
       {onSync && (
@@ -52,10 +62,48 @@ export function EntityActionsMenu({
         Edit
       </button>
       {onDuplicate && (
-        <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onDuplicate}>
-          <CopyIcon className="h-4 w-4 shrink-0" />
-          Duplicate
-        </button>
+        <div className="flex items-center justify-between gap-2 py-1 pl-3 pr-2">
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-slate-300 hover:text-slate-100"
+            onClick={() => {
+              onDuplicate(duplicateCount);
+              setDuplicateCount(1);
+            }}
+          >
+            <CopyIcon className="h-4 w-4 shrink-0" />
+            Duplicate
+          </button>
+          {/* `stopPropagation` here, not on each button — `MoreMenu`'s panel
+              closes on any click inside it (see its own doc comment), which
+              would otherwise dismiss the menu on every +/- tap instead of
+              letting the count be bumped a few times before actually
+              duplicating. */}
+          <span
+            className="flex shrink-0 items-center overflow-hidden rounded border border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Fewer copies"
+              disabled={duplicateCount <= 1}
+              onClick={() => setDuplicateCount((n) => Math.max(1, n - 1))}
+              className="flex h-5 w-5 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              −
+            </button>
+            <span className="w-5 text-center text-xs font-semibold text-sky-400 tabular-nums">{duplicateCount}</span>
+            <button
+              type="button"
+              aria-label="More copies"
+              disabled={duplicateCount >= MAX_DUPLICATE_COUNT}
+              onClick={() => setDuplicateCount((n) => Math.min(MAX_DUPLICATE_COUNT, n + 1))}
+              className="flex h-5 w-5 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              +
+            </button>
+          </span>
+        </div>
       )}
       {onShowHpHistory && (
         <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onShowHpHistory}>

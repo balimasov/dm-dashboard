@@ -160,6 +160,16 @@ export function EditCharacterModal({
     }));
   }
 
+  function setLanguages(value: string) {
+    setDraft((d) => ({
+      ...d,
+      languages: value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }));
+  }
+
   function updateSense(index: number, updates: Partial<Sense>) {
     setDraft((d) => ({
       ...d,
@@ -514,6 +524,14 @@ export function EditCharacterModal({
                   rows={2}
                   value={draft.advantages.join("\n")}
                   onChange={(e) => setAdvantages(e.target.value)}
+                />
+              </Field>
+              {/* Only field in this section not synced from D&D Beyond's own combat/proficiency data (or not synced reliably) — worth a manual field here rather than being stuck read-only until the next sync. */}
+              <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
+                <input
+                  className={`${inputCls} w-full`}
+                  value={draft.languages.join(", ")}
+                  onChange={(e) => setLanguages(e.target.value)}
                 />
               </Field>
             </section>

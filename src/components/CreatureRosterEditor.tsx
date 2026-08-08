@@ -494,7 +494,7 @@ export function CreatureRosterEditor({
 
   async function handleDuplicate(creature: Creature) {
     try {
-      const copy = await duplicateCreature(creature);
+      const [copy] = await duplicateCreature(creature);
       setToast({ message: `Duplicated "${creature.name}" as "${copy.name}".`, variant: "success" });
     } catch {
       setToast({ message: `Failed to duplicate "${creature.name}".`, variant: "error" });

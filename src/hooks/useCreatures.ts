@@ -66,49 +66,64 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
    * about *this specific instance* rather than copying it verbatim: full
    * HP (not whatever the source had taken), no conditions/exhaustion, no
    * notes/quick notes/flagged reminders, not hidden — a fresh copy of the
-   * template, not a snapshot of an in-progress fight. `" (Copy)"` on the
-   * name makes the two cards tell apart at a glance until the DM renames it
-   * via the existing Edit form — this action intentionally does NOT open
-   * that form itself, so duplicating several at once doesn't interrupt with
-   * a modal each time.
+   * template, not a snapshot of an in-progress fight. This action
+   * intentionally does NOT open the Edit form itself, so duplicating
+   * several at once doesn't interrupt with a modal each time.
+   *
+   * `count` (default 1) makes several copies in one call — the common
+   * "drop 5 goblins in for this encounter" case, without clicking Duplicate
+   * five separate times. At `count === 1` the name is `"X (Copy)"`, exactly
+   * as before; at `count > 1` each gets its own number (`"X (Copy 1)"` ..
+   * `"X (Copy N)"`) — plain `"(Copy)"` repeated N times would leave every
+   * card reading identically until individually renamed, which defeats the
+   * "tell apart at a glance" reason the suffix exists at all. Copies are
+   * added sequentially (not `Promise.all`) so their on-screen order matches
+   * the number in their name instead of whichever request's response
+   * happened to land first.
    */
   const duplicateCreature = useCallback(
-    async (source: Creature): Promise<Creature> => {
-      return addCreature({
-        templateId: source.templateId,
-        templateName: source.templateName,
-        name: `${source.name} (Copy)`,
-        category: source.category,
-        avatarUrl: source.avatarUrl,
-        creatureType: source.creatureType,
-        size: source.size,
-        alignment: source.alignment,
-        ac: source.ac,
-        armorDesc: source.armorDesc,
-        proficiencyBonus: source.proficiencyBonus,
-        hp: source.maxHp,
-        maxHp: source.maxHp,
-        hitDice: source.hitDice,
-        speed: source.speed,
-        speedDetail: source.speedDetail,
-        initiativeBonus: source.initiativeBonus,
-        stats: source.stats,
-        savingThrows: source.savingThrows,
-        senses: source.senses,
-        languages: source.languages,
-        challengeRating: source.challengeRating,
-        experiencePoints: source.experiencePoints,
-        skills: source.skills,
-        damageVulnerabilities: source.damageVulnerabilities,
-        damageResistances: source.damageResistances,
-        damageImmunities: source.damageImmunities,
-        conditionImmunities: source.conditionImmunities,
-        traits: source.traits,
-        spellcasting: source.spellcasting,
-        ownerCharacterId: source.ownerCharacterId,
-        source: source.source,
-        referenceUrl: source.referenceUrl,
-      });
+    async (source: Creature, count = 1): Promise<Creature[]> => {
+      const results: Creature[] = [];
+      for (let i = 1; i <= count; i++) {
+        const name = count === 1 ? `${source.name} (Copy)` : `${source.name} (Copy ${i})`;
+        const created = await addCreature({
+          templateId: source.templateId,
+          templateName: source.templateName,
+          name,
+          category: source.category,
+          avatarUrl: source.avatarUrl,
+          creatureType: source.creatureType,
+          size: source.size,
+          alignment: source.alignment,
+          ac: source.ac,
+          armorDesc: source.armorDesc,
+          proficiencyBonus: source.proficiencyBonus,
+          hp: source.maxHp,
+          maxHp: source.maxHp,
+          hitDice: source.hitDice,
+          speed: source.speed,
+          speedDetail: source.speedDetail,
+          initiativeBonus: source.initiativeBonus,
+          stats: source.stats,
+          savingThrows: source.savingThrows,
+          senses: source.senses,
+          languages: source.languages,
+          challengeRating: source.challengeRating,
+          experiencePoints: source.experiencePoints,
+          skills: source.skills,
+          damageVulnerabilities: source.damageVulnerabilities,
+          damageResistances: source.damageResistances,
+          damageImmunities: source.damageImmunities,
+          conditionImmunities: source.conditionImmunities,
+          traits: source.traits,
+          spellcasting: source.spellcasting,
+          ownerCharacterId: source.ownerCharacterId,
+          source: source.source,
+          referenceUrl: source.referenceUrl,
+        });
+        results.push(created);
+      }
+      return results;
     },
     [addCreature]
   );
