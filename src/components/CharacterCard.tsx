@@ -158,7 +158,7 @@ export function CharacterCard({
         />
         <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
           <IconStat
-            icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<ShieldIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={AC_HINT_PANEL}
             label="AC"
           >
@@ -166,14 +166,14 @@ export function CharacterCard({
           </IconStat>
           <IconStat
             className="pl-2"
-            icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<SpeedIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={SPEED_HINT_PANEL}
             label="Speed"
           >
             {c.combat.speed}ft
           </IconStat>
           <IconStat
-            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<InitiativeIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={INITIATIVE_HINT_PANEL}
             label="Initiative"
           >
@@ -181,7 +181,7 @@ export function CharacterCard({
           </IconStat>
           <IconStat
             className="pl-2"
-            icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={PROFICIENCY_HINT_PANEL}
             label="Prof"
           >

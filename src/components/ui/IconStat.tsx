@@ -33,7 +33,10 @@ export function IconStat({
     <span className={`flex items-center gap-1.5 ${className}`}>
       {icon}
       <span className="flex min-w-0 flex-1 items-baseline gap-1">
-        <InfoTooltip panel={panel}>{label}</InfoTooltip>
+        <InfoTooltip panel={panel}>
+          {/* Same muted-label-plus-colon convention `SenseEntries`/`DamageInfoList` already use for Darkvision/Resist/Immune — this row used to be the one place with a bare, brighter (inherited `text-slate-300`) label and no colon. */}
+          <span className="text-slate-500">{label}:</span>
+        </InfoTooltip>
         <span title={valueTitle} className="min-w-0 flex-1 truncate">
           {children}
         </span>

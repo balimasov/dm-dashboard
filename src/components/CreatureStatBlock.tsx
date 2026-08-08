@@ -116,7 +116,7 @@ export function CreatureStatBlock({
 
         <div className="space-y-1.5 text-sm text-slate-300">
           <IconStat
-            icon={<ShieldIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<ShieldIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={CREATURE_AC_HINT_PANEL}
             label="AC"
           >
@@ -124,30 +124,30 @@ export function CreatureStatBlock({
             {creature.armorDesc && <span className="text-slate-500"> ({creature.armorDesc})</span>}
           </IconStat>
           <IconStat
-            icon={<SpeedIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<SpeedIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={CREATURE_SPEED_HINT_PANEL}
             label="Speed"
           >
             {creature.speedDetail ?? `${creature.speed}ft`}
           </IconStat>
           <IconStat
-            icon={<InitiativeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<InitiativeIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={INITIATIVE_HINT_PANEL}
             label="Initiative"
           >
             {creature.initiativeBonus !== undefined ? formatModifier(creature.initiativeBonus) : "—"}
           </IconStat>
           <IconStat
-            icon={<ProficiencyIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={CREATURE_PROFICIENCY_HINT_PANEL}
             label="Prof"
           >
             {creature.proficiencyBonus !== undefined ? formatModifier(creature.proficiencyBonus) : "—"}
           </IconStat>
           <IconStat
-            icon={<LanguageIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
-            label="Languages:"
+            label="Languages"
             valueTitle={creature.languages}
           >
             {creature.languages || "—"}
