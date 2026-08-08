@@ -45,3 +45,21 @@ with that version in brackets: `[1.0.1] Fix CI: run on push to every
 branch, not just main`. Bump the version and write the commit in the same
 step, so the bracketed number always matches what's actually in
 `package.json` in that commit.
+
+# Субагент conventions-checker
+
+Проєкт має субагента `conventions-checker` (`.claude/agents/conventions-checker.md`,
+read-only). Викликай його ПРОАКТИВНО, без нагадування від користувача,
+перед тим як:
+
+- додати нову іконку, стиль чи дрібний UI-компонент — щоб перевірити, чи
+  вже є щось готове в `src/components/ui/` (`icons.tsx`, `containerStyles.ts`,
+  `typography.ts` тощо);
+- додати новий хук, API-роут чи тип — щоб звірити форму з еталоном
+  (`useCreatures.ts` як зразок CRUD-хука, `schemas.ts`-валідація, розкладка
+  типів по `lib/types/`).
+
+Це легко забути в межах звичайного потоку роботи (сам факт, що субагент
+існує, не означає, що він автоматично використовується) — тримай цей
+пункт явно в увазі на початку кожної задачі, що торкається UI-кіту чи
+структурного коду, а не покладайся на пам'ять розмови.
