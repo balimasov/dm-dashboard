@@ -112,6 +112,7 @@ function AddCreaturePanel({
   addedTemplateIds,
   category,
   onResult,
+  busy,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Bestiary template ids already present in this campaign's roster — lets a search hit show "(Added)" instead of leaving no trace of a creature the DM already added a minute ago (e.g. while adding several different hits from one search). */
@@ -119,6 +120,8 @@ function AddCreaturePanel({
   /** Current value of the shared category selector rendered above this panel — applied to whatever gets added. */
   category: CreatureCategory;
   onResult: ResultReporter;
+  /** True while any of the three add panels (this one included) has a request in flight — see `CreatureRosterEditor`'s own doc comment on why this is tracked one level up instead of per-panel. Disables this panel's own buttons even when its *own* local flags are idle, so switching to this panel mid-import can't fire a second, overlapping add. */
+  busy: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -189,7 +192,7 @@ function AddCreaturePanel({
             }
           }}
         />
-        <Button type="button" onClick={handleSearch} disabled={!query.trim() || searching}>
+        <Button type="button" onClick={handleSearch} disabled={!query.trim() || searching || busy}>
           {searching ? "Searching..." : "Search"}
         </Button>
       </div>
@@ -212,7 +215,7 @@ function AddCreaturePanel({
               <button
                 type="button"
                 onClick={() => addHit(t)}
-                disabled={addingId !== null}
+                disabled={addingId !== null || busy}
                 className="shrink-0 text-sm text-sky-400 hover:underline disabled:opacity-50"
               >
                 {addingId === t.id ? "Adding..." : addedTemplateIds.has(t.id) ? "Add (Added)" : "Add"}
@@ -243,11 +246,14 @@ function AddManuallyPanel({
   onAdd,
   category,
   onResult,
+  busy,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Applied to whatever gets added. */
   category: CreatureCategory;
   onResult: ResultReporter;
+  /** See `AddCreaturePanel`'s own doc comment on this same prop. */
+  busy: boolean;
 }) {
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
@@ -282,7 +288,7 @@ function AddManuallyPanel({
             }
           }}
         />
-        <Button type="button" onClick={handleAdd} disabled={!name.trim() || adding}>
+        <Button type="button" onClick={handleAdd} disabled={!name.trim() || adding || busy}>
           {adding ? "Adding..." : "Add"}
         </Button>
       </div>
@@ -313,6 +319,7 @@ function ImportCreaturePanel({
   characters,
   category,
   onResult,
+  busy,
 }: {
   onAdd: (input: AddCreatureInput) => Promise<Creature>;
   /** Resolves the template's plain-text `ownerCharacter: "Aria"` field to an id — the parser itself only knows the schema, not any particular campaign's roster. */
@@ -320,6 +327,8 @@ function ImportCreaturePanel({
   /** The roster manager's active category tab — wins over whatever `category:` line the imported file itself has, since the tab is now the one place category is chosen. */
   category: CreatureCategory;
   onResult: ResultReporter;
+  /** See `AddCreaturePanel`'s own doc comment on this same prop. */
+  busy: boolean;
 }) {
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
@@ -449,7 +458,7 @@ function ImportCreaturePanel({
         <button type="button" onClick={downloadTemplate} className="text-sm text-sky-400 hover:underline">
           Download template (.yaml)
         </button>
-        <Button type="button" onClick={handleImport} disabled={!text.trim() || importing}>
+        <Button type="button" onClick={handleImport} disabled={!text.trim() || importing || busy}>
           {importing ? "Importing..." : "Import"}
         </Button>
       </div>
@@ -604,6 +613,24 @@ export function CreatureRosterEditor({
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
   const onAddResult = (message: string, variant: "success" | "error") => setToast({ message, variant });
 
+  // Each add panel tracks its own in-flight state locally (`searching`,
+  // `importing`, `adding`...) for its own button's label/disabling — but
+  // that alone only guards *that* panel's own buttons. Nothing stopped a
+  // DM from clicking "← Choose a different way" while e.g. an import was
+  // still resolving and firing a second, overlapping add from a
+  // freshly-mounted sibling panel. `busy` is tracked one level up here and
+  // passed to all three so each panel's buttons stay disabled for the
+  // whole app-wide request, not just its own.
+  const [busy, setBusy] = useState(false);
+  async function addCreatureTracked(input: AddCreatureInput): Promise<Creature> {
+    setBusy(true);
+    try {
+      return await addCreature(input);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div>
       <div className="mb-5">
@@ -611,25 +638,41 @@ export function CreatureRosterEditor({
           <AddCreatureModePicker onPick={setAddMode} />
         ) : (
           <>
+            {/* `block`, not the default `inline-block` a bare `<button>`
+                renders as — without it this sits a couple pixels lower than
+                the mode picker's own `<p>` heading it replaces (the
+                inline-block baseline-alignment quirk), which read as the
+                whole panel "jumping" when switching in and out of a mode
+                despite both elements sharing identical margin/line-height/
+                font-size otherwise. */}
             <button
               type="button"
               onClick={() => setAddMode(null)}
-              className="mb-3 text-sm text-slate-400 hover:text-slate-200"
+              className="mb-3 block text-sm text-slate-400 hover:text-slate-200"
             >
               ← Choose a different way
             </button>
             {addMode === "search" && (
               <AddCreaturePanel
-                onAdd={addCreature}
+                onAdd={addCreatureTracked}
                 addedTemplateIds={addedTemplateIds}
                 category={category}
                 onResult={onAddResult}
+                busy={busy}
               />
             )}
             {addMode === "import" && (
-              <ImportCreaturePanel onAdd={addCreature} characters={characters} category={category} onResult={onAddResult} />
+              <ImportCreaturePanel
+                onAdd={addCreatureTracked}
+                characters={characters}
+                category={category}
+                onResult={onAddResult}
+                busy={busy}
+              />
             )}
-            {addMode === "manual" && <AddManuallyPanel onAdd={addCreature} category={category} onResult={onAddResult} />}
+            {addMode === "manual" && (
+              <AddManuallyPanel onAdd={addCreatureTracked} category={category} onResult={onAddResult} busy={busy} />
+            )}
           </>
         )}
       </div>
