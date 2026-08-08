@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
 import { DotsVerticalIcon } from "./icons";
 
@@ -12,7 +13,12 @@ const EDGE_MARGIN = 8;
  * that don't deserve a permanent slot in an already-crowded toolbar — same
  * click-outside-closes pattern as `SyncAllButton`'s own interval menu.
  * Clicking anywhere inside the panel closes it, so a plain `<a>`/`<button>`
- * child doesn't need its own `onClick` just to dismiss the menu.
+ * child doesn't need its own `onClick` just to dismiss the menu. Escape
+ * closes it too, via the same shared `useEscapeToClose` stack every modal
+ * already uses — `active: open` so it only claims the Escape key (ahead of
+ * whatever modal this menu happens to be nested inside, e.g. a kebab opened
+ * from inside `CampaignFormModal`) while its own panel is actually showing,
+ * one fix here covering every kebab menu in the app at once.
  */
 export function MoreMenu({
   children,
@@ -61,6 +67,8 @@ export function MoreMenu({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEscapeToClose(() => setOpen(false), open);
 
   useEffect(() => {
     if (!open) return;

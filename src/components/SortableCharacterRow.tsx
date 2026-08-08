@@ -1,13 +1,11 @@
 "use client";
 
 import { Character } from "@/lib/types";
-import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
-import { IconButton } from "./ui/IconButton";
-import { EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "./ui/icons";
+import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 
 export function SortableCharacterRow({
   character,
@@ -28,29 +26,13 @@ export function SortableCharacterRow({
       dimmed={character.hidden}
       avatar={<CharacterAvatar character={character} />}
       actions={
-        <div className="flex items-center gap-1">
-          <IconButton tone="muted" onClick={() => onEdit(character)} title="Edit" aria-label="Edit">
-            <PencilIcon className="h-4 w-4" />
-          </IconButton>
-          <IconButton
-            tone="muted"
-            onClick={() => onToggleHidden(character.id)}
-            title={character.hidden ? "Show" : "Hide"}
-            aria-label={character.hidden ? "Show" : "Hide"}
-          >
-            {character.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
-          </IconButton>
-          <IconButton
-            tone="danger"
-            onClick={() => {
-              if (confirmRemoveFromCampaign(character.name)) onRemove(character.id);
-            }}
-            title="Remove"
-            aria-label="Remove"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </IconButton>
-        </div>
+        <EntityActionsMenu
+          onEdit={() => onEdit(character)}
+          name={character.name}
+          hidden={character.hidden}
+          onToggleHidden={() => onToggleHidden(character.id)}
+          onRemove={() => onRemove(character.id)}
+        />
       }
     >
       <p

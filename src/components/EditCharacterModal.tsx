@@ -526,20 +526,12 @@ export function EditCharacterModal({
                   onChange={(e) => setAdvantages(e.target.value)}
                 />
               </Field>
-              {/* Only field in this section not synced from D&D Beyond's own combat/proficiency data (or not synced reliably) — worth a manual field here rather than being stuck read-only until the next sync. */}
-              <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
-                <input
-                  className={`${inputCls} w-full`}
-                  value={draft.languages.join(", ")}
-                  onChange={(e) => setLanguages(e.target.value)}
-                />
-              </Field>
             </section>
 
-            {/* Senses */}
+            {/* Senses and Languages */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className={FORM_SECTION_HEADING_CLS}>Senses</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Senses and Languages</h2>
                 <button type="button" onClick={addSense} className={addBtnCls}>
                   + Sense
                 </button>
@@ -565,6 +557,14 @@ export function EditCharacterModal({
                   </div>
                 ))}
               </div>
+              {/* Only field in this section not synced from D&D Beyond's own combat/proficiency data (or not synced reliably) — worth a manual field here rather than being stuck read-only until the next sync. */}
+              <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
+                <input
+                  className={`${inputCls} w-full`}
+                  value={draft.languages.join(", ")}
+                  onChange={(e) => setLanguages(e.target.value)}
+                />
+              </Field>
             </section>
 
             {/* Resources */}

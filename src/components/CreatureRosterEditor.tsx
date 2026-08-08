@@ -18,7 +18,6 @@ import {
 } from "@dnd-kit/sortable";
 import { AddCreatureInput, useCreatures } from "@/hooks/useCreatures";
 import { apiFetch } from "@/lib/apiClient";
-import { confirmRemoveFromCampaign } from "@/lib/confirm";
 import {
   CREATURE_CATEGORY_LABELS,
   CREATURE_CATEGORY_SINGULAR_LABELS,
@@ -39,11 +38,10 @@ import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
-import { CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
+import { EntityActionsMenu } from "@/components/ui/EntityActionsMenu";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { inputCls } from "@/components/ui/Field";
-import { IconButton } from "@/components/ui/IconButton";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import {
   EMPTY_STATE_CLS,
@@ -397,7 +395,7 @@ function CreatureRow({
   onEdit: (creature: Creature) => void;
   onRemove: (id: string) => Promise<void>;
   onToggleHidden: (id: string) => void;
-  onDuplicate: (creature: Creature) => void;
+  onDuplicate: (creature: Creature, count: number) => void;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
   const infoLine = creatureInfoLine(creature);
@@ -416,32 +414,14 @@ function CreatureRow({
         </div>
       }
       actions={
-        <>
-          <IconButton tone="muted" onClick={() => onEdit(creature)} title="Edit" aria-label="Edit">
-            <PencilIcon className="h-4 w-4" />
-          </IconButton>
-          <IconButton tone="muted" onClick={() => onDuplicate(creature)} title="Duplicate" aria-label="Duplicate">
-            <CopyIcon className="h-4 w-4" />
-          </IconButton>
-          <IconButton
-            tone="muted"
-            onClick={() => onToggleHidden(creature.id)}
-            title={creature.hidden ? "Show" : "Hide"}
-            aria-label={creature.hidden ? "Show" : "Hide"}
-          >
-            {creature.hidden ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
-          </IconButton>
-          <IconButton
-            tone="danger"
-            onClick={() => {
-              if (confirmRemoveFromCampaign(creature.name)) onRemove(creature.id);
-            }}
-            title="Remove"
-            aria-label="Remove"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </IconButton>
-        </>
+        <EntityActionsMenu
+          onEdit={() => onEdit(creature)}
+          name={creature.name}
+          hidden={creature.hidden}
+          onToggleHidden={() => onToggleHidden(creature.id)}
+          onDuplicate={(count) => onDuplicate(creature, count)}
+          onRemove={() => onRemove(creature.id)}
+        />
       }
     >
       <p title={creature.name} className={`truncate ${LIST_ROW_TITLE_CLS}`}>
@@ -492,10 +472,14 @@ export function CreatureRosterEditor({
     if (creature) updateCreature(id, { hidden: !creature.hidden });
   }
 
-  async function handleDuplicate(creature: Creature) {
+  async function handleDuplicate(creature: Creature, count: number) {
     try {
-      const [copy] = await duplicateCreature(creature);
-      setToast({ message: `Duplicated "${creature.name}" as "${copy.name}".`, variant: "success" });
+      const copies = await duplicateCreature(creature, count);
+      const message =
+        copies.length === 1
+          ? `Duplicated "${creature.name}" as "${copies[0].name}".`
+          : `Duplicated "${creature.name}" into ${copies.length} copies.`;
+      setToast({ message, variant: "success" });
     } catch {
       setToast({ message: `Failed to duplicate "${creature.name}".`, variant: "error" });
     }
