@@ -110,8 +110,18 @@ export default async function RootLayout({
             </div>
           </header>
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-slate-800 py-3 text-center text-xs text-slate-600">
-            DM Dashboard · v{APP_VERSION} · dwarfbalin
+          <footer className="border-t border-slate-800 px-4 py-3 text-center text-xs text-slate-600">
+            <p>
+              DM Dashboard · v{APP_VERSION} · dwarfbalin ·{" "}
+              <Link href="/legal" className="hover:text-slate-400 hover:underline">
+                Legal &amp; Licenses
+              </Link>
+            </p>
+            {/* Short-form disclaimer — the fuller trademark/ownership statement lives on `/legal` itself. */}
+            <p className="mt-1">
+              DM Dashboard is an independent 5E-compatible tool. Not affiliated with or endorsed by Wizards of the
+              Coast or D&amp;D Beyond.
+            </p>
           </footer>
         </TimezoneProvider>
       </body>
