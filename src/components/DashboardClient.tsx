@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -39,7 +38,7 @@ import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconButton } from "@/components/ui/IconButton";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PlusIcon } from "@/components/ui/icons";
+import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { logout } from "@/app/login/actions";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
@@ -57,40 +56,17 @@ import {
 import { UserRole } from "@/lib/auth";
 
 /**
- * `layout.tsx`'s `#header-extra-slot` — read via `useSyncExternalStore`
- * rather than `useState`+`useEffect`, because this component renders
- * during SSR (it's not conditionally mounted client-side only, unlike
- * `FloatingPanel`/`InfoTooltip`'s own portal targets): a lazy `useState`
- * initializer that reads `document.getElementById` directly returns `null`
- * on the server (no `document` there) but the *real* element immediately
- * on the client's very first render (hydration itself runs in the
- * browser, where `document` already exists) — a same-first-render
- * server/client mismatch, exactly the case React's own hydration-mismatch
- * warning calls out. `useSyncExternalStore`'s separate server/client
- * snapshot getters are the React-documented way to read a browser-only
- * value like this without that mismatch: the server snapshot is `null`
- * (matching what the server actually rendered — nothing portaled), and the
- * client snapshot briefly disagreeing is exactly what this hook exists to
- * reconcile safely. No subscription needed — the slot element itself
- * never changes after the initial server-rendered HTML lands, so the
- * `subscribe` function is a no-op.
- */
-const noopSubscribe = () => () => {};
-function getHeaderSlotSnapshot(): HTMLElement | null {
-  return document.getElementById("header-extra-slot");
-}
-function getHeaderSlotServerSnapshot(): null {
-  return null;
-}
-
-/**
  * Doubles as the campaign's visual identity (its logo, or an initial-letter
  * badge) AND the trigger for its collapsed action menu — used as
  * `MoreMenu`'s `renderTrigger`. Same `h-9 w-9`/`rounded-lg`/`border-slate-700`
  * box the old purely-decorative version had, now an actual `<button>` with
- * `IconFab`'s own hover/focus recipe (`hover:bg-slate-800`, a focus ring)
- * plus a `title` — otherwise nothing here reads as clickable, unlike every
- * other icon control in this header.
+ * a `title` — otherwise nothing here reads as clickable, unlike every other
+ * icon control in this header. Hover reuses `focus-visible`'s own
+ * `ring-2 ring-sky-600` (not just `IconFab`'s plain `hover:bg-slate-800`,
+ * which reads too faint against this header's own translucent/blurred dark
+ * background) — the ring stays legible even when a campaign's own colorful
+ * logo image fills the whole box, since it draws *around* the box rather
+ * than relying on a background change the image would cover.
  */
 function CampaignMenuTrigger({ campaign, open, toggle }: { campaign: Campaign; open: boolean; toggle: () => void }) {
   return (
@@ -101,7 +77,7 @@ function CampaignMenuTrigger({ campaign, open, toggle }: { campaign: Campaign; o
       aria-expanded={open}
       aria-label="Campaign menu"
       title="Campaign menu"
-      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 text-sm font-semibold text-slate-600 hover:border-sky-600 hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 text-sm font-semibold text-slate-600 hover:border-sky-600 hover:bg-slate-800 hover:text-slate-300 hover:ring-2 hover:ring-sky-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
     >
       {campaign.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
@@ -468,14 +444,6 @@ export function DashboardClient({
   const [rosterTab, setRosterTab] = useState<RosterTab | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
-  // The global header's own extension point (`layout.tsx`'s `#header-extra-slot`)
-  // — the Sync/Journal/⋮ toolbar below portals into it instead of rendering
-  // as its own separately `sticky`+`backdrop-blur`'d element, so it reads
-  // as part of the same header instead of a second block with a visible
-  // seam where the two independent blur regions meet. See
-  // `getHeaderSlotSnapshot`'s own comment above for why this is
-  // `useSyncExternalStore`, not a plain lazy `useState`.
-  const headerSlot = useSyncExternalStore(noopSubscribe, getHeaderSlotSnapshot, getHeaderSlotServerSnapshot);
 
   // A player has no Settings modal to open at all — guarded here too (not
   // just by hiding every button that calls this), so nothing short of
@@ -595,127 +563,127 @@ export function DashboardClient({
     [isDm]
   );
 
-  // Portaled into `layout.tsx`'s `#header-extra-slot` (see `headerSlot`'s
-  // own comment above) instead of rendered as its own separately
-  // `sticky`+`backdrop-blur`'d block — physically part of the header
-  // element now, not a second block sitting flush under it, so there's no
-  // seam between two independent blur regions to chase. The slot itself is
-  // `display: contents` (see `layout.tsx`), so this lands as a direct flex
-  // item of the header row right after the brand link, on every breakpoint
-  // — no separate mobile row anymore. Collapsing everything but Sync Party
-  // behind the campaign menu is what makes one shared row wide enough at
-  // every width: the `.campaign-toolbar` marker class is what globals.css's
-  // `:has()` rule watches for to hide the header's fallback logout button
-  // once this menu's own "Log out" item exists. No mount-fade — an instant
-  // appearance reads as arriving, not blinking, unlike the opacity fade
-  // this replaced.
+  // `position: fixed` at the same `top-0`, same `mx-auto max-w-[1800px]
+  // px-4 py-3` centering as `layout.tsx`'s own header row, `z-20` above
+  // its `z-10` — lands visually right on top of that header without being
+  // a DOM descendant of it (no `createPortal`, no client-side mount to
+  // wait for: this is an ordinary part of the page's own server-rendered
+  // HTML, painted in the very first frame). The outer wrapper is
+  // `pointer-events-none` and spans the full row so it doesn't block
+  // clicks on the header's own brand link to its left; `pointer-events-
+  // auto` on the inner `.campaign-toolbar` re-enables them for its own
+  // buttons. No background/blur of its own, so there's no second blurred
+  // layer to seam against — it's just buttons floating on the header's
+  // one blur. `.campaign-toolbar` is also what globals.css's `:has()` rule
+  // watches for to hide the header's fallback logout button once this
+  // menu's own "Log out" item exists.
   const toolbar = (
-    <div className="campaign-toolbar flex flex-wrap items-center justify-end gap-2">
-      {lastSyncedAt && (
-        <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-          Synced <SyncTimestamp iso={lastSyncedAt} />
-        </span>
-      )}
-      {linkedCharacters.length > 0 && (
-        <div className="shrink-0">
-          <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
-        </div>
-      )}
-      <MoreMenu
-        renderTrigger={({ open, toggle }) => (
-          <CampaignMenuTrigger campaign={campaignState} open={open} toggle={toggle} />
-        )}
-      >
-        {/* Only surfaced here on mobile, where the plain-text timestamp
-            above is hidden — this is the one place left to see it on a
-            phone once the sync date lost its own header-row spot. */}
-        {lastSyncedAt && (
-          <div className={`border-b border-slate-800 px-3 pb-2 pt-1 sm:hidden ${MUTED_LABEL_CLS}`}>
-            Synced <SyncTimestamp iso={lastSyncedAt} />
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-[1800px] items-center justify-end px-4 py-3">
+      <div className="campaign-toolbar pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+        {linkedCharacters.length > 0 && (
+          <div className="shrink-0">
+            <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
           </div>
         )}
-        {/* Quick Note/Journal are shared by both roles — a DM's Quick Note
-            still lands in their own private journal, a player's lands in
-            the shared Party journal, and the full Journal modal shows each
-            role only the tab(s) it's allowed to see. */}
-        <button
-          type="button"
-          onClick={() => setQuickNoteOpen(true)}
-          title="Quick Note (n)"
-          className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+        <MoreMenu
+          renderTrigger={({ open, toggle }) => (
+            <CampaignMenuTrigger campaign={campaignState} open={open} toggle={toggle} />
+          )}
         >
-          <PencilIcon className="h-4 w-4 shrink-0 text-slate-400" />
-          Quick Note
-        </button>
-        <button
-          type="button"
-          onClick={() => setJournalOpen(true)}
-          title="Campaign Journal (j)"
-          className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
-        >
-          <NoteIcon className="h-4 w-4 shrink-0 text-slate-400" />
-          Campaign Journal
-        </button>
-        {/* A player has no use for any of these three — Export dumps the
-            whole campaign (including the enemies/NPCs/notes this role
-            otherwise never sees), and Settings has no reduced view of its
-            own — so the whole group is skipped rather than left in with an
-            action that would fail or leak data for that role. */}
-        {isDm && (
-          <>
-            <div className="my-1 border-t border-slate-800" />
-            <a
-              href={`/api/campaigns/${campaign.id}/export`}
-              title="Export this campaign as JSON"
-              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
-            >
-              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Export Campaign
-            </a>
-            <button
-              type="button"
-              onClick={() => openRoster("characters")}
-              title="Manage characters & creatures"
-              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
-            >
-              <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Characters &amp; Creatures
-            </button>
-            <button
-              type="button"
-              onClick={() => openSettings()}
-              title="Campaign settings"
-              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
-            >
-              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              Settings
-            </button>
-          </>
-        )}
-        <div className="my-1 border-t border-slate-800" />
-        {/* A real form submit (the `logout` server action imported below),
-            not a client-side redirect — same mechanism as the header's own
-            fallback button in `layout.tsx`, just reachable from in here
-            too now that this menu is the one place logout always lives
-            once it exists. */}
-        <form action={logout}>
-          <button type="submit" title="Log out of your account" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
-            <LogOutIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            Log out
+          {/* Always the first thing in the menu, on every breakpoint — not
+              also duplicated as separate header-row text on wide screens,
+              so there's exactly one place to look for it. Two-tone
+              "muted label, bright value" split matches the established
+              `AttackDisplay`/`SpellDisplay`/`CreatureAbilitiesPanel`
+              recipe for a label+value pair sharing one line. */}
+          {lastSyncedAt && (
+            <div className={`border-b border-slate-800 px-3 pb-2 pt-1 ${MUTED_LABEL_CLS}`}>
+              Synced <span className="font-semibold text-slate-100"><SyncTimestamp iso={lastSyncedAt} /></span>
+            </div>
+          )}
+          {/* Quick Note/Journal are shared by both roles — a DM's Quick Note
+              still lands in their own private journal, a player's lands in
+              the shared Party journal, and the full Journal modal shows each
+              role only the tab(s) it's allowed to see. */}
+          <button
+            type="button"
+            onClick={() => setQuickNoteOpen(true)}
+            title="Quick Note (N)"
+            className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+          >
+            <PencilIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Quick Note
           </button>
-        </form>
-      </MoreMenu>
+          <button
+            type="button"
+            onClick={() => setJournalOpen(true)}
+            title="Campaign Journal (J)"
+            className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+          >
+            <NoteIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Campaign Journal
+          </button>
+          {/* A player has no use for any of these three — Export dumps the
+              whole campaign (including the enemies/NPCs/notes this role
+              otherwise never sees), and Settings has no reduced view of its
+              own — so the whole group is skipped rather than left in with an
+              action that would fail or leak data for that role. */}
+          {isDm && (
+            <>
+              <div className="my-1 border-t border-slate-800" />
+              <a
+                href={`/api/campaigns/${campaign.id}/export`}
+                title="Export this campaign as JSON"
+                className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+              >
+                <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Export Campaign
+              </a>
+              <button
+                type="button"
+                onClick={() => openRoster("characters")}
+                title="Manage characters & creatures"
+                className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+              >
+                <PersonIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Characters &amp; Creatures
+              </button>
+              <button
+                type="button"
+                onClick={() => openSettings()}
+                title="Campaign settings"
+                className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+              >
+                <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                Settings
+              </button>
+            </>
+          )}
+          <div className="my-1 border-t border-slate-800" />
+          {/* A real form submit (the `logout` server action imported below),
+              not a client-side redirect — same mechanism as the header's own
+              fallback button in `layout.tsx`, just reachable from in here
+              too now that this menu is the one place logout always lives
+              once it exists. */}
+          <form action={logout}>
+            <button type="submit" title="Log out of your account" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
+              <LogOutIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Log out
+            </button>
+          </form>
+        </MoreMenu>
+      </div>
     </div>
   );
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pt-4 pb-8">
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
-      {headerSlot && createPortal(toolbar, headerSlot)}
-      {/* Sibling of the portaled toolbar above, not nested inside it — the
-          header it portals into has its own `backdrop-blur`, which creates
-          a containing block for `position: fixed` descendants and would
-          break this popover's own fixed positioning if it lived in there. */}
+      {toolbar}
+      {/* Sibling of the toolbar above, not nested inside it — the header it
+          overlays has its own `backdrop-blur`, which creates a containing
+          block for `position: fixed` descendants and would break this
+          popover's own fixed positioning if it lived in there. */}
       <QuickNotePopover campaignId={campaign.id} open={quickNoteOpen} onClose={() => setQuickNoteOpen(false)} />
 
       <div id="section-campaign" className="scroll-mt-[130px]">

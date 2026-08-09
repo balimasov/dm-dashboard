@@ -227,17 +227,18 @@ html::-webkit-scrollbar-thumb:hover,
   animation: inspiration-glow 2s ease-in-out infinite;
 }
 
-/* `DashboardClient`'s own campaign menu (rendered via `createPortal` into
-   `layout.tsx`'s `#header-extra-slot`) carries a "Log out" item as its own
+/* `DashboardClient`'s own campaign menu carries a "Log out" item as its own
    last entry — once that menu exists, the app-level fallback logout button
-   below is redundant, and `:has()` hides it the instant the menu's marker
-   class appears anywhere inside the shared header row. The fallback stays
-   visible everywhere else (the campaigns list, which has no campaign menu
-   at all) and for the brief pre-hydration window on this page too, since a
-   portal can't exist in server-rendered HTML — deliberately not animated
-   away, an instant swap reads as arriving, not blinking, the same call
-   already made for dropping this toolbar's own old pop-in fade. */
-.app-header-row:has(.campaign-toolbar) .header-logout-fallback {
+   in `layout.tsx` is redundant, and `:has()` hides it. Scoped to `body`
+   (not a closer shared ancestor) because the menu's `.campaign-toolbar`
+   wrapper is `position: fixed` — visually it sits right on top of the
+   header, but in the DOM tree it's a sibling of `<header>`, not a
+   descendant of it, since it's no longer portaled in. Since
+   `.campaign-toolbar` is now an ordinary part of that page's own
+   server-rendered HTML (not something a client-side portal adds after
+   hydration), this rule already matches in the very first paint — no
+   pop-in, no flash, nothing to animate away. */
+body:has(.campaign-toolbar) .header-logout-fallback {
   display: none;
 }
 

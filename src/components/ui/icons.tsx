@@ -88,6 +88,16 @@ export function ClockIcon({ className }: { className?: string }) {
   );
 }
 
+/** Generic person/creature silhouette — "Characters & Creatures" isn't an add/create action on its own (that lives inside the modal it opens), so a plus sign was the wrong signifier for it. */
+export function PersonIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <circle cx="12" cy="8" r="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function LogOutIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
