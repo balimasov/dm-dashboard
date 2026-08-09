@@ -99,6 +99,7 @@ export function SyncAllButton({
         {tier && (
           <InfoTooltip
             hoverOnly
+            mobileOnly
             panel={
               <p>
                 <span className={`font-semibold ${SYNC_TIER_CLASS[tier]}`}>
@@ -107,9 +108,10 @@ export function SyncAllButton({
               </p>
             }
           >
-            {/* Tap-to-toggle on mobile is how the exact date stays reachable
-                there — the text next to the icon is desktop-only, so a
-                phone only ever shows the tier-colored icon. */}
+            {/* `mobileOnly` — above `sm` the date already sits in plain text
+                right next to the icon, so a hint there would just repeat it.
+                Below `sm` that text is hidden, and tap-to-toggle is how the
+                exact date stays reachable from the icon alone. */}
             <span className="flex h-9 shrink-0 items-center gap-1.5 border-r border-slate-700 bg-slate-800 px-2.5">
               <ClockIcon className={`h-3.5 w-3.5 shrink-0 ${SYNC_TIER_CLASS[tier]}`} />
               <span className={`hidden whitespace-nowrap text-xs font-semibold sm:inline ${SYNC_TIER_CLASS[tier]}`}>

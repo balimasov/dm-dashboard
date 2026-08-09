@@ -57,6 +57,7 @@ export function InfoTooltip({
   hoverOnly = false,
   disableTap = false,
   desktopOnly = false,
+  mobileOnly = false,
   inline = false,
   className,
 }: {
@@ -81,6 +82,16 @@ export function InfoTooltip({
    * itself — pass both when the wrapped element needs neither.
    */
   desktopOnly?: boolean;
+  /**
+   * The mirror of `desktopOnly` — at/above `sm` the trigger stops listening
+   * for hover/focus/tap entirely, for a trigger whose panel would only
+   * repeat what's already shown as plain text right next to it once there's
+   * room for that text (e.g. the header sync pill's clock icon, once its
+   * date shows inline beside it above `sm` — the hint would just say the
+   * same thing again). Below `sm`, where that text is hidden, the trigger
+   * stays fully interactive.
+   */
+  mobileOnly?: boolean;
   /**
    * The trigger is always `inline-block` (sits on the same line as
    * surrounding text either way) — `inline` only skips the inner span's
@@ -107,21 +118,22 @@ export function InfoTooltip({
   // the trigger is briefly listening. Server-rendered as `true` (`window`
   // doesn't exist yet); harmless, since this only gates event handlers, not
   // anything present in the server-rendered HTML itself.
+  const watchesBreakpoint = desktopOnly || mobileOnly;
   const [isDesktop, setIsDesktop] = useState(
-    () => !desktopOnly || typeof window === "undefined" || window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+    () => !watchesBreakpoint || typeof window === "undefined" || window.matchMedia(DESKTOP_MEDIA_QUERY).matches
   );
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    if (!desktopOnly) return;
+    if (!watchesBreakpoint) return;
     const mql = window.matchMedia(DESKTOP_MEDIA_QUERY);
     const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
-  }, [desktopOnly]);
+  }, [watchesBreakpoint]);
 
-  const suppressed = desktopOnly && !isDesktop;
+  const suppressed = (desktopOnly && !isDesktop) || (mobileOnly && isDesktop);
   const visible = !suppressed && (open || hovered);
 
   // Position is written straight to the portaled panel's own DOM node via

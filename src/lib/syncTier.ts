@@ -3,9 +3,9 @@
  * `tierColor.ts` buckets HP percentage — except keyed off elapsed time
  * against fixed thresholds instead of a 0-100 percent, so it doesn't reuse
  * that file's `tierColorClass` signature directly. `fresh` stays neutral
- * (`text-slate-500`, the clock icon's original always-on color) rather than
- * emerald — an up-to-date sync isn't a "good" state worth celebrating, just
- * the absence of a problem, so there's nothing to call out.
+ * white (`text-slate-100`) rather than emerald — an up-to-date sync isn't a
+ * "good" state worth celebrating, just the absence of a problem, so there's
+ * nothing to call out beyond reading clearly.
  *
  * Thresholds: under an hour is normal (right after a sync, or mid-session
  * with auto-sync running), past an hour is worth a glance, past a day is a
@@ -26,9 +26,9 @@ export function syncTier(lastSyncedAt: string | undefined, now: number = Date.no
   return "fresh";
 }
 
-/** The `text-*` color for each tier — shared by the clock icon and its paired timestamp text, deliberately identical rather than a two-tone "muted label, bright value" split, so the icon and the date it explains always read as one colored unit. `fresh` matches the clock icon's original always-on `text-slate-500`. */
+/** The `text-*` color for each tier — shared by the clock icon and its paired timestamp text, deliberately identical rather than a two-tone "muted label, bright value" split, so the icon and the date it explains always read as one colored unit. `fresh` is plain white — a synced-and-fine state has nothing to flag, so it just needs to read clearly next to the amber/red states that do. */
 export const SYNC_TIER_CLASS: Record<SyncTier, string> = {
-  fresh: "text-slate-500",
+  fresh: "text-slate-100",
   aging: "text-amber-400",
   stale: "text-red-400",
 };

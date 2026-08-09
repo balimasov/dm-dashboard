@@ -32,19 +32,17 @@ import { RemindersPanel } from "@/components/RemindersPanel";
 import { RosterManagerModal, type RosterTab } from "@/components/RosterManagerModal";
 import { SectionNavRail, type SectionNavItem } from "@/components/ui/SectionNavRail";
 import { SyncAllButton } from "@/components/SyncAllButton";
-import { SyncTimestamp } from "@/components/SyncTimestamp";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconButton } from "@/components/ui/IconButton";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
-import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
+import { MUTED_BODY_CLS } from "@/components/ui/typography";
 import { logout } from "@/app/login/actions";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { reorderSubset } from "@/lib/reorderSubset";
-import { SYNC_TIER_CLASS, syncTier } from "@/lib/syncTier";
 import {
   CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
@@ -521,16 +519,15 @@ export function DashboardClient({
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
   // The *oldest* sync among linked characters, not the most recent — this
-  // feeds the header's clock icon color (see `partySyncTier` below) and its
-  // whole point is flagging "does anyone in the party need a refresh," not
-  // "did anything happen recently." A character who's never synced at all
-  // doesn't count here (nothing to date it by), same as `DdbSyncStatus`'s
-  // own per-character clock icon skips that case.
+  // feeds the header sync pill's clock icon color (via `SyncAllButton`'s own
+  // `syncTier` call) and its whole point is flagging "does anyone in the
+  // party need a refresh," not "did anything happen recently." A character
+  // who's never synced at all doesn't count here (nothing to date it by),
+  // same as `DdbSyncStatus`'s own per-character clock icon skips that case.
   const oldestSyncedAt = linkedCharacters.reduce<string | undefined>((oldest, c) => {
     if (!c.lastSyncedAt) return oldest;
     return !oldest || c.lastSyncedAt < oldest ? c.lastSyncedAt : oldest;
   }, undefined);
-  const partySyncTier = syncTier(oldestSyncedAt);
 
   async function handleSyncAll() {
     if (linkedCharacters.length === 0) return;
@@ -631,19 +628,6 @@ export function DashboardClient({
             <CampaignMenuTrigger campaign={campaignState} open={open} toggle={toggle} />
           )}
         >
-          {/* Always the first thing in the menu, on every breakpoint —
-              repeats the sync pill's own desktop-only date (visible there
-              too, not an either/or) so it's never missing on mobile, where
-              that inline text is hidden and only the pill's tap-to-reveal
-              icon carries it. */}
-          {oldestSyncedAt && (
-            <div className={`border-b border-slate-800 px-3 pb-2 pt-1 ${MUTED_LABEL_CLS}`}>
-              Synced{" "}
-              <span className={`font-semibold ${SYNC_TIER_CLASS[partySyncTier]}`}>
-                <SyncTimestamp iso={oldestSyncedAt} />
-              </span>
-            </div>
-          )}
           {/* Quick Note/Journal are shared by both roles — a DM's Quick Note
               still lands in their own private journal, a player's lands in
               the shared Party journal, and the full Journal modal shows each
