@@ -229,6 +229,24 @@ export function BloodDropIcon({ className }: { className?: string }) {
   );
 }
 
+/** Death-save success — "still clinging to life," paired with `SkullIcon` for failures. Filled, not stroked, like `BloodDropIcon` — reads clearer at the 12-16px this renders at than a thin outline would. */
+export function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+    </svg>
+  );
+}
+
+/** Death-save failure, paired with `HeartIcon` for successes. */
+export function SkullIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2C7.5 2 4.5 5.3 4.5 9.7c0 2.9 1.4 4.8 2.9 6V18a1 1 0 0 0 1 1h1.2v-1.8h1v1.8h2.8v-1.8h1V19H15.6a1 1 0 0 0 1-1v-2.3c1.5-1.2 2.9-3.1 2.9-6C19.5 5.3 16.5 2 12 2zM9.3 9.5a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm5.4 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z" />
+    </svg>
+  );
+}
+
 export function FlameIcon({ className, filled }: { className?: string; filled?: boolean }) {
   return (
     <svg

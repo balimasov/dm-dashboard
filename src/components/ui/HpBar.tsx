@@ -2,7 +2,7 @@ import { NumberInput } from "@/components/NumberInput";
 import { DotMeter } from "@/components/ResourceMeter";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { tierColorClass, tierTextClass } from "@/lib/tierColor";
-import { BloodDropIcon } from "./icons";
+import { BloodDropIcon, HeartIcon, SkullIcon } from "./icons";
 
 export function HpBar({
   hp,
@@ -86,8 +86,14 @@ export function HpBar({
               <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
             )}
             <span className="text-slate-400">Saves</span>
-            <span className="inline-flex items-center gap-1 align-middle text-emerald-400">
-              ✅
+            {/* `HeartIcon`/`SkullIcon` — same neutral `text-slate-400` every
+                other small icon in the app uses; the color-coding lives on
+                the dots themselves (`colorClass`), not the icon, so it
+                doesn't double up and blend into them. No separator between
+                the two groups — the row's own `gap-1.5` already keeps them
+                apart. */}
+            <span className="inline-flex items-center gap-1 align-middle">
+              <HeartIcon className="h-4 w-4 shrink-0 text-slate-400" />
               <DotMeter
                 current={deathSaves.successes}
                 max={3}
@@ -97,9 +103,8 @@ export function HpBar({
                 }
               />
             </span>
-            <span className="text-slate-600">·</span>
-            <span className="inline-flex items-center gap-1 align-middle text-red-400">
-              ❌
+            <span className="inline-flex items-center gap-1 align-middle">
+              <SkullIcon className="h-4 w-4 shrink-0 text-slate-400" />
               <DotMeter
                 current={deathSaves.failures}
                 max={3}

@@ -146,9 +146,9 @@ function CampaignRow({
         <div className="relative z-10 shrink-0">
           {/* `whitespace-nowrap` on every item (not just the longest one) so
               they all size consistently against the popover's own
-              content-driven width — "Export Campaign" is the widest label
-              here, longer than `MoreMenu`'s `min-w-[9rem]` default fits on
-              one line otherwise. `portal` — without it, an open panel on one
+              content-driven width — "Duplicate" is the widest label here,
+              longer than `MoreMenu`'s `min-w-[9rem]` default fits on one
+              line otherwise. `portal` — without it, an open panel on one
               row rendered in-flow at `z-30` inside that row's own (unstacked)
               `<li>`, and the *next* row's `<li>` — later in DOM order, also
               unstacked — still painted its own kebab trigger on top of the
@@ -156,16 +156,21 @@ function CampaignRow({
               uses for character/creature cards in a list, for the same
               reason. */}
           <MoreMenu label="Campaign actions" portal variant="plain">
-            <a href={`/api/campaigns/${campaign.id}/export`} className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
-              <DownloadIcon className="h-4 w-4 shrink-0" />
-              Export Campaign
-            </a>
             {onEdit && (
               <button type="button" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`} onClick={() => onEdit(campaign)}>
                 <PencilIcon className="h-4 w-4 shrink-0" />
                 Edit
               </button>
             )}
+            {/* Just "Export" here — unlike the dashboard header's own kebab
+                (which also has a "Characters & Creatures" item that "Export
+                Campaign" needs to be told apart from), this row is already
+                scoped to one campaign, so the export action's target is
+                unambiguous without spelling it out. */}
+            <a href={`/api/campaigns/${campaign.id}/export`} className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
+              <DownloadIcon className="h-4 w-4 shrink-0" />
+              Export
+            </a>
             {onDuplicate && (
               <button type="button" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`} onClick={() => onDuplicate(campaign)}>
                 <CopyIcon className="h-4 w-4 shrink-0" />

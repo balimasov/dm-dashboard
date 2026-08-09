@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/Button";
 import { inputCls } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { Modal } from "@/components/ui/Modal";
-import { INLINE_ERROR_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
+import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 
 const MAX_QUICK_LINKS = 15;
 
@@ -178,6 +178,10 @@ type Actions = Pick<ReturnType<typeof useCampaigns>, "updateCampaign"> & {
  * `divider` defaults on (a border-top separating it from the section
  * before), but Notes sits right under the name/logo row with its own
  * heading already doing the separating, so a line there read as redundant.
+ * Heading uses `FORM_SECTION_HEADING_CLS` — the same uppercase/tracked
+ * label style "Basic Info"/"Combat State"/"Stats" use in the character and
+ * creature edit forms, instead of this modal's own previous one-off
+ * (non-uppercase, brighter `slate-200`) recipe.
  */
 function Section({
   title,
@@ -192,7 +196,7 @@ function Section({
 }) {
   return (
     <section className={`pt-5 first:pt-0 ${divider ? "border-t border-slate-800/80 first:border-t-0" : ""}`}>
-      <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
+      <h3 className={FORM_SECTION_HEADING_CLS}>{title}</h3>
       {description && <p className={`mt-1 ${MUTED_LABEL_CLS}`}>{description}</p>}
       <div className="mt-3">{children}</div>
     </section>

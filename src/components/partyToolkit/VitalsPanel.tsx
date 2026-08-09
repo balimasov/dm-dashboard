@@ -5,7 +5,7 @@ import { InfoTooltip } from "../InfoTooltip";
 import { DotMeter } from "../ResourceMeter";
 import { CharacterChip } from "../ui/CharacterChip";
 import { ConditionHintPanel } from "../ui/conditionHints";
-import { ShieldIcon } from "../ui/icons";
+import { HeartIcon, ShieldIcon, SkullIcon } from "../ui/icons";
 import { CONCENTRATION_HINT_TEXT, CONDITION_HUES } from "../ui/StatusRail";
 import { ToolkitCard } from "../ui/ToolkitCard";
 import { MICRO_LABEL_STRONG_CLS } from "../ui/typography";
@@ -148,9 +148,13 @@ function DeathSavesRow({ deathSaves }: { deathSaves?: { successes: number; failu
   const failures = deathSaves?.failures ?? 0;
   return (
     <div className={`${HP_LINE_CLASS} gap-1`}>
-      <span className="text-[9px] text-emerald-400">✅</span>
+      {/* `h-3 w-3` — the smallest icon size already used elsewhere in the
+          app (`AcBadge`'s own `ShieldIcon`), comfortably inside this row's
+          `h-5` — not a bespoke tiny size matching the old `text-[9px]`
+          emoji pixel-for-pixel. */}
+      <HeartIcon className="h-3 w-3 shrink-0 text-slate-400" />
       <DotMeter current={successes} max={3} colorClass="bg-emerald-500" />
-      <span className="text-[9px] text-red-400">❌</span>
+      <SkullIcon className="h-3 w-3 shrink-0 text-slate-400" />
       <DotMeter current={failures} max={3} colorClass="bg-red-500" />
     </div>
   );
