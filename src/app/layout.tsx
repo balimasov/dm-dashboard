@@ -34,7 +34,22 @@ export default async function RootLayout({
           <TimezoneSync />
           <GlobalLoadingIndicator />
           <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
-            <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-x-2 gap-y-2 px-4 py-3">
+            {/* `min-h-[60px]` — this row's own `py-3` (12px) top/bottom
+                plus `DashboardClient`'s `h-9` (36px) toolbar buttons add up
+                to exactly 60px, the total height its `position: fixed`
+                overlay computes for itself (see that component's own doc
+                comment) — it's no longer a DOM descendant sharing this
+                flexbox, so nothing here forces the two to agree on their
+                own. Without this, this row's own shorter content (just the
+                28px logo, once the fallback logout is hidden) gave it a
+                shorter total height than the overlay's, so the overlay's
+                buttons sat off-center against this header's real
+                border-bottom — 12px above them, 5px below. (`min-h-9`
+                alone doesn't work here: with Tailwind's `border-box`
+                sizing, `min-height` includes the row's own padding, so a
+                bare 36px min-height leaves only 12px for content, not the
+                36px intended — the explicit `[60px]` sidesteps that.) */}
+            <div className="mx-auto flex max-w-[1800px] min-h-[60px] flex-wrap items-center gap-x-2 gap-y-2 px-4 py-3">
               <Link href="/" className="mr-auto flex shrink-0 items-center gap-2 font-semibold text-slate-100">
                 {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset, no need for next/image here */}
                 <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />

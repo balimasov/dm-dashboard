@@ -58,15 +58,17 @@ import { UserRole } from "@/lib/auth";
 /**
  * Doubles as the campaign's visual identity (its logo, or an initial-letter
  * badge) AND the trigger for its collapsed action menu — used as
- * `MoreMenu`'s `renderTrigger`. Same `h-9 w-9`/`rounded-lg`/`border-slate-700`
- * box the old purely-decorative version had, now an actual `<button>` with
- * a `title` — otherwise nothing here reads as clickable, unlike every other
- * icon control in this header. Hover reuses `focus-visible`'s own
- * `ring-2 ring-sky-600` (not just `IconFab`'s plain `hover:bg-slate-800`,
- * which reads too faint against this header's own translucent/blurred dark
- * background) — the ring stays legible even when a campaign's own colorful
- * logo image fills the whole box, since it draws *around* the box rather
- * than relying on a background change the image would cover.
+ * `MoreMenu`'s `renderTrigger`. Same `h-9 w-9`/`rounded-lg`/`border-slate-700`/
+ * `bg-slate-800` box the old purely-decorative version had, now an actual
+ * `<button>` with a `title` — otherwise nothing here reads as clickable,
+ * unlike every other icon control in this header. Hover is a light border
+ * tint (`hover:border-sky-600`, same recipe the rest of this header's
+ * controls use) plus `hover:brightness-75` — a `filter`, not a `bg-*`
+ * swap, so it visibly darkens *whatever's already inside the box*
+ * uniformly, the same technique `Pill`/`AbilityScoreBox` already use for
+ * their own hover (there `brightness-125` to lighten; here `brightness-75`
+ * to darken) — unlike a background-color hover, it still reads clearly
+ * even when a campaign's own colorful logo image fills the whole box.
  */
 function CampaignMenuTrigger({ campaign, open, toggle }: { campaign: Campaign; open: boolean; toggle: () => void }) {
   return (
@@ -77,7 +79,7 @@ function CampaignMenuTrigger({ campaign, open, toggle }: { campaign: Campaign; o
       aria-expanded={open}
       aria-label="Campaign menu"
       title="Campaign menu"
-      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 text-sm font-semibold text-slate-600 hover:border-sky-600 hover:bg-slate-800 hover:text-slate-300 hover:ring-2 hover:ring-sky-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-slate-600 transition hover:border-sky-600 hover:brightness-75 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
     >
       {campaign.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
@@ -580,6 +582,15 @@ export function DashboardClient({
   const toolbar = (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-[1800px] items-center justify-end px-4 py-3">
       <div className="campaign-toolbar pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+        {/* Desktop only — mobile has no room to spare for it next to the
+            button, so it's reachable there only inside the menu below,
+            which repeats it (same two-tone treatment) as that menu's own
+            first item so it's never missing entirely on a narrow screen. */}
+        {lastSyncedAt && (
+          <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
+            Synced <span className="font-semibold text-slate-100"><SyncTimestamp iso={lastSyncedAt} /></span>
+          </span>
+        )}
         {linkedCharacters.length > 0 && (
           <div className="shrink-0">
             <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
@@ -590,10 +601,11 @@ export function DashboardClient({
             <CampaignMenuTrigger campaign={campaignState} open={open} toggle={toggle} />
           )}
         >
-          {/* Always the first thing in the menu, on every breakpoint — not
-              also duplicated as separate header-row text on wide screens,
-              so there's exactly one place to look for it. Two-tone
-              "muted label, bright value" split matches the established
+          {/* Always the first thing in the menu, on every breakpoint —
+              repeats the header row's own desktop-only text above (visible
+              there too, not an either/or) so it's never missing on mobile,
+              where that inline text is hidden. Two-tone "muted label,
+              bright value" split matches the established
               `AttackDisplay`/`SpellDisplay`/`CreatureAbilitiesPanel`
               recipe for a label+value pair sharing one line. */}
           {lastSyncedAt && (
