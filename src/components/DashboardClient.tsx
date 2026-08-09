@@ -463,6 +463,17 @@ export function DashboardClient({
     setRosterTab(tab);
   }
 
+  // Same DM-only guard as `openSettings`/`openRoster`, for the "E" hotkey
+  // — the menu item itself is a plain `<a href>` download link (no click
+  // handler to hang a guard off), so this is the only place that check
+  // happens for the keyboard path. A GET to a `Content-Disposition:
+  // attachment` route, so setting `location.href` triggers the download
+  // without navigating away, same as clicking the link would.
+  function exportCampaign() {
+    if (!isDm) return;
+    window.location.href = `/api/campaigns/${campaign.id}/export`;
+  }
+
   async function patchCampaign(id: string, updates: Partial<Campaign>) {
     setCampaignState((c) => ({ ...c, ...updates }));
     await apiFetch(`/api/campaigns/${id}`, {
@@ -537,6 +548,10 @@ export function DashboardClient({
   useGlobalHotkey("j", () => setJournalOpen(true));
   useGlobalHotkey("n", () => setQuickNoteOpen(true));
   useGlobalHotkey("s", () => void handleSyncAll(), linkedCharacters.length > 0);
+  useGlobalHotkey("e", exportCampaign, isDm);
+  useGlobalHotkey("c", () => openRoster("characters"), isDm);
+  // "S" is already Sync Party — "G" for the gear this same item shows.
+  useGlobalHotkey("g", openSettings, isDm);
 
   // Mirrors exactly what's actually on the page for this role (see the
   // matching `id`s below) — a player never gets Campaign/Enemies/NPCs
@@ -645,7 +660,7 @@ export function DashboardClient({
               <div className="my-1 border-t border-slate-800" />
               <a
                 href={`/api/campaigns/${campaign.id}/export`}
-                title="Export this campaign as JSON"
+                title="Export this campaign as JSON (E)"
                 className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
               >
                 <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
@@ -654,7 +669,7 @@ export function DashboardClient({
               <button
                 type="button"
                 onClick={() => openRoster("characters")}
-                title="Manage characters & creatures"
+                title="Manage characters & creatures (C)"
                 className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
               >
                 <PersonIcon className="h-4 w-4 shrink-0 text-slate-400" />
@@ -663,7 +678,7 @@ export function DashboardClient({
               <button
                 type="button"
                 onClick={() => openSettings()}
-                title="Campaign settings"
+                title="Campaign settings (G)"
                 className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
               >
                 <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />

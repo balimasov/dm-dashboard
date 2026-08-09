@@ -85,32 +85,48 @@ export function HpBar({
             ) : (
               <span className={`text-2xl font-bold ${hpTextColor}`}>{hp}</span>
             )}
-            <span className="text-slate-400">Saves</span>
-            {/* `HeartIcon`/`SkullIcon` — same neutral `text-slate-400` every
-                other small icon in the app uses; the color-coding lives on
-                the dots themselves (`colorClass`), not the icon, so it
-                doesn't double up and blend into them. No separator between
-                the two groups — the row's own `gap-1.5` already keeps them
-                apart. */}
-            <span className="inline-flex items-center gap-1 align-middle">
-              <HeartIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              <DotMeter
-                current={deathSaves.successes}
-                max={3}
-                colorClass="bg-emerald-500"
-                onSetCount={
-                  onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
-                }
-              />
-            </span>
-            <span className="inline-flex items-center gap-1 align-middle">
-              <SkullIcon className="h-4 w-4 shrink-0 text-slate-400" />
-              <DotMeter
-                current={deathSaves.failures}
-                max={3}
-                colorClass="bg-red-500"
-                onSetCount={onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined}
-              />
+            {/* "Saves" and the two icon pairs are grouped into one flex
+                item (`items-center` against each other, isolated from the
+                outer row's `items-baseline`) rather than being three
+                separate top-level items — `HeartIcon`/`SkullIcon` have no
+                text of their own to contribute a real baseline, so as
+                direct children of the `items-baseline` row they centered
+                against that row's *tallest* line (the 2xl HP number)
+                instead of against "Saves" specifically, landing a few
+                pixels off. Grouped like this, "Saves" is the only text
+                baseline in play for the outer row (still lines up with the
+                HP number as before), while the icons center tightly
+                against "Saves" alone. */}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-slate-400">Saves</span>
+              {/* `HeartIcon`/`SkullIcon` — same neutral `text-slate-400`
+                  every other small icon in the app uses; the color-coding
+                  lives on the dots themselves (`colorClass`), not the
+                  icon, so it doesn't double up and blend into them. No
+                  separator between the two groups — `gap-1.5` already
+                  keeps them apart. */}
+              <span className="inline-flex items-center gap-1">
+                <HeartIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                <DotMeter
+                  current={deathSaves.successes}
+                  max={3}
+                  colorClass="bg-emerald-500"
+                  onSetCount={
+                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, successes: n }) : undefined
+                  }
+                />
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <SkullIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                <DotMeter
+                  current={deathSaves.failures}
+                  max={3}
+                  colorClass="bg-red-500"
+                  onSetCount={
+                    onDeathSavesChange ? (n) => onDeathSavesChange({ ...deathSaves, failures: n }) : undefined
+                  }
+                />
+              </span>
             </span>
           </span>
         ) : (
