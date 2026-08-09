@@ -238,11 +238,11 @@ export function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-/** Death-save failure, paired with `HeartIcon` for successes. */
+/** Death-save failure, paired with `HeartIcon` for successes. Widened from its first pass to fill roughly the same share of the 24x24 box `HeartIcon` does (~80% width) — the original was noticeably narrower (~62%), so the two read as different sizes even at identical container dimensions. */
 export function SkullIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 2C7.5 2 4.5 5.3 4.5 9.7c0 2.9 1.4 4.8 2.9 6V18a1 1 0 0 0 1 1h1.2v-1.8h1v1.8h2.8v-1.8h1V19H15.6a1 1 0 0 0 1-1v-2.3c1.5-1.2 2.9-3.1 2.9-6C19.5 5.3 16.5 2 12 2zM9.3 9.5a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm5.4 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z" />
+      <path d="M12 2C6.5 2 2.5 6 2.5 10.8c0 3.3 1.9 5.5 3.8 6.9V19a1 1 0 0 0 1 1h1.4v-1.9h1v1.9h2.6v-1.9h1V20h1.4a1 1 0 0 0 1-1v-1.3c1.9-1.4 3.8-3.6 3.8-6.9C21.5 6 17.5 2 12 2zM8.6 9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zm6.8 0a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z" />
     </svg>
   );
 }

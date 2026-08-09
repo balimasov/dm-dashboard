@@ -74,18 +74,13 @@ function NotionIcon({ className }: { className?: string }) {
   );
 }
 
-/** An open notebook with a small spark above it, for the "LM" (language model) half of NotebookLM. */
+/** Three nested arches sharing a baseline — NotebookLM's actual mark (a blue-to-purple gradient set of concentric arcs), simplified to a single-stroke silhouette matching every other icon in this registry (tinted by `colorClass` at the call site, not a baked-in gradient). Closer to the real logo than the previous open-book-and-spark design, which didn't resemble it at all. */
 function NotebookLMIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className}>
-      <path
-        d="M3.5 6.5c2.4-1 5-1 7 .3v11c-2-1.3-4.6-1.3-7-.3v-11Zm17 0c-2.4-1-5-1-7 .3v11c2-1.3 4.6-1.3 7-.3v-11Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path d="M17.5 2.5 18.6 5l2.4.6-2.4.6-1.1 2.3-1.1-2.3-2.4-.6 2.4-.6Z" fill="currentColor" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={className}>
+      <path d="M3 20A9 9 0 0 1 21 20" />
+      <path d="M6.5 20A5.5 5.5 0 0 1 17.5 20" />
+      <path d="M10 20A2 2 0 0 1 14 20" />
     </svg>
   );
 }

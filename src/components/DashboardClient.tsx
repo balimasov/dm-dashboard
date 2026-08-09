@@ -399,6 +399,13 @@ function CreatureCategorySection({
   );
 }
 
+// Temporarily off — the Reminders section (below `RemindersPanel`/
+// `section-reminders`) is hidden from the dashboard for now, but the
+// component/data/hook it depends on are all untouched, so flipping this
+// back to `true` is the entire revert. Grep this name to find every place
+// that toggle touches (the section itself and its nav-rail entry).
+const SHOW_REMINDERS_SECTION = false;
+
 export function DashboardClient({
   campaign,
   initialCharacters,
@@ -565,7 +572,7 @@ export function DashboardClient({
   const navItems: SectionNavItem[] = useMemo(
     () => [
       ...(isDm ? [{ id: "section-campaign", emoji: "📜", label: "Campaign" }] : []),
-      { id: "section-reminders", emoji: "🔥", label: "Reminders" },
+      ...(SHOW_REMINDERS_SECTION ? [{ id: "section-reminders", emoji: "🔥", label: "Reminders" }] : []),
       { id: "section-party-toolkit", emoji: "🧭", label: "Party Toolkit" },
       { id: "section-inventory", emoji: "💎", label: "Inventory" },
       { id: "section-party", emoji: "🛡️", label: "Party" },
@@ -737,16 +744,18 @@ export function DashboardClient({
           browser receives at all), so a player's reminders can only ever
           surface their characters and their own Companions, never an
           Enemy/NPC's traits they've never been shown. */}
-      <div id="section-reminders" className="scroll-mt-[130px]">
-        <RemindersPanel
-          characters={characters}
-          creatures={creatures}
-          onUpdateCharacter={updateCharacter}
-          onUpdateCreature={updateCreature}
-          storageKey="dm-dashboard-reminders-open"
-          initialOpen={initialOpen.reminders}
-        />
-      </div>
+      {SHOW_REMINDERS_SECTION && (
+        <div id="section-reminders" className="scroll-mt-[130px]">
+          <RemindersPanel
+            characters={characters}
+            creatures={creatures}
+            onUpdateCharacter={updateCharacter}
+            onUpdateCreature={updateCreature}
+            storageKey="dm-dashboard-reminders-open"
+            initialOpen={initialOpen.reminders}
+          />
+        </div>
+      )}
 
       {/* Floating quick-access counterpart to the block above, plus the new
           per-card "🔥 N" badges on `CharacterCard`/`CreatureCard` — same
