@@ -238,11 +238,14 @@ export function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-/** Death-save failure, paired with `HeartIcon` for successes. Widened from its first pass to fill roughly the same share of the 24x24 box `HeartIcon` does (~80% width) — the original was noticeably narrower (~62%), so the two read as different sizes even at identical container dimensions. */
+/** Death-save failure, paired with `HeartIcon` for successes. Redrawn as a mirror-symmetric outline (every left-side coordinate is the exact `24 - x` reflection of its right-side counterpart) plus eye sockets and a nose notch cut via `fillRule="evenodd"` — the previous hand-typed bezier had a subtle left/right asymmetry that read as slightly lopsided, and its jaw "teeth" notches (drawn as part of the outline itself, not a clean hole) were the hardest part to keep symmetric by hand. */
 export function SkullIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 2C6.5 2 2.5 6 2.5 10.8c0 3.3 1.9 5.5 3.8 6.9V19a1 1 0 0 0 1 1h1.4v-1.9h1v1.9h2.6v-1.9h1V20h1.4a1 1 0 0 0 1-1v-1.3c1.9-1.4 3.8-3.6 3.8-6.9C21.5 6 17.5 2 12 2zM8.6 9a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zm6.8 0a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z" />
+      <path
+        fillRule="evenodd"
+        d="M12 2C16.5 2 21 6 21 11C21 15 18.5 18 15 19.3L13 20.5Q12 21 11 20.5L9 19.3C5.5 18 3 15 3 11C3 6 7.5 2 12 2ZM8.5 8.3a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4ZM15.5 8.3a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4ZM12 13.2l-1.3 2.3h2.6z"
+      />
     </svg>
   );
 }

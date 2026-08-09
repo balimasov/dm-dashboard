@@ -18,6 +18,7 @@ import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { NotesEditor } from "@/components/NotesEditor";
 import { QuickNotePopover } from "@/components/QuickNotePopover";
 import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
@@ -38,12 +39,13 @@ import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconButton } from "@/components/ui/IconButton";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
+import { ClockIcon, DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { logout } from "@/app/login/actions";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { reorderSubset } from "@/lib/reorderSubset";
+import { SYNC_TIER_ICON_CLASS, SYNC_TIER_VALUE_CLASS, syncTier } from "@/lib/syncTier";
 import {
   CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
@@ -519,10 +521,17 @@ export function DashboardClient({
   }
 
   const linkedCharacters = characters.filter((c) => c.dndBeyondUrl);
-  const lastSyncedAt = linkedCharacters.reduce<string | undefined>((latest, c) => {
-    if (!c.lastSyncedAt) return latest;
-    return !latest || c.lastSyncedAt > latest ? c.lastSyncedAt : latest;
+  // The *oldest* sync among linked characters, not the most recent — this
+  // feeds the header's clock icon color (see `partySyncTier` below) and its
+  // whole point is flagging "does anyone in the party need a refresh," not
+  // "did anything happen recently." A character who's never synced at all
+  // doesn't count here (nothing to date it by), same as `DdbSyncStatus`'s
+  // own per-character clock icon skips that case.
+  const oldestSyncedAt = linkedCharacters.reduce<string | undefined>((oldest, c) => {
+    if (!c.lastSyncedAt) return oldest;
+    return !oldest || c.lastSyncedAt < oldest ? c.lastSyncedAt : oldest;
   }, undefined);
+  const partySyncTier = syncTier(oldestSyncedAt);
 
   async function handleSyncAll() {
     if (linkedCharacters.length === 0) return;
@@ -604,13 +613,36 @@ export function DashboardClient({
   const toolbar = (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-[1800px] items-center justify-end px-4 py-3">
       <div className="campaign-toolbar pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+        {/* Clock icon — always visible, mobile included, colored by
+            `partySyncTier` the same way `DdbSyncStatus`'s own per-card icon
+            is: neutral once everyone's fresh, amber/red once the party's
+            *oldest* sync starts aging. On a phone this is the only signal
+            at all (the text next to it is desktop-only), so tapping it
+            (via `InfoTooltip`'s tap-to-toggle) is how the exact date stays
+            reachable without opening the menu. */}
+        {oldestSyncedAt && (
+          <InfoTooltip
+            hoverOnly
+            panel={
+              <p>
+                Synced <SyncTimestamp iso={oldestSyncedAt} />
+                {partySyncTier !== "fresh" && " — consider re-syncing"}
+              </p>
+            }
+          >
+            <ClockIcon className={`h-4 w-4 shrink-0 ${SYNC_TIER_ICON_CLASS[partySyncTier]}`} />
+          </InfoTooltip>
+        )}
         {/* Desktop only — mobile has no room to spare for it next to the
             button, so it's reachable there only inside the menu below,
             which repeats it (same two-tone treatment) as that menu's own
             first item so it's never missing entirely on a narrow screen. */}
-        {lastSyncedAt && (
+        {oldestSyncedAt && (
           <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-            Synced <span className="font-semibold text-slate-100"><SyncTimestamp iso={lastSyncedAt} /></span>
+            Synced{" "}
+            <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}>
+              <SyncTimestamp iso={oldestSyncedAt} />
+            </span>
           </span>
         )}
         {linkedCharacters.length > 0 && (
@@ -630,9 +662,12 @@ export function DashboardClient({
               bright value" split matches the established
               `AttackDisplay`/`SpellDisplay`/`CreatureAbilitiesPanel`
               recipe for a label+value pair sharing one line. */}
-          {lastSyncedAt && (
+          {oldestSyncedAt && (
             <div className={`border-b border-slate-800 px-3 pb-2 pt-1 ${MUTED_LABEL_CLS}`}>
-              Synced <span className="font-semibold text-slate-100"><SyncTimestamp iso={lastSyncedAt} /></span>
+              Synced{" "}
+              <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}>
+                <SyncTimestamp iso={oldestSyncedAt} />
+              </span>
             </div>
           )}
           {/* Quick Note/Journal are shared by both roles — a DM's Quick Note
