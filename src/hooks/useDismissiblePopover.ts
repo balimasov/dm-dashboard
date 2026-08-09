@@ -11,9 +11,9 @@ import { useEscapeToClose } from "./useEscapeToClose";
  * that holds both the trigger button and the popover itself, so a click on
  * the trigger (which toggles `open`) isn't also mistaken for an outside
  * click that immediately closes it again. Deliberately not wired into
- * `QuickNoteButton` — its trigger/popover are a genuinely different shape
- * (inline header toolbar icon, not a corner FAB), not just a near-miss of
- * these two.
+ * `QuickNotePopover` — its trigger/popover are a genuinely different shape
+ * (a menu row, not a corner FAB, with open state controlled by its caller
+ * rather than owned here), not just a near-miss of these two.
  */
 export function useDismissiblePopover() {
   const [open, setOpen] = useState(false);

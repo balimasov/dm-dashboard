@@ -4,15 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { createJournalEntryApi } from "@/lib/journalApi";
 import { plainTextToParagraphHtml } from "@/lib/journal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { Toast } from "./Toast";
 import { POPOVER_SHELL_CLS } from "./ui/containerStyles";
-import { IconFab } from "./ui/IconFab";
-import { PencilIcon } from "./ui/icons";
 import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
 
 /**
- * Always-visible fast-entry point for a DM-private journal note — doesn't
+ * Always-reachable fast-entry point for a DM-private journal note — doesn't
  * know about sessions at all (unlike `CampaignJournalModal`/`useJournal`);
  * the server auto-resolves "today's" session for whatever it creates. A
  * plain `<textarea>`, not the full `NotesEditor` — Tiptap's own default
@@ -22,27 +19,42 @@ import { INLINE_ERROR_XS_CLS, MUTED_LABEL_CLS } from "./ui/typography";
  * up as the same HTML shape every other journal entry uses (see
  * `plainTextToParagraphHtml`), so it opens and edits identically in the
  * full Journal modal later.
+ *
+ * Controlled (`open`/`onClose`) rather than owning its own trigger — the
+ * trigger is now a "Quick Note" row inside `DashboardClient`'s campaign
+ * menu, which closes itself on any inner click; a popover nested inside
+ * that menu's own conditionally-rendered panel would unmount the instant
+ * it opened. Rendered as a sibling of that menu instead, `fixed` near the
+ * top-right of the viewport rather than anchored to a specific trigger
+ * element, since the row that opens it no longer exists once the menu
+ * that contained it has closed.
  */
-export function QuickNoteButton({ campaignId }: { campaignId: string }) {
-  const [open, setOpen] = useState(false);
+export function QuickNotePopover({
+  campaignId,
+  open,
+  onClose,
+}: {
+  campaignId: string;
+  open: boolean;
+  onClose: () => void;
+}) {
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEscapeToClose(() => setOpen(false), open);
-  useGlobalHotkey("n", () => setOpen(true));
+  useEscapeToClose(onClose, open);
 
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  }, [open, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,7 +79,7 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
     try {
       await createJournalEntryApi({ campaignId, text: plainTextToParagraphHtml(trimmed) });
       setText("");
-      setOpen(false);
+      onClose();
       setToast("Note saved.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save note.");
@@ -77,18 +89,16 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <IconFab onClick={() => setOpen((o) => !o)} aria-label="Quick Note" title="Quick Note (n)">
-        <PencilIcon className="h-4 w-4" />
-      </IconFab>
+    <>
       {open && (
-        // `fixed` + `inset-x-3` on mobile — anchoring this as an `absolute
-        // right-0` dropdown (still used from `sm:` up) let its fixed width
-        // run past the left edge of a narrow viewport whenever the trigger
-        // button sat close enough to the right edge, clipping the panel.
-        // Pinning both side edges to the viewport with a margin sidesteps
-        // that regardless of where the button ends up in the header row.
-        <div className={`fixed inset-x-3 top-24 z-30 p-3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-10 sm:w-80 ${POPOVER_SHELL_CLS}`}>
+        // `fixed` on every breakpoint (not just mobile, like the old
+        // trigger-anchored version) — there's no longer a trigger element to
+        // anchor an `absolute` panel to, since the row that opens this lives
+        // inside a menu that's already closed by the time this renders.
+        <div
+          ref={panelRef}
+          className={`fixed inset-x-3 top-20 z-30 p-3 sm:inset-x-auto sm:right-4 sm:top-16 sm:w-80 ${POPOVER_SHELL_CLS}`}
+        >
           <textarea
             ref={textareaRef}
             value={text}
@@ -118,6 +128,6 @@ export function QuickNoteButton({ campaignId }: { campaignId: string }) {
         </div>
       )}
       {toast && <Toast variant="success" message={toast} onDismiss={() => setToast(null)} />}
-    </div>
+    </>
   );
 }

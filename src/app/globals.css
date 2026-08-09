@@ -227,25 +227,18 @@ html::-webkit-scrollbar-thumb:hover,
   animation: inspiration-glow 2s ease-in-out infinite;
 }
 
-/* `DashboardClient`'s Sync/Journal/⋮ toolbar, portaled into `layout.tsx`'s
-   `header-extra-slot` — that slot's own `min-h-[53px]` already reserves its
-   footprint up front, so the toolbar no longer shoves page content down
-   when it mounts (a portal can't exist in server-rendered HTML, so it's
-   always a moment after hydration). Without this, the toolbar still
-   *popped* into that reserved space in a single frame — no layout jump
-   left to notice, but the sudden appearance itself read as a flash/flicker
-   now that it's the only thing changing. A short fade softens that instant
-   appearance into something that reads as arriving, not blinking on. */
-@keyframes header-toolbar-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.header-toolbar-fade-in {
-  animation: header-toolbar-fade-in 200ms ease-out;
+/* `DashboardClient`'s own campaign menu (rendered via `createPortal` into
+   `layout.tsx`'s `#header-extra-slot`) carries a "Log out" item as its own
+   last entry — once that menu exists, the app-level fallback logout button
+   below is redundant, and `:has()` hides it the instant the menu's marker
+   class appears anywhere inside the shared header row. The fallback stays
+   visible everywhere else (the campaigns list, which has no campaign menu
+   at all) and for the brief pre-hydration window on this page too, since a
+   portal can't exist in server-rendered HTML — deliberately not animated
+   away, an instant swap reads as arriving, not blinking, the same call
+   already made for dropping this toolbar's own old pop-in fade. */
+.app-header-row:has(.campaign-toolbar) .header-logout-fallback {
+  display: none;
 }
 
 /* `NotesEditor`'s Tiptap content area — ProseMirror emits plain <h1>-<h3>/

@@ -50,7 +50,7 @@ export const ENTITY_CARD_BASE_CLS = "rounded-xl border shadow-lg shadow-black/20
 
 /**
  * "Popover-shell" — a floating dropdown/menu panel anchored off a trigger
- * button. Exact match across `SyncAllButton.tsx`, `QuickNoteButton.tsx`,
+ * button. Exact match across `SyncAllButton.tsx`, `QuickNotePopover.tsx`,
  * `QuickLinksButton.tsx`, `ui/SelectMenu.tsx`, `ui/MoreMenu.tsx` (both
  * variants), `ui/StatusRail.tsx` — each still layers its own
  * position/z-index/size/padding on top. `Toast.tsx`'s superficially similar
@@ -62,9 +62,9 @@ export const POPOVER_SHELL_CLS = "rounded-lg border border-slate-700 bg-slate-90
 
 /**
  * Shell for the app's floating "quick action" popovers — `RemindersFab`,
- * `QuickLinksButton`, `QuickNoteButton`, unified into one look (and one
- * `QuickMenuPanel` component) after those three drifted into slightly
- * different header/background treatments. Deliberately darker
+ * `QuickLinksButton`, unified into one look (and one `QuickMenuPanel`
+ * component) after those two drifted into slightly different
+ * header/background treatments. Deliberately darker
  * (`bg-slate-950`) than `POPOVER_SHELL_CLS`'s `bg-slate-900` — that's this
  * family's own established look (`RemindersFab`'s original recipe), not a
  * near-miss of the more common dropdown/kebab-menu shell above.

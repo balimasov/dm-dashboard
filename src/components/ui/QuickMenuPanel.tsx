@@ -5,10 +5,11 @@ import { PANEL_HEADING_CLS } from "./typography";
  * Shared shell + header for the app's two corner-pinned quick-action FAB
  * popovers (`RemindersFab`, `QuickLinksButton`) — same dark card, same
  * `icon + title + (count)` header row, same hairline divider under it.
- * Deliberately NOT used by `QuickNoteButton` — that one's trigger lives
- * inline in the header toolbar (not a corner FAB) and its popover already
- * carries its own distinct shape/anchoring, a genuinely different affordance
- * rather than a near-miss of these two. Only the header's own content is
+ * Deliberately NOT used by `QuickNotePopover` — that one's trigger is a row
+ * inside the campaign menu, not a corner FAB, and its popover already
+ * carries its own distinct shape/anchoring (`fixed` near the header, open
+ * state controlled by its caller), a genuinely different affordance rather
+ * than a near-miss of these two. Only the header's own content is
  * standardized here; positioning (`absolute`, corner offsets, width) and
  * scrolling (`max-h`, `overflow-y-auto`, `scrollbar-themed`) stay owned by
  * each caller via `className`, since those genuinely differ per trigger —

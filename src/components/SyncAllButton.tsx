@@ -82,7 +82,7 @@ export function SyncAllButton({
       <button
         onClick={onSync}
         disabled={syncing}
-        title={autoSyncMinutes > 0 ? `Sync All (s) — auto-syncing every ${autoSyncMinutes} min` : "Sync All (s)"}
+        title={autoSyncMinutes > 0 ? `Sync Party (s) — auto-syncing every ${autoSyncMinutes} min` : "Sync Party (s)"}
         className="flex h-9 min-w-[102px] items-center justify-center gap-1.5 rounded-l-lg bg-sky-600 px-4 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
       >
         <RefreshIcon className={`h-4 w-4 shrink-0 ${syncing ? "animate-spin" : ""}`} />
@@ -90,7 +90,7 @@ export function SyncAllButton({
           "Syncing..."
         ) : (
           <>
-            Sync All
+            Sync Party
             {autoSyncMinutes > 0 && <span className="font-normal text-amber-200">· {autoSyncMinutes}m</span>}
           </>
         )}

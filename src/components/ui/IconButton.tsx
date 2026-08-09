@@ -24,8 +24,8 @@ import { ButtonHTMLAttributes } from "react";
  * sky-tinted) — so the affordance ("this is clickable, here's its exact
  * bounding box") reads identically everywhere regardless of role.
  *
- * Bordered, larger "fab"-style icon buttons (`QuickNoteButton`, the
- * kebab-menu trigger, Journal's export button — `h-9 w-9`/`h-7 w-7` with
+ * Bordered, larger "fab"-style icon buttons (the kebab-menu trigger,
+ * Journal's export button — `h-9 w-9`/`h-7 w-7` with
  * their own border/background) are a genuinely different, separate shape —
  * see `IconFab.tsx`, not this component.
  *

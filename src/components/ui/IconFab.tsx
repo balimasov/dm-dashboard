@@ -1,8 +1,8 @@
 import { ButtonHTMLAttributes } from "react";
 
 /**
- * The larger, bordered "fab"-style icon button — `QuickNoteButton` and
- * Journal's export button each hand-rolled this shape independently
+ * The larger, bordered "fab"-style icon button — Journal's export button
+ * and others hand-rolled this shape independently
  * (`flex h-9/h-7 w-9/w-7 items-center justify-center rounded-lg border
  * border-slate-700 ... hover:bg-slate-800`). A genuinely different shape
  * from `IconButton` (bordered, its own background, meant to stand alone

@@ -20,13 +20,12 @@ import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
 import { NotesEditor } from "@/components/NotesEditor";
-import { QuickNoteButton } from "@/components/QuickNoteButton";
+import { QuickNotePopover } from "@/components/QuickNotePopover";
 import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { CreatureCard } from "@/components/CreatureCard";
 import { CoinsPanel, InventoryOverview } from "@/components/InventoryOverview";
-import { InfoTooltip } from "@/components/InfoTooltip";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
 import { RemindersFab } from "@/components/RemindersFab";
@@ -39,10 +38,10 @@ import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconButton } from "@/components/ui/IconButton";
-import { IconFab } from "@/components/ui/IconFab";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon, NoteIcon, PencilIcon, PlusIcon } from "@/components/ui/icons";
+import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PlusIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
+import { logout } from "@/app/login/actions";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { reorderSubset } from "@/lib/reorderSubset";
@@ -84,22 +83,33 @@ function getHeaderSlotServerSnapshot(): null {
   return null;
 }
 
-/** Sized and bordered to match the adjacent Settings button (same height, same rounded-lg/border-slate-700 treatment) so the two read as one aligned group. */
-function CampaignLogo({ campaign }: { campaign: Campaign }) {
-  if (campaign.logoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
-      <img
-        src={campaign.logoUrl}
-        alt=""
-        className="h-9 w-9 shrink-0 rounded-lg border border-slate-700 object-cover"
-      />
-    );
-  }
+/**
+ * Doubles as the campaign's visual identity (its logo, or an initial-letter
+ * badge) AND the trigger for its collapsed action menu — used as
+ * `MoreMenu`'s `renderTrigger`. Same `h-9 w-9`/`rounded-lg`/`border-slate-700`
+ * box the old purely-decorative version had, now an actual `<button>` with
+ * `IconFab`'s own hover/focus recipe (`hover:bg-slate-800`, a focus ring)
+ * plus a `title` — otherwise nothing here reads as clickable, unlike every
+ * other icon control in this header.
+ */
+function CampaignMenuTrigger({ campaign, open, toggle }: { campaign: Campaign; open: boolean; toggle: () => void }) {
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-slate-600">
-      {campaign.name.trim().charAt(0).toUpperCase() || "?"}
-    </div>
+    <button
+      type="button"
+      onClick={toggle}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      aria-label="Campaign menu"
+      title="Campaign menu"
+      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 text-sm font-semibold text-slate-600 hover:border-sky-600 hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+    >
+      {campaign.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- base64 data URI, next/image can't optimize it
+        <img src={campaign.logoUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        campaign.name.trim().charAt(0).toUpperCase() || "?"
+      )}
+    </button>
   );
 }
 
@@ -457,6 +467,7 @@ export function DashboardClient({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rosterTab, setRosterTab] = useState<RosterTab | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   // The global header's own extension point (`layout.tsx`'s `#header-extra-slot`)
   // — the Sync/Journal/⋮ toolbar below portals into it instead of rendering
   // as its own separately `sticky`+`backdrop-blur`'d element, so it reads
@@ -554,6 +565,7 @@ export function DashboardClient({
   }
 
   useGlobalHotkey("j", () => setJournalOpen(true));
+  useGlobalHotkey("n", () => setQuickNoteOpen(true));
   useGlobalHotkey("s", () => void handleSyncAll(), linkedCharacters.length > 0);
 
   // Mirrors exactly what's actually on the page for this role (see the
@@ -587,84 +599,112 @@ export function DashboardClient({
   // own comment above) instead of rendered as its own separately
   // `sticky`+`backdrop-blur`'d block — physically part of the header
   // element now, not a second block sitting flush under it, so there's no
-  // seam between two independent blur regions to chase. The slot itself now
-  // lives *inside* the header's own `mx-auto max-w-[1800px] px-4` row (see
-  // its doc comment in `layout.tsx`), so this no longer needs its own copy
-  // of that centering/padding — on mobile it's still visually a second row
-  // (the slot forces that via `w-full`), on `sm:`+ it's just another inline
-  // item sharing the brand+logout row. `border-t`/`pt-2` only apply on
-  // mobile, where a divider above a genuine second row still reads as one;
-  // inline on desktop it would just be a stray horizontal line floating
-  // mid-row. `header-toolbar-fade-in` (globals.css) softens this toolbar's
-  // unavoidable pop-in — mobile's slot reservation stops it from shoving
-  // content down there, but it still arrives in a single frame with nothing
-  // to smooth that out otherwise.
+  // seam between two independent blur regions to chase. The slot itself is
+  // `display: contents` (see `layout.tsx`), so this lands as a direct flex
+  // item of the header row right after the brand link, on every breakpoint
+  // — no separate mobile row anymore. Collapsing everything but Sync Party
+  // behind the campaign menu is what makes one shared row wide enough at
+  // every width: the `.campaign-toolbar` marker class is what globals.css's
+  // `:has()` rule watches for to hide the header's fallback logout button
+  // once this menu's own "Log out" item exists. No mount-fade — an instant
+  // appearance reads as arriving, not blinking, unlike the opacity fade
+  // this replaced.
   const toolbar = (
-    <div className="header-toolbar-fade-in flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-2 sm:border-t-0 sm:pt-0">
+    <div className="campaign-toolbar flex flex-wrap items-center justify-end gap-2">
       {lastSyncedAt && (
-        <>
-          {/* Full text on desktop, where there's room to spare... */}
-          <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-            Synced <SyncTimestamp iso={lastSyncedAt} />
-          </span>
-          {/* ...a tap/hover-able clock icon on mobile instead of hiding this
-              entirely — otherwise there's no way at all on a phone to tell
-              when the party last synced. */}
-          <span className="sm:hidden">
-            <InfoTooltip
-              hoverOnly
-              panel={
-                <p>
-                  Synced <SyncTimestamp iso={lastSyncedAt} />
-                </p>
-              }
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400">
-                <ClockIcon className="h-4 w-4" />
-              </span>
-            </InfoTooltip>
-          </span>
-        </>
+        <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
+          Synced <SyncTimestamp iso={lastSyncedAt} />
+        </span>
       )}
       {linkedCharacters.length > 0 && (
         <div className="shrink-0">
           <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
         </div>
       )}
-      {/* Quick Note/Journal are shared by both roles now — a DM's Quick
-          Note still lands in their own private journal, a player's
-          lands in the shared Party journal, and the full Journal modal
-          shows each role only the tab(s) it's allowed to see. */}
-      <QuickNoteButton campaignId={campaign.id} />
-      <IconFab onClick={() => setJournalOpen(true)} aria-label="Campaign Journal" title="Campaign Journal (j)">
-        <NoteIcon className="h-4 w-4" />
-      </IconFab>
-      {/* A player has nothing in this menu — Export dumps the whole
-          campaign (including the enemies/NPCs/notes this role otherwise
-          never sees), and Settings has no reduced view of its own — so
-          the menu itself is skipped rather than left open with an empty
-          or half-working dropdown. */}
-      {isDm && (
-        <MoreMenu>
-          <a
-            href={`/api/campaigns/${campaign.id}/export`}
-            title="Download this campaign (and its characters/creatures) as JSON"
-            className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
-          >
-            <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            Export Campaign
-          </a>
-          <button type="button" onClick={() => openRoster("characters")} className={MORE_MENU_ITEM_CLASS}>
-            <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            Characters &amp; Creatures
+      <MoreMenu
+        renderTrigger={({ open, toggle }) => (
+          <CampaignMenuTrigger campaign={campaignState} open={open} toggle={toggle} />
+        )}
+      >
+        {/* Only surfaced here on mobile, where the plain-text timestamp
+            above is hidden — this is the one place left to see it on a
+            phone once the sync date lost its own header-row spot. */}
+        {lastSyncedAt && (
+          <div className={`border-b border-slate-800 px-3 pb-2 pt-1 sm:hidden ${MUTED_LABEL_CLS}`}>
+            Synced <SyncTimestamp iso={lastSyncedAt} />
+          </div>
+        )}
+        {/* Quick Note/Journal are shared by both roles — a DM's Quick Note
+            still lands in their own private journal, a player's lands in
+            the shared Party journal, and the full Journal modal shows each
+            role only the tab(s) it's allowed to see. */}
+        <button
+          type="button"
+          onClick={() => setQuickNoteOpen(true)}
+          title="Quick Note (n)"
+          className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+        >
+          <PencilIcon className="h-4 w-4 shrink-0 text-slate-400" />
+          Quick Note
+        </button>
+        <button
+          type="button"
+          onClick={() => setJournalOpen(true)}
+          title="Campaign Journal (j)"
+          className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+        >
+          <NoteIcon className="h-4 w-4 shrink-0 text-slate-400" />
+          Campaign Journal
+        </button>
+        {/* A player has no use for any of these three — Export dumps the
+            whole campaign (including the enemies/NPCs/notes this role
+            otherwise never sees), and Settings has no reduced view of its
+            own — so the whole group is skipped rather than left in with an
+            action that would fail or leak data for that role. */}
+        {isDm && (
+          <>
+            <div className="my-1 border-t border-slate-800" />
+            <a
+              href={`/api/campaigns/${campaign.id}/export`}
+              title="Export this campaign as JSON"
+              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+            >
+              <DownloadIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Export Campaign
+            </a>
+            <button
+              type="button"
+              onClick={() => openRoster("characters")}
+              title="Manage characters & creatures"
+              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+            >
+              <PlusIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Characters &amp; Creatures
+            </button>
+            <button
+              type="button"
+              onClick={() => openSettings()}
+              title="Campaign settings"
+              className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}
+            >
+              <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
+              Settings
+            </button>
+          </>
+        )}
+        <div className="my-1 border-t border-slate-800" />
+        {/* A real form submit (the `logout` server action imported below),
+            not a client-side redirect — same mechanism as the header's own
+            fallback button in `layout.tsx`, just reachable from in here
+            too now that this menu is the one place logout always lives
+            once it exists. */}
+        <form action={logout}>
+          <button type="submit" title="Log out of your account" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`}>
+            <LogOutIcon className="h-4 w-4 shrink-0 text-slate-400" />
+            Log out
           </button>
-          <button type="button" onClick={() => openSettings()} className={MORE_MENU_ITEM_CLASS}>
-            <GearIcon className="h-4 w-4 shrink-0 text-slate-400" />
-            Settings
-          </button>
-        </MoreMenu>
-      )}
-      <CampaignLogo campaign={campaignState} />
+        </form>
+      </MoreMenu>
     </div>
   );
 
@@ -672,6 +712,11 @@ export function DashboardClient({
     <div className="mx-auto max-w-[1800px] px-4 pt-4 pb-8">
       <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
       {headerSlot && createPortal(toolbar, headerSlot)}
+      {/* Sibling of the portaled toolbar above, not nested inside it — the
+          header it portals into has its own `backdrop-blur`, which creates
+          a containing block for `position: fixed` descendants and would
+          break this popover's own fixed positioning if it lived in there. */}
+      <QuickNotePopover campaignId={campaign.id} open={quickNoteOpen} onClose={() => setQuickNoteOpen(false)} />
 
       <div id="section-campaign" className="scroll-mt-[130px]">
         <CollapsibleSection
