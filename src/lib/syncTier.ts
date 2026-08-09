@@ -7,14 +7,15 @@
  * emerald — an up-to-date sync isn't a "good" state worth celebrating, just
  * the absence of a problem, so there's nothing to call out.
  *
- * Thresholds assume a roughly weekly session cadence: under a day is normal
- * (nobody re-syncs mid-week), 1-3 days is "you might want to refresh before
- * next session," 3+ days is "this is probably stale."
+ * Thresholds: under an hour is normal (right after a sync, or mid-session
+ * with auto-sync running), past an hour is worth a glance, past a day is a
+ * real flag — HP/resources drift fast enough during actual play that even
+ * same-day can be meaningfully out of date.
  */
 export type SyncTier = "fresh" | "aging" | "stale";
 
-const AGING_AFTER_MS = 24 * 60 * 60 * 1000;
-const STALE_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
+const AGING_AFTER_MS = 60 * 60 * 1000;
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 /** `undefined` (never synced) reads as `"fresh"` — callers that care about "never synced" already show a separate banner for that (`DdbSyncStatus`'s `!synced` check); this tier is only meaningful once there's an actual timestamp to age. */
 export function syncTier(lastSyncedAt: string | undefined, now: number = Date.now()): SyncTier {

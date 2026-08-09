@@ -625,8 +625,7 @@ export function DashboardClient({
             hoverOnly
             panel={
               <p>
-                Synced <SyncTimestamp iso={oldestSyncedAt} />
-                {partySyncTier !== "fresh" && " — consider re-syncing"}
+                Synced <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}><SyncTimestamp iso={oldestSyncedAt} /></span>
               </p>
             }
           >

@@ -238,14 +238,20 @@ export function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-/** Death-save failure, paired with `HeartIcon` for successes. Redrawn as a mirror-symmetric outline (every left-side coordinate is the exact `24 - x` reflection of its right-side counterpart) plus eye sockets and a nose notch cut via `fillRule="evenodd"` — the previous hand-typed bezier had a subtle left/right asymmetry that read as slightly lopsided, and its jaw "teeth" notches (drawn as part of the outline itself, not a clean hole) were the hardest part to keep symmetric by hand. */
+/**
+ * Death-save failure, paired with `HeartIcon` for successes. This is the
+ * original prototype's outline (the one confirmed to actually look right,
+ * teeth and all — an in-between attempt at "fixing" its asymmetry read as
+ * more lopsided, not less), scaled 1.28x wider around its own vertical
+ * midline (y untouched, so nothing pushes past the 0-24 viewBox) to fill
+ * roughly the same ~80% share of the box `HeartIcon` does — the original
+ * only filled ~62%, reading noticeably smaller at matching container
+ * sizes despite being drawn to the same scale.
+ */
 export function SkullIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path
-        fillRule="evenodd"
-        d="M12 2C16.5 2 21 6 21 11C21 15 18.5 18 15 19.3L13 20.5Q12 21 11 20.5L9 19.3C5.5 18 3 15 3 11C3 6 7.5 2 12 2ZM8.5 8.3a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4ZM15.5 8.3a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4ZM12 13.2l-1.3 2.3h2.6z"
-      />
+      <path d="M12 2C6.24 2 2.4 5.3 2.4 9.7c0 2.9 1.79 4.8 3.71 6V18a1.28 1 0 0 0 1.28 1h1.54v-1.8h1.28v1.8h3.58v-1.8h1.28V19H16.61a1.28 1 0 0 0 1.28-1v-2.3c1.92-1.2 3.71-3.1 3.71-6C21.6 5.3 17.76 2 12 2zM8.54 9.5a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zm6.92 0a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z" />
     </svg>
   );
 }

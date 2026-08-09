@@ -1,6 +1,6 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
-import { SYNC_TIER_ICON_CLASS, syncTier } from "@/lib/syncTier";
+import { SYNC_TIER_ICON_CLASS, SYNC_TIER_VALUE_CLASS, syncTier } from "@/lib/syncTier";
 import { ClockIcon, ExternalLinkIcon } from "./icons";
 
 /**
@@ -77,8 +77,7 @@ export function DdbSyncStatus({
                 ) : (
                   lastSyncedAt && (
                     <>
-                      Last synced <SyncTimestamp iso={lastSyncedAt} />
-                      {tier !== "fresh" && " — consider re-syncing"}
+                      Synced <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[tier]}`}><SyncTimestamp iso={lastSyncedAt} /></span>
                     </>
                   )
                 )}
