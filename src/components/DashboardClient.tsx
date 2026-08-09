@@ -18,7 +18,6 @@ import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { CampaignJournalModal } from "@/components/CampaignJournalModal";
-import { InfoTooltip } from "@/components/InfoTooltip";
 import { NotesEditor } from "@/components/NotesEditor";
 import { QuickNotePopover } from "@/components/QuickNotePopover";
 import { CampaignDataProvider } from "@/contexts/CampaignDataContext";
@@ -39,13 +38,13 @@ import { Button } from "@/components/ui/Button";
 import { DIM_ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { IconButton } from "@/components/ui/IconButton";
 import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
-import { ClockIcon, DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
+import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 import { logout } from "@/app/login/actions";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { reorderSubset } from "@/lib/reorderSubset";
-import { SYNC_TIER_ICON_CLASS, SYNC_TIER_VALUE_CLASS, syncTier } from "@/lib/syncTier";
+import { SYNC_TIER_CLASS, syncTier } from "@/lib/syncTier";
 import {
   CREATURE_CATEGORY_EMOJI,
   CREATURE_CATEGORY_LABELS,
@@ -613,40 +612,18 @@ export function DashboardClient({
   const toolbar = (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-[1800px] items-center justify-end px-4 py-3">
       <div className="campaign-toolbar pointer-events-auto flex flex-wrap items-center justify-end gap-2">
-        {/* Clock icon — always visible, mobile included, colored by
-            `partySyncTier` the same way `DdbSyncStatus`'s own per-card icon
-            is: neutral once everyone's fresh, amber/red once the party's
-            *oldest* sync starts aging. On a phone this is the only signal
-            at all (the text next to it is desktop-only), so tapping it
-            (via `InfoTooltip`'s tap-to-toggle) is how the exact date stays
-            reachable without opening the menu. */}
-        {oldestSyncedAt && (
-          <InfoTooltip
-            hoverOnly
-            panel={
-              <p>
-                Synced <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}><SyncTimestamp iso={oldestSyncedAt} /></span>
-              </p>
-            }
-          >
-            <ClockIcon className={`h-4 w-4 shrink-0 ${SYNC_TIER_ICON_CLASS[partySyncTier]}`} />
-          </InfoTooltip>
-        )}
-        {/* Desktop only — mobile has no room to spare for it next to the
-            button, so it's reachable there only inside the menu below,
-            which repeats it (same two-tone treatment) as that menu's own
-            first item so it's never missing entirely on a narrow screen. */}
-        {oldestSyncedAt && (
-          <span className={`hidden shrink-0 whitespace-nowrap sm:inline ${MUTED_LABEL_CLS}`}>
-            Synced{" "}
-            <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}>
-              <SyncTimestamp iso={oldestSyncedAt} />
-            </span>
-          </span>
-        )}
+        {/* Status (clock + oldest sync date) and the sync action live in one
+            bordered pill now — `SyncAllButton` renders the status segment
+            itself when `lastSyncedAt` is given, instead of a separate
+            icon+text pair sitting next to an unrelated button. */}
         {linkedCharacters.length > 0 && (
           <div className="shrink-0">
-            <SyncAllButton onSync={handleSyncAll} syncing={syncingAll} campaignId={campaign.id} />
+            <SyncAllButton
+              onSync={handleSyncAll}
+              syncing={syncingAll}
+              campaignId={campaign.id}
+              lastSyncedAt={oldestSyncedAt}
+            />
           </div>
         )}
         <MoreMenu
@@ -655,16 +632,14 @@ export function DashboardClient({
           )}
         >
           {/* Always the first thing in the menu, on every breakpoint —
-              repeats the header row's own desktop-only text above (visible
-              there too, not an either/or) so it's never missing on mobile,
-              where that inline text is hidden. Two-tone "muted label,
-              bright value" split matches the established
-              `AttackDisplay`/`SpellDisplay`/`CreatureAbilitiesPanel`
-              recipe for a label+value pair sharing one line. */}
+              repeats the sync pill's own desktop-only date (visible there
+              too, not an either/or) so it's never missing on mobile, where
+              that inline text is hidden and only the pill's tap-to-reveal
+              icon carries it. */}
           {oldestSyncedAt && (
             <div className={`border-b border-slate-800 px-3 pb-2 pt-1 ${MUTED_LABEL_CLS}`}>
               Synced{" "}
-              <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[partySyncTier]}`}>
+              <span className={`font-semibold ${SYNC_TIER_CLASS[partySyncTier]}`}>
                 <SyncTimestamp iso={oldestSyncedAt} />
               </span>
             </div>

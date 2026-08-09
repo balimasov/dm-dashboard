@@ -1,6 +1,6 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SyncTimestamp } from "@/components/SyncTimestamp";
-import { SYNC_TIER_ICON_CLASS, SYNC_TIER_VALUE_CLASS, syncTier } from "@/lib/syncTier";
+import { SYNC_TIER_CLASS, syncTier } from "@/lib/syncTier";
 import { ClockIcon, ExternalLinkIcon } from "./icons";
 
 /**
@@ -77,7 +77,7 @@ export function DdbSyncStatus({
                 ) : (
                   lastSyncedAt && (
                     <>
-                      Synced <span className={`font-semibold ${SYNC_TIER_VALUE_CLASS[tier]}`}><SyncTimestamp iso={lastSyncedAt} /></span>
+                      Synced <span className={`font-semibold ${SYNC_TIER_CLASS[tier]}`}><SyncTimestamp iso={lastSyncedAt} /></span>
                     </>
                   )
                 )}
@@ -86,7 +86,7 @@ export function DdbSyncStatus({
           >
             {/* Neutral while syncing (mid-spin, the tier doesn't matter yet) — otherwise colored by how old `lastSyncedAt` is, via the same tier this character's `EntityActionsMenu` "Sync" row and the header's own clock icon key off. */}
             <ClockIcon
-              className={`h-3 w-3 shrink-0 ${syncing ? "animate-spin text-slate-500" : SYNC_TIER_ICON_CLASS[tier]}`}
+              className={`h-3 w-3 shrink-0 ${syncing ? "animate-spin text-slate-500" : SYNC_TIER_CLASS[tier]}`}
             />
           </InfoTooltip>
         )}

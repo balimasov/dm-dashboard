@@ -26,16 +26,9 @@ export function syncTier(lastSyncedAt: string | undefined, now: number = Date.no
   return "fresh";
 }
 
-/** The clock icon's `text-*` color for each tier — `fresh` matches its original always-on `text-slate-500`. */
-export const SYNC_TIER_ICON_CLASS: Record<SyncTier, string> = {
+/** The `text-*` color for each tier — shared by the clock icon and its paired timestamp text, deliberately identical rather than a two-tone "muted label, bright value" split, so the icon and the date it explains always read as one colored unit. `fresh` matches the clock icon's original always-on `text-slate-500`. */
+export const SYNC_TIER_CLASS: Record<SyncTier, string> = {
   fresh: "text-slate-500",
   aging: "text-amber-400",
   stale: "text-red-400",
-};
-
-/** One shade brighter than `SYNC_TIER_ICON_CLASS`, for the bold timestamp *value* in the header's "muted label, bright value" pair (matching `AttackDisplay`'s own label/value convention) — `fresh` keeps the plain `text-slate-100` that value already had. */
-export const SYNC_TIER_VALUE_CLASS: Record<SyncTier, string> = {
-  fresh: "text-slate-100",
-  aging: "text-amber-300",
-  stale: "text-red-300",
 };
