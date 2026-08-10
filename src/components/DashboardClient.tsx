@@ -51,6 +51,7 @@ import {
   Character,
   Creature,
   CreatureCategory,
+  CustomConditionTemplate,
 } from "@/lib/types";
 import { UserRole } from "@/lib/auth";
 
@@ -322,6 +323,8 @@ function CreatureCategorySection({
   onReorder,
   dragEnabled,
   sensors,
+  customConditionLibrary,
+  onCustomConditionLibraryChange,
 }: {
   category: CreatureCategory;
   creatures: Creature[];
@@ -336,6 +339,8 @@ function CreatureCategorySection({
   onReorder: (orderedIds: string[]) => void;
   dragEnabled: boolean;
   sensors: ReturnType<typeof useSensors>;
+  customConditionLibrary: CustomConditionTemplate[];
+  onCustomConditionLibraryChange: (library: CustomConditionTemplate[]) => void;
 }) {
   const inCategory = creatures.filter((c) => c.category === category);
   const filtered = inCategory.filter((c) => !c.hidden);
@@ -386,6 +391,8 @@ function CreatureCategorySection({
                       onClearHpHistory={onClearHpHistory}
                       onRemove={onRemove}
                       dragEnabled={dragEnabled}
+                      customConditionLibrary={customConditionLibrary}
+                      onCustomConditionLibraryChange={onCustomConditionLibraryChange}
                     />
                   </div>
                 );
@@ -487,6 +494,16 @@ export function DashboardClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
+  }
+
+  // Shared campaign-wide, not per-entity — every `StatusRail` (via
+  // `CharacterCard`/`CreatureCard`) reads/writes the same array through
+  // this one setter, so defining or renaming a custom condition on one
+  // card is immediately reflected on every other card that has it
+  // attached.
+  const customConditionLibrary = campaignState.customConditionLibrary ?? [];
+  function updateCustomConditionLibrary(library: CustomConditionTemplate[]) {
+    void patchCampaign(campaignState.id, { customConditionLibrary: library });
   }
 
   // The Settings modal shares this page's own `charactersState`/`creaturesState`
@@ -873,6 +890,8 @@ export function DashboardClient({
                         onRemove={removeCharacter}
                         onUpdate={updateCharacter}
                         dragEnabled={dragEnabled}
+                        customConditionLibrary={customConditionLibrary}
+                        onCustomConditionLibraryChange={updateCustomConditionLibrary}
                       />
                     </div>
                   ))}
@@ -898,6 +917,8 @@ export function DashboardClient({
           onReorder={reorderCreatures}
           dragEnabled={dragEnabled}
           sensors={sensors}
+          customConditionLibrary={customConditionLibrary}
+          onCustomConditionLibraryChange={updateCustomConditionLibrary}
         />
       </div>
 
@@ -922,6 +943,8 @@ export function DashboardClient({
               onReorder={reorderCreatures}
               dragEnabled={dragEnabled}
               sensors={sensors}
+              customConditionLibrary={customConditionLibrary}
+              onCustomConditionLibraryChange={updateCustomConditionLibrary}
             />
           </div>
 
@@ -940,6 +963,8 @@ export function DashboardClient({
               onReorder={reorderCreatures}
               dragEnabled={dragEnabled}
               sensors={sensors}
+              customConditionLibrary={customConditionLibrary}
+              onCustomConditionLibraryChange={updateCustomConditionLibrary}
             />
           </div>
         </>

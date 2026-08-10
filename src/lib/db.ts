@@ -10,6 +10,7 @@ import {
   Character,
   Creature,
   CreatureTrait,
+  CustomConditionTemplate,
   HpHistoryEntry,
   ItemCategory,
   ItemRarity,
@@ -114,6 +115,90 @@ function openDb(): Database.Database {
   return db;
 }
 
+/**
+ * One-time upgrade for campaigns/characters/creatures saved before custom
+ * conditions became a shared per-campaign library (`Campaign
+ * .customConditionLibrary`, `CustomConditionTemplate`) — an old row's
+ * `customConditions`/`combat.customConditions` was a self-contained array of
+ * `{id, name, description, disabled}` objects with no link to any other
+ * entity's copy of the "same" homebrew condition. Runs a raw SQL read/write
+ * pass rather than going through `rowToCharacter`/`rowToCreature` (those only
+ * normalize a single row on read, never write back, and have no access to
+ * the campaign's own library to push new entries into). Skipped per-campaign
+ * the moment that campaign already has a `customConditionLibrary` key —
+ * whether from a prior run of this migration or because it's a fresh
+ * campaign that has only ever used the new model — so this is idempotent and
+ * cheap to leave running on every boot rather than needing a one-shot
+ * version marker. A `disabled: true` entry keeps its library definition
+ * (nothing typed into it is lost) but starts out unattached — the new model
+ * has no "attached but off" state; the same effect is now just "not
+ * currently attached," reachable again via the pill grid.
+ */
+function migrateCustomConditionLibrary(db: Database.Database): void {
+  const campaignRows = db.prepare("SELECT id, data FROM campaigns").all() as Array<{ id: string; data: string }>;
+  for (const campaignRow of campaignRows) {
+    const campaign = JSON.parse(campaignRow.data) as Campaign;
+    if (campaign.customConditionLibrary) continue;
+
+    const characterRows = db.prepare("SELECT id, data FROM characters WHERE campaign_id = ?").all(campaign.id) as Array<{
+      id: string;
+      data: string;
+    }>;
+    const creatureRows = db.prepare("SELECT id, data FROM creatures WHERE campaign_id = ?").all(campaign.id) as Array<{
+      id: string;
+      data: string;
+    }>;
+
+    type LegacyCustomCondition = { name: string; description?: string; disabled?: boolean };
+    const hasLegacyData =
+      characterRows.some((r) => (JSON.parse(r.data).combat as { customConditions?: unknown } | undefined)?.customConditions) ||
+      creatureRows.some((r) => (JSON.parse(r.data) as { customConditions?: unknown }).customConditions);
+    if (!hasLegacyData) continue;
+
+    const library: CustomConditionTemplate[] = [];
+    function libraryIdFor(name: string, description: string | undefined): string {
+      const existing = library.find((l) => l.name === name);
+      if (existing) return existing.id;
+      const id = `cclib-${Date.now()}-${library.length}-${Math.random().toString(36).slice(2, 7)}`;
+      library.push({ id, name, description });
+      return id;
+    }
+
+    const updateCharacterStmt = db.prepare("UPDATE characters SET data = ? WHERE id = ?");
+    for (const row of characterRows) {
+      const data = JSON.parse(row.data);
+      const legacy = data.combat?.customConditions as LegacyCustomCondition[] | undefined;
+      if (!legacy) continue;
+      const ids: string[] = [];
+      for (const c of legacy) {
+        const id = libraryIdFor(c.name, c.description);
+        if (!c.disabled) ids.push(id);
+      }
+      data.combat.customConditionIds = ids;
+      delete data.combat.customConditions;
+      updateCharacterStmt.run(JSON.stringify(data), row.id);
+    }
+
+    const updateCreatureStmt = db.prepare("UPDATE creatures SET data = ? WHERE id = ?");
+    for (const row of creatureRows) {
+      const data = JSON.parse(row.data);
+      const legacy = data.customConditions as LegacyCustomCondition[] | undefined;
+      if (!legacy) continue;
+      const ids: string[] = [];
+      for (const c of legacy) {
+        const id = libraryIdFor(c.name, c.description);
+        if (!c.disabled) ids.push(id);
+      }
+      data.customConditionIds = ids;
+      delete data.customConditions;
+      updateCreatureStmt.run(JSON.stringify(data), row.id);
+    }
+
+    campaign.customConditionLibrary = library;
+    db.prepare("UPDATE campaigns SET data = ? WHERE id = ?").run(JSON.stringify(campaign), campaign.id);
+  }
+}
+
 // Reused across hot-reloads in dev so we don't reopen the file on every request.
 declare global {
   var __dmDashboardDb: Database.Database | undefined;
@@ -152,6 +237,9 @@ function getDb(): Database.Database {
         insert.run(character.id, character.campaignId, index, JSON.stringify(character));
       });
     }
+
+    migrateCustomConditionLibrary(db);
+
     global.__dmDashboardDb = db;
   }
   return global.__dmDashboardDb;

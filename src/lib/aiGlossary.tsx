@@ -6,13 +6,13 @@ import { CustomConditionHintPanel } from "@/components/ui/conditionHints";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
 import { SpellHintPanel } from "@/components/ui/SpellDisplay";
 import { creatureSpellSourceId, creatureTraitSourceId, isPositionalCreatureSourceId } from "./aiSourceIds";
-import { Character, Creature, RECOVERY_LABELS } from "./types";
+import { Character, Creature, CustomConditionTemplate, RECOVERY_LABELS, resolveCustomConditions } from "./types";
 
 export type AiGlossary = Record<string, ReactNode>;
 
 type GlossaryEntry = { id: string; name: string; hint: ReactNode };
 
-function characterGlossaryEntries(c: Character): GlossaryEntry[] {
+function characterGlossaryEntries(c: Character, customConditionLibrary: CustomConditionTemplate[]): GlossaryEntry[] {
   const entries: GlossaryEntry[] = [];
   for (const r of c.resources) {
     entries.push({
@@ -70,14 +70,13 @@ function characterGlossaryEntries(c: Character): GlossaryEntry[] {
   // `assistantContext.ts`) got no hover hint at all, unlike every standard
   // condition (`UNIVERSAL_TERMS` in `AiResponseText.tsx`) and everything
   // else on the sheet.
-  for (const cc of c.combat.customConditions ?? []) {
-    if (cc.disabled) continue;
+  for (const cc of resolveCustomConditions(c.combat.customConditionIds, customConditionLibrary)) {
     entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
   }
   return entries;
 }
 
-function creatureGlossaryEntries(cr: Creature): GlossaryEntry[] {
+function creatureGlossaryEntries(cr: Creature, customConditionLibrary: CustomConditionTemplate[]): GlossaryEntry[] {
   const entries: GlossaryEntry[] = [];
   cr.traits.forEach((t, index) => {
     entries.push({ id: creatureTraitSourceId(index), name: t.name, hint: <CreatureAbilityHintPanel trait={t} /> });
@@ -94,15 +93,16 @@ function creatureGlossaryEntries(cr: Creature): GlossaryEntry[] {
     });
   }
   // Same reasoning as `characterGlossaryEntries`'s own custom-conditions loop.
-  for (const cc of cr.customConditions ?? []) {
-    if (cc.disabled) continue;
+  for (const cc of resolveCustomConditions(cr.customConditionIds, customConditionLibrary)) {
     entries.push({ id: cc.id, name: cc.name, hint: <CustomConditionHintPanel name={cc.name} description={cc.description} /> });
   }
   return entries;
 }
 
-function glossaryEntries(entity: Character | Creature): GlossaryEntry[] {
-  return "className" in entity ? characterGlossaryEntries(entity) : creatureGlossaryEntries(entity);
+function glossaryEntries(entity: Character | Creature, customConditionLibrary: CustomConditionTemplate[]): GlossaryEntry[] {
+  return "className" in entity
+    ? characterGlossaryEntries(entity, customConditionLibrary)
+    : creatureGlossaryEntries(entity, customConditionLibrary);
 }
 
 /**
@@ -120,9 +120,9 @@ function glossaryEntries(entity: Character | Creature): GlossaryEntry[] {
  * assistant's answer now shows literally the same hint a DM would get
  * hovering the name on the card itself, description formatting and all.
  */
-export function buildAiGlossary(entity: Character | Creature): AiGlossary {
+export function buildAiGlossary(entity: Character | Creature, customConditionLibrary: CustomConditionTemplate[] = []): AiGlossary {
   const glossary: AiGlossary = {};
-  for (const entry of glossaryEntries(entity)) glossary[entry.id] = entry.hint;
+  for (const entry of glossaryEntries(entity, customConditionLibrary)) glossary[entry.id] = entry.hint;
   return glossary;
 }
 
@@ -149,8 +149,8 @@ function stripEnhancementSuffix(name: string): string {
  * so a real distinct entry (e.g. an actual "Longsword") always wins over
  * another entry's bare-name alias, regardless of iteration order.
  */
-export function buildAiGlossaryByName(entity: Character | Creature): AiGlossary {
-  const entries = glossaryEntries(entity);
+export function buildAiGlossaryByName(entity: Character | Creature, customConditionLibrary: CustomConditionTemplate[] = []): AiGlossary {
+  const entries = glossaryEntries(entity, customConditionLibrary);
   const glossary: AiGlossary = {};
   for (const entry of entries) glossary[entry.name.trim().toLowerCase()] = entry.hint;
   for (const entry of entries) {

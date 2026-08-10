@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, Creature } from "@/lib/types";
+import { Character, Creature, CustomConditionTemplate } from "@/lib/types";
 import { creatureReminders } from "@/lib/reminders";
 import { useCardSortable } from "@/hooks/useCardSortable";
 import { AiAssistantModal } from "./AiAssistantModal";
@@ -49,6 +49,8 @@ export function CreatureCard({
   onClearHpHistory,
   onRemove,
   dragEnabled = false,
+  customConditionLibrary = [],
+  onCustomConditionLibraryChange,
 }: {
   creature: Creature;
   owner?: Character;
@@ -59,6 +61,9 @@ export function CreatureCard({
   onRemove?: (id: string) => void;
   /** Reordering is DM-only, matching `/api/creatures/reorder` — a player still sees the same card, just without the drag affordance on its header. */
   dragEnabled?: boolean;
+  /** The campaign's shared custom-conditions library — see `CustomConditionTemplate`'s own doc comment. */
+  customConditionLibrary?: CustomConditionTemplate[];
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -82,11 +87,13 @@ export function CreatureCard({
         conditions={creature.conditions}
         exhaustion={creature.exhaustion}
         concentrating={Boolean(creature.concentrating)}
-        customConditions={creature.customConditions ?? []}
+        customConditionIds={creature.customConditionIds ?? []}
+        customConditionLibrary={customConditionLibrary}
         onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
         onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
         onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
-        onCustomConditionsChange={onUpdate ? (customConditions) => onUpdate(creature.id, { customConditions }) : undefined}
+        onCustomConditionIdsChange={onUpdate ? (customConditionIds) => onUpdate(creature.id, { customConditionIds }) : undefined}
+        onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
 
       <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
@@ -131,6 +138,8 @@ export function CreatureCard({
           onDuplicate={onDuplicate}
           onClearHpHistory={onClearHpHistory}
           onRemove={onRemove}
+          customConditionLibrary={customConditionLibrary}
+          onCustomConditionLibraryChange={onCustomConditionLibraryChange}
         />
       )}
 
@@ -156,6 +165,7 @@ export function CreatureCard({
           name={creature.name}
           target={{ campaignId: creature.campaignId, creatureId: creature.id }}
           entity={creature}
+          customConditionLibrary={customConditionLibrary}
           onClose={() => setAiOpen(false)}
         />
       )}

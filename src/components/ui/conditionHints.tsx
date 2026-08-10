@@ -1,4 +1,4 @@
-import { CustomCondition } from "@/lib/types";
+import { CustomConditionTemplate } from "@/lib/types";
 import { getConditionInfo } from "@/lib/conditionInfo";
 
 /**
@@ -22,7 +22,7 @@ export function ConditionHintPanel({ condition }: { condition: string }) {
 }
 
 /**
- * Same shape as `ConditionHintPanel`, for a homebrew `CustomCondition` —
+ * Same shape as `ConditionHintPanel`, for a homebrew `CustomConditionTemplate` —
  * there's no `conditionInfo.ts` lookup for these, so the description comes
  * straight from the condition itself (the same text that also gets sent to
  * the AI assistant, see `assistantContext.ts`).
@@ -42,7 +42,7 @@ export function ConditionsListHintPanel({
   customConditions = [],
 }: {
   conditions: string[];
-  customConditions?: CustomCondition[];
+  customConditions?: CustomConditionTemplate[];
 }) {
   return (
     <div className="space-y-1.5">

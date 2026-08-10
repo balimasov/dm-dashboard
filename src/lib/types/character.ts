@@ -1,4 +1,4 @@
-import { AbilityScores, CustomCondition, QuickNote, SkillName } from "./common";
+import { AbilityScores, QuickNote, SkillName } from "./common";
 import { Attack, Currency, InventoryItem } from "./item";
 
 export type RecoveryType =
@@ -176,8 +176,8 @@ export interface CombatState {
   passiveInsight: number;
   conditions: string[];
   exhaustion: number;
-  /** Homebrew states with their own name/description — see `CustomCondition`'s own doc comment. Optional/absent, not defaulted to `[]`, for characters saved before this field existed. */
-  customConditions?: CustomCondition[];
+  /** References into `Campaign.customConditionLibrary` — see `CustomConditionTemplate`'s own doc comment. Optional/absent, not defaulted to `[]`, for characters with none attached. */
+  customConditionIds?: string[];
   deathSaves?: {
     successes: number;
     failures: number;

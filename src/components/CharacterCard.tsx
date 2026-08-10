@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
+import { Character, CustomConditionTemplate, SKILL_ABBR, STAT_ORDER } from "@/lib/types";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { characterReminders } from "@/lib/reminders";
@@ -48,12 +48,17 @@ export function CharacterCard({
   onRemove,
   onUpdate,
   dragEnabled = false,
+  customConditionLibrary = [],
+  onCustomConditionLibraryChange,
 }: {
   character: Character;
   onRemove?: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Character>) => void;
   /** Reordering is DM-only, matching `/api/characters/reorder` — a player still sees the same card, just without the drag affordance on its header. */
   dragEnabled?: boolean;
+  /** The campaign's shared custom-conditions library — see `CustomConditionTemplate`'s own doc comment. */
+  customConditionLibrary?: CustomConditionTemplate[];
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
@@ -98,11 +103,13 @@ export function CharacterCard({
         conditions={c.combat.conditions}
         exhaustion={c.combat.exhaustion}
         concentrating={Boolean(c.concentrating)}
-        customConditions={c.combat.customConditions ?? []}
+        customConditionIds={c.combat.customConditionIds ?? []}
+        customConditionLibrary={customConditionLibrary}
         onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
-        onCustomConditionsChange={
-          onUpdate ? (customConditions) => onUpdate(c.id, { combat: { ...c.combat, customConditions } }) : undefined
+        onCustomConditionIdsChange={
+          onUpdate ? (customConditionIds) => onUpdate(c.id, { combat: { ...c.combat, customConditionIds } }) : undefined
         }
+        onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
 
       {/* Header */}
@@ -293,7 +300,14 @@ export function CharacterCard({
       <NotesSection notes={c.notes} compact />
 
       {detailsOpen && (
-        <CharacterDetailsModal character={c} onClose={() => setDetailsOpen(false)} onUpdate={onUpdate} onRemove={onRemove} />
+        <CharacterDetailsModal
+          character={c}
+          onClose={() => setDetailsOpen(false)}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+          customConditionLibrary={customConditionLibrary}
+          onCustomConditionLibraryChange={onCustomConditionLibraryChange}
+        />
       )}
 
       {editOpen && onUpdate && (
@@ -305,6 +319,7 @@ export function CharacterCard({
           name={c.name}
           target={{ campaignId: c.campaignId, characterId: c.id }}
           entity={c}
+          customConditionLibrary={customConditionLibrary}
           onClose={() => setAiOpen(false)}
         />
       )}

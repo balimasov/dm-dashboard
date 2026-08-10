@@ -1,3 +1,5 @@
+import { CustomConditionTemplate } from "./common";
+
 /** A DM's campaign — its own name, freeform notes, and character roster (characters point back via `Character.campaignId`). */
 export interface Campaign {
   id: string;
@@ -8,6 +10,8 @@ export interface Campaign {
   logoUrl?: string;
   /** Reference links the DM wants reachable mid-session (rules docs, lore notes, a Google Doc of ideas...) — shown via the floating `QuickLinksButton`, capped at 10 in the editor. */
   quickLinks?: QuickLink[];
+  /** Homebrew conditions/states the DM has defined for this campaign — see `CustomConditionTemplate`'s own doc comment. Characters/creatures reference entries here by id rather than holding their own copy, so defining one once makes it pickable on every character/creature in the campaign. */
+  customConditionLibrary?: CustomConditionTemplate[];
 }
 
 export interface QuickLink {

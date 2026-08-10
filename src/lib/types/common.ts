@@ -127,20 +127,30 @@ export interface QuickNote {
  * A homebrew condition/state with its own name and description — for
  * anything the standard D&D condition list (`conditionInfo.ts`) doesn't
  * cover: a dragon's fear-roar-induced madness, a story curse, a
- * campaign-specific status effect. Shown on the card the same way a standard
- * condition is (its own badge on `StatusRail`, added/removed from the same
- * popover), and its `description` is sent to the AI assistant's context the
- * same way a standard condition's `conditionInfo.ts` blurb is — the model
- * never has to reason about a custom condition "blind". Shared by `Character`
- * (nested in `CombatState`) and `Creature` (flat on the object), same
- * convention as `conditions`/`exhaustion` already being duplicated across
- * both rather than factored into one shared "combat state" type.
+ * campaign-specific status effect. Defined once per campaign
+ * (`Campaign.customConditionLibrary`) and picked from the same pill-grid
+ * interaction the standard conditions list already uses — a character or
+ * creature only ever holds a reference (`customConditionIds`) into this
+ * shared list, never its own independent copy, so renaming/re-describing one
+ * updates it everywhere it's attached and defining it once makes it
+ * available to every other character/creature in the campaign. Its
+ * `description` is sent to the AI assistant's context the same way a
+ * standard condition's `conditionInfo.ts` blurb is — the model never has to
+ * reason about a custom condition "blind".
  */
-export interface CustomCondition {
+export interface CustomConditionTemplate {
   id: string;
   name: string;
   /** Optional only for the moment right after typing a name and before filling this in — an empty description still renders and still gets sent to the AI, just with nothing beyond the bare name. */
   description?: string;
-  /** Temporarily off without deleting it — the only other way to stop a custom state from being "active" used to be removing it outright, losing its name/description for next time it's needed. `undefined`/`false` (the default for every already-persisted condition, from before this field existed) means active, same as `Character.hidden`'s convention. */
-  disabled?: boolean;
+}
+
+/** Resolves a character's/creature's `customConditionIds` against the campaign's library into the actual `{name, description}` templates they refer to — every call site that needs to *display* or *describe* an attached custom condition does this once rather than re-deriving it, and a stale id that no longer matches any library entry (e.g. the entry was deleted from the library after being attached) is silently dropped instead of rendering a broken placeholder. */
+export function resolveCustomConditions(
+  ids: string[] | undefined,
+  library: CustomConditionTemplate[] | undefined
+): CustomConditionTemplate[] {
+  if (!ids || ids.length === 0) return [];
+  const byId = new Map((library ?? []).map((l) => [l.id, l]));
+  return ids.map((id) => byId.get(id)).filter((l): l is CustomConditionTemplate => l !== undefined);
 }

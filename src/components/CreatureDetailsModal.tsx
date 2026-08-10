@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, Creature } from "@/lib/types";
+import { Character, Creature, CustomConditionTemplate } from "@/lib/types";
 import { creatureReminders } from "@/lib/reminders";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
@@ -43,6 +43,8 @@ export function CreatureDetailsModal({
   onDuplicate,
   onClearHpHistory,
   onRemove,
+  customConditionLibrary = [],
+  onCustomConditionLibraryChange,
 }: {
   creature: Creature;
   owner?: Character;
@@ -52,6 +54,8 @@ export function CreatureDetailsModal({
   onDuplicate?: (count: number) => void;
   onClearHpHistory?: (id: string) => void;
   onRemove?: (id: string) => void;
+  customConditionLibrary?: CustomConditionTemplate[];
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [hpHistoryOpen, setHpHistoryOpen] = useState(false);
@@ -75,11 +79,13 @@ export function CreatureDetailsModal({
             conditions={creature.conditions}
             exhaustion={creature.exhaustion}
             concentrating={Boolean(creature.concentrating)}
-            customConditions={creature.customConditions ?? []}
+            customConditionIds={creature.customConditionIds ?? []}
+            customConditionLibrary={customConditionLibrary}
             onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
             onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
             onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
-            onCustomConditionsChange={onUpdate ? (customConditions) => onUpdate(creature.id, { customConditions }) : undefined}
+            onCustomConditionIdsChange={onUpdate ? (customConditionIds) => onUpdate(creature.id, { customConditionIds }) : undefined}
+            onCustomConditionLibraryChange={onCustomConditionLibraryChange}
           />
 
           <div className="flex items-start gap-3">
@@ -161,6 +167,7 @@ export function CreatureDetailsModal({
         name={creature.name}
         target={{ campaignId: creature.campaignId, creatureId: creature.id }}
         entity={creature}
+        customConditionLibrary={customConditionLibrary}
         onClose={() => setAiOpen(false)}
         // Opened from inside this already-open Modal (z-50) via the "Ask AI"
         // pill above — needs to land above it, not behind it. See

@@ -1,4 +1,4 @@
-import { Character, Creature, CustomCondition, RECOVERY_LABELS, SKILL_LABELS, STAT_ORDER } from "./types";
+import { Character, Creature, CustomConditionTemplate, RECOVERY_LABELS, resolveCustomConditions, SKILL_LABELS, STAT_ORDER } from "./types";
 import { getConditionInfo, getExhaustionEffect } from "./conditionInfo";
 import { getMasteryInfo } from "./masteryInfo";
 import { creatureSpellSourceId, creatureTraitSourceId } from "./aiSourceIds";
@@ -52,7 +52,7 @@ import { formatModifier } from "./format";
  * Builds the "Conditions:" block shared by `characterAssistantContext`/
  * `creatureAssistantContext`. A standard condition gets its exact mechanical
  * effect appended (`getConditionInfo`'s short blurb) — a homebrew
- * `CustomCondition` gets its own supplied `description` the same way, tagged
+ * `CustomConditionTemplate` gets its own supplied `description` the same way, tagged
  * "(homebrew)" so the model can tell it apart from a standard condition's
  * blurb. An earlier version withheld the description entirely after
  * observing the model echo it back verbatim in a reply; that traded away the
@@ -67,14 +67,10 @@ import { formatModifier } from "./format";
  * condition is common knowledge even without its blurb, a homebrew one
  * isn't.
  */
-function conditionLines(conditions: string[], customConditions: CustomCondition[]): string[] {
-  // A disabled custom condition is off, not gone — see its own doc comment
-  // — so it shouldn't read as currently affecting the character/creature
-  // here any more than it shows a badge on the card.
-  const active = customConditions.filter((c) => !c.disabled);
-  if (conditions.length === 0 && active.length === 0) return [];
+function conditionLines(conditions: string[], customConditions: CustomConditionTemplate[]): string[] {
+  if (conditions.length === 0 && customConditions.length === 0) return [];
   const lines = ["Conditions:"];
-  for (const custom of active) {
+  for (const custom of customConditions) {
     lines.push(`- ${custom.name} (homebrew)${custom.description ? `: ${custom.description}` : ""}`);
   }
   for (const condition of conditions) {
@@ -83,7 +79,7 @@ function conditionLines(conditions: string[], customConditions: CustomCondition[
   }
   return lines;
 }
-export function characterAssistantContext(character: Character): string {
+export function characterAssistantContext(character: Character, customConditionLibrary: CustomConditionTemplate[] = []): string {
   const c = character;
   const lines: string[] = [];
 
@@ -94,7 +90,7 @@ export function characterAssistantContext(character: Character): string {
   if (c.senses.length > 0) {
     lines.push(`Senses: ${c.senses.map((s) => `${s.name} ${s.range} ft`).join(", ")}`);
   }
-  lines.push(...conditionLines(c.combat.conditions, c.combat.customConditions ?? []));
+  lines.push(...conditionLines(c.combat.conditions, resolveCustomConditions(c.combat.customConditionIds, customConditionLibrary)));
   if (c.combat.exhaustion > 0) {
     const effect = getExhaustionEffect(c.combat.exhaustion);
     lines.push(
@@ -310,7 +306,7 @@ export function characterAssistantContext(character: Character): string {
  * about a creature instead, since no creature id will ever match a
  * character's), so nobody appears twice between the main context and here.
  */
-export function partyTeammatesContext(party: Character[], excludeId?: string): string {
+export function partyTeammatesContext(party: Character[], excludeId?: string, customConditionLibrary: CustomConditionTemplate[] = []): string {
   const teammates = party.filter((c) => c.id !== excludeId && !c.hidden);
   if (teammates.length === 0) return "";
 
@@ -320,7 +316,10 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
       `${t.name} (${[t.race, t.className].filter(Boolean).join(" ")}, level ${t.level})`,
       `HP ${t.combat.hp}/${t.combat.maxHp}${t.combat.tempHp ? ` (+${t.combat.tempHp} temp)` : ""}`,
     ];
-    const conditionNames = [...(t.combat.customConditions ?? []).filter((cc) => !cc.disabled).map((cc) => cc.name), ...t.combat.conditions];
+    const conditionNames = [
+      ...resolveCustomConditions(t.combat.customConditionIds, customConditionLibrary).map((cc) => cc.name),
+      ...t.combat.conditions,
+    ];
     if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     if (t.combat.exhaustion > 0) parts.push(`exhaustion ${t.combat.exhaustion}`);
     if (t.concentrating) parts.push("concentrating");
@@ -358,7 +357,7 @@ export function partyTeammatesContext(party: Character[], excludeId?: string): s
  * spellcasting) only matters when the companion's OWN turn is what's being
  * asked about (`creatureAssistantContext`), not here.
  */
-export function companionsContext(creatures: Creature[], ownerId: string): string {
+export function companionsContext(creatures: Creature[], ownerId: string, customConditionLibrary: CustomConditionTemplate[] = []): string {
   const owned = creatures.filter((cr) => cr.ownerCharacterId === ownerId && !cr.hidden);
   if (owned.length === 0) return "";
 
@@ -381,7 +380,7 @@ export function companionsContext(creatures: Creature[], ownerId: string): strin
       // flight" gets wrongly concluded despite a flying mount being summoned.
       `Speed ${cr.speedDetail || `${cr.speed}ft`}`,
     ];
-    const conditionNames = [...(cr.customConditions ?? []).filter((cc) => !cc.disabled).map((cc) => cc.name), ...cr.conditions];
+    const conditionNames = [...resolveCustomConditions(cr.customConditionIds, customConditionLibrary).map((cc) => cc.name), ...cr.conditions];
     if (conditionNames.length > 0) parts.push(`conditions: ${conditionNames.join(", ")}`);
     lines.push(`- ${parts.join(" | ")}`);
   }
@@ -397,7 +396,7 @@ export function companionsContext(creatures: Creature[], ownerId: string): strin
  * and its own turn can free up the owner's for something else. Omitted
  * entirely for a creature with no owner (most enemies/NPCs).
  */
-export function creatureAssistantContext(creature: Creature, ownerName?: string): string {
+export function creatureAssistantContext(creature: Creature, ownerName?: string, customConditionLibrary: CustomConditionTemplate[] = []): string {
   const cr = creature;
   const lines: string[] = [];
 
@@ -419,7 +418,7 @@ export function creatureAssistantContext(creature: Creature, ownerName?: string)
     `HP: ${cr.hp}/${cr.maxHp}${cr.tempHp ? ` (+${cr.tempHp} temp)` : ""} | AC: ${cr.ac} | Speed: ${cr.speedDetail || `${cr.speed}ft`}`
   );
   if (cr.senses) lines.push(`Senses: ${cr.senses}`);
-  lines.push(...conditionLines(cr.conditions, cr.customConditions ?? []));
+  lines.push(...conditionLines(cr.conditions, resolveCustomConditions(cr.customConditionIds, customConditionLibrary)));
   if (cr.exhaustion > 0) {
     const effect = getExhaustionEffect(cr.exhaustion);
     lines.push(

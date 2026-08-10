@@ -111,17 +111,18 @@ describe("characterAssistantContext", () => {
         passiveInsight: 10,
         conditions: ["Poisoned"],
         exhaustion: 0,
-        customConditions: [
-          {
-            id: "cb",
-            name: "Chardal's Madness",
-            description: "Attacks the nearest creature, allies included, unless it succeeds a DC 15 Wisdom save.",
-          },
-        ],
+        customConditionIds: ["cb"],
       },
     });
+    const library = [
+      {
+        id: "cb",
+        name: "Chardal's Madness",
+        description: "Attacks the nearest creature, allies included, unless it succeeds a DC 15 Wisdom save.",
+      },
+    ];
 
-    const context = characterAssistantContext(character);
+    const context = characterAssistantContext(character, library);
     const customIndex = context.indexOf("- Chardal's Madness");
     const standardIndex = context.indexOf("- Poisoned");
 
@@ -586,10 +587,11 @@ describe("creatureAssistantContext", () => {
   test("lists a creature's custom condition with its description tagged '(homebrew)'", () => {
     const creature = makeCreature({
       name: "Jerun",
-      customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature, allies included." }],
+      customConditionIds: ["cb"],
     });
+    const library = [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature, allies included." }];
 
-    const context = creatureAssistantContext(creature);
+    const context = creatureAssistantContext(creature, undefined, library);
 
     expect(context).toContain("- Chardal's Madness (homebrew): Attacks the nearest creature, allies included.");
   });
@@ -686,10 +688,11 @@ describe("partyTeammatesContext", () => {
     const self = makeCharacter({ name: "Nyra" });
     const teammate = makeCharacter({
       name: "Durgin",
-      combat: { ...self.combat, conditions: ["Poisoned"], customConditions: [{ id: "cb", name: "Chardal's Madness" }] },
+      combat: { ...self.combat, conditions: ["Poisoned"], customConditionIds: ["cb"] },
     });
+    const library = [{ id: "cb", name: "Chardal's Madness" }];
 
-    const context = partyTeammatesContext([self, teammate], self.id);
+    const context = partyTeammatesContext([self, teammate], self.id, library);
 
     expect(context).toContain("conditions: Chardal's Madness, Poisoned");
   });
@@ -762,9 +765,10 @@ describe("companionsContext", () => {
       name: "Warhorse",
       ownerCharacterId: "char-1",
       conditions: ["Prone"],
-      customConditions: [{ id: "cb", name: "Chardal's Madness" }],
+      customConditionIds: ["cb"],
     });
-    const context = companionsContext([mount], "char-1");
+    const library = [{ id: "cb", name: "Chardal's Madness" }];
+    const context = companionsContext([mount], "char-1", library);
     expect(context).toContain("conditions: Chardal's Madness, Prone");
   });
 

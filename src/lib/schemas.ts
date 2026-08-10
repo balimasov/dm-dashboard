@@ -35,7 +35,7 @@ const resourceSchema = z.object({
   description: z.string().optional(),
 });
 
-const customConditionSchema = z.object({
+const customConditionTemplateSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(60),
   // Real-world custom conditions get copied straight from a monster's stat
@@ -43,7 +43,6 @@ const customConditionSchema = z.object({
   // silently truncating a paste like that well before the DM even reached
   // the end of it.
   description: z.string().max(2000).optional(),
-  disabled: z.boolean().optional(),
 });
 
 const spellSlotLevelSchema = z.object({
@@ -170,7 +169,7 @@ const combatStateSchema = z.object({
   passiveInsight: z.number(),
   conditions: z.array(z.string()),
   exhaustion: z.number(),
-  customConditions: z.array(customConditionSchema).optional(),
+  customConditionIds: z.array(z.string()).optional(),
   deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
 });
 
@@ -272,6 +271,7 @@ export const campaignUpdateSchema = z
     createdAt: z.string(),
     logoUrl: z.string().optional(),
     quickLinks: z.array(quickLinkSchema).optional(),
+    customConditionLibrary: z.array(customConditionTemplateSchema).optional(),
   })
   .partial();
 
@@ -365,7 +365,7 @@ export const creatureUpdateSchema = z
     spellcasting: creatureSpellcastingSchema.nullable().optional(),
     conditions: z.array(z.string()),
     exhaustion: z.number(),
-    customConditions: z.array(customConditionSchema).optional(),
+    customConditionIds: z.array(z.string()).optional(),
     concentrating: z.boolean().optional(),
     deathSaves: z.object({ successes: z.number(), failures: z.number() }).optional(),
     ownerCharacterId: z.string().nullable().optional(),

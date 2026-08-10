@@ -7,7 +7,7 @@ import { parseJsonOrThrow } from "@/lib/apiClient";
 import { buildAiGlossary, buildAiGlossaryByName } from "@/lib/aiGlossary";
 import { formatSyncTimestamp } from "@/lib/format";
 import { AI_REASONING_EFFORT_LEVELS, AiReasoningEffort } from "@/lib/schemas";
-import { AssistantChatMessage, Character, Creature } from "@/lib/types";
+import { AssistantChatMessage, Character, Creature, CustomConditionTemplate } from "@/lib/types";
 import { AiChatReply, AiResponseText } from "./AiResponseText";
 import { CollapseChevron } from "./ui/CollapseChevron";
 import { FloatingPanel } from "./ui/FloatingPanel";
@@ -340,19 +340,22 @@ export function AiAssistantModal({
   name,
   target,
   entity,
+  customConditionLibrary = [],
   onClose,
   zIndexClassName,
 }: {
   name: string;
   target: Target;
   entity: Character | Creature;
+  /** The campaign's shared custom-conditions library — needed to resolve `entity`'s `customConditionIds` into real name+description hover hints (see `buildAiGlossary`). */
+  customConditionLibrary?: CustomConditionTemplate[];
   onClose: () => void;
   /** Forwarded to `FloatingPanel` — see its own doc comment. Callers opening this from inside an already-open `Modal` (the details modals' own "Ask AI" pill) pass `"z-[60]"` so the panel lands above that modal's backdrop instead of behind it. */
   zIndexClassName?: string;
 }) {
   useEscapeToClose(onClose);
-  const glossary = useMemo(() => buildAiGlossary(entity), [entity]);
-  const glossaryByName = useMemo(() => buildAiGlossaryByName(entity), [entity]);
+  const glossary = useMemo(() => buildAiGlossary(entity, customConditionLibrary), [entity, customConditionLibrary]);
+  const glossaryByName = useMemo(() => buildAiGlossaryByName(entity, customConditionLibrary), [entity, customConditionLibrary]);
   const availability = useMemo(() => buildAiAvailability(entity), [entity]);
   const availabilityByName = useMemo(() => buildAiAvailabilityByName(entity), [entity]);
 

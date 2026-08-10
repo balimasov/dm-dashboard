@@ -367,13 +367,13 @@ describe("custom conditions survive a sync", () => {
       ...existing,
       combat: {
         ...existing.combat,
-        customConditions: [{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }],
+        customConditionIds: ["cb"],
       },
     };
 
     const resynced = parseDdbCharacter(raw, withCustom);
 
-    expect(resynced.combat.customConditions).toEqual([{ id: "cb", name: "Chardal's Madness", description: "Attacks the nearest creature." }]);
+    expect(resynced.combat.customConditionIds).toEqual(["cb"]);
   });
 });
 

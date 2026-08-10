@@ -99,7 +99,7 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
       // from `data` — carried over unchanged from `existing`, or it would
       // silently vanish on every sync (this whole `combat` object replaces
       // the old one wholesale, not a deep merge).
-      customConditions: existing.combat?.customConditions,
+      customConditionIds: existing.combat?.customConditionIds,
       deathSaves:
         hp <= 0
           ? {

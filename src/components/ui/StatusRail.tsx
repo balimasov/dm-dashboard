@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { CustomCondition } from "@/lib/types";
+import { CustomConditionTemplate, resolveCustomConditions } from "@/lib/types";
 import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/lib/conditionInfo";
 import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel } from "./conditionHints";
 import { inputCls } from "./Field";
+import { IconButton } from "./IconButton";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
-import { ExhaustionIcon, ConcentrationIcon, EyeIcon, EyeOffIcon, PencilIcon, PlusIcon } from "./icons";
+import { ConcentrationIcon, ExhaustionIcon, PencilIcon, PlusIcon, TrashOutlineIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
 function ExhaustionPanel({ level }: { level: number }) {
@@ -100,7 +101,7 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
 }
 
 /** Same pulsing-glow badge shape as `ConditionBadge`, plus a dashed border — the second, always-on signal (color alone isn't enough at a glance) that this is a homebrew state, not one of the 14 standard D&D conditions. */
-function CustomConditionBadge({ condition }: { condition: CustomCondition }) {
+function CustomConditionBadge({ condition }: { condition: CustomConditionTemplate }) {
   return (
     <span
       className={`${STATUS_BADGE_SIZE} status-ring-dynamic border-dashed text-[10px] font-bold`}
@@ -155,7 +156,7 @@ export const CONCENTRATION_HINT_TEXT = (
 );
 
 /** Placeholder icon for the overflow badge — a plain ellipsis, standing in for whatever custom art replaces it later. */
-function OverflowBadge({ conditions, customConditions = [] }: { conditions: string[]; customConditions?: CustomCondition[] }) {
+function OverflowBadge({ conditions, customConditions = [] }: { conditions: string[]; customConditions?: CustomConditionTemplate[] }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
       <InfoTooltip
@@ -218,154 +219,43 @@ function ConcentrationToggleRow({ active, onToggle }: { active: boolean; onToggl
   );
 }
 
+let customConditionTemplateUid = 0;
+/** Same throwaway-unique-enough convention as `EditCharacterModal.tsx`'s own `nextId` — never persisted anywhere as a display value, only as a React key and the id every attach/detach toggle matches against. */
+function nextCustomConditionTemplateId(): string {
+  customConditionTemplateUid += 1;
+  return `custom-${Date.now()}-${customConditionTemplateUid}`;
+}
+
 /**
- * Renaming/re-describing an existing custom condition reuses this same row
- * rather than a separate dialog — pencil icon flips it into the exact same
- * name+description fields `AddCustomConditionForm` uses, seeded from the
- * current values fresh on every entry into edit mode (not just on mount),
- * so a cancelled edit never leaks into the next attempt.
+ * A name+description editor for one library entry — used both inline (a
+ * library row's pencil flips it into this) and for "+ Add Custom Condition"
+ * (same fields, starting blank). Seeded fresh from the current values on
+ * every entry into edit mode (not just on mount), so a cancelled edit never
+ * leaks into the next attempt.
  */
-function CustomConditionRow({
-  condition,
-  onSave,
-  onToggleDisabled,
-  onRemove,
+function CustomConditionTemplateForm({
+  initialName = "",
+  initialDescription = "",
+  onCancel,
+  onSubmit,
+  submitLabel,
 }: {
-  condition: CustomCondition;
-  onSave?: (next: CustomCondition) => void;
-  /** Flips `disabled` without touching name/description — the reversible alternative to `onRemove` for "not right now, but I'll want this again." */
-  onToggleDisabled?: () => void;
-  onRemove?: () => void;
+  initialName?: string;
+  initialDescription?: string;
+  onCancel: () => void;
+  onSubmit: (name: string, description: string) => void;
+  submitLabel: string;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(condition.name);
-  const [description, setDescription] = useState(condition.description ?? "");
-
-  function startEditing() {
-    setName(condition.name);
-    setDescription(condition.description ?? "");
-    setEditing(true);
-  }
-
-  function save() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onSave?.({ ...condition, name: trimmed, description: description.trim() || undefined });
-    setEditing(false);
-  }
-
-  if (editing) {
-    return (
-      <div className="space-y-1.5 rounded-md border border-dashed border-sky-700 bg-slate-950 p-2">
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="State name"
-          maxLength={60}
-          className={`${inputCls} w-full`}
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="What it does mechanically"
-          rows={5}
-          maxLength={2000}
-          className={`${inputCls} w-full resize-y`}
-        />
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => setEditing(false)} className="text-xs font-semibold text-slate-400 hover:text-slate-200">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={!name.trim()}
-            className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const disabled = Boolean(condition.disabled);
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription);
 
   return (
-    <div
-      className={`flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2 ${disabled ? "opacity-50" : ""}`}
-    >
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold text-slate-200">
-          {condition.name}
-          {disabled && <span className="ml-1.5 text-[10px] font-normal uppercase tracking-wide text-slate-500">Off</span>}
-        </p>
-        {condition.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{condition.description}</p>}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {onToggleDisabled && (
-          <button
-            type="button"
-            onClick={onToggleDisabled}
-            aria-label={disabled ? `Enable ${condition.name}` : `Disable ${condition.name}`}
-            title={disabled ? "Enable" : "Disable"}
-            className="text-slate-600 hover:text-sky-400"
-          >
-            {disabled ? <EyeIcon className="h-3 w-3" /> : <EyeOffIcon className="h-3 w-3" />}
-          </button>
-        )}
-        {onSave && (
-          <button type="button" onClick={startEditing} aria-label={`Edit ${condition.name}`} className="text-slate-600 hover:text-sky-400">
-            <PencilIcon className="h-3 w-3" />
-          </button>
-        )}
-        {onRemove && (
-          <button type="button" onClick={onRemove} aria-label={`Remove ${condition.name}`} className="text-slate-600 hover:text-red-400">
-            ✕
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-let customConditionUid = 0;
-/** Same throwaway-unique-enough convention as `EditCharacterModal.tsx`'s own `nextId` — never persisted anywhere as a display value, only as a React key and the id a later remove-click matches against. */
-function nextCustomConditionId(): string {
-  customConditionUid += 1;
-  return `custom-${Date.now()}-${customConditionUid}`;
-}
-
-function AddCustomConditionForm({ onAdd }: { onAdd: (condition: CustomCondition) => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-sky-400 hover:underline">
-        + Add custom state
-      </button>
-    );
-  }
-
-  function submit() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onAdd({ id: nextCustomConditionId(), name: trimmed, description: description.trim() || undefined });
-    setName("");
-    setDescription("");
-    setOpen(false);
-  }
-
-  return (
-    <div className="space-y-1.5 border-t border-dashed border-slate-700 pt-2">
+    <div className="space-y-1.5 rounded-md border border-dashed border-sky-700 bg-slate-950 p-2">
       <input
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="State name"
+        placeholder="Condition name"
         maxLength={60}
         className={`${inputCls} w-full`}
       />
@@ -377,13 +267,186 @@ function AddCustomConditionForm({ onAdd }: { onAdd: (condition: CustomCondition)
         maxLength={2000}
         className={`${inputCls} w-full resize-y`}
       />
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!name.trim()}
-        className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
-      >
-        Add
+      <div className="flex justify-end gap-3">
+        <button type="button" onClick={onCancel} className="text-xs font-semibold text-slate-400 hover:text-slate-200">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const trimmed = name.trim();
+            if (!trimmed) return;
+            onSubmit(trimmed, description.trim());
+          }}
+          disabled={!name.trim()}
+          className="rounded-full bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+        >
+          {submitLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One library entry inside the "Manage Custom Conditions" view — read-only
+ * name+description (same recipe the old per-entity row used) with edit/
+ * delete actions using the app's own canonical row-action icons (`IconButton`
+ * `muted`/`danger` — see that component's own doc comment for why those are
+ * the designated tones for "edit" and "remove/delete a row"). Editing here
+ * changes the shared definition, so every character/creature that has this
+ * condition attached picks up the new name/description immediately, without
+ * re-attaching anything.
+ */
+function CustomConditionLibraryRow({
+  template,
+  onSave,
+  onRemove,
+}: {
+  template: CustomConditionTemplate;
+  onSave: (next: CustomConditionTemplate) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <CustomConditionTemplateForm
+        initialName={template.name}
+        initialDescription={template.description ?? ""}
+        submitLabel="Save"
+        onCancel={() => setEditing(false)}
+        onSubmit={(name, description) => {
+          onSave({ ...template, name, description: description || undefined });
+          setEditing(false);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold text-slate-200">{template.name}</p>
+        {template.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{template.description}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-0.5">
+        <IconButton tone="muted" onClick={() => setEditing(true)} aria-label={`Edit ${template.name}`} title="Edit">
+          <PencilIcon className="h-3.5 w-3.5" />
+        </IconButton>
+        <IconButton tone="danger" onClick={onRemove} aria-label={`Delete ${template.name} from the library`} title="Delete from library">
+          <TrashOutlineIcon className="h-3.5 w-3.5" />
+        </IconButton>
+      </div>
+    </div>
+  );
+}
+
+/** Toggle pill for one library entry — same on/off click interaction and active-state colors (`amber-500`) the standard-conditions pill grid above it uses, plus a dashed border (this app's established "homebrew" signal, also used by `CustomConditionBadge`) so the two grids read as clearly related but distinct. Unlike the standard grid's pills, this one also carries a hover hint (`disableTap` since the pill already has its own click handler) — a custom condition's name alone often isn't self-explanatory the way "Poisoned" is, so its description needs to be reachable before deciding whether to toggle it on. */
+function CustomConditionPill({ template, active, onToggle }: { template: CustomConditionTemplate; active: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`rounded-full border border-dashed px-2 py-0.5 text-xs ${
+        active ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+      }`}
+    >
+      <InfoTooltip hoverOnly disableTap panel={<CustomConditionHintPanel name={template.name} description={template.description} />}>
+        {template.name}
+      </InfoTooltip>
+    </button>
+  );
+}
+
+/**
+ * "Custom Conditions" — deliberately mirrors the standard-conditions pill
+ * grid right above it in `StatusPopover`: every library entry gets its own
+ * always-shown pill, a click toggles it on/off for *this* character/creature
+ * directly (no separate "attach" step, no "already attached vs. library"
+ * split list) — the same one-click interaction a standard condition already
+ * has. Defining, renaming, or deleting a condition is a deliberately
+ * separate concern (`⚙ Manage Custom Conditions`, its own local `managing`
+ * toggle below) so this grid itself never carries a text input.
+ *
+ * Deleting a library entry here only removes it from `customConditionLibrary`
+ * — it does *not* reach into every other character's/creature's own
+ * `customConditionIds` to strip the now-dangling id (this component only
+ * has write access to the *current* entity's ids, not the whole roster).
+ * `resolveCustomConditions` already treats an id with no matching library
+ * entry as simply absent, so a stale reference on another card just quietly
+ * stops rendering a badge there instead of erroring — the same end state a
+ * real cross-entity cleanup would produce, without needing this popover to
+ * touch data it doesn't own.
+ */
+function CustomConditionsSection({
+  ids,
+  library,
+  onIdsChange,
+  onLibraryChange,
+}: {
+  ids: string[];
+  library: CustomConditionTemplate[];
+  onIdsChange: (ids: string[]) => void;
+  onLibraryChange: (library: CustomConditionTemplate[]) => void;
+}) {
+  const [managing, setManaging] = useState(false);
+  const [addingNew, setAddingNew] = useState(false);
+
+  function toggle(id: string) {
+    onIdsChange(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+  }
+
+  if (managing) {
+    return (
+      <div className="space-y-1.5">
+        <button type="button" onClick={() => setManaging(false)} className="text-xs font-semibold text-slate-400 hover:text-slate-200">
+          ← Back
+        </button>
+        <p className={MICRO_LABEL_CLS}>Custom Conditions Library</p>
+        {library.length === 0 && <p className="text-xs italic text-slate-500">No custom conditions yet.</p>}
+        <div className="space-y-1.5">
+          {library.map((t) => (
+            <CustomConditionLibraryRow
+              key={t.id}
+              template={t}
+              onSave={(next) => onLibraryChange(library.map((x) => (x.id === next.id ? next : x)))}
+              onRemove={() => onLibraryChange(library.filter((x) => x.id !== t.id))}
+            />
+          ))}
+        </div>
+        {addingNew ? (
+          <CustomConditionTemplateForm
+            submitLabel="Add"
+            onCancel={() => setAddingNew(false)}
+            onSubmit={(name, description) => {
+              onLibraryChange([...library, { id: nextCustomConditionTemplateId(), name, description: description || undefined }]);
+              setAddingNew(false);
+            }}
+          />
+        ) : (
+          <button type="button" onClick={() => setAddingNew(true)} className="text-xs font-semibold text-sky-400 hover:underline">
+            + Add Custom Condition
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className={MICRO_LABEL_CLS}>Custom Conditions</p>
+      {library.length === 0 ? (
+        <p className="text-xs italic text-slate-500">No custom conditions in this campaign yet.</p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {library.map((t) => (
+            <CustomConditionPill key={t.id} template={t} active={ids.includes(t.id)} onToggle={() => toggle(t.id)} />
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={() => setManaging(true)} className="text-xs font-semibold text-sky-400 hover:underline">
+        ⚙ Manage Custom Conditions
       </button>
     </div>
   );
@@ -392,33 +455,38 @@ function AddCustomConditionForm({ onAdd }: { onAdd: (condition: CustomCondition)
 /**
  * The single entry point for everything on this rail that isn't purely
  * read-only: concentration, exhaustion, standard D&D conditions, and custom
- * states — one popover shared by `CharacterCard` and `CreatureCard` rather
- * than each having its own editing surface. Concentration and custom states
- * show up for both callers (whichever pass `onToggleConcentration`/
- * `onCustomConditionsChange`); the standard-conditions pill grid only
- * appears for a caller that also passes `onConditionsChange` — today that's
- * `CreatureCard`/`CreatureDetailsModal` only, since a Character's standard
- * conditions come from D&D Beyond sync (or the free-text field on its full
- * edit page) rather than manual pill-toggling here.
+ * conditions — one popover shared by `CharacterCard` and `CreatureCard`
+ * rather than each having its own editing surface. Concentration and custom
+ * conditions show up for both callers (whichever pass
+ * `onToggleConcentration`/`onCustomConditionIdsChange`); the
+ * standard-conditions pill grid only appears for a caller that also passes
+ * `onConditionsChange` — today that's `CreatureCard`/`CreatureDetailsModal`
+ * only, since a Character's standard conditions come from D&D Beyond sync
+ * (or the free-text field on its full edit page) rather than manual
+ * pill-toggling here.
  */
 function StatusPopover({
   conditions,
   exhaustion,
   concentrating,
-  customConditions,
+  customConditionIds,
+  customConditionLibrary,
   onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
-  onCustomConditionsChange,
+  onCustomConditionIdsChange,
+  onCustomConditionLibraryChange,
 }: {
   conditions: string[];
   exhaustion: number;
   concentrating?: boolean;
-  customConditions: CustomCondition[];
+  customConditionIds: string[];
+  customConditionLibrary: CustomConditionTemplate[];
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
-  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
+  onCustomConditionIdsChange?: (ids: string[]) => void;
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -501,22 +569,13 @@ function StatusPopover({
               </div>
             </div>
           )}
-          {onCustomConditionsChange && (
-            <div className="space-y-1.5">
-              <p className={MICRO_LABEL_CLS}>Custom states</p>
-              {customConditions.map((c) => (
-                <CustomConditionRow
-                  key={c.id}
-                  condition={c}
-                  onSave={(next) => onCustomConditionsChange(customConditions.map((x) => (x.id === next.id ? next : x)))}
-                  onToggleDisabled={() =>
-                    onCustomConditionsChange(customConditions.map((x) => (x.id === c.id ? { ...x, disabled: !x.disabled } : x)))
-                  }
-                  onRemove={() => onCustomConditionsChange(customConditions.filter((x) => x.id !== c.id))}
-                />
-              ))}
-              <AddCustomConditionForm onAdd={(c) => onCustomConditionsChange([...customConditions, c])} />
-            </div>
+          {onCustomConditionIdsChange && onCustomConditionLibraryChange && (
+            <CustomConditionsSection
+              ids={customConditionIds}
+              library={customConditionLibrary}
+              onIdsChange={onCustomConditionIdsChange}
+              onLibraryChange={onCustomConditionLibraryChange}
+            />
           )}
         </div>
       )}
@@ -531,33 +590,36 @@ function StatusBadges({
   conditions,
   exhaustion,
   concentrating,
-  customConditions,
+  customConditionIds,
+  customConditionLibrary,
   onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
-  onCustomConditionsChange,
+  onCustomConditionIdsChange,
+  onCustomConditionLibraryChange,
 }: {
   conditions: string[];
   exhaustion: number;
   concentrating?: boolean;
-  customConditions: CustomCondition[];
+  customConditionIds: string[];
+  customConditionLibrary: CustomConditionTemplate[];
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
-  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
+  onCustomConditionIdsChange?: (ids: string[]) => void;
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
-  const showTrigger = Boolean(onConditionsChange || onExhaustionChange || onCustomConditionsChange || onToggleConcentration);
+  const showTrigger = Boolean(onConditionsChange || onExhaustionChange || onCustomConditionIdsChange || onToggleConcentration);
   const fixedCount = (exhaustion > 0 ? 1 : 0) + (showTrigger ? 1 : 0);
   const availableForConditions = MAX_BADGES - fixedCount;
 
-  // A disabled custom condition stays in `customConditions` (so the popover
-  // can still list/re-enable it) but shouldn't get a floating badge — that's
-  // the whole point of "disable" over "remove". `StatusPopover` below still
-  // gets the *full*, unfiltered array so its own editable list keeps showing
-  // every condition regardless of on/off state.
-  const activeCustomConditions = customConditions.filter((c) => !c.disabled);
+  // Every id in `customConditionIds` is attached, full stop — there's no
+  // "attached but off" state in this model (see `CustomConditionsSection`'s
+  // own doc comment), so unlike the old `disabled`-filtered array, nothing
+  // here needs excluding before it counts as an active badge.
+  const activeCustomConditions = resolveCustomConditions(customConditionIds, customConditionLibrary);
 
-  // Custom states go first when slots run short — a standard condition
+  // Custom conditions go first when slots run short — a standard condition
   // (Poisoned, Prone...) is common knowledge even reduced to "•••" in the
   // overflow badge, where a homebrew one losing its only visible badge loses
   // the one on-card cue that it's active at all.
@@ -579,11 +641,13 @@ function StatusBadges({
           conditions={conditions}
           exhaustion={exhaustion}
           concentrating={concentrating}
-          customConditions={customConditions}
+          customConditionIds={customConditionIds}
+          customConditionLibrary={customConditionLibrary}
           onToggleConcentration={onToggleConcentration}
           onConditionsChange={onConditionsChange}
           onExhaustionChange={onExhaustionChange}
-          onCustomConditionsChange={onCustomConditionsChange}
+          onCustomConditionIdsChange={onCustomConditionIdsChange}
+          onCustomConditionLibraryChange={onCustomConditionLibraryChange}
         />
       )}
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
@@ -604,21 +668,26 @@ export function StatusRail({
   conditions,
   exhaustion,
   concentrating,
-  customConditions,
+  customConditionIds,
+  customConditionLibrary,
   onToggleConcentration,
   onConditionsChange,
   onExhaustionChange,
-  onCustomConditionsChange,
+  onCustomConditionIdsChange,
+  onCustomConditionLibraryChange,
 }: {
   conditions: string[];
   exhaustion: number;
   /** Only affects the card's passive `concentrating-ring` border tint now — omit entirely when the caller doesn't track concentration at all. Pass `onToggleConcentration` (whether or not this is set) to also show the toggle in the popover. */
   concentrating?: boolean;
-  customConditions: CustomCondition[];
+  customConditionIds: string[];
+  /** The campaign's shared library every `customConditionIds` entry references — see `CustomConditionTemplate`'s own doc comment. */
+  customConditionLibrary: CustomConditionTemplate[];
   onToggleConcentration?: () => void;
   onConditionsChange?: (conditions: string[]) => void;
   onExhaustionChange?: (level: number) => void;
-  onCustomConditionsChange?: (customConditions: CustomCondition[]) => void;
+  onCustomConditionIdsChange?: (ids: string[]) => void;
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   return (
     // Straddles the *top* border (row, centered, shifted up by half its own
@@ -644,11 +713,13 @@ export function StatusRail({
         conditions={conditions}
         exhaustion={exhaustion}
         concentrating={concentrating}
-        customConditions={customConditions}
+        customConditionIds={customConditionIds}
+        customConditionLibrary={customConditionLibrary}
         onToggleConcentration={onToggleConcentration}
         onConditionsChange={onConditionsChange}
         onExhaustionChange={onExhaustionChange}
-        onCustomConditionsChange={onCustomConditionsChange}
+        onCustomConditionIdsChange={onCustomConditionIdsChange}
+        onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
     </div>
   );

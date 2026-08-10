@@ -1085,6 +1085,7 @@ export async function POST(req: Request) {
   const party = listCharacters(campaignId);
   const entityId = characterId ?? creatureId!;
   const entityKind: AssistantQueryEntityKind = characterId ? "character" : "creature";
+  const customConditionLibrary = campaign.customConditionLibrary ?? [];
 
   let name: string;
   let context: string;
@@ -1101,8 +1102,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Character not found." }, { status: 404 });
     }
     name = character.name;
-    context = characterAssistantContext(character);
-    context += companionsContext(listCreatures(campaignId), character.id);
+    context = characterAssistantContext(character, customConditionLibrary);
+    context += companionsContext(listCreatures(campaignId), character.id, customConditionLibrary);
     selfCharacterId = character.id;
   } else {
     const creature = getCreature(creatureId!);
@@ -1111,13 +1112,13 @@ export async function POST(req: Request) {
     }
     name = creature.name;
     const ownerName = creature.ownerCharacterId ? party.find((c) => c.id === creature.ownerCharacterId)?.name : undefined;
-    context = creatureAssistantContext(creature, ownerName);
+    context = creatureAssistantContext(creature, ownerName, customConditionLibrary);
   }
   // Battlefield-wide awareness (see the prompt's PARTY AWARENESS section) —
   // e.g. "is anyone else already critically low," "does anyone else still
   // have a heal ready" — matters for a creature's turn just as much as a
   // character's, so this isn't gated on `characterId` alone.
-  context += partyTeammatesContext(party, selfCharacterId);
+  context += partyTeammatesContext(party, selfCharacterId, customConditionLibrary);
 
   // Derived server-side from this entity's own persisted conversation
   // (never client-supplied — see `assistantSuggestSchema`'s own doc

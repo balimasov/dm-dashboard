@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Attack,
   Character,
+  CustomConditionTemplate,
   Feature,
   InventoryItem,
   KnownSpell,
@@ -196,11 +197,15 @@ export function CharacterDetailsModal({
   onClose,
   onUpdate,
   onRemove,
+  customConditionLibrary = [],
+  onCustomConditionLibraryChange,
 }: {
   character: Character;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Character>) => void;
   onRemove?: (id: string) => void;
+  customConditionLibrary?: CustomConditionTemplate[];
+  onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const c = character;
   const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
@@ -270,11 +275,13 @@ export function CharacterDetailsModal({
             conditions={c.combat.conditions}
             exhaustion={c.combat.exhaustion}
             concentrating={Boolean(c.concentrating)}
-            customConditions={c.combat.customConditions ?? []}
+            customConditionIds={c.combat.customConditionIds ?? []}
+            customConditionLibrary={customConditionLibrary}
             onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
-            onCustomConditionsChange={
-              onUpdate ? (customConditions) => onUpdate(c.id, { combat: { ...c.combat, customConditions } }) : undefined
+            onCustomConditionIdsChange={
+              onUpdate ? (customConditionIds) => onUpdate(c.id, { combat: { ...c.combat, customConditionIds } }) : undefined
             }
+            onCustomConditionLibraryChange={onCustomConditionLibraryChange}
           />
 
           <div className="flex items-start gap-3">
@@ -664,6 +671,7 @@ export function CharacterDetailsModal({
         name={c.name}
         target={{ campaignId: c.campaignId, characterId: c.id }}
         entity={c}
+        customConditionLibrary={customConditionLibrary}
         onClose={() => setAiOpen(false)}
         // Opened from inside this already-open Modal (z-50) via the "Ask AI"
         // pill above — needs to land above it, not behind it. See
