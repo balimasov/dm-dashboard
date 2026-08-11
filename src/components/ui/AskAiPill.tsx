@@ -16,7 +16,7 @@ export function AskAiPill({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       title="Ask AI"
-      className="flex shrink-0 items-center gap-1 rounded-full bg-sky-600/15 px-2 py-0.5 text-xs font-semibold text-sky-300 hover:bg-sky-600/25"
+      className="flex shrink-0 items-center gap-1 rounded-full border border-sky-600/35 bg-sky-600/10 px-2 py-0.5 text-xs font-semibold text-sky-300 hover:bg-sky-600/20"
     >
       <span aria-hidden="true">✨</span>
       Ask AI

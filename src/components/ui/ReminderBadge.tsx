@@ -37,7 +37,7 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
             toggle();
           }}
           title={label}
-          className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25"
+          className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
         >
           <span aria-hidden="true">🔥</span>
           {group.entries.length}

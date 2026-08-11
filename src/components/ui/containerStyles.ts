@@ -97,13 +97,13 @@ export const AI_CHIP_CLS =
  * Soft, borderless row shell for `CharacterCard`/`CreatureCard`'s (and
  * their matching Details modals') reminder/AI/kebab row — previously a bare
  * `flex` row with no shared container, which read as controls scattered in
- * a spot rather than one panel. Grouping now comes from a faint `white/3.5`
- * tint alone, not a border: this row's own `ReminderBadge`/`AskAiPill`
- * chips are borderless too (see their own comments), and stacking this
- * shell's border around two more nested pill borders read as three frames
- * nested in a small area — worst on a short creature card, where the
- * toolbar is most of what's visible under the name. One soft band groups
- * the row exactly as before; color/fill alone (not a stroke) now
- * distinguishes each chip inside it.
+ * a spot rather than one panel. Grouping comes from a faint `white/3.5`
+ * tint alone, not a border: stacking this shell's own border around the
+ * row's `ReminderBadge`/`AskAiPill` chips (each still bordered, unlike an
+ * earlier fully-borderless pass through this shell) read as three nested
+ * frames in a small area — worst on a short creature card, where the
+ * toolbar is most of what's visible under the name. Dropping just this
+ * outer border groups the row exactly as before while leaving one frame
+ * per chip instead of two.
  */
 export const TOOLBAR_SHELL_CLS = "rounded-lg bg-white/[0.035]";
