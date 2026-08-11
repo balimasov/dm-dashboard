@@ -25,11 +25,16 @@ export function RosterRow({
   actions: ReactNode;
   children: ReactNode;
   /**
-   * Keeps the row on one line at every width instead of stacking the
-   * actions onto their own line below `sm` — for rows whose `children` is
-   * already a single flex line meant to shrink (like Quick Links' label+url
-   * inputs), where wrapping just pushes the delete button onto a lonely
-   * second row instead of anything actually getting more room.
+   * Keeps the row on one line at every width instead of stacking `actions`
+   * onto their own line below `sm`. Two distinct reasons callers want this:
+   * rows whose `children` is already a single flex line meant to shrink
+   * (Quick Links' label+url inputs), where wrapping just pushes the delete
+   * button onto a lonely second row instead of anything actually getting
+   * more room; and rows whose `children` is multiple stacked text lines
+   * (`SortableCharacterRow`/`CreatureRosterEditor`'s `CreatureRow`), where
+   * stacking `actions` below instead of beside `avatar` made the kebab drift
+   * down to sit level with the last text line instead of the avatar it's
+   * meant to sit next to.
    */
   singleRow?: boolean;
   /** For a character/creature hidden from the dashboard — a lower-opacity row is the roster list's own visual cue that this one won't show up there, without needing a separate badge. */

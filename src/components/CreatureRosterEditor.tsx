@@ -494,6 +494,7 @@ function CreatureRow({
     <RosterRow
       id={creature.id}
       dimmed={creature.hidden}
+      singleRow
       avatar={
         <div className="relative shrink-0">
           <Avatar src={creature.avatarUrl} label={creature.name} />

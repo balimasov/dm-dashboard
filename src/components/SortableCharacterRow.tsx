@@ -29,6 +29,7 @@ export function SortableCharacterRow({
     <RosterRow
       id={character.id}
       dimmed={character.hidden}
+      singleRow
       avatar={<CharacterAvatar character={character} />}
       actions={
         <EntityActionsMenu
