@@ -47,7 +47,6 @@ export function CampaignRosterEditor({
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<"active" | "hidden">("active");
@@ -89,7 +88,6 @@ export function CampaignRosterEditor({
     setUrl("");
     setAdding(false);
 
-    setSyncingId(character.id);
     try {
       const synced = await fetchAndParseDdbCharacter(character);
       await updateCharacter(character.id, synced);
@@ -98,8 +96,6 @@ export function CampaignRosterEditor({
       setSyncError(
         `Failed to sync "${character.name}": ${message} You can fill in the data manually on the edit page.`
       );
-    } finally {
-      setSyncingId(null);
     }
   }
 
@@ -186,7 +182,7 @@ export function CampaignRosterEditor({
               <SortableCharacterRow
                 key={c.id}
                 character={c}
-                syncing={syncingId === c.id}
+                onUpdate={updateCharacter}
                 onEdit={setEditingCharacter}
                 onRemove={removeCharacter}
                 onToggleHidden={handleToggleHidden}

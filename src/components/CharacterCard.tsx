@@ -133,8 +133,11 @@ export function CharacterCard({
           so the two read as one aligned column, not two differently-inset
           blocks. No internal dividers — reminder/AI stay their established
           pill look, the kebab its own icon button, grouped only by the
-          shared border/background. */}
-      <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+          shared border/background. `-mb-2` trims the card's own uniform
+          `gap-3.5` down for just this one gap (toolbar → HP block) — once
+          the toolbar got a visible border, that same 14px read as more
+          leftover space than it did as a plain unbordered row. */}
+      <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
         <ReminderBadge
           group={characterReminders(c)}
           onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
@@ -171,7 +174,7 @@ export function CharacterCard({
             {c.combat.ac}
           </IconStat>
           <IconStat
-            className="pl-2"
+            className="pl-4"
             icon={<SpeedIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={SPEED_HINT_PANEL}
             label="Speed"
@@ -186,7 +189,7 @@ export function CharacterCard({
             {formatModifier(c.initiative)}
           </IconStat>
           <IconStat
-            className="pl-2"
+            className="pl-4"
             icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
             panel={PROFICIENCY_HINT_PANEL}
             label="Prof"

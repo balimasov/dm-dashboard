@@ -33,6 +33,7 @@ import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creature
 import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
 import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
+import { CreatureHpHistoryModal } from "@/components/CreatureHpHistoryModal";
 import { EditCreatureModal } from "@/components/EditCreatureModal";
 import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
@@ -473,6 +474,7 @@ function CreatureRow({
   onRemove,
   onToggleHidden,
   onDuplicate,
+  onShowHpHistory,
 }: {
   creature: Creature;
   characters: Character[];
@@ -480,6 +482,7 @@ function CreatureRow({
   onRemove: (id: string) => Promise<void>;
   onToggleHidden: (id: string) => void;
   onDuplicate: (creature: Creature, count: number) => void;
+  onShowHpHistory: () => void;
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
   const infoLine = creatureInfoLine(creature);
@@ -504,6 +507,7 @@ function CreatureRow({
           hidden={creature.hidden}
           onToggleHidden={() => onToggleHidden(creature.id)}
           onDuplicate={(count) => onDuplicate(creature, count)}
+          onShowHpHistory={onShowHpHistory}
           onRemove={() => onRemove(creature.id)}
         />
       }
@@ -547,9 +551,11 @@ export function CreatureRosterEditor({
   creaturesState: ReturnType<typeof useCreatures>;
   characters: Character[];
 }) {
-  const { creatures, addCreature, duplicateCreature, removeCreature, reorderCreatures, updateCreature } = creaturesState;
+  const { creatures, addCreature, duplicateCreature, removeCreature, reorderCreatures, updateCreature, clearHpHistory } =
+    creaturesState;
 
   const [editingCreature, setEditingCreature] = useState<Creature | null>(null);
+  const [hpHistoryCreature, setHpHistoryCreature] = useState<Creature | null>(null);
 
   function handleToggleHidden(id: string) {
     const creature = creatures.find((c) => c.id === id);
@@ -714,6 +720,7 @@ export function CreatureRosterEditor({
                   onRemove={removeCreature}
                   onToggleHidden={handleToggleHidden}
                   onDuplicate={handleDuplicate}
+                  onShowHpHistory={() => setHpHistoryCreature(creature)}
                 />
               ))}
             </ul>
@@ -727,6 +734,14 @@ export function CreatureRosterEditor({
           characters={characters}
           onClose={() => setEditingCreature(null)}
           onUpdate={updateCreature}
+        />
+      )}
+
+      {hpHistoryCreature && (
+        <CreatureHpHistoryModal
+          creature={hpHistoryCreature}
+          onClear={() => clearHpHistory(hpHistoryCreature.id)}
+          onClose={() => setHpHistoryCreature(null)}
         />
       )}
     </div>

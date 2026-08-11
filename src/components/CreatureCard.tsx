@@ -101,8 +101,9 @@ export function CreatureCard({
 
       {/* Reminder badge (conditional) + AI pill + kebab — one bordered
           toolbar (same `TOOLBAR_SHELL_CLS` as `CharacterCard`'s equivalent
-          row) instead of a bare flex row. */}
-      <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+          row) instead of a bare flex row. `-mb-2` trims the leftover gap
+          before the stat block — see `CharacterCard`'s own comment. */}
+      <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
         <ReminderBadge
           group={creatureReminders(creature)}
           onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}

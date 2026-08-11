@@ -313,8 +313,10 @@ export function CharacterDetailsModal({
 
         {/* Reminder/AI/kebab — same bordered toolbar as the compact card's
             own row (`CharacterCard`), not a bare flex row — this modal is a
-            superset of the card, not a different view of the same actions. */}
-        <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+            superset of the card, not a different view of the same actions.
+            `-mb-2` trims the leftover gap the same way — see that file's
+            own comment. */}
+        <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
           <ReminderBadge
             group={characterReminders(c)}
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
@@ -351,7 +353,7 @@ export function CharacterDetailsModal({
               {c.combat.ac}
             </IconStat>
             <IconStat
-              className="pl-2"
+              className="pl-4"
               icon={<SpeedIcon className="h-4 w-4 shrink-0 text-slate-500" />}
               panel={SPEED_HINT_PANEL}
               label="Speed"
@@ -366,7 +368,7 @@ export function CharacterDetailsModal({
               {formatModifier(c.initiative)}
             </IconStat>
             <IconStat
-              className="pl-2"
+              className="pl-4"
               icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
               panel={PROFICIENCY_HINT_PANEL}
               label="Prof"

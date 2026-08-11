@@ -107,8 +107,9 @@ export function CreatureDetailsModal({
         {/* Reminder badge (conditional) + AI pill + kebab — same bordered
             toolbar as `CreatureCard`'s equivalent row; the Reference link
             now lives inline on the header's own "CR N" line instead (see
-            `CreatureHeader`). */}
-        <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+            `CreatureHeader`). `-mb-2` trims the leftover gap — see
+            `CharacterCard`'s own comment. */}
+        <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
           <ReminderBadge
             group={creatureReminders(creature)}
             onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}

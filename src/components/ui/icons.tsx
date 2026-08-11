@@ -30,10 +30,10 @@ export function ProficiencyIcon({ className }: { className?: string }) {
   );
 }
 
-/** Same five-point star path as `ProficiencyIcon` — visually identical, but a separate, semantically-scoped export (Heroic Inspiration, not the Proficiency stat), following the same "same shape, different meaning gets its own name" convention as `TrashOutlineIcon` vs. `TrashIcon`. */
+/** Same five-point star path as `ProficiencyIcon` — visually identical, but a separate, semantically-scoped export (Heroic Inspiration, not the Proficiency stat), following the same "same shape, different meaning gets its own name" convention as `TrashOutlineIcon` vs. `TrashIcon`. `viewBox="0 -2 24 24"` (not `0 0 24 24`) — a 5-point star's own visual weight sits higher than its bounding box's vertical center (the path's own y-extent is roughly [2, 18.3], not [0, 24]), so centering the *box* inside a circular badge left the star reading as sitting slightly above true-center; shifting the viewBox's top down by 2 re-centers the actual glyph instead of its box. */
 export function StarIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <svg viewBox="0 -2 24 24" fill="currentColor" className={className}>
       <path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 2z" />
     </svg>
   );

@@ -97,7 +97,7 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
         } as React.CSSProperties
       }
     >
-      <InfoTooltip panel={<ConditionHintPanel condition={condition} />} className={BADGE_HINT_TRIGGER_CLS}>
+      <InfoTooltip hoverOnly panel={<ConditionHintPanel condition={condition} />} className={BADGE_HINT_TRIGGER_CLS}>
         {condition.trim().slice(0, 2).toUpperCase()}
       </InfoTooltip>
     </span>
@@ -121,6 +121,7 @@ function CustomConditionBadge({ condition }: { condition: CustomConditionTemplat
       }
     >
       <InfoTooltip
+        hoverOnly
         panel={<CustomConditionHintPanel name={condition.name} description={condition.description} />}
         className={BADGE_HINT_TRIGGER_CLS}
       >
@@ -144,6 +145,7 @@ function InspirationBadge() {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-amber border-amber-400`}>
       <InfoTooltip
+        hoverOnly
         panel={
           <p>
             <span className="font-semibold text-amber-300">Heroic Inspiration</span>: lets you reroll one d20 roll,
@@ -152,7 +154,7 @@ function InspirationBadge() {
         }
         className={BADGE_HINT_TRIGGER_CLS}
       >
-        <StarIcon className="h-4 w-4 text-amber-300" />
+        <StarIcon className="h-[18px] w-[18px] text-amber-300" />
       </InfoTooltip>
     </span>
   );
@@ -161,7 +163,7 @@ function InspirationBadge() {
 function ExhaustionBadge({ level }: { level: number }) {
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-red border-red-500`}>
-      <InfoTooltip panel={<ExhaustionPanel level={level} />} className={BADGE_HINT_TRIGGER_CLS}>
+      <InfoTooltip hoverOnly panel={<ExhaustionPanel level={level} />} className={BADGE_HINT_TRIGGER_CLS}>
         <ExhaustionIcon className="h-[18px] w-[18px] text-red-300" />
       </InfoTooltip>
       <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold leading-none text-white">
@@ -192,6 +194,7 @@ function OverflowBadge({ conditions, customConditions = [] }: { conditions: stri
   return (
     <span className={`${STATUS_BADGE_SIZE} status-ring-gray border-slate-400 text-slate-200`}>
       <InfoTooltip
+        hoverOnly
         panel={<ConditionsListHintPanel conditions={conditions} customConditions={customConditions} />}
         className={BADGE_HINT_TRIGGER_CLS}
       >
