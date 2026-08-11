@@ -40,9 +40,13 @@ function ExhaustionPanel({ level }: { level: number }) {
  * glance across a full party row, so anything currently active also gets a
  * pulsing badge up top. Half-overlaps the card's border (rather than sitting
  * fully inset) so it reads as a floating marker without eating into the
- * 16px content padding where the header/text actually starts.
+ * 16px content padding where the header/text actually starts. `34px` (not
+ * the even `h-9`/36px Tailwind step) — shrunk 2px per feedback, since the
+ * rail dips down over the name/header row below it and a couple fewer
+ * pixels there measurably reduces how much it crowds a long name.
  */
-const STATUS_BADGE_SIZE = "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
+const STATUS_BADGE_SIZE =
+  "relative flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border-2 bg-slate-950";
 
 /**
  * Every badge's `InfoTooltip` trigger gets this instead of relying on its

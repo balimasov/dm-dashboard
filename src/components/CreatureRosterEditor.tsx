@@ -40,6 +40,7 @@ import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { EntityActionsMenu } from "@/components/ui/EntityActionsMenu";
+import { OwnerBadge } from "@/components/ui/OwnerBadge";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { inputCls } from "@/components/ui/Field";
@@ -486,7 +487,6 @@ function CreatureRow({
 }) {
   const owner = characters.find((c) => c.id === creature.ownerCharacterId);
   const infoLine = creatureInfoLine(creature);
-  const ownerLine = [owner?.name, creature.source].filter(Boolean).join(" · ");
 
   return (
     <RosterRow
@@ -498,6 +498,15 @@ function CreatureRow({
           <div className="absolute inset-x-0 bottom-0 flex translate-y-1/2 justify-center">
             <CreatureCategoryChip category={creature.category} size="sm" />
           </div>
+          {/* Same corner-badge + hover-hint treatment as `CreatureHeader`'s
+              own owner badge — replaces the old plain-text "OwnerName ·
+              Source" caption below, which duplicated the name without the
+              hint (level/class) the badge's tooltip already gives for free. */}
+          {owner && (
+            <div className="absolute -left-2 -top-2">
+              <OwnerBadge owner={owner} />
+            </div>
+          )}
         </div>
       }
       actions={
@@ -522,9 +531,9 @@ function CreatureRow({
         </p>
       )}
       {creature.challengeRating && <p className="text-xs text-slate-600">CR {creature.challengeRating}</p>}
-      {ownerLine && (
-        <p title={ownerLine} className="truncate text-xs text-slate-600">
-          {ownerLine}
+      {creature.source && (
+        <p title={creature.source} className="truncate text-xs text-slate-600">
+          {creature.source}
         </p>
       )}
     </RosterRow>
