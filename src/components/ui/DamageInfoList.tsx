@@ -43,12 +43,17 @@ export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
           // `hidden`/`block` class toggles), so a `<p>` wrapper here would put
           // a `<p>` inside a `<p>` and trip a hydration mismatch (confirmed).
           <div key={e.label}>
-            <span className="inline-flex items-center gap-1 align-text-bottom">
-              {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              <InfoTooltip inline panel={e.panel}>
-                <span className="text-slate-500">{e.label}:</span>
-              </InfoTooltip>
-            </span>{" "}
+            {/* No wrapping `inline-flex` box around icon+label anymore — its
+                own baseline (an `inline-flex` box has no well-defined one)
+                sat differently from `e.value`'s plain-text baseline right
+                after it, which is what made the value read as sitting lower
+                than the label. `align-middle` on the bare icon plus
+                `InfoTooltip`'s own `inline-block` trigger both baseline-align
+                against `e.value` the normal, reliable way instead. */}
+            {Icon && <Icon className="mr-1 inline-block h-3.5 w-3.5 align-middle text-slate-500" />}
+            <InfoTooltip inline panel={e.panel}>
+              <span className="text-slate-500">{e.label}:</span>
+            </InfoTooltip>{" "}
             {e.value}
           </div>
         );
