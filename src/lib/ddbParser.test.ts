@@ -288,6 +288,39 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
   });
 });
 
+describe("spell/resource source resolves to the specific granting feature (buildComponentSourceIndex)", () => {
+  test("a normal class-list spell (componentId 0) keeps the plain 'Class' source", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Fireball")?.source).toBe("Class");
+  });
+
+  test("a subclass-granted bonus spell resolves to 'Class (Spellfire Spells)', matching D&D Beyond's own spell list", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Cure Wounds")?.source).toBe("Class (Spellfire Spells)");
+  });
+
+  test("a racial bonus spell resolves through the option indirection to 'Race (Elven Lineage Spells)'", () => {
+    const c = load("yorun-all-immunities");
+    const mistyStep = c.knownSpells.filter((s) => s.name === "Misty Step");
+    expect(mistyStep.some((s) => s.source === "Race (Elven Lineage Spells)")).toBe(true);
+  });
+
+  test("an item-granted spell (no matching racial trait/class feature/feat) keeps the plain 'Item' source", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Melf's Acid Arrow")?.source).toBe("Item");
+  });
+
+  test("a charge-pool resource resolves the same way — 'Class (Font of Magic)', not just 'Class'", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.resources.find((r) => r.name === "Font of Magic: Sorcery Points")?.source).toBe("Class (Font of Magic)");
+  });
+
+  test("the racial spell's own charge-pool resource resolves to 'Race (Elven Lineage Spells)' too", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.resources.find((r) => r.name === "Detect Magic (1st)")?.source).toBe("Race (Elven Lineage Spells)");
+  });
+});
+
 describe("custom defense adjustments (customDefenseAdjustments)", () => {
   test("Yorun with every entry in her Resistances picker added", () => {
     const c = load("yorun-all-resistances");

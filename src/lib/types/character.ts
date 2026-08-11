@@ -38,7 +38,7 @@ export interface Resource {
   max: number;
   recovery: RecoveryType;
   note?: string;
-  /** Where this resource comes from (e.g. "Race", "Class", "Feat", "Item", "Pact Magic") — shown as the first line of the hover tooltip, above the description. */
+  /** Where this resource comes from — as specific as the data allows, e.g. "Class (Combat Superiority)" for a charge pool tied to a specific class feature, or just "Race"/"Class"/"Feat"/"Item"/"Pact Magic" when it doesn't resolve to one. Shown as the first line of the hover tooltip, above the description. */
   source?: string;
   /** Short rules blurb shown as a hover tooltip on the card (from D&D Beyond, or typed manually). */
   description?: string;
@@ -58,7 +58,7 @@ export interface KnownSpell {
   school?: string;
   /** Short rules blurb shown as a hover tooltip (from D&D Beyond, or typed manually). */
   description?: string;
-  /** Where this spell comes from (e.g. "Class", "Race", "Item"). */
+  /** Where this spell comes from — as specific as the data allows, e.g. "Race (Elven Lineage Spells)" or "Class (Spellfire Spells)" for a bonus spell granted by a specific racial trait/subclass feature, or just "Class"/"Race"/"Background"/"Item"/"Feat" when it doesn't resolve to one (e.g. every spell freely chosen from a class's own spell list). */
   source: string;
   /** e.g. "V, S, M" — which of Verbal/Somatic/Material components the spell needs. */
   components?: string;

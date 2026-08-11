@@ -1,6 +1,6 @@
 import { AbilityScores, KnownSpell, SpellcastingStats, SpellSlotLevel } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription, titleCase } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, buildComponentSourceIndex, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 const ABILITY_ABBR: Record<number, string> = { 1: "STR", 2: "DEX", 3: "CON", 4: "INT", 5: "WIS", 6: "CHA" };
@@ -140,6 +140,15 @@ export function computeSpells(
 ): KnownSpell[] {
   const spells: KnownSpell[] = [];
   const seenKeys = new Set<string>();
+  // Same index `features.ts` builds for its own actions/options rows (see
+  // `buildComponentSourceIndex`'s own doc comment) — lets a bonus-granted
+  // spell's source read "Race (Elven Lineage Spells)" instead of just
+  // "Race" whenever its `componentId` resolves to a specific racial
+  // trait/class feature/feat, matching what D&D Beyond's own spell list
+  // shows under each spell's name. A spell from the main class spell list
+  // (not a bonus grant) always has `componentId: 0`, which never resolves,
+  // so it keeps its plain "Class" source exactly as before.
+  const componentSourceIndex = buildComponentSourceIndex(data);
 
   function add(entry: RawDdbAny, source: string) {
     const df = entry?.definition;
@@ -169,6 +178,8 @@ export function computeSpells(
     const components: number[] = df.components ?? [];
     const tags: string[] = df.tags ?? [];
     const effect = formatEffect(df);
+    const specificSource = entry?.componentId ? componentSourceIndex.get(entry.componentId) : undefined;
+    const resolvedSource = specificSource && specificSource.name !== source ? `${source} (${specificSource.name})` : source;
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
@@ -177,7 +188,7 @@ export function computeSpells(
       description: rawDescription
         ? resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed)
         : undefined,
-      source,
+      source: resolvedSource,
       ...(components.length > 0
         ? { components: components.map((c) => COMPONENT_LABELS[c]).filter(Boolean).join(", ") }
         : {}),

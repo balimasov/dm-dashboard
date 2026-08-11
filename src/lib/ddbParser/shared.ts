@@ -1,4 +1,4 @@
-import { AbilityScores, ItemRarity, RecoveryType } from "../types";
+import { AbilityScores, Feature, ItemRarity, RecoveryType } from "../types";
 import { formatModifier } from "../format";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 // Re-exported (not duplicated) so `abilities.ts`/`combat.ts`/`spells.ts`/`ddbParser.ts` can keep importing
@@ -472,4 +472,88 @@ export function computeLimitedUseCharges(
 export function diceTypeNote(name: string, dice: RawDdbAny): string {
   if (!dice?.diceValue || !/\b(die|dice)\b/i.test(name)) return "";
   return ` Each die is a d${dice.diceValue}.`;
+}
+
+/**
+ * Resolves a D&D Beyond `componentId` — found on `actions.*`/`options.*`
+ * entries (`features.ts`) and bonus-granted `spells.*` entries
+ * (`spells.ts`) alike — back to the specific racial trait/class feature/feat
+ * that granted it, plus that parent's origin type. Shared here (rather than
+ * built inline in each caller, as `features.ts` used to) so a spell's source
+ * can read "Race (Elven Lineage Spells)" instead of just "Race", using the
+ * exact same resolution `features.ts` already relies on for its own actions/
+ * options rows, instead of a second parallel implementation drifting from it.
+ *
+ * Two registration passes, same priority `features.ts` always used:
+ * `grantedFeats`-indirect links win over a direct `definition.id` match — a
+ * class feature's own internal "choose one of these" mechanism reuses the
+ * same `feat`-typed entity D&D Beyond puts in `data.feats[]`, so a direct
+ * id/name match there isn't reliable ground truth by itself (confirmed on a
+ * real Fighter/Barbarian export: the *class feature* "Weapon Mastery" has
+ * `grantedFeats: [{featIds: [X]}]`, and `data.feats[]` independently
+ * contains its own entry with `definition.id === X` and the same name — a
+ * technical placeholder, not a real chosen feat).
+ *
+ * A third pass then extends the map with every chosen `options.*` entry's
+ * own `definition.id`, pointing at whatever *that option's own* componentId
+ * already resolved to two passes above — confirmed necessary on a real Elf
+ * export: a racial bonus spell's `componentId` doesn't match the "Elven
+ * Lineage Spells" racial trait directly, it matches the *option* the player
+ * chose under it ("High Elf - Intelligence"), whose own `componentId` is
+ * what actually points at the trait. Without this third pass, that spell's
+ * source silently falls back to the generic "Race" bucket instead of the
+ * specific one D&D Beyond itself shows.
+ */
+export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name: string; originType: Feature["originType"] }> {
+  const index = new Map<number, { name: string; originType: Feature["originType"] }>();
+
+  function registerGrantedFeatLinks(definition: RawDdbAny, name: string | undefined, originType: Feature["originType"]) {
+    if (!name) return;
+    for (const grant of definition?.grantedFeats ?? []) {
+      for (const featId of grant.featIds ?? []) {
+        index.set(featId, { name, originType });
+      }
+    }
+  }
+
+  for (const trait of data.race?.racialTraits ?? []) {
+    registerGrantedFeatLinks(trait.definition, trait.definition?.name, "species");
+  }
+  for (const cls of data.classes ?? []) {
+    for (const cf of cls.classFeatures ?? []) {
+      registerGrantedFeatLinks(cf.definition, cf.definition?.name, "class");
+    }
+  }
+  for (const feat of data.feats ?? []) {
+    registerGrantedFeatLinks(feat.definition, feat.definition?.name, "feat");
+  }
+  registerGrantedFeatLinks(data.background?.definition, data.background?.definition?.featureName, "background");
+
+  function registerDirect(id: number | null | undefined, name: string | undefined, originType: Feature["originType"]) {
+    if (id != null && name && !index.has(id)) index.set(id, { name, originType });
+  }
+
+  for (const trait of data.race?.racialTraits ?? []) {
+    registerDirect(trait.definition?.id, trait.definition?.name, "species");
+  }
+  for (const cls of data.classes ?? []) {
+    for (const cf of cls.classFeatures ?? []) {
+      registerDirect(cf.definition?.id, cf.definition?.name, "class");
+    }
+  }
+  for (const feat of data.feats ?? []) {
+    registerDirect(feat.definition?.id, feat.definition?.name, "feat");
+  }
+
+  for (const group of ["race", "class", "feat"] as const) {
+    for (const opt of data.options?.[group] ?? []) {
+      const parentInfo = index.get(opt.componentId);
+      const optionId = opt.definition?.id;
+      if (parentInfo && optionId != null && !index.has(optionId)) {
+        index.set(optionId, parentInfo);
+      }
+    }
+  }
+
+  return index;
 }

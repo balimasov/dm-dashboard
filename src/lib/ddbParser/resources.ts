@@ -1,10 +1,21 @@
 import { AbilityScores, Resource } from "../types";
 import { ordinalLevel } from "../format";
-import { computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
 import { computePactMagicSlots } from "./spells";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 export function computeResources(data: RawDdbData, abilities: AbilityScores, profBonus: number, level: number, speed: number): Resource[] {
+  // Same index `features.ts`/`spells.ts` build for their own rows (see
+  // `buildComponentSourceIndex`'s own doc comment) — lets a charge pool's
+  // source read "Class (Combat Superiority)" instead of just "Class"
+  // whenever its `componentId` resolves to the specific class feature/
+  // racial trait/feat that actually grants it.
+  const componentSourceIndex = buildComponentSourceIndex(data);
+  function resolveSource(componentId: number | null | undefined, source: string): string {
+    const specific = componentId ? componentSourceIndex.get(componentId) : undefined;
+    return specific && specific.name !== source ? `${source} (${specific.name})` : source;
+  }
+
   function fromLimitedUse(
     name: string,
     lu: RawDdbAny,
@@ -45,7 +56,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
         `action-${group}`,
         idx,
         shortDescription(action.snippet, action.description),
-        source,
+        resolveSource(action.componentId, source),
         action.dice
       );
       if (resource) resources.push(resource);
@@ -78,7 +89,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
         `spell-${key}`,
         idx,
         shortDescription(df.snippet, df.description),
-        source
+        resolveSource(entry.componentId, source)
       );
       if (resource) resources.push(resource);
     });

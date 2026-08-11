@@ -1,5 +1,5 @@
 import { AbilityScores, Feature, RecoveryType, Resource } from "../types";
-import { computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
@@ -87,62 +87,11 @@ export function computeFeatures(
   // class feature/feat (a Battle Master's chosen maneuvers all share
   // `componentId` with the "Maneuvers" class feature; a Sorcerer's Metamagic
   // choices share it with "Metamagic Options", a *different* class feature
-  // from the "Metamagic" one that's otherwise shown).
-  //
-  // But `componentId` doesn't always point at a definition's own `id` —
-  // D&D Beyond implements *any* feature/trait/feat's internal "choose one of
-  // these" mechanism via a generic, reusable `grantedFeats[].featIds[]` link
-  // to an entity that's typed as a "feat" internally regardless of what
-  // actually grants it, and that *same* entity is *also* separately listed as
-  // its own entry in `data.feats[]` (confirmed on a real Fighter/Barbarian
-  // export: the *class feature* "Weapon Mastery" has `grantedFeats:
-  // [{featIds: [X]}]`, and `data.feats[]` independently contains its own
-  // entry with `definition.id === X` and the *same* name "Weapon Mastery" —
-  // a technical placeholder, not a real chosen feat). So a direct id/name
-  // match in `data.feats[]` is *not* reliable ground truth here — the
-  // `grantedFeats` link is, since it's the actual feature declaring "I own
-  // this choice". Indirect (`grantedFeats`) registrations therefore win: they
-  // run first, and the direct definition-id pass below only fills in ids
-  // that indirect registration didn't already claim.
-  const parentInfoById = new Map<number, { name: string; originType: Feature["originType"] }>();
-
-  function registerGrantedFeatLinks(definition: RawDdbAny, name: string | undefined, originType: Feature["originType"]) {
-    if (!name) return;
-    for (const grant of definition?.grantedFeats ?? []) {
-      for (const featId of grant.featIds ?? []) {
-        parentInfoById.set(featId, { name, originType });
-      }
-    }
-  }
-
-  for (const trait of data.race?.racialTraits ?? []) {
-    registerGrantedFeatLinks(trait.definition, trait.definition?.name, "species");
-  }
-  for (const cls of data.classes ?? []) {
-    for (const cf of cls.classFeatures ?? []) {
-      registerGrantedFeatLinks(cf.definition, cf.definition?.name, "class");
-    }
-  }
-  for (const feat of data.feats ?? []) {
-    registerGrantedFeatLinks(feat.definition, feat.definition?.name, "feat");
-  }
-  registerGrantedFeatLinks(data.background?.definition, data.background?.definition?.featureName, "background");
-
-  function registerDirect(id: number | null | undefined, name: string | undefined, originType: Feature["originType"]) {
-    if (id != null && name && !parentInfoById.has(id)) parentInfoById.set(id, { name, originType });
-  }
-
-  for (const trait of data.race?.racialTraits ?? []) {
-    registerDirect(trait.definition?.id, trait.definition?.name, "species");
-  }
-  for (const cls of data.classes ?? []) {
-    for (const cf of cls.classFeatures ?? []) {
-      registerDirect(cf.definition?.id, cf.definition?.name, "class");
-    }
-  }
-  for (const feat of data.feats ?? []) {
-    registerDirect(feat.definition?.id, feat.definition?.name, "feat");
-  }
+  // from the "Metamagic" one that's otherwise shown). Built once here via the
+  // shared `buildComponentSourceIndex` (see its own doc comment for the full
+  // resolution/priority rules) — `spells.ts` builds the exact same index for
+  // its own bonus-spell sources, instead of a second parallel implementation.
+  const parentInfoById = buildComponentSourceIndex(data);
 
   // "race"/"class"/"feat" here is D&D Beyond's own data grouping, not the
   // renamed 2024 terminology — the fallback `originType` for an action/option
