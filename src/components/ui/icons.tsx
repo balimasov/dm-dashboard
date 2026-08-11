@@ -30,6 +30,15 @@ export function ProficiencyIcon({ className }: { className?: string }) {
   );
 }
 
+/** Same five-point star path as `ProficiencyIcon` — visually identical, but a separate, semantically-scoped export (Heroic Inspiration, not the Proficiency stat), following the same "same shape, different meaning gets its own name" convention as `TrashOutlineIcon` vs. `TrashIcon`. */
+export function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 2z" />
+    </svg>
+  );
+}
+
 export function LanguageIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>

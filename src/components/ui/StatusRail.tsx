@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DotMeter } from "@/components/ResourceMeter";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
@@ -10,8 +11,11 @@ import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel }
 import { inputCls } from "./Field";
 import { IconButton } from "./IconButton";
 import { POPOVER_SHELL_CLS } from "./containerStyles";
-import { ConcentrationIcon, ExhaustionIcon, PencilIcon, PlusIcon, TrashOutlineIcon } from "./icons";
+import { ConcentrationIcon, ExhaustionIcon, PencilIcon, PlusIcon, StarIcon, TrashOutlineIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
+
+/** Screen-edge buffer for `StatusPopover`'s clamped position — same value/purpose as `InfoTooltip`'s own `EDGE_MARGIN`, kept local rather than imported since that constant isn't exported and the two components' positioning logic isn't shared. */
+const EDGE_MARGIN = 8;
 
 function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);
@@ -121,6 +125,34 @@ function CustomConditionBadge({ condition }: { condition: CustomConditionTemplat
         className={BADGE_HINT_TRIGGER_CLS}
       >
         {condition.name.trim().slice(0, 2).toUpperCase()}
+      </InfoTooltip>
+    </span>
+  );
+}
+
+/**
+ * Heroic Inspiration — now a rail badge like every other state instead of a
+ * bare glyph sitting inline in `CharacterHeader` (see that file's own
+ * history: it used to compete with the name for horizontal room and read as
+ * "stuck on the side"). Always first among the state badges (rendered before
+ * `ExhaustionBadge` in `StatusBadges` below) when the caller shows it at
+ * all — the caller only renders this component when inspiration is active,
+ * so there's no "off" state to draw here, unlike `ConcentrationToggleRow`'s
+ * on/off switch.
+ */
+function InspirationBadge() {
+  return (
+    <span className={`${STATUS_BADGE_SIZE} status-ring-amber border-amber-400`}>
+      <InfoTooltip
+        panel={
+          <p>
+            <span className="font-semibold text-amber-300">Heroic Inspiration</span>: lets you reroll one d20 roll,
+            keeping the better result.
+          </p>
+        }
+        className={BADGE_HINT_TRIGGER_CLS}
+      >
+        <StarIcon className="h-4 w-4 text-amber-300" />
       </InfoTooltip>
     </span>
   );
@@ -489,18 +521,54 @@ function StatusPopover({
   onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
   useEscapeToClose(() => setOpen(false), open);
+
+  // Portaled to `document.body` and positioned from measured rects, the same
+  // technique `InfoTooltip` uses (see its own doc comment) — the previous
+  // pure-CSS `left-1/2 -translate-x-1/2` centered the panel under the
+  // trigger with no regard for the viewport edge, clipping it for the
+  // leftmost card in a row (confirmed). Horizontal-only clamp: this panel
+  // always opens below the trigger (`top: trigger bottom + 8px`), and every
+  // real trigger position on the rail has room below it, unlike `InfoTooltip`
+  // which also has to flip above short/tall panels near the bottom edge.
+  useLayoutEffect(() => {
+    if (!open) return;
+    function computePosition() {
+      const trigger = triggerRef.current;
+      const panelEl = panelRef.current;
+      if (!trigger || !panelEl) return;
+      const triggerRect = trigger.getBoundingClientRect();
+      const panelRect = panelEl.getBoundingClientRect();
+      const idealLeft = triggerRect.left + triggerRect.width / 2 - panelRect.width / 2;
+      const maxLeft = window.innerWidth - panelRect.width - EDGE_MARGIN;
+      const left = Math.max(Math.min(idealLeft, maxLeft), EDGE_MARGIN);
+      panelEl.style.left = `${left}px`;
+      panelEl.style.top = `${triggerRect.bottom + 8}px`;
+      panelEl.style.visibility = "visible";
+    }
+    computePosition();
+    window.addEventListener("scroll", computePosition, { capture: true, passive: true });
+    window.addEventListener("resize", computePosition, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", computePosition, { capture: true });
+      window.removeEventListener("resize", computePosition);
+    };
+  }, [open]);
 
   function toggleCondition(name: string) {
     if (!onConditionsChange) return;
@@ -509,8 +577,9 @@ function StatusPopover({
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Manage states and concentration"
@@ -536,50 +605,61 @@ function StatusPopover({
           <PlusIcon className="h-3 w-3" />
         </InfoTooltip>
       </button>
-      {open && (
-        <div className={`absolute left-1/2 top-full z-10 mt-2 w-80 -translate-x-1/2 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}>
-          {onToggleConcentration && <ConcentrationToggleRow active={Boolean(concentrating)} onToggle={onToggleConcentration} />}
-          {onExhaustionChange && (
-            <div>
-              <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>
-              <DotMeter current={exhaustion} max={6} colorClass="bg-red-500" onSetCount={onExhaustionChange} />
-            </div>
-          )}
-          {onConditionsChange && (
-            <div>
-              <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Conditions</p>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.keys(CONDITION_INFO).map((name) => {
-                  const active = conditions.includes(name);
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => toggleCondition(name)}
-                      className={`rounded-full border px-2 py-0.5 text-xs capitalize ${
-                        active
-                          ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                          : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  );
-                })}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          // `left: -9999px`/`visibility: hidden` is the pre-measurement
+          // default for the one frame between mounting and the layout
+          // effect's synchronous `computePosition()` overwriting it — same
+          // convention as `InfoTooltip`'s own portaled panel.
+          <div
+            ref={panelRef}
+            style={{ position: "fixed", left: "-9999px", visibility: "hidden" }}
+            className={`z-[60] w-80 space-y-3 p-3 text-left ${POPOVER_SHELL_CLS}`}
+          >
+            {onToggleConcentration && <ConcentrationToggleRow active={Boolean(concentrating)} onToggle={onToggleConcentration} />}
+            {onExhaustionChange && (
+              <div>
+                <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>
+                <DotMeter current={exhaustion} max={6} colorClass="bg-red-500" onSetCount={onExhaustionChange} />
               </div>
-            </div>
-          )}
-          {onCustomConditionIdsChange && onCustomConditionLibraryChange && (
-            <CustomConditionsSection
-              ids={customConditionIds}
-              library={customConditionLibrary}
-              onIdsChange={onCustomConditionIdsChange}
-              onLibraryChange={onCustomConditionLibraryChange}
-            />
-          )}
-        </div>
-      )}
-    </div>
+            )}
+            {onConditionsChange && (
+              <div>
+                <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Conditions</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.keys(CONDITION_INFO).map((name) => {
+                    const active = conditions.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => toggleCondition(name)}
+                        className={`rounded-full border px-2 py-0.5 text-xs capitalize ${
+                          active
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {onCustomConditionIdsChange && onCustomConditionLibraryChange && (
+              <CustomConditionsSection
+                ids={customConditionIds}
+                library={customConditionLibrary}
+                onIdsChange={onCustomConditionIdsChange}
+                onLibraryChange={onCustomConditionLibraryChange}
+              />
+            )}
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 
@@ -590,6 +670,7 @@ function StatusBadges({
   conditions,
   exhaustion,
   concentrating,
+  heroicInspiration,
   customConditionIds,
   customConditionLibrary,
   onToggleConcentration,
@@ -601,6 +682,7 @@ function StatusBadges({
   conditions: string[];
   exhaustion: number;
   concentrating?: boolean;
+  heroicInspiration?: boolean;
   customConditionIds: string[];
   customConditionLibrary: CustomConditionTemplate[];
   onToggleConcentration?: () => void;
@@ -650,6 +732,7 @@ function StatusBadges({
           onCustomConditionLibraryChange={onCustomConditionLibraryChange}
         />
       )}
+      {heroicInspiration && <InspirationBadge />}
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
       {visibleCustom.map((c) => (
         <CustomConditionBadge key={c.id} condition={c} />
@@ -668,6 +751,7 @@ export function StatusRail({
   conditions,
   exhaustion,
   concentrating,
+  heroicInspiration,
   customConditionIds,
   customConditionLibrary,
   onToggleConcentration,
@@ -680,6 +764,8 @@ export function StatusRail({
   exhaustion: number;
   /** Only affects the card's passive `concentrating-ring` border tint now — omit entirely when the caller doesn't track concentration at all. Pass `onToggleConcentration` (whether or not this is set) to also show the toggle in the popover. */
   concentrating?: boolean;
+  /** Character-only — omit entirely for a creature. Shows `InspirationBadge` (always first among the state badges) when true; renders nothing at all when false/omitted, no dimmed placeholder. */
+  heroicInspiration?: boolean;
   customConditionIds: string[];
   /** The campaign's shared library every `customConditionIds` entry references — see `CustomConditionTemplate`'s own doc comment. */
   customConditionLibrary: CustomConditionTemplate[];
@@ -713,6 +799,7 @@ export function StatusRail({
         conditions={conditions}
         exhaustion={exhaustion}
         concentrating={concentrating}
+        heroicInspiration={heroicInspiration}
         customConditionIds={customConditionIds}
         customConditionLibrary={customConditionLibrary}
         onToggleConcentration={onToggleConcentration}

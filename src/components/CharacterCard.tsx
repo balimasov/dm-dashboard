@@ -27,7 +27,7 @@ import {
   VULNERABLE_HINT_PANEL,
 } from "./ui/combatStatHints";
 import { AskAiPill } from "./ui/AskAiPill";
-import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
+import { ENTITY_CARD_BASE_CLS, TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { Pill } from "./ui/Pill";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -103,6 +103,7 @@ export function CharacterCard({
         conditions={c.combat.conditions}
         exhaustion={c.combat.exhaustion}
         concentrating={Boolean(c.concentrating)}
+        heroicInspiration={c.heroicInspiration}
         customConditionIds={c.combat.customConditionIds ?? []}
         customConditionLibrary={customConditionLibrary}
         onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
@@ -112,36 +113,34 @@ export function CharacterCard({
         onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
 
-      {/* Header */}
+      {/* Header — D&D Beyond link now lives inline on its own "Lvl N" line
+          (see `CharacterHeader`), so only the "not synced"/error banners
+          (conditional, `showLink={false}`) still need their own space here.
+          Only rendered when there's actually a banner/error to show — the
+          card's own `gap-3.5` inserts a full gap between every flex child
+          regardless of whether that child is empty, so an always-mounted
+          (but usually-empty) block here would have quietly added a stray
+          14px of card height in the common synced-fine case. */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
+      {c.dndBeyondUrl && (!c.synced || syncError) && (
+        <DdbSyncStatus dndBeyondUrl={c.dndBeyondUrl} synced={c.synced} lastSyncedAt={c.lastSyncedAt} syncing={syncing} error={syncError} showLink={false} />
+      )}
 
-      {/* Sync (left) + kebab actions menu (right) share one row, same
-          placement as the details modal's own sync+actions row — keeps the
-          menu off the header row above, where it would crowd the Heroic
-          Inspiration star at that row's right edge. */}
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <DdbSyncStatus
-            dndBeyondUrl={c.dndBeyondUrl}
-            synced={c.synced}
-            lastSyncedAt={c.lastSyncedAt}
-            syncing={syncing}
-            error={syncError}
-          />
-        </div>
-        {/* Cluster sits right next to the kebab (its own small `gap-1.5`,
-            tighter than the row's own `gap-3` to the sync block) rather than
-            centered in the leftover space between the two — reads as part
-            of the same corner of controls instead of floating mid-row. The
-            reminder badge (conditional) goes before the always-present AI
-            pill, which stays immediately next to the kebab either way — see
-            `AskAiPill`'s doc comment. */}
-        <div className="flex shrink-0 items-center gap-1.5">
-          <ReminderBadge
-            group={characterReminders(c)}
-            onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
-          />
-          <AskAiPill onClick={() => setAiOpen(true)} />
+      {/* Reminder/AI/kebab — one bordered toolbar instead of a bare flex
+          row (the row used to read as controls scattered in a spot, not a
+          panel). Same horizontal bounds as the header button above it
+          (`-mx-2`/`px-2`-equivalent, see `TOOLBAR_SHELL_CLS`'s own comment)
+          so the two read as one aligned column, not two differently-inset
+          blocks. No internal dividers — reminder/AI stay their established
+          pill look, the kebab its own icon button, grouped only by the
+          shared border/background. */}
+      <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <ReminderBadge
+          group={characterReminders(c)}
+          onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
+        />
+        <AskAiPill onClick={() => setAiOpen(true)} />
+        <div className="ml-auto">
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}
             name={c.name}

@@ -30,12 +30,15 @@ export function DdbSyncStatus({
   lastSyncedAt,
   syncing,
   error,
+  showLink = true,
 }: {
   dndBeyondUrl?: string;
   synced?: boolean;
   lastSyncedAt?: string;
   syncing?: boolean;
   error?: string | null;
+  /** `CharacterCard`/`CharacterDetailsModal` now render the "D&D Beyond ↗" link themselves, inline on the header's "Lvl N" line (no clock/sync-date hint there — see `CharacterHeader`'s own comment) — passing `false` here keeps just the "not synced" banner and error line, so this component doesn't render the same link a second time. `EditCharacterForm`/`SortableCharacterRow` don't have that inline link, so they keep the default. */
+  showLink?: boolean;
 }) {
   if (!dndBeyondUrl) return null;
   const tier = syncTier(lastSyncedAt);
@@ -58,39 +61,41 @@ export function DdbSyncStatus({
           text — a date long enough to need truncating was exactly the thing
           that used to disappear first once the AI pill and a reminder badge
           were both present. */}
-      <div className="flex items-center gap-1.5 text-xs leading-none">
-        <a
-          href={dndBeyondUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-sky-400 hover:underline"
-        >
-          D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
-        </a>
-        {(syncing || lastSyncedAt) && (
-          <InfoTooltip
-            hoverOnly
-            panel={
-              <p>
-                {syncing ? (
-                  "Syncing with D&D Beyond…"
-                ) : (
-                  lastSyncedAt && (
-                    <>
-                      Synced <span className={`font-semibold ${SYNC_TIER_CLASS[tier]}`}><SyncTimestamp iso={lastSyncedAt} /></span>
-                    </>
-                  )
-                )}
-              </p>
-            }
+      {showLink && (
+        <div className="flex items-center gap-1.5 text-xs leading-none">
+          <a
+            href={dndBeyondUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-sky-400 hover:underline"
           >
-            {/* Neutral while syncing (mid-spin, the tier doesn't matter yet) — otherwise colored by how old `lastSyncedAt` is, via the same tier this character's `EntityActionsMenu` "Sync" row and the header's own clock icon key off. */}
-            <ClockIcon
-              className={`h-3 w-3 shrink-0 ${syncing ? "animate-spin text-slate-500" : SYNC_TIER_CLASS[tier]}`}
-            />
-          </InfoTooltip>
-        )}
-      </div>
+            D&D Beyond <ExternalLinkIcon className="h-3 w-3" />
+          </a>
+          {(syncing || lastSyncedAt) && (
+            <InfoTooltip
+              hoverOnly
+              panel={
+                <p>
+                  {syncing ? (
+                    "Syncing with D&D Beyond…"
+                  ) : (
+                    lastSyncedAt && (
+                      <>
+                        Synced <span className={`font-semibold ${SYNC_TIER_CLASS[tier]}`}><SyncTimestamp iso={lastSyncedAt} /></span>
+                      </>
+                    )
+                  )}
+                </p>
+              }
+            >
+              {/* Neutral while syncing (mid-spin, the tier doesn't matter yet) — otherwise colored by how old `lastSyncedAt` is, via the same tier this character's `EntityActionsMenu` "Sync" row and the header's own clock icon key off. */}
+              <ClockIcon
+                className={`h-3 w-3 shrink-0 ${syncing ? "animate-spin text-slate-500" : SYNC_TIER_CLASS[tier]}`}
+              />
+            </InfoTooltip>
+          )}
+        </div>
+      )}
       {error && <p className="text-xs text-amber-400">{error}</p>}
     </div>
   );

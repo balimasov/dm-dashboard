@@ -1,7 +1,7 @@
 import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
-import { InfoTooltip } from "@/components/InfoTooltip";
+import { ExternalLinkIcon } from "@/components/ui/icons";
 import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "@/components/ui/typography";
 
 /**
@@ -39,27 +39,33 @@ export function CharacterHeader({
         <p title={characterInfoLine(c)} className={CARD_SUBTITLE_CLS}>
           {characterInfoLine(c)}
         </p>
-        <p className={MUTED_LABEL_CLS}>Lvl {c.level}</p>
+        {/* D&D Beyond link lives here now (was its own full-width `DdbSyncStatus`
+            row below the card header) — same line as "Lvl N" instead of a
+            separate row, so linking a character costs no extra card height.
+            Nested `<a>` inside this header's own clickable `<button>`
+            (see below) isn't strict HTML nesting, but it's the only way to
+            keep the link's real anchor behavior (middle-click, ctrl-click,
+            right-click "open in new tab", native keyboard focus/activation)
+            — `stopPropagation` is what keeps a click here from *also*
+            opening the details modal underneath it. */}
+        <p className={`flex min-w-0 items-center gap-1 ${MUTED_LABEL_CLS}`}>
+          <span className="shrink-0">Lvl {c.level}</span>
+          {c.dndBeyondUrl && (
+            <>
+              <span className="shrink-0">·</span>
+              <a
+                href={c.dndBeyondUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex min-w-0 shrink items-center gap-0.5 truncate text-sky-400 hover:underline"
+              >
+                D&amp;D Beyond <ExternalLinkIcon className="h-3 w-3 shrink-0" />
+              </a>
+            </>
+          )}
+        </p>
       </div>
-      <InfoTooltip
-        hoverOnly
-        disableTap
-        desktopOnly
-        panel={
-          <p>
-            <span className="font-semibold text-amber-400">Heroic Inspiration</span> — lets you reroll one d20 roll,
-            keeping the better result. Currently {c.heroicInspiration ? "available" : "not available"}.
-          </p>
-        }
-      >
-        <span
-          className={`shrink-0 text-3xl leading-none ${
-            c.heroicInspiration ? "inspiration-star text-amber-400" : "text-slate-700"
-          }`}
-        >
-          ★
-        </span>
-      </InfoTooltip>
     </>
   );
 

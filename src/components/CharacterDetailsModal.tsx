@@ -29,6 +29,7 @@ import { SkillPanel } from "./SkillPanel";
 import { AskAiPill } from "./ui/AskAiPill";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { ConsumableQuantity } from "./ui/ConsumableQuantity";
+import { TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
@@ -275,6 +276,7 @@ export function CharacterDetailsModal({
             conditions={c.combat.conditions}
             exhaustion={c.combat.exhaustion}
             concentrating={Boolean(c.concentrating)}
+            heroicInspiration={c.heroicInspiration}
             customConditionIds={c.combat.customConditionIds ?? []}
             customConditionLibrary={customConditionLibrary}
             onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
@@ -300,28 +302,25 @@ export function CharacterDetailsModal({
           : "border-slate-800 bg-slate-950"
       }`}
     >
-        {/* Sync (left) + reminder badge/AI pill/kebab (right) share one row,
-            level with each other — keeps the cluster off the header row
-            above, where it would crowd the Heroic Inspiration star at that
-            row's right edge. Same chips, same order, as the compact card's
-            own row (`CharacterCard`) — this modal is a superset of the card,
-            not a different view of the same actions. */}
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <DdbSyncStatus
-              dndBeyondUrl={c.dndBeyondUrl}
-              synced={c.synced}
-              lastSyncedAt={c.lastSyncedAt}
-              syncing={syncing}
-              error={syncError}
-            />
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <ReminderBadge
-              group={characterReminders(c)}
-              onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
-            />
-            <AskAiPill onClick={() => setAiOpen(true)} />
+        {/* D&D Beyond link lives inline on the header's "Lvl N" line now (see
+            `CharacterHeader`) — only the "not synced"/error banners still
+            need space here, and only when there's actually one to show (see
+            `CharacterCard`'s own comment on why this is conditionally
+            mounted rather than always-there-but-usually-empty). */}
+        {c.dndBeyondUrl && (!c.synced || syncError) && (
+          <DdbSyncStatus dndBeyondUrl={c.dndBeyondUrl} synced={c.synced} lastSyncedAt={c.lastSyncedAt} syncing={syncing} error={syncError} showLink={false} />
+        )}
+
+        {/* Reminder/AI/kebab — same bordered toolbar as the compact card's
+            own row (`CharacterCard`), not a bare flex row — this modal is a
+            superset of the card, not a different view of the same actions. */}
+        <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+          <ReminderBadge
+            group={characterReminders(c)}
+            onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
+          />
+          <AskAiPill onClick={() => setAiOpen(true)} />
+          <div className="ml-auto">
             <EntityActionsMenu
               onEdit={() => setEditOpen(true)}
               name={c.name}

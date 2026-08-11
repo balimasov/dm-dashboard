@@ -10,7 +10,7 @@ import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { AskAiPill } from "./ui/AskAiPill";
-import { CreatureReferenceLink } from "./ui/CreatureReferenceLink";
+import { TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { IconButton } from "./ui/IconButton";
 import { Modal } from "./ui/Modal";
@@ -104,20 +104,17 @@ export function CreatureDetailsModal({
           : "border-slate-800 bg-slate-950"
       }`}
     >
-        {/* Reference link (left, when set) + reminder badge (conditional) +
-            AI pill + kebab (right) — same cluster/order as `CreatureCard`'s
-            equivalent row (see that card's own comment for why the
-            created/edited timestamp was dropped rather than kept here). */}
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <CreatureReferenceLink url={creature.referenceUrl} />
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <ReminderBadge
-              group={creatureReminders(creature)}
-              onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
-            />
-            <AskAiPill onClick={() => setAiOpen(true)} />
+        {/* Reminder badge (conditional) + AI pill + kebab — same bordered
+            toolbar as `CreatureCard`'s equivalent row; the Reference link
+            now lives inline on the header's own "CR N" line instead (see
+            `CreatureHeader`). */}
+        <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+          <ReminderBadge
+            group={creatureReminders(creature)}
+            onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+          />
+          <AskAiPill onClick={() => setAiOpen(true)} />
+          <div className="ml-auto">
             <EntityActionsMenu
               onEdit={() => setEditOpen(true)}
               name={creature.name}

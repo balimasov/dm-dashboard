@@ -11,8 +11,7 @@ import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
 import { AskAiPill } from "./ui/AskAiPill";
-import { ENTITY_CARD_BASE_CLS } from "./ui/containerStyles";
-import { CreatureReferenceLink } from "./ui/CreatureReferenceLink";
+import { ENTITY_CARD_BASE_CLS, TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { StatusRail } from "./ui/StatusRail";
@@ -96,24 +95,20 @@ export function CreatureCard({
         onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
 
+      {/* Header — Reference link now lives inline on its own "CR N" line
+          (see `CreatureHeader`). */}
       <CreatureHeader creature={creature} owner={owner} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
 
-      {/* Reference link (left, when set) + reminder badge (conditional) + AI
-          pill + kebab (right) — a creature has no D&D Beyond sync date, and
-          its created/edited timestamp turned out not to be worth the row
-          space (removed rather than replaced with something else), but an
-          optional reference link takes the same left slot `DdbSyncStatus`
-          occupies on `CharacterCard`'s equivalent row. */}
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <CreatureReferenceLink url={creature.referenceUrl} />
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <ReminderBadge
-            group={creatureReminders(creature)}
-            onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
-          />
-          <AskAiPill onClick={() => setAiOpen(true)} />
+      {/* Reminder badge (conditional) + AI pill + kebab — one bordered
+          toolbar (same `TOOLBAR_SHELL_CLS` as `CharacterCard`'s equivalent
+          row) instead of a bare flex row. */}
+      <div className={`-mx-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <ReminderBadge
+          group={creatureReminders(creature)}
+          onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+        />
+        <AskAiPill onClick={() => setAiOpen(true)} />
+        <div className="ml-auto">
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}
             name={creature.name}
