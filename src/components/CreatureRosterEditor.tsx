@@ -45,9 +45,11 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import { inputCls } from "@/components/ui/Field";
 import {
+  CARD_META_CLS,
+  CARD_SUBTITLE_CLS,
+  CARD_TITLE_CLS,
   EMPTY_STATE_CLS,
   FORM_SECTION_HEADING_CLS,
-  LIST_ROW_TITLE_CLS,
   MUTED_LABEL_CLS,
   WARNING_TEXT_CLS,
 } from "@/components/ui/typography";
@@ -515,22 +517,28 @@ function CreatureRow({
           name={creature.name}
           hidden={creature.hidden}
           onToggleHidden={() => onToggleHidden(creature.id)}
+          linkUrl={creature.referenceUrl}
+          linkLabel="Open Reference"
           onDuplicate={(count) => onDuplicate(creature, count)}
           onShowHpHistory={onShowHpHistory}
           onRemove={() => onRemove(creature.id)}
         />
       }
     >
-      <p title={creature.name} className={`truncate ${LIST_ROW_TITLE_CLS}`}>
+      {/* Same three-line recipe as `CreatureHeader`'s own card header
+          (`CARD_TITLE_CLS`/`CARD_SUBTITLE_CLS`/`CARD_META_CLS`) instead of
+          this row's previously different sizes/colors, so a creature reads
+          the same whether shown here or on its dashboard card. */}
+      <p title={creature.name} className={CARD_TITLE_CLS}>
         {creature.name}
         {creature.hidden && <span className="ml-2 text-xs font-normal text-slate-500">(hidden)</span>}
       </p>
       {infoLine && (
-        <p title={infoLine} className={`truncate ${MUTED_LABEL_CLS}`}>
+        <p title={infoLine} className={CARD_SUBTITLE_CLS}>
           {infoLine}
         </p>
       )}
-      {creature.challengeRating && <p className="text-xs text-slate-600">CR {creature.challengeRating}</p>}
+      {creature.challengeRating && <p className={CARD_META_CLS}>CR {creature.challengeRating}</p>}
       {creature.source && (
         <p title={creature.source} className="truncate text-xs text-slate-600">
           {creature.source}

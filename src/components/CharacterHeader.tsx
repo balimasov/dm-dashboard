@@ -38,7 +38,7 @@ export function CharacterHeader({
         <p title={characterInfoLine(c)} className={CARD_SUBTITLE_CLS}>
           {characterInfoLine(c)}
         </p>
-        {/* D&D Beyond now lives in the kebab menu's "Open in D&D Beyond"
+        {/* D&D Beyond now lives in the kebab menu's "Open D&D Beyond"
             item (see `EntityActionsMenu`) instead of an inline link here —
             keeps this line plain text, same size/color tier as the
             race/class line above via `CARD_META_CLS`. */}
