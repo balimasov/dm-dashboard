@@ -59,6 +59,8 @@ export const LIST_ROW_TITLE_CLS = "text-lg font-semibold text-slate-100";
 export const CARD_TITLE_CLS = "truncate text-lg font-semibold text-slate-50 transition-colors group-hover:text-white";
 /** Secondary info line under `CARD_TITLE_CLS` (class/level, size/type) — 2 exact matches. */
 export const CARD_SUBTITLE_CLS = "truncate text-sm text-slate-400 transition-colors group-hover:text-slate-200";
+/** Third header line under `CARD_SUBTITLE_CLS` ("Lvl N" / "CR N") — same size/color as `CARD_SUBTITLE_CLS` so the two read as one consistent tier instead of a dimmer third size, but with `leading-4` (16px) instead of the default text-sm leading (20px): `CARD_TITLE_CLS` (28px) + `CARD_SUBTITLE_CLS` (20px) + this at 20px would total 68px, spilling 4px past the `h-16` (64px) avatar next to it — at 16px it stays flush with the avatar's bottom edge, same as the block's total height before this line existed at this size. */
+export const CARD_META_CLS = "truncate text-sm text-slate-400 leading-4";
 /** Clickable reminder title inside the Reminders panel/FAB — 2 exact matches. */
 export const REMINDER_LINK_TITLE_CLS =
   "min-w-0 max-w-full truncate text-left text-sm font-semibold text-slate-100 hover:opacity-80";

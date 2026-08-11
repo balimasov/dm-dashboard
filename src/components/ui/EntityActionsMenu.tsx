@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { confirmRemoveFromCampaign } from "@/lib/confirm";
-import { ClockIcon, CopyIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
+import { ClockIcon, CopyIcon, ExternalLinkIcon, EyeIcon, EyeOffIcon, PencilIcon, RefreshIcon, TrashIcon } from "./icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "./MoreMenu";
 
 /** Upper bound on the inline duplicate-count stepper — well past any real encounter's need for one more of the same creature, just there so the +/- pair can't be held down into something absurd. */
@@ -25,6 +25,8 @@ export function EntityActionsMenu({
   name,
   hidden,
   onToggleHidden,
+  linkUrl,
+  linkLabel,
   onSync,
   syncing,
   onDuplicate,
@@ -36,6 +38,9 @@ export function EntityActionsMenu({
   name: string;
   hidden?: boolean;
   onToggleHidden?: () => void;
+  /** External reference link (D&D Beyond for characters, SRD/Reference for creatures) — rendered as a real `<a>` so native middle-click/ctrl-click/"open in new tab" still work, right after Edit and ahead of every other action. */
+  linkUrl?: string;
+  linkLabel?: string;
   onSync?: () => void;
   syncing?: boolean;
   onDuplicate?: (count: number) => void;
@@ -51,16 +56,22 @@ export function EntityActionsMenu({
 
   return (
     <MoreMenu label="Actions" portal variant={variant}>
+      <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onEdit}>
+        <PencilIcon className="h-4 w-4 shrink-0" />
+        Edit
+      </button>
+      {linkUrl && (
+        <a href={linkUrl} target="_blank" rel="noreferrer" className={MORE_MENU_ITEM_CLASS}>
+          <ExternalLinkIcon className="h-4 w-4 shrink-0" />
+          {linkLabel}
+        </a>
+      )}
       {onSync && (
         <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onSync} disabled={syncing}>
           <RefreshIcon className={`h-4 w-4 shrink-0 ${syncing ? "animate-spin" : ""}`} />
           {syncing ? "Syncing..." : "Sync"}
         </button>
       )}
-      <button type="button" className={MORE_MENU_ITEM_CLASS} onClick={onEdit}>
-        <PencilIcon className="h-4 w-4 shrink-0" />
-        Edit
-      </button>
       {onDuplicate && (
         <div className="flex items-center justify-between gap-2 py-1 pl-3 pr-2">
           <button

@@ -115,6 +115,8 @@ export function CreatureCard({
             name={creature.name}
             hidden={creature.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(creature.id, { hidden: !creature.hidden }) : undefined}
+            linkUrl={creature.referenceUrl}
+            linkLabel="Open Reference"
             onDuplicate={onDuplicate}
             onShowHpHistory={() => setHpHistoryOpen(true)}
             onRemove={onRemove ? () => onRemove(creature.id) : undefined}

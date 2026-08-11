@@ -149,6 +149,8 @@ export function CharacterCard({
             name={c.name}
             hidden={c.hidden}
             onToggleHidden={onUpdate ? () => onUpdate(c.id, { hidden: !c.hidden }) : undefined}
+            linkUrl={c.dndBeyondUrl}
+            linkLabel="Open in D&D Beyond"
             onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
             syncing={syncing}
             onRemove={onRemove ? () => onRemove(c.id) : undefined}

@@ -3,9 +3,8 @@ import { creatureInfoLine } from "@/lib/format";
 import { Avatar } from "./Avatar";
 import { InfoTooltip } from "./InfoTooltip";
 import { CreatureCategoryChip } from "./ui/CreatureCategoryChip";
-import { ExternalLinkIcon } from "./ui/icons";
 import { OwnerBadge } from "./ui/OwnerBadge";
-import { CARD_SUBTITLE_CLS, CARD_TITLE_CLS, MUTED_LABEL_CLS } from "./ui/typography";
+import { CARD_META_CLS, CARD_SUBTITLE_CLS, CARD_TITLE_CLS } from "./ui/typography";
 
 /**
  * Shared between the compact `CreatureCard` and `CreatureDetailsModal`
@@ -58,33 +57,18 @@ export function CreatureHeader({
             {infoLine}
           </p>
         )}
-        {/* Reference link lives here now (was its own full-width
-            `CreatureReferenceLink` row below the card header) — same line as
-            "CR N" instead of a separate row, so linking a creature costs no
-            extra card height. See `CharacterHeader`'s own "Lvl N · D&D
-            Beyond" line for why the nested `<a>` (inside this header's own
-            clickable button) carries `stopPropagation`. */}
-        {(creature.challengeRating != null || creature.referenceUrl) && (
-          <p className={`flex min-w-0 items-center gap-1 ${MUTED_LABEL_CLS}`}>
-            {creature.challengeRating != null &&
-              (creature.experiencePoints != null ? (
-                <InfoTooltip disableTap inline panel={<p>{creature.experiencePoints.toLocaleString()} XP</p>}>
-                  CR {creature.challengeRating}
-                </InfoTooltip>
-              ) : (
-                <span className="shrink-0">CR {creature.challengeRating}</span>
-              ))}
-            {creature.challengeRating != null && creature.referenceUrl && <span className="shrink-0">·</span>}
-            {creature.referenceUrl && (
-              <a
-                href={creature.referenceUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex min-w-0 shrink items-center gap-0.5 truncate text-sky-400 hover:underline"
-              >
-                Reference <ExternalLinkIcon className="h-3 w-3 shrink-0" />
-              </a>
+        {/* Reference now lives in the kebab menu's "Open Reference" item
+            (see `EntityActionsMenu`) instead of an inline link here — this
+            line is just "CR N", same size/color tier as the size/type line
+            above via `CARD_META_CLS`. */}
+        {creature.challengeRating != null && (
+          <p className={CARD_META_CLS}>
+            {creature.experiencePoints != null ? (
+              <InfoTooltip disableTap inline panel={<p>{creature.experiencePoints.toLocaleString()} XP</p>}>
+                CR {creature.challengeRating}
+              </InfoTooltip>
+            ) : (
+              `CR ${creature.challengeRating}`
             )}
           </p>
         )}
