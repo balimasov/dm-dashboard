@@ -94,14 +94,16 @@ export const AI_CHIP_CLS =
   "rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs font-semibold text-sky-300 hover:border-sky-700 hover:bg-sky-950/60";
 
 /**
- * Bordered, dark-tinted row shell for `CharacterCard`/`CreatureCard`'s (and
- * their matching Details modals') reference-link + reminder/AI/kebab row —
- * previously a bare `flex` row with no shared container, which read as
- * controls scattered in a spot rather than one panel. Deliberately not a
- * near-miss of `ROW_CARD_CLS`/`POPOVER_SHELL_CLS` above: no shadow, and a
- * darker `bg-black/16` tint (vs. those two's `bg-slate-900/60` and solid
- * `bg-slate-900`) — this row sits *inside* an already-bordered card, where a
- * shadow or a lighter fill would compete with the card's own edge instead of
- * reading as a nested, quieter zone.
+ * Soft, borderless row shell for `CharacterCard`/`CreatureCard`'s (and
+ * their matching Details modals') reminder/AI/kebab row — previously a bare
+ * `flex` row with no shared container, which read as controls scattered in
+ * a spot rather than one panel. Grouping now comes from a faint `white/3.5`
+ * tint alone, not a border: this row's own `ReminderBadge`/`AskAiPill`
+ * chips are borderless too (see their own comments), and stacking this
+ * shell's border around two more nested pill borders read as three frames
+ * nested in a small area — worst on a short creature card, where the
+ * toolbar is most of what's visible under the name. One soft band groups
+ * the row exactly as before; color/fill alone (not a stroke) now
+ * distinguishes each chip inside it.
  */
-export const TOOLBAR_SHELL_CLS = "rounded-lg border border-slate-800/85 bg-black/[0.16]";
+export const TOOLBAR_SHELL_CLS = "rounded-lg bg-white/[0.035]";
