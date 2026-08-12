@@ -51,9 +51,12 @@ function splitHitOrDc(hitOrDc: string): { label: string; value: string } {
  * range), do I need to roll and what happens (to-hit-or-DC/effect), does a
  * condition change any of that (Duration/Concentration — read *before*
  * availability, since "am I already concentrating on something else"
- * qualifies the numbers above it), can I cast it again right now (recovery),
- * and finally components/material cost, prep-time info rather than
- * mid-combat. Description gets its own trailing group.
+ * qualifies the numbers above it), components/material cost (prep-time info,
+ * not mid-combat), and last, "can I cast it again right now" (recovery) —
+ * kept at the very end rather than beside the other numbers since it only
+ * applies to the minority of spells with their own charge pool, and reads
+ * as an outlier wedged in the middle of the rest. Description gets its own
+ * trailing group.
  */
 export function SpellHintPanel({
   spell,
@@ -108,7 +111,7 @@ export function SpellHintPanel({
                   <span className="text-slate-500">Duration</span>{" "}
                   {isConcentration ? (
                     <>
-                      <span className="font-semibold text-slate-100">Concentration</span>
+                      <span className="font-semibold text-sky-400">Concentration</span>
                       {`, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}`}
                     </>
                   ) : (
@@ -116,13 +119,13 @@ export function SpellHintPanel({
                   )}
                 </span>
               )}
-              {status && <span className="block text-xs font-medium">{status}</span>}
               {(spell.components || spell.materialComponent) && (
                 <span className="block">
-                  <span className="text-slate-500">Components:</span>{" "}
+                  <span className="text-slate-500">Components</span>{" "}
                   {[spell.components, spell.materialComponent ? `(${spell.materialComponent})` : undefined].filter(Boolean).join(" ")}
                 </span>
               )}
+              {status && <span className="block text-xs font-medium">{status}</span>}
             </span>
           )}
           {spell.description && (
