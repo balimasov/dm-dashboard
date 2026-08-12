@@ -4,9 +4,10 @@ import { AttackHintPanel } from "@/components/ui/AttackDisplay";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
 import { CustomConditionHintPanel } from "@/components/ui/conditionHints";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
+import { recoveryStatusLine } from "@/components/ui/RecoveryBadge";
 import { SpellHintPanel } from "@/components/ui/SpellDisplay";
 import { creatureSpellSourceId, creatureTraitSourceId, isPositionalCreatureSourceId } from "./aiSourceIds";
-import { Character, Creature, CustomConditionTemplate, RECOVERY_LABELS, resolveCustomConditions } from "./types";
+import { Character, Creature, CustomConditionTemplate, resolveCustomConditions } from "./types";
 
 export type AiGlossary = Record<string, ReactNode>;
 
@@ -22,7 +23,7 @@ function characterGlossaryEntries(c: Character, customConditionLibrary: CustomCo
         <AbilityHintPanel
           name={r.name}
           metaLines={[r.source]}
-          status={<span className="text-sky-400">{RECOVERY_LABELS[r.recovery]} recovery</span>}
+          status={recoveryStatusLine(r.recovery, r.current, r.max)}
           description={r.description}
         />
       ),
@@ -36,7 +37,7 @@ function characterGlossaryEntries(c: Character, customConditionLibrary: CustomCo
         <AbilityHintPanel
           name={f.name}
           metaLines={[f.source]}
-          status={f.max != null && <span className="text-sky-400">{RECOVERY_LABELS[f.recovery!]} recovery</span>}
+          status={f.max != null && recoveryStatusLine(f.recovery!, f.current, f.max)}
           description={f.description}
         />
       ),
@@ -46,7 +47,7 @@ function characterGlossaryEntries(c: Character, customConditionLibrary: CustomCo
     entries.push({
       id: s.id,
       name: s.name,
-      hint: <SpellHintPanel spell={s} status={s.max != null && <span className="text-sky-400">{RECOVERY_LABELS[s.recovery!]} recovery</span>} />,
+      hint: <SpellHintPanel spell={s} status={s.max != null && recoveryStatusLine(s.recovery!, s.current, s.max)} />,
     });
   }
   for (const a of c.attacks) {

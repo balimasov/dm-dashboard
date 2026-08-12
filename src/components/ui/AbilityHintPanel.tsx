@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { CoverageHolder } from "@/lib/partyToolkit";
 import { RichText } from "../RichText";
+import { HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
 import { HintPanel } from "./HintPanel";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
@@ -21,6 +22,14 @@ import { MICRO_LABEL_STRONG_CLS } from "./typography";
  * component only composes `metaLines`/`note`/`status`/`description` into
  * that shared component's single `description` slot, so title styling, row
  * rendering, and the empty-state fallback all come from one place.
+ *
+ * The composed content renders as up to three groups — identity
+ * (`metaLines`), specifics (`note`/`status`), body (`description`/
+ * `emptyDescription`) — separated by `HINT_PANEL_DIVIDER_CLS` wherever two
+ * adjacent groups both have content, the same grouping `SpellHintPanel`/
+ * `AttackHintPanel` use. A caller that only ever fills one group (e.g. a
+ * creature spell's bare `metaLines={["Spell"]}`) just gets that one line,
+ * no stray divider.
  */
 export function AbilityHintPanel({
   name,
@@ -49,7 +58,10 @@ export function AbilityHintPanel({
   holders?: CoverageHolder[];
 }) {
   const meta = (metaLines ?? []).filter((line): line is string => Boolean(line));
-  const hasBody = meta.length > 0 || note || status || description || emptyDescription;
+  const hasMeta = meta.length > 0;
+  const hasSpecifics = Boolean(note || status);
+  const hasBodyText = Boolean(description || emptyDescription);
+  const hasBody = hasMeta || hasSpecifics || hasBodyText;
 
   return (
     <HintPanel
@@ -61,20 +73,26 @@ export function AbilityHintPanel({
       }
       description={
         hasBody && (
-          <span className="block space-y-1">
-            {meta.map((line, i) => (
-              <span key={i} className={`block ${MICRO_LABEL_STRONG_CLS}`}>
-                {line}
+          <span className="block space-y-1.5">
+            {hasMeta && (
+              <span className="block space-y-1">
+                {meta.map((line, i) => (
+                  <span key={i} className={`block ${MICRO_LABEL_STRONG_CLS}`}>
+                    {line}
+                  </span>
+                ))}
               </span>
-            ))}
-            {note && <span className="block text-slate-500">{note}</span>}
-            {status && <span className="block text-xs font-medium">{status}</span>}
-            {description ? (
-              <span className="block">
-                <RichText text={description} />
+            )}
+            {hasSpecifics && (
+              <span className={`block space-y-1 ${hasMeta ? HINT_PANEL_DIVIDER_CLS : ""}`}>
+                {note && <span className="block text-slate-500">{note}</span>}
+                {status && <span className="block text-xs font-medium">{status}</span>}
               </span>
-            ) : (
-              emptyDescription && <span className="block">{emptyDescription}</span>
+            )}
+            {hasBodyText && (
+              <span className={`block ${hasMeta || hasSpecifics ? HINT_PANEL_DIVIDER_CLS : ""}`}>
+                {description ? <RichText text={description} /> : emptyDescription}
+              </span>
             )}
           </span>
         )

@@ -4,6 +4,7 @@ import { formatModifier } from "@/lib/format";
 import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
+import { HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
@@ -14,9 +15,15 @@ import { MICRO_LABEL_STRONG_CLS } from "./typography";
  * so all three stay in sync instead of drifting apart. Spells out range/
  * to-hit/damage even on rows that already show `AttackTrailing`'s numbers
  * inline, so the hint reads the same complete way regardless of which row
- * it's opened from. For a non-Common weapon it also adds its base type and
- * full rules text — the "what is this magic weapon" a DM wants to remember
- * — and its own title is colored by rarity the same way the row's name is.
+ * it's opened from. Its own title is colored by rarity the same way the
+ * row's name is — `Attack` has no `source` field the way a `Feature`/
+ * `KnownSpell` does, so there's no separate identity line under the title
+ * here, just the title itself.
+ *
+ * Everything else is one group, divided from the description (a non-Common
+ * weapon's full rules text) by `HINT_PANEL_DIVIDER_CLS`: weapon type/attack
+ * type/range, then the to-hit/damage numbers, then whatever changes them
+ * (proficiency, mastery), then any remaining properties.
  */
 export function AttackHintPanel({ attack }: { attack: Attack }) {
   const notes = attackNotes(attack);
@@ -32,52 +39,40 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
       title={<span className={RARITY_COLOR[attack.rarity ?? "Common"]}>{attack.name}</span>}
       description={
         <span className="block space-y-1.5">
-          <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
-            {attack.attackType === "ranged" ? "Ranged" : "Melee"}
-            {attack.range ? ` · ${attack.range}` : ""}
-          </span>
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-            <span>
-              <span className="text-slate-500">To Hit</span>{" "}
-              <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
+          <span className="block space-y-1.5">
+            <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
+              {[attack.weaponType, attack.attackType === "ranged" ? "Ranged" : "Melee", attack.range].filter(Boolean).join(" · ")}
             </span>
-            <span>
-              <span className="text-slate-500">Damage</span> <span className="font-semibold text-slate-100">{attack.damage}</span>
-              {/* No color override — inherits `HintPanel`'s own `text-slate-300`
-                  description color, same as the item-description prose below,
-                  instead of standing out as its own dimmer/brighter shade. */}
-              {attack.damageType && <span> {attack.damageType}</span>}
-            </span>
-          </span>
-          {/* Bold + colored *label* (amber/violet, same colors `AttackTrailing`'s
-              own mastery badge uses) followed by a plain-prose explanation —
-              the label is the one fact that needs to visually jump out, the
-              explanation reads like any other rules text rather than
-              inheriting the label's loud color for a whole line. */}
-          {!attack.proficient && (
-            <span className="block">
-              <span className="font-semibold text-amber-400">Not proficient</span>: Bonus is ability modifier only.
-            </span>
-          )}
-          {attack.mastery && (
-            <span className="block">
-              <span className="font-semibold text-violet-300">{attack.mastery}</span>
-              {masteryInfo ? `: ${masteryInfo}` : ""}
-            </span>
-          )}
-          {notes && (
-            <span className="block">
-              <span className="text-slate-500">Notes:</span> {notes}
-            </span>
-          )}
-          {isSpecialWeapon && (
-            <span className="block space-y-1 border-t border-slate-800 pt-1.5">
-              <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
-                {[attack.rarity, attack.weaponType].filter(Boolean).join(" ")}
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              <span>
+                <span className="text-slate-500">To Hit</span>{" "}
+                <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
               </span>
+              <span>
+                <span className="text-slate-500">Damage</span> <span className="font-semibold text-sky-400">{attack.damage}</span>
+                {attack.damageType && <span> {attack.damageType}</span>}
+              </span>
+            </span>
+            {!attack.proficient && (
               <span className="block">
-                <RichText text={attack.description!} />
+                <span className="font-semibold text-slate-100">Not proficient</span>: Bonus is ability modifier only.
               </span>
+            )}
+            {attack.mastery && (
+              <span className="block">
+                <span className="font-semibold text-slate-100">{attack.mastery}</span>
+                {masteryInfo ? `: ${masteryInfo}` : ""}
+              </span>
+            )}
+            {notes && (
+              <span className="block">
+                <span className="text-slate-500">Notes:</span> {notes}
+              </span>
+            )}
+          </span>
+          {isSpecialWeapon && (
+            <span className={`block ${HINT_PANEL_DIVIDER_CLS}`}>
+              <RichText text={attack.description!} />
             </span>
           )}
         </span>

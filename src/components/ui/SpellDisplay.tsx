@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { RichText } from "../RichText";
+import { HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
 import { HintPanel } from "./HintPanel";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
@@ -40,23 +41,33 @@ function splitHitOrDc(hitOrDc: string): { label: string; value: string } {
  * `AttackHintPanel` has for weapons) instead of composing through the
  * generic `AbilityHintPanel`: a spell has enough of its own structure (a
  * labeled to-hit/save-DC + effect row styled like a weapon's own bonus/
- * damage line, a highlighted Concentration marker) that forcing it through
- * the shared multi-purpose shape would mean either bloating that shape with
- * spell-only concerns or losing this layout. Ordered to read the way a DM
- * actually asks the questions in combat: where's it from, how do I cast it,
- * do I need to roll and what happens, how long does it last — components/
- * material cost last, since that's prep-time info rather than mid-combat.
+ * damage line, a labeled Duration line) that forcing it through the shared
+ * multi-purpose shape would mean either bloating that shape with spell-only
+ * concerns or losing this layout.
+ *
+ * Two groups below the title, divided by `HINT_PANEL_DIVIDER_CLS`: source
+ * (where this spell comes from) on its own, then everything else in the
+ * order a DM actually asks the questions in combat — how do I cast it (time/
+ * range), do I need to roll and what happens (to-hit-or-DC/effect), does a
+ * condition change any of that (Duration/Concentration — read *before*
+ * availability, since "am I already concentrating on something else"
+ * qualifies the numbers above it), can I cast it again right now (recovery),
+ * and finally components/material cost, prep-time info rather than
+ * mid-combat. Description gets its own trailing group.
  */
 export function SpellHintPanel({
   spell,
   status,
 }: {
   spell: SpellDisplayData;
-  /** "Short Rest recovery" etc. — only for a spell with its own limited-use charge pool (a `ChargeBadge` already shown on the row); one with no pool has nothing to recover. */
+  /** "Short Rest recovery" etc. (see `recoveryStatusLine`) — only for a spell with its own limited-use charge pool (a `ChargeBadge` already shown on the row); one with no pool has nothing to recover. */
   status?: ReactNode;
 }) {
   const isConcentration = spell.duration?.startsWith(CONCENTRATION_PREFIX);
   const hitOrDc = spell.hitOrDc ? splitHitOrDc(spell.hitOrDc) : undefined;
+  const hasSpecifics = Boolean(
+    spell.castingTime || spell.range || hitOrDc || spell.effect || spell.duration || status || spell.components || spell.materialComponent
+  );
 
   return (
     <HintPanel
@@ -68,51 +79,52 @@ export function SpellHintPanel({
       }
       description={
         <span className="block space-y-1.5">
-          {spell.source && (
-            <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>{spell.source}</span>
-          )}
-          {(spell.castingTime || spell.range) && (
-            <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
-              {[spell.castingTime, spell.range].filter(Boolean).join(" · ")}
-            </span>
-          )}
-          {(hitOrDc || spell.effect) && (
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-              {hitOrDc && (
-                <span>
-                  <span className="text-slate-500">{hitOrDc.label}</span>{" "}
-                  <span className="font-semibold text-slate-100">{hitOrDc.value}</span>
+          {spell.source && <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>{spell.source}</span>}
+          {hasSpecifics && (
+            <span className={`block space-y-1.5 ${spell.source ? HINT_PANEL_DIVIDER_CLS : ""}`}>
+              {(spell.castingTime || spell.range) && (
+                <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
+                  {[spell.castingTime, spell.range].filter(Boolean).join(" · ")}
                 </span>
               )}
-              {spell.effect && (
-                <span>
-                  <span className="text-slate-500">Effect</span> <span className="font-semibold text-slate-100">{spell.effect}</span>
-                  {spell.effectType && <span> {spell.effectType}</span>}
+              {(hitOrDc || spell.effect) && (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  {hitOrDc && (
+                    <span>
+                      <span className="text-slate-500">{hitOrDc.label}</span>{" "}
+                      <span className="font-semibold text-sky-400">{hitOrDc.value}</span>
+                    </span>
+                  )}
+                  {spell.effect && (
+                    <span>
+                      <span className="text-slate-500">Effect</span> <span className="font-semibold text-sky-400">{spell.effect}</span>
+                      {spell.effectType && <span> {spell.effectType}</span>}
+                    </span>
+                  )}
                 </span>
               )}
-            </span>
-          )}
-          {status && <span className="block text-xs font-medium">{status}</span>}
-          {spell.duration && (
-            <span className="block">
-              {isConcentration ? (
-                <>
-                  <span className="font-semibold text-violet-300">Concentration</span>
-                  {`, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}`}
-                </>
-              ) : (
-                spell.duration
+              {spell.duration && (
+                <span className="block">
+                  <span className="text-slate-500">Duration</span>{" "}
+                  {isConcentration ? (
+                    <>
+                      <span className="font-semibold text-slate-100">Concentration</span>
+                      {`, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}`}
+                    </>
+                  ) : (
+                    spell.duration
+                  )}
+                </span>
+              )}
+              {status && <span className="block text-xs font-medium">{status}</span>}
+              {(spell.components || spell.materialComponent) && (
+                <span className="block text-slate-500">{[spell.components, spell.materialComponent].filter(Boolean).join(" — ")}</span>
               )}
             </span>
           )}
           {spell.description && (
-            <span className="block">
+            <span className={`block ${spell.source || hasSpecifics ? HINT_PANEL_DIVIDER_CLS : ""}`}>
               <RichText text={spell.description} />
-            </span>
-          )}
-          {(spell.components || spell.materialComponent) && (
-            <span className="block border-t border-slate-800 pt-1.5 text-slate-500">
-              {[spell.components, spell.materialComponent].filter(Boolean).join(" — ")}
             </span>
           )}
         </span>

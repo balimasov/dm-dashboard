@@ -107,3 +107,15 @@ export const AI_CHIP_CLS =
  * per chip instead of two.
  */
 export const TOOLBAR_SHELL_CLS = "rounded-lg bg-white/[0.035]";
+
+/**
+ * Light divider between grouped zones inside a compact ability/spell/attack
+ * hover-hint (`AbilityHintPanel`, `SpellHintPanel`, `AttackHintPanel`) —
+ * tighter than `SectionDivider`'s `pt-2.5`/`pt-3` (deliberately rejected
+ * there as "too dense" for a full card section, but that's exactly the
+ * scale a ~256px popover needs). Was duplicated inline in `SpellDisplay.tsx`
+ * and `AttackDisplay.tsx` before every hint panel's zones were grouped this
+ * way; named once here so all three (plus every `AbilityHintPanel` caller)
+ * stay the same divider if it ever changes.
+ */
+export const HINT_PANEL_DIVIDER_CLS = "border-t border-slate-800 pt-1.5";

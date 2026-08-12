@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Attack, Character, RARITY_COLOR, RECOVERY_LABELS } from "@/lib/types";
+import { Attack, Character, RARITY_COLOR } from "@/lib/types";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { ordinalLevel } from "@/lib/format";
 import {
@@ -24,7 +24,7 @@ import { AttackName, AttackTrailing } from "../ui/AttackDisplay";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { ConsumableQuantity } from "../ui/ConsumableQuantity";
 import { ItemHintPanel } from "../ui/ItemHintPanel";
-import { RecoveryBadge } from "../ui/RecoveryBadge";
+import { RecoveryBadge, recoveryStatusLine } from "../ui/RecoveryBadge";
 import { SpellHintPanel, SpellTrailing } from "../ui/SpellDisplay";
 import { TabBar } from "../ui/TabBar";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
@@ -55,7 +55,7 @@ function ResourceRow({ entry }: { entry: PartyResourceEntry }) {
             <AbilityHintPanel
               name={entry.resourceName}
               metaLines={[entry.source]}
-              status={<span className="text-sky-400">{RECOVERY_LABELS[entry.recovery]} recovery</span>}
+              status={recoveryStatusLine(entry.recovery, entry.current, entry.max)}
               description={entry.description}
             />
           }

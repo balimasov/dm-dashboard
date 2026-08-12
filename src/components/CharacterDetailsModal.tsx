@@ -9,7 +9,6 @@ import {
   InventoryItem,
   KnownSpell,
   RARITY_COLOR,
-  RECOVERY_LABELS,
   RecoveryType,
   SKILL_ABBR,
   SKILL_LABELS,
@@ -52,7 +51,7 @@ import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
-import { RecoveryBadge } from "./ui/RecoveryBadge";
+import { RecoveryBadge, recoveryStatusLine } from "./ui/RecoveryBadge";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { SectionDivider } from "./ui/SectionDivider";
 import { SenseEntries } from "./ui/SenseEntries";
@@ -92,11 +91,6 @@ function ChargeBadge({ current, max, recovery }: { current: number; max: number;
       <RecoveryBadge recovery={recovery} />
     </span>
   );
-}
-
-/** Same "when does this come back" status line every other `AbilityHintPanel` shows for a pool-kind resource (Party Toolkit's Resources & Coverage, Actions & Resources) — only for a Feature/Spell that has its own charge pool (`ChargeBadge` already shown on the row), since one with no pool has nothing to recover. */
-function recoveryStatus(recovery: RecoveryType) {
-  return <span className="text-sky-400">{RECOVERY_LABELS[recovery]} recovery</span>;
 }
 
 const GROUP_LABELS: Record<Feature["group"], string> = {
@@ -158,7 +152,7 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
           <AbilityHintPanel
             name={feature.name}
             metaLines={[feature.source]}
-            status={feature.max !== undefined && recoveryStatus(feature.recovery!)}
+            status={feature.max !== undefined && recoveryStatusLine(feature.recovery!, feature.current, feature.max)}
             description={feature.description}
           />
         }
@@ -613,7 +607,10 @@ export function CharacterDetailsModal({
                               >
                                 <InfoTooltip
                                   panel={
-                                    <SpellHintPanel spell={spell} status={spell.max !== undefined && recoveryStatus(spell.recovery!)} />
+                                    <SpellHintPanel
+                                      spell={spell}
+                                      status={spell.max !== undefined && recoveryStatusLine(spell.recovery!, spell.current, spell.max)}
+                                    />
                                   }
                                 >
                                   {spell.name}

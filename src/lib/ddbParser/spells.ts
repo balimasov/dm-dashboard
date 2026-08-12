@@ -72,14 +72,14 @@ function formatEffect(df: RawDdbAny): { value: string; type?: string } | undefin
   return tag ? { value: tag } : undefined;
 }
 
-/** D&D Beyond's "Notes" column, duration half (components/material already surface separately via `components`/`materialComponent`) — `durationType` "Instantaneous" and the open-ended "Until Dispelled(...)" cases stand alone, everything else pairs `durationInterval`+`durationUnit` into a real duration string, prefixed "Concentration, " when `durationType` is "Concentration". */
+/** D&D Beyond's "Notes" column, duration half (components/material already surface separately via `components`/`materialComponent`) — `durationType` "Instantaneous" and the open-ended "Until Dispelled(...)" cases stand alone, everything else pairs `durationInterval`+`durationUnit` into a real duration string, prefixed "Concentration, up to " when `durationType` is "Concentration" — matching how every rulebook actually phrases a concentration duration (D&D Beyond's own raw data has no "up to" of its own to read; `durationInterval`/`durationUnit` alone don't distinguish it from a fixed duration, so it's added here rather than sourced from the API). */
 function formatDuration(duration: RawDdbAny): string | undefined {
   if (!duration?.durationType) return undefined;
   if (duration.durationType === "Instantaneous") return "Instantaneous";
   if (duration.durationUnit && duration.durationInterval) {
     const unit = String(duration.durationUnit).toLowerCase();
     const time = `${duration.durationInterval} ${unit}${duration.durationInterval === 1 ? "" : "s"}`;
-    return duration.durationType === "Concentration" ? `Concentration, ${time}` : time;
+    return duration.durationType === "Concentration" ? `Concentration, up to ${time}` : time;
   }
   return duration.durationType;
 }

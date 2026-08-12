@@ -282,9 +282,9 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
     expect(shield?.effectType).toBeUndefined();
   });
 
-  test("Bless: concentration duration formatted as 'Concentration, 1 minute'", () => {
+  test("Bless: concentration duration formatted as 'Concentration, up to 1 minute'", () => {
     const c = load("durgin-cleric");
-    expect(c.knownSpells.find((s) => s.name === "Bless")?.duration).toBe("Concentration, 1 minute");
+    expect(c.knownSpells.find((s) => s.name === "Bless")?.duration).toBe("Concentration, up to 1 minute");
   });
 });
 

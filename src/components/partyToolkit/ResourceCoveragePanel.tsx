@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, RECOVERY_LABELS } from "@/lib/types";
+import { Character } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import {
   CoverageHolder,
@@ -15,7 +15,7 @@ import { persistOpenCookie } from "../CollapsibleSection";
 import { InfoTooltip } from "../InfoTooltip";
 import { AbilityHintPanel } from "../ui/AbilityHintPanel";
 import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
-import { RecoveryBadge } from "../ui/RecoveryBadge";
+import { RecoveryBadge, recoveryStatusLine } from "../ui/RecoveryBadge";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { EMPTY_STATE_CLS } from "../ui/typography";
 import { CANTRIP_HINT, HEROIC_INSPIRATION_DESCRIPTION, HolderListPanel, LevelBadge, distributeIntoColumns, usageColorClass } from "./shared";
@@ -106,7 +106,7 @@ function TrackableRow({ entry }: { entry: ResourceCoverageEntry }) {
             <AbilityHintPanel
               name={entry.name}
               metaLines={[abilityMetaLine(entry.kind, entry.source, entry.isCantrip), tagsLine(entry.kind, entry.tags)]}
-              status={availability.kind === "pool" && <span className="text-sky-400">{RECOVERY_LABELS[availability.recovery]} recovery</span>}
+              status={availability.kind === "pool" && recoveryStatusLine(availability.recovery, availability.current, availability.max)}
               description={entry.description}
             />
           }
