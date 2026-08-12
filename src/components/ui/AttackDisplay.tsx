@@ -33,6 +33,13 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
   // proficiency/mastery works" blurb that says nothing item-specific), so a
   // plain Common weapon would otherwise show this block too.
   const isSpecialWeapon = Boolean(attack.rarity && attack.rarity !== "Common" && attack.rarity !== "Unknown" && attack.description);
+  // A plain "Longbow"/"Shortsword" has a `weaponType` that's just its own
+  // name again — showing it in the meta line would repeat the title one
+  // line down for no reason. A named magic weapon ("Ferol's Staff of Acid")
+  // has a genuinely different `weaponType` ("Quarterstaff"), which is
+  // exactly the case this line exists to surface. Same self-reference guard
+  // `formatSource` uses for a Feature/Spell's `source` vs. its own name.
+  const showWeaponType = attack.weaponType && attack.weaponType.trim().toLowerCase() !== attack.name.trim().toLowerCase();
 
   return (
     <HintPanel
@@ -41,7 +48,9 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
         <span className="block space-y-1.5">
           <span className="block space-y-1.5">
             <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
-              {[attack.weaponType, attack.attackType === "ranged" ? "Ranged" : "Melee", attack.range].filter(Boolean).join(" · ")}
+              {[showWeaponType ? attack.weaponType : undefined, attack.attackType === "ranged" ? "Ranged" : "Melee", attack.range]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
             <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
               <span>

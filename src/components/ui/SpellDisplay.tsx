@@ -112,13 +112,16 @@ export function SpellHintPanel({
                       {`, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}`}
                     </>
                   ) : (
-                    spell.duration
+                    <span className="font-semibold text-sky-400">{spell.duration}</span>
                   )}
                 </span>
               )}
               {status && <span className="block text-xs font-medium">{status}</span>}
               {(spell.components || spell.materialComponent) && (
-                <span className="block text-slate-500">{[spell.components, spell.materialComponent].filter(Boolean).join(" — ")}</span>
+                <span className="block">
+                  <span className="text-slate-500">Components:</span>{" "}
+                  {[spell.components, spell.materialComponent ? `(${spell.materialComponent})` : undefined].filter(Boolean).join(" ")}
+                </span>
               )}
             </span>
           )}
