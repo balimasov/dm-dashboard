@@ -557,3 +557,23 @@ export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name:
 
   return index;
 }
+
+/**
+ * The one place a `Feature`/`KnownSpell`/`Resource`'s `source` string gets
+ * assembled, so every caller (`features.ts`'s actions/options/classFeature
+ * rows, `spells.ts`, `resources.ts`) produces the exact same shape instead
+ * of each hand-rolling its own — some substituting the specific name in
+ * place of the category, some concatenating it, some doing neither. Always
+ * the broad D&D Beyond category (`"Race"`/`"Class"`/`"Feat"`/
+ * `"Background"`/`"Item"`) alone when there's no more specific grantor to
+ * name, or `"Category (Specific Name)"` when there is — e.g. `"Race (Elven
+ * Lineage Spells)"`, `"Class (Spellfire Sorcery)"` — mirroring exactly how
+ * D&D Beyond's own spell list labels a bonus spell's source. `specific ===
+ * category` (the plain class/racial-trait/feat name matching its own
+ * fallback bucket, e.g. a base-class feature whose "specific" name is just
+ * the class name again) collapses back to the bare category rather than a
+ * redundant `"Class (Class)"`.
+ */
+export function formatSource(category: string, specific: string | undefined): string {
+  return specific && specific !== category ? `${category} (${specific})` : category;
+}

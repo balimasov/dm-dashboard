@@ -1,5 +1,5 @@
 import { AbilityScores, Feature, RecoveryType, Resource } from "../types";
-import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
@@ -229,7 +229,7 @@ export function computeFeatures(
       // it, regardless of class — the one reliable, data-driven way to tell
       // it apart from a real feature sharing the same type.
       if (action.componentTypeId === 12168134 && !parentInfo) continue;
-      const source = parentInfo?.name || actionFallbackSource[group];
+      const source = formatSource(actionFallbackSource[group], parentInfo?.name);
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       const charges = action.limitedUse ? computeLimitedUseCharges(action.limitedUse, abilities, profBonus) ?? undefined : undefined;
       add(
@@ -272,7 +272,7 @@ export function computeFeatures(
       add(
         df.name,
         shortDescription(df.snippet, df.description),
-        isSubclassFeature ? subclassName : className,
+        formatSource("Class", isSubclassFeature ? subclassName : className),
         "other",
         "class",
         actionChargesById.get(df.id),
@@ -312,7 +312,7 @@ export function computeFeatures(
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
       const parentInfo = parentInfoById.get(opt.componentId);
-      const source = parentInfo?.name || fallbackSource;
+      const source = formatSource(fallbackSource, parentInfo?.name);
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       add(df.name, shortDescription(df.snippet, df.description), source, "other", originType, actionChargesById.get(df.id));
     }

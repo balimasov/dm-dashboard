@@ -321,6 +321,45 @@ describe("spell/resource source resolves to the specific granting feature (build
   });
 });
 
+describe("Feature.source is always 'Category' or 'Category (Specific)' — formatSource keeps it uniform", () => {
+  test("a top-level racial trait (no more specific parent than itself) is the bare category", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Darkvision")?.source).toBe("Race");
+  });
+
+  test("a top-level feat is the bare category", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Skilled")?.source).toBe("Feat");
+  });
+
+  test("a base-class feature reads 'Class (Sorcerer)', not the bare class name replacing the category", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Font of Magic")?.source).toBe("Class (Sorcerer)");
+  });
+
+  test("a subclass feature reads 'Class (Spellfire Sorcery)'", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Spellfire Burst")?.source).toBe("Class (Spellfire Sorcery)");
+  });
+
+  test("an action whose componentId resolves back to its own granting feature reads 'Class (Innate Sorcery)', not the bare duplicated name", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Innate Sorcery")?.source).toBe("Class (Innate Sorcery)");
+    expect(c.features.find((f) => f.name === "Sorcerous Restoration")?.source).toBe("Class (Sorcerous Restoration)");
+  });
+
+  test("a chosen option under a racial lineage reads 'Race (Elven Lineage)'/'Race (Elven Lineage Spells)'", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "High Elf Lineage")?.source).toBe("Race (Elven Lineage)");
+    expect(c.features.find((f) => f.name === "High Elf - Intelligence")?.source).toBe("Race (Elven Lineage Spells)");
+  });
+
+  test("a feat-granted option reads 'Feat (Skilled)'", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.features.find((f) => f.name === "Increase two scores (+2 / +1)")?.source).toBe("Feat (Skilled)");
+  });
+});
+
 describe("custom defense adjustments (customDefenseAdjustments)", () => {
   test("Yorun with every entry in her Resistances picker added", () => {
     const c = load("yorun-all-resistances");

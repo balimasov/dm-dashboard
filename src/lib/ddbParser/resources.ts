@@ -1,6 +1,6 @@
 import { AbilityScores, Resource } from "../types";
 import { ordinalLevel } from "../format";
-import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
 import { computePactMagicSlots } from "./spells";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
@@ -13,7 +13,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
   const componentSourceIndex = buildComponentSourceIndex(data);
   function resolveSource(componentId: number | null | undefined, source: string): string {
     const specific = componentId ? componentSourceIndex.get(componentId) : undefined;
-    return specific && specific.name !== source ? `${source} (${specific.name})` : source;
+    return formatSource(source, specific?.name);
   }
 
   function fromLimitedUse(

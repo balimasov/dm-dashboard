@@ -1,6 +1,6 @@
 import { AbilityScores, KnownSpell, SpellcastingStats, SpellSlotLevel } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier, buildComponentSourceIndex, computeLimitedUseCharges, resolveSnippetTemplate, shortDescription, titleCase } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, buildComponentSourceIndex, computeLimitedUseCharges, formatSource, resolveSnippetTemplate, shortDescription, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 const ABILITY_ABBR: Record<number, string> = { 1: "STR", 2: "DEX", 3: "CON", 4: "INT", 5: "WIS", 6: "CHA" };
@@ -179,7 +179,7 @@ export function computeSpells(
     const tags: string[] = df.tags ?? [];
     const effect = formatEffect(df);
     const specificSource = entry?.componentId ? componentSourceIndex.get(entry.componentId) : undefined;
-    const resolvedSource = specificSource && specificSource.name !== source ? `${source} (${specificSource.name})` : source;
+    const resolvedSource = formatSource(source, specificSource?.name);
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),
