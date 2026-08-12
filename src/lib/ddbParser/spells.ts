@@ -58,16 +58,38 @@ function formatHitOrDc(df: RawDdbAny, spellcasting: SpellcastingStats | undefine
  * "Healing" label). A spell with neither — most buffs, control, and utility
  * effects — falls back to its first D&D Beyond classification tag (e.g.
  * "Buff", "Control") as the closest one-word summary this data offers.
+ *
+ * A cantrip's own damage die scales with the caster's character level (Fire
+ * Bolt: 1d10 -> 2d10 at 5 -> 3d10 at 11 -> 4d10 at 17, confirmed on a real
+ * export) — `df.scaleType === "characterlevel"` marks this, and the
+ * modifier's own `atHigherLevels.higherLevelDefinitions` carries the real
+ * dice for each threshold, so the highest threshold at or below the
+ * character's current level wins over the modifier's base `die`. Gated
+ * strictly on that `scaleType`: a *leveled* spell's own upcast-by-slot-level
+ * table lives in the exact same `atHigherLevels.higherLevelDefinitions`
+ * shape (confirmed on Insect Plague, a 5th-level spell: `{level: 1, dice:
+ * "1d10"}`, meaning "+1d10 per slot level above base", not "at character
+ * level 1") — reading that table as character-level thresholds would show a
+ * leveled spell's own upcast *increment* as its base damage for every
+ * character regardless of level, so it's never consulted outside the
+ * cantrip case.
  */
-function formatEffect(df: RawDdbAny): { value: string; type?: string } | undefined {
+function formatEffect(df: RawDdbAny, level: number): { value: string; type?: string } | undefined {
   const mods: RawDdbAny[] = df.modifiers ?? [];
+  function scaledDice(mod: RawDdbAny): string {
+    if (df.scaleType !== "characterlevel") return mod.die.diceString;
+    const tiers: RawDdbAny[] = mod.atHigherLevels?.higherLevelDefinitions ?? [];
+    const applicable = tiers.filter((t) => typeof t.level === "number" && t.level <= level && t.dice?.diceString);
+    const best = applicable.sort((a, b) => b.level - a.level)[0];
+    return best?.dice.diceString ?? mod.die.diceString;
+  }
   const damageMod = mods.find((m) => m.type === "damage" && m.die?.diceString);
   if (damageMod) {
     const type = damageMod.friendlySubtypeName || titleCase(damageMod.subType ?? "");
-    return { value: damageMod.die.diceString, ...(type ? { type } : {}) };
+    return { value: scaledDice(damageMod), ...(type ? { type } : {}) };
   }
   const healMod = mods.find((m) => m.type === "bonus" && m.subType === "hit-points" && m.die?.diceString);
-  if (healMod) return { value: healMod.die.diceString, type: "Healing" };
+  if (healMod) return { value: scaledDice(healMod), type: "Healing" };
   const tag = (df.tags ?? [])[0];
   return tag ? { value: tag } : undefined;
 }
@@ -177,7 +199,7 @@ export function computeSpells(
     const rawDescription = shortDescription(df.snippet, df.description);
     const components: number[] = df.components ?? [];
     const tags: string[] = df.tags ?? [];
-    const effect = formatEffect(df);
+    const effect = formatEffect(df, level);
     const specificSource = entry?.componentId ? componentSourceIndex.get(entry.componentId) : undefined;
     const resolvedSource = formatSource(source, specificSource?.name, df.name);
     const spell: KnownSpell = {

@@ -265,6 +265,21 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
     expect(fireBolt?.hitOrDc).toBe(formatModifier(c.spellcasting!.attack));
   });
 
+  test("Fire Bolt: cantrip damage scales with character level (1d10 base -> 2d10 at level 5), not stuck at its level-1 die", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.level).toBe(5);
+    const fireBolt = c.knownSpells.find((s) => s.name === "Fire Bolt");
+    expect(fireBolt?.effect).toBe("2d10");
+    expect(fireBolt?.effectType).toBe("Fire");
+  });
+
+  test("Insect Plague (a 5th-level spell, not a cantrip): stays its own base 4d10, not misread as its upcast-per-slot-level table (which starts '{level: 1, dice: 1d10}' — that '1' means 'per slot level above base', not 'character level 1')", () => {
+    const c = load("durgin-cleric");
+    const insectPlague = c.knownSpells.find((s) => s.name === "Insect Plague");
+    expect(insectPlague?.effect).toBe("4d10");
+    expect(insectPlague?.effectType).toBe("Piercing");
+  });
+
   test("Cure Wounds: touch range, healing dice fall back to a plain 'Healing' label", () => {
     const c = load("durgin-cleric");
     const cureWounds = c.knownSpells.find((s) => s.name === "Cure Wounds");
