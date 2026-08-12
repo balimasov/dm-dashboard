@@ -360,6 +360,19 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
   });
 });
 
+describe("cleanRulesText preserves paragraph breaks in a plain-text snippet (no <p>/<br> markup)", () => {
+  test("War Caster's four bold sub-effects stay on separate paragraphs, not one run-on wall of text", () => {
+    const c = load("yorun-all-immunities");
+    const warCaster = c.features.find((f) => f.name === "War Caster");
+    expect(warCaster?.description).toBe(
+      "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1.\n\n" +
+        "**Concentration.** You have Advantage on Con. saving throws to maintain Concentration.\n\n" +
+        "**Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature.\n\n" +
+        "**Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands."
+    );
+  });
+});
+
 describe("custom defense adjustments (customDefenseAdjustments)", () => {
   test("Yorun with every entry in her Resistances picker added", () => {
     const c = load("yorun-all-resistances");

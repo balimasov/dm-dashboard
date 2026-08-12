@@ -128,6 +128,17 @@ export function cleanRulesText(html: string): string {
       // each with a placeholder the same way the HTML `<li>` case above does,
       // then restore both kinds together below.
       .replace(/\s*(?:\r?\n\s*)+•\s*/g, "@@BULLET@@")
+      // Unlike `description`, D&D Beyond's `snippet` field often has no
+      // `<p>`/`<br>` markup at all to catch above — just a real blank line
+      // (`\r\n\r\n`) between each named sub-effect (confirmed on a feat's
+      // snippet: "War Caster" is four `\r\n\r\n`-separated "**Label.** text"
+      // blocks with zero HTML). Without this, that blank line is just
+      // another run of whitespace to the general collapse below, silently
+      // flattening visibly distinct sub-sections into one wall of text —
+      // exactly the "everything runs together" gap between our hint and
+      // D&D Beyond's own page. A single newline (mid-sentence wrapping, not
+      // a real paragraph break) is deliberately left alone.
+      .replace(/\r?\n[ \t]*\r?\n+/g, "@@PARA@@")
       .replace(/\s+/g, " ")
       .replace(/\s*@@BULLET@@\s*/g, "\n• ")
       .replace(/\s*@@PARA@@\s*/g, "\n\n")
