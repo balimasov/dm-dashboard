@@ -480,7 +480,7 @@ export function diceTypeNote(name: string, dice: RawDdbAny): string {
  * (`spells.ts`) alike — back to the specific racial trait/class feature/feat
  * that granted it, plus that parent's origin type. Shared here (rather than
  * built inline in each caller, as `features.ts` used to) so a spell's source
- * can read "Race (Elven Lineage Spells)" instead of just "Race", using the
+ * can read "Species (Elven Lineage Spells)" instead of just "Species", using the
  * exact same resolution `features.ts` already relies on for its own actions/
  * options rows, instead of a second parallel implementation drifting from it.
  *
@@ -501,7 +501,7 @@ export function diceTypeNote(name: string, dice: RawDdbAny): string {
  * Lineage Spells" racial trait directly, it matches the *option* the player
  * chose under it ("High Elf - Intelligence"), whose own `componentId` is
  * what actually points at the trait. Without this third pass, that spell's
- * source silently falls back to the generic "Race" bucket instead of the
+ * source silently falls back to the generic "Species" bucket instead of the
  * specific one D&D Beyond itself shows.
  */
 export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name: string; originType: Feature["originType"] }> {
@@ -564,9 +564,9 @@ export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name:
  * rows, `spells.ts`, `resources.ts`) produces the exact same shape instead
  * of each hand-rolling its own — some substituting the specific name in
  * place of the category, some concatenating it, some doing neither. Always
- * the broad D&D Beyond category (`"Race"`/`"Class"`/`"Feat"`/
+ * the broad D&D Beyond category (`"Species"`/`"Class"`/`"Feat"`/
  * `"Background"`/`"Item"`) alone when there's no more specific grantor to
- * name, or `"Category (Specific Name)"` when there is — e.g. `"Race (Elven
+ * name, or `"Category (Specific Name)"` when there is — e.g. `"Species (Elven
  * Lineage Spells)"`, `"Class (Spellfire Sorcery)"` — mirroring exactly how
  * D&D Beyond's own spell list labels a bonus spell's source. `specific ===
  * category` (the plain class/racial-trait/feat name matching its own

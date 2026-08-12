@@ -142,8 +142,8 @@ export function computeSpells(
   const seenKeys = new Set<string>();
   // Same index `features.ts` builds for its own actions/options rows (see
   // `buildComponentSourceIndex`'s own doc comment) — lets a bonus-granted
-  // spell's source read "Race (Elven Lineage Spells)" instead of just
-  // "Race" whenever its `componentId` resolves to a specific racial
+  // spell's source read "Species (Elven Lineage Spells)" instead of just
+  // "Species" whenever its `componentId` resolves to a specific racial
   // trait/class feature/feat, matching what D&D Beyond's own spell list
   // shows under each spell's name. A spell from the main class spell list
   // (not a bonus grant) always has `componentId: 0`, which never resolves,
@@ -222,7 +222,7 @@ export function computeSpells(
   }
 
   const bonusGroups: Array<[keyof NonNullable<RawDdbData["spells"]>, string]> = [
-    ["race", "Race"],
+    ["race", "Species"],
     ["class", "Class"],
     ["background", "Background"],
     ["item", "Item"],

@@ -170,7 +170,7 @@ describe("characterAssistantContext", () => {
       name: "Nyra",
       knownSpells: [
         { id: "s1", name: "Fireball", level: 3, source: "Class" },
-        { id: "s2", name: "Detect Magic", level: 1, source: "Race", current: 0, max: 1, recovery: "long-rest" },
+        { id: "s2", name: "Detect Magic", level: 1, source: "Species", current: 0, max: 1, recovery: "long-rest" },
       ],
     });
 

@@ -302,7 +302,7 @@ describe("spell/resource source resolves to the specific granting feature (build
   test("a racial bonus spell resolves through the option indirection to 'Race (Elven Lineage Spells)'", () => {
     const c = load("yorun-all-immunities");
     const mistyStep = c.knownSpells.filter((s) => s.name === "Misty Step");
-    expect(mistyStep.some((s) => s.source === "Race (Elven Lineage Spells)")).toBe(true);
+    expect(mistyStep.some((s) => s.source === "Species (Elven Lineage Spells)")).toBe(true);
   });
 
   test("an item-granted spell (no matching racial trait/class feature/feat) keeps the plain 'Item' source", () => {
@@ -317,14 +317,14 @@ describe("spell/resource source resolves to the specific granting feature (build
 
   test("the racial spell's own charge-pool resource resolves to 'Race (Elven Lineage Spells)' too", () => {
     const c = load("yorun-all-immunities");
-    expect(c.resources.find((r) => r.name === "Detect Magic (1st)")?.source).toBe("Race (Elven Lineage Spells)");
+    expect(c.resources.find((r) => r.name === "Detect Magic (1st)")?.source).toBe("Species (Elven Lineage Spells)");
   });
 });
 
 describe("Feature.source is always 'Category' or 'Category (Specific)' — formatSource keeps it uniform", () => {
   test("a top-level racial trait (no more specific parent than itself) is the bare category", () => {
     const c = load("yorun-all-immunities");
-    expect(c.features.find((f) => f.name === "Darkvision")?.source).toBe("Race");
+    expect(c.features.find((f) => f.name === "Darkvision")?.source).toBe("Species");
   });
 
   test("a top-level feat is the bare category", () => {
@@ -350,8 +350,8 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
 
   test("a chosen option under a racial lineage reads 'Race (Elven Lineage)'/'Race (Elven Lineage Spells)'", () => {
     const c = load("yorun-all-immunities");
-    expect(c.features.find((f) => f.name === "High Elf Lineage")?.source).toBe("Race (Elven Lineage)");
-    expect(c.features.find((f) => f.name === "High Elf - Intelligence")?.source).toBe("Race (Elven Lineage Spells)");
+    expect(c.features.find((f) => f.name === "High Elf Lineage")?.source).toBe("Species (Elven Lineage)");
+    expect(c.features.find((f) => f.name === "High Elf - Intelligence")?.source).toBe("Species (Elven Lineage Spells)");
   });
 
   test("a feat-granted option reads 'Feat (Skilled)'", () => {

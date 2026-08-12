@@ -481,7 +481,7 @@ export interface PartyResourceEntry {
   max: number;
   status: ResourceStatus;
   recovery: RecoveryType;
-  /** Where this resource comes from (e.g. "Race", "Class", "Feat") — same convention as `Resource.source`, shown in the row's hover hint. */
+  /** Where this resource comes from (e.g. "Species", "Class", "Feat") — same convention as `Resource.source`, shown in the row's hover hint. */
   source?: string;
   description?: string;
 }
@@ -1160,7 +1160,7 @@ export interface ResourceCoverageEntry {
   availability?: ResourceAvailability;
   /** What kind of thing this is — the hint panel's own "type" line, same idea as `PartyResourceEntry.source` on the old Resources panel but generalized to spells/features too. Absent for the Heroic Inspiration entry, which isn't any of the three. */
   kind?: "spell" | "feature" | "resource";
-  /** Where it comes from (e.g. "Class", "Race", "Feat") — `KnownSpell.source`/`Feature.source`/`Resource.source` passed straight through, same convention as the old Resources panel's hover hint. */
+  /** Where it comes from (e.g. "Class", "Species", "Feat") — `KnownSpell.source`/`Feature.source`/`Resource.source` passed straight through, same convention as the old Resources panel's hover hint. */
   source?: string;
   /** A spell at level 0 — the row's "no availability badge" is otherwise indistinguishable from an unlimited passive `Feature`, which reads as a gap rather than an intentional cantrip. */
   isCantrip?: boolean;

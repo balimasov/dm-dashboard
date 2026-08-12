@@ -104,7 +104,7 @@ describe("buildAiAvailability", () => {
   test("formats a spell with its own charge pool as charges, not slots, even though it has a level", () => {
     const character = makeCharacter({
       name: "Nyra",
-      knownSpells: [{ id: "s2", name: "Detect Magic", level: 1, source: "Race", current: 0, max: 1, recovery: "long-rest" }],
+      knownSpells: [{ id: "s2", name: "Detect Magic", level: 1, source: "Species", current: 0, max: 1, recovery: "long-rest" }],
     });
 
     expect(buildAiAvailability(character)).toEqual({ s2: "0/1 charges" });

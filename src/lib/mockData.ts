@@ -38,7 +38,7 @@ export const demoCharacters: Character[] = [
         "current": 3,
         "max": 3,
         "recovery": "short-rest",
-        "source": "Race",
+        "source": "Species",
         "description": "As a Bonus Action, you can take the Dash action. When you do, you gain 3 Temporary HP. You can use this trait 3 times, and you regain all uses after a Short or Long Rest."
       },
       {
@@ -47,7 +47,7 @@ export const demoCharacters: Character[] = [
         "current": 1,
         "max": 1,
         "recovery": "long-rest",
-        "source": "Race",
+        "source": "Species",
         "description": "Once per Long Rest, when you’re reduced to 0 HP but not killed outright, you can drop to 1 HP instead."
       },
       {
@@ -281,7 +281,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-8",
         "name": "Darkvision",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have Darkvision with a range of 120 ft."
@@ -289,7 +289,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-9",
         "name": "Creature Type",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You're a Humanoid."
@@ -297,7 +297,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-10",
         "name": "Size",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Your Size is Medium."
@@ -305,7 +305,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-11",
         "name": "Speed",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Your Speed is 30 ft."
@@ -313,7 +313,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-12",
         "name": "Ability Score Increases",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1."
@@ -899,7 +899,7 @@ export const demoCharacters: Character[] = [
         "level": 0,
         "school": "Illusion",
         "description": "You create up to four torch-size lights within range, making them appear as torches, lanterns, or glowing orbs that hover for the duration. Alternatively, you combine the four lights into one glowing Medium form that is vaguely humanlike. Whichever form you choose, each light sheds Dim Light in a 10-foot radius. As a Bonus Action, you can move the lights up to 60 feet to a space within range. A light must be within 20 feet of another light created by this spell, and a light vanishes if it exceeds the spell’s range.",
-        "source": "Race",
+        "source": "Species",
         "components": "V, S, M",
         "materialComponent": "a bit of phosphorus"
       },
@@ -909,7 +909,7 @@ export const demoCharacters: Character[] = [
         "level": 1,
         "school": "Evocation",
         "description": "Objects in a 20-foot Cube within range are outlined in blue, green, or violet light (your choice). Each creature in the Cube is also outlined if it fails a Dexterity saving throw. For the duration, objects and affected creatures shed Dim Light in a 10-foot radius and can’t benefit from the Invisible condition. Attack rolls against an affected creature or object have Advantage if the attacker can see it.",
-        "source": "Race",
+        "source": "Species",
         "components": "V",
         "current": 1,
         "max": 1,
@@ -921,7 +921,7 @@ export const demoCharacters: Character[] = [
         "level": 2,
         "school": "Evocation",
         "description": "For the duration, magical Darkness spreads from a point within range and fills a 15-foot-radius Sphere. Darkvision can’t see through it, and nonmagical light can’t illuminate it. Alternatively, you cast the spell on an object that isn’t being worn or carried, causing the Darkness to fill a 15-foot Emanation originating from that object. Covering that object with something opaque, such as a bowl or helm, blocks the Darkness. If any of this spell’s area overlaps with an area of Bright Light or Dim Light created by a spell of level 2 or lower, that other spell is dispelled.",
-        "source": "Race",
+        "source": "Species",
         "components": "V, M",
         "materialComponent": "bat fur and a piece of coal",
         "current": 0,
@@ -1071,7 +1071,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-17",
         "name": "Creature Type",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You are a Humanoid."
@@ -1079,7 +1079,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-18",
         "name": "Size",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You are Medium."
@@ -1087,7 +1087,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-19",
         "name": "Speed",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Your speed is 30 ft."
@@ -1095,7 +1095,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-20",
         "name": "Darkvision",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have Darkvision with a range of 60 ft."
@@ -1103,7 +1103,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-21",
         "name": "Elven Lineage",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
@@ -1111,7 +1111,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-22",
         "name": "Fey Ancestry",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
@@ -1119,7 +1119,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-23",
         "name": "Keen Senses",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have proficiency in the Insight, Perception, or Survival skill."
@@ -1127,7 +1127,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-24",
         "name": "Trance",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
@@ -1135,7 +1135,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-25",
         "name": "Elven Lineage Spells",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "When you choose your Elven Lineage, and at character levels 3 and 5, you learn a spell as shown on the table. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have of the appropriate level. Intelligence, Wisdom, or Charisma is your spellcasting ability for the spells you cast with this trait (choose the ability when you select the lineage)."
@@ -1143,7 +1143,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-26",
         "name": "Ability Score Increases",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "When determining your character’s ability scores, increase one score by 2 and a different one by 1, or increase three scores by 1."
@@ -1786,7 +1786,7 @@ export const demoCharacters: Character[] = [
         "level": 1,
         "school": "Divination",
         "description": "For the duration, you sense the presence of magical effects within 30 feet of yourself. If you sense such effects, you can take the Magic action to see a faint aura around any visible creature or object in the area that bears the magic, and if an effect was created by a spell, you learn the spell’s school of magic. The spell is blocked by 1 foot of stone, dirt, or wood; 1 inch of metal; or a thin sheet of lead.",
-        "source": "Race",
+        "source": "Species",
         "components": "V, S",
         "current": 1,
         "max": 1,
@@ -1974,7 +1974,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-20",
         "name": "Darkvision",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have Darkvision with a range of 60 ft."
@@ -1982,7 +1982,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-21",
         "name": "Elven Lineage",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Choose a lineage from the Elven Lineages table. You gain the level 1 benefit of that lineage."
@@ -1990,7 +1990,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-22",
         "name": "Fey Ancestry",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have Advantage on saving throws you make to avoid or end the Charmed condition."
@@ -1998,7 +1998,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-23",
         "name": "Keen Senses",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have proficiency in the Insight, Perception, or Survival skill."
@@ -2006,7 +2006,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-24",
         "name": "Trance",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You don’t need to sleep, and magic can’t put you to sleep. You can finish a Long Rest in 4 hours if you spend those hours in a trancelike meditation, during which you retain consciousness."
@@ -2542,7 +2542,7 @@ export const demoCharacters: Character[] = [
         "level": 0,
         "school": "Transmutation",
         "description": "You manifest a minor wonder, a sign of supernatural power, within range. You create one of the following magical effects within range: Your voice booms up to three times as loud as normal for 1 minute. You cause flames to flicker, brighten, dim, or change color for 1 minute. You cause harmless tremors in the ground for 1 minute. You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers. You instantaneously cause an unlocked door or window to fly open or slam shut. You alter the appearance of your eyes for 1 minute. If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time, and you can dismiss such an effect as an action.",
-        "source": "Race",
+        "source": "Species",
         "components": "V"
       },
       {
@@ -2551,7 +2551,7 @@ export const demoCharacters: Character[] = [
         "level": 1,
         "school": "Evocation",
         "description": "You point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a Dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one.\n\n**At Higher Levels.** When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.",
-        "source": "Race",
+        "source": "Species",
         "components": "V, S",
         "current": 1,
         "max": 1,
@@ -2563,7 +2563,7 @@ export const demoCharacters: Character[] = [
         "level": 2,
         "school": "Evocation",
         "description": "Magical darkness spreads from a point you choose within range to fill a 15-foot-radius sphere for the duration. The darkness spreads around corners. A creature with darkvision can't see through this darkness, and nonmagical light can't illuminate it. If the point you choose is on an object you are holding or one that isn't being worn or carried, the darkness emanates from the object and moves with it. Completely covering the source of the darkness with an opaque object, such as a bowl or a helm, blocks the darkness. If any of this spell's area overlaps with an area of light created by a spell of 2nd level or lower, the spell that created the light is dispelled.",
-        "source": "Race",
+        "source": "Species",
         "components": "V, M",
         "materialComponent": "bat fur and a drop of pitch or piece of coal",
         "current": 1,
@@ -2634,7 +2634,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-12",
         "name": "Darkvision",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You can see in darkness (shades of gray) up to 60 ft."
@@ -2642,7 +2642,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-13",
         "name": "Hellish Resistance",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You have resistance to fire damage."
@@ -2650,7 +2650,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-14",
         "name": "Infernal Legacy",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "You know the thaumaturgy cantrip. [3rd] You can cast hellish rebuke (2nd) once per long rest. [5th] You can cast darkness once per long rest. CHA is your spellcasting ability."
@@ -2658,7 +2658,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-15",
         "name": "Ability Score Increase",
-        "source": "Race",
+        "source": "Species",
         "group": "other",
         "originType": "species",
         "description": "Your Intelligence score increases by 1, and your Charisma score increases by 2."

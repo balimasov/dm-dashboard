@@ -44,7 +44,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
 
   const resources: Resource[] = [];
   const actionGroups: Array<[string, string, RawDdbAny[]]> = [
-    ["race", "Race", data.actions?.race ?? []],
+    ["race", "Species", data.actions?.race ?? []],
     ["class", "Class", data.actions?.class ?? []],
     ["feat", "Feat", data.actions?.feat ?? []],
   ];
@@ -72,7 +72,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
   // level is folded into the name (`Faerie Fire (1st)`) since `Resource` has
   // no separate level field to hang it off of.
   const spellResourceGroups: Array<[keyof NonNullable<RawDdbData["spells"]>, string]> = [
-    ["race", "Race"],
+    ["race", "Species"],
     ["class", "Class"],
     ["background", "Background"],
     ["item", "Item"],

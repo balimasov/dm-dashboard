@@ -205,7 +205,7 @@ export function computeFeatures(
   // entry describing the same umbrella ability (e.g. the "Rage" classFeature
   // vs. the "Rage (Enter)" action) when their names coincide exactly.
   const actionFallbackSource: Record<"race" | "class" | "feat", string> = {
-    race: "Race",
+    race: "Species",
     class: "Class",
     feat: "Feat",
   };
@@ -251,7 +251,7 @@ export function computeFeatures(
     add(
       df.name,
       shortDescription(df.snippet, df.description),
-      "Race",
+      "Species",
       "other",
       "species",
       actionChargesById.get(df.id),
@@ -304,7 +304,7 @@ export function computeFeatures(
   // exactly the specific abilities a DM most wants to know about a character
   // were the ones missing.
   const optionGroups: Array<["race" | "class" | "feat", string]> = [
-    ["race", "Race"],
+    ["race", "Species"],
     ["class", "Class"],
     ["feat", "Feat"],
   ];

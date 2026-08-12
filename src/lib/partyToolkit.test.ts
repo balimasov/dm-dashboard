@@ -413,13 +413,13 @@ describe("computePartySpellsByLevel", () => {
     const a = makeCharacter({
       name: "A",
       knownSpells: [
-        { id: "s1", name: "Faerie Fire", level: 1, source: "Race" },
-        { id: "s2", name: "Faerie Fire", level: 1, source: "Race", current: 1, max: 1, recovery: "long-rest" },
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Species" },
+        { id: "s2", name: "Faerie Fire", level: 1, source: "Species", current: 1, max: 1, recovery: "long-rest" },
       ],
     });
     const groups = computePartySpellsByLevel([a]);
     expect(groups).toEqual([
-      { level: 1, spells: [{ name: "Faerie Fire", isCantrip: false, source: "Race", holders: [{ characterId: "A", characterName: "A" }] }] },
+      { level: 1, spells: [{ name: "Faerie Fire", isCantrip: false, source: "Species", holders: [{ characterId: "A", characterName: "A" }] }] },
     ]);
   });
 
@@ -929,7 +929,7 @@ describe("computeResourceCoverage", () => {
     const c = makeCharacter({
       name: "A",
       knownSpells: [
-        { id: "s1", name: "Faerie Fire", level: 1, source: "Race", current: 0, max: 1, recovery: "long-rest" },
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Species", current: 0, max: 1, recovery: "long-rest" },
         { id: "s2", name: "Web", level: 2, source: "Class" },
       ],
       spellSlots: [{ level: 2, current: 3, max: 3 }],
@@ -960,8 +960,8 @@ describe("computeResourceCoverage", () => {
     const c = makeCharacter({
       name: "Runa",
       knownSpells: [
-        { id: "s1", name: "Faerie Fire", level: 1, source: "Race" },
-        { id: "s2", name: "Faerie Fire", level: 1, source: "Race", current: 1, max: 1, recovery: "long-rest" },
+        { id: "s1", name: "Faerie Fire", level: 1, source: "Species" },
+        { id: "s2", name: "Faerie Fire", level: 1, source: "Species", current: 1, max: 1, recovery: "long-rest" },
       ],
     });
     const coverage = computeResourceCoverage([c]);
@@ -972,7 +972,7 @@ describe("computeResourceCoverage", () => {
         characterName: "Runa",
         description: undefined,
         kind: "spell",
-        source: "Race",
+        source: "Species",
         isCantrip: false,
         availability: { kind: "pool", current: 1, max: 1, recovery: "long-rest" },
       },
@@ -1002,7 +1002,7 @@ describe("computeResourceCoverage", () => {
   test("an uncategorized feature does NOT land in Resources — too much lore/reference noise, unlike spells", () => {
     const c = makeCharacter({
       name: "A",
-      features: [{ id: "f1", name: "Ability Score Increases", source: "Race", group: "other", originType: "species" }],
+      features: [{ id: "f1", name: "Ability Score Increases", source: "Species", group: "other", originType: "species" }],
     });
     const coverage = computeResourceCoverage([c]);
     const allEntries = Object.values(coverage).flat();
@@ -1012,8 +1012,8 @@ describe("computeResourceCoverage", () => {
   test("a charge-pool resource named with D&D Beyond's level suffix isn't listed again in Other once its plain-named spell is already categorized", () => {
     const c = makeCharacter({
       name: "Runa",
-      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Race" }],
-      resources: [{ id: "r1", name: "Faerie Fire (1st)", current: 1, max: 1, recovery: "long-rest", source: "Race" }],
+      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Species" }],
+      resources: [{ id: "r1", name: "Faerie Fire (1st)", current: 1, max: 1, recovery: "long-rest", source: "Species" }],
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Control).toHaveLength(1);
@@ -1065,7 +1065,7 @@ describe("computeResourceCoverage", () => {
       // Faerie Fire's real tags include Detection; the keyword map separately
       // knows its exact name as Control. Once a spell has tags, D&D Beyond's
       // classification is authoritative — no name-keyword topping-up.
-      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Race", tags: ["Detection"] }],
+      knownSpells: [{ id: "s1", name: "Faerie Fire", level: 1, source: "Species", tags: ["Detection"] }],
     });
     const coverage = computeResourceCoverage([c]);
     expect(coverage.Detection.map((e) => e.name)).toContain("Faerie Fire");
@@ -1175,7 +1175,7 @@ describe("computeFeatureCategories (via computeResourceCoverage) — features ha
         {
           id: "f1",
           name: "Totally Homebrew Trance",
-          source: "Race",
+          source: "Species",
           group: "other",
           originType: "species",
           description: "Once per day, you regain hit points equal to your level.",
