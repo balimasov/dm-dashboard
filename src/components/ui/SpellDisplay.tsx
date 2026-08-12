@@ -48,15 +48,12 @@ function splitHitOrDc(hitOrDc: string): { label: string; value: string } {
  * Two groups below the title, divided by `HINT_PANEL_DIVIDER_CLS`: source
  * (where this spell comes from) on its own, then everything else in the
  * order a DM actually asks the questions in combat — how do I cast it (time/
- * range), do I need to roll and what happens (to-hit-or-DC/effect), does a
- * condition change any of that (Duration/Concentration — read *before*
- * availability, since "am I already concentrating on something else"
- * qualifies the numbers above it), components/material cost (prep-time info,
- * not mid-combat), and last, "can I cast it again right now" (recovery) —
- * kept at the very end rather than beside the other numbers since it only
- * applies to the minority of spells with their own charge pool, and reads
- * as an outlier wedged in the middle of the rest. Description gets its own
- * trailing group.
+ * range), do I need to roll and what happens (to-hit-or-DC/effect), can I
+ * cast it again right now (`recoveryStatusLine`'s "Recovery" line — read
+ * right after the numbers it gates, before anything about *this* casting),
+ * does a condition change any of that (Duration/Concentration), and finally
+ * components/material cost, prep-time info rather than mid-combat.
+ * Description gets its own trailing group.
  */
 export function SpellHintPanel({
   spell,
@@ -106,6 +103,7 @@ export function SpellHintPanel({
                   )}
                 </span>
               )}
+              {status}
               {spell.duration && (
                 <span className="block">
                   <span className="text-slate-500">Duration</span>{" "}
@@ -125,7 +123,6 @@ export function SpellHintPanel({
                   {[spell.components, spell.materialComponent ? `(${spell.materialComponent})` : undefined].filter(Boolean).join(" ")}
                 </span>
               )}
-              {status && <span className="block text-xs font-medium">{status}</span>}
             </span>
           )}
           {spell.description && (
