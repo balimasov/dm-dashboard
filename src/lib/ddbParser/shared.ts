@@ -573,7 +573,18 @@ export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name:
  * fallback bucket, e.g. a base-class feature whose "specific" name is just
  * the class name again) collapses back to the bare category rather than a
  * redundant `"Class (Class)"`.
+ *
+ * `ownName`, when passed, guards a second redundant case: a base class
+ * feature's own action (e.g. Sorcerer's "Innate Sorcery") resolves right
+ * back to the classFeature that grants it — confirmed on a real export,
+ * `isSubClassFeature: false` on both, meaning there genuinely is no more
+ * specific grantor above the class itself to name. Rather than "Class
+ * (Innate Sorcery)" repeating the ability's own name (already the bold
+ * title right above this line), that case collapses to the bare category
+ * too.
  */
-export function formatSource(category: string, specific: string | undefined): string {
-  return specific && specific !== category ? `${category} (${specific})` : category;
+export function formatSource(category: string, specific: string | undefined, ownName?: string): string {
+  if (!specific || specific === category) return category;
+  if (ownName && specific.trim().toLowerCase() === ownName.trim().toLowerCase()) return category;
+  return `${category} (${specific})`;
 }

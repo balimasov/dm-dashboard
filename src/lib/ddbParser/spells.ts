@@ -179,7 +179,7 @@ export function computeSpells(
     const tags: string[] = df.tags ?? [];
     const effect = formatEffect(df);
     const specificSource = entry?.componentId ? componentSourceIndex.get(entry.componentId) : undefined;
-    const resolvedSource = formatSource(source, specificSource?.name);
+    const resolvedSource = formatSource(source, specificSource?.name, df.name);
     const spell: KnownSpell = {
       id: `spell-${spells.length}`,
       name: df.name.trim(),

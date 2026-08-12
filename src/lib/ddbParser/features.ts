@@ -229,7 +229,7 @@ export function computeFeatures(
       // it, regardless of class — the one reliable, data-driven way to tell
       // it apart from a real feature sharing the same type.
       if (action.componentTypeId === 12168134 && !parentInfo) continue;
-      const source = formatSource(actionFallbackSource[group], parentInfo?.name);
+      const source = formatSource(actionFallbackSource[group], parentInfo?.name, action.name);
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       const charges = action.limitedUse ? computeLimitedUseCharges(action.limitedUse, abilities, profBonus) ?? undefined : undefined;
       add(
@@ -272,7 +272,7 @@ export function computeFeatures(
       add(
         df.name,
         shortDescription(df.snippet, df.description),
-        formatSource("Class", isSubclassFeature ? subclassName : className),
+        formatSource("Class", isSubclassFeature ? subclassName : className, df.name),
         "other",
         "class",
         actionChargesById.get(df.id),
@@ -312,7 +312,7 @@ export function computeFeatures(
     for (const opt of data.options?.[group] ?? []) {
       const df = opt.definition ?? {};
       const parentInfo = parentInfoById.get(opt.componentId);
-      const source = formatSource(fallbackSource, parentInfo?.name);
+      const source = formatSource(fallbackSource, parentInfo?.name, df.name);
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
       add(df.name, shortDescription(df.snippet, df.description), source, "other", originType, actionChargesById.get(df.id));
     }

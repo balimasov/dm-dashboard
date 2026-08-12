@@ -342,13 +342,13 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
     expect(c.features.find((f) => f.name === "Spellfire Burst")?.source).toBe("Class (Spellfire Sorcery)");
   });
 
-  test("an action whose componentId resolves back to its own granting feature reads 'Class (Innate Sorcery)', not the bare duplicated name", () => {
+  test("an action whose componentId resolves back to its own granting feature (no more specific grantor exists) collapses to the bare 'Class', not a self-duplicating 'Class (Innate Sorcery)'", () => {
     const c = load("yorun-all-immunities");
-    expect(c.features.find((f) => f.name === "Innate Sorcery")?.source).toBe("Class (Innate Sorcery)");
-    expect(c.features.find((f) => f.name === "Sorcerous Restoration")?.source).toBe("Class (Sorcerous Restoration)");
+    expect(c.features.find((f) => f.name === "Innate Sorcery")?.source).toBe("Class");
+    expect(c.features.find((f) => f.name === "Sorcerous Restoration")?.source).toBe("Class");
   });
 
-  test("a chosen option under a racial lineage reads 'Race (Elven Lineage)'/'Race (Elven Lineage Spells)'", () => {
+  test("a chosen option under a racial lineage reads 'Species (Elven Lineage)'/'Species (Elven Lineage Spells)'", () => {
     const c = load("yorun-all-immunities");
     expect(c.features.find((f) => f.name === "High Elf Lineage")?.source).toBe("Species (Elven Lineage)");
     expect(c.features.find((f) => f.name === "High Elf - Intelligence")?.source).toBe("Species (Elven Lineage Spells)");

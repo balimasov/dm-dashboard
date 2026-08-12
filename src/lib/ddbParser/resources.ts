@@ -11,9 +11,9 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
   // whenever its `componentId` resolves to the specific class feature/
   // racial trait/feat that actually grants it.
   const componentSourceIndex = buildComponentSourceIndex(data);
-  function resolveSource(componentId: number | null | undefined, source: string): string {
+  function resolveSource(componentId: number | null | undefined, source: string, ownName?: string): string {
     const specific = componentId ? componentSourceIndex.get(componentId) : undefined;
-    return formatSource(source, specific?.name);
+    return formatSource(source, specific?.name, ownName);
   }
 
   function fromLimitedUse(
@@ -56,7 +56,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
         `action-${group}`,
         idx,
         shortDescription(action.snippet, action.description),
-        resolveSource(action.componentId, source),
+        resolveSource(action.componentId, source, action.name),
         action.dice
       );
       if (resource) resources.push(resource);
@@ -89,7 +89,7 @@ export function computeResources(data: RawDdbData, abilities: AbilityScores, pro
         `spell-${key}`,
         idx,
         shortDescription(df.snippet, df.description),
-        resolveSource(entry.componentId, source)
+        resolveSource(entry.componentId, source, df.name)
       );
       if (resource) resources.push(resource);
     });

@@ -208,7 +208,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-0",
         "name": "Adrenaline Rush",
-        "source": "Adrenaline Rush",
+        "source": "Species",
         "group": "bonusAction",
         "originType": "species",
         "description": "As a Bonus Action, you can take the Dash action. When you do, you gain 3 Temporary HP. You can use this trait 3 times, and you regain all uses after a Short or Long Rest.",
@@ -219,7 +219,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-1",
         "name": "Relentless Endurance",
-        "source": "Relentless Endurance",
+        "source": "Species",
         "group": "special",
         "originType": "species",
         "description": "Once per Long Rest, when you’re reduced to 0 HP but not killed outright, you can drop to 1 HP instead.",
@@ -1017,7 +1017,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-4",
         "name": "Channel Divinity",
-        "source": "Channel Divinity",
+        "source": "Class",
         "group": "action",
         "originType": "class",
         "description": "You can channel energy directly from the Outer Planes to fuel magical effects. Each time you use this class’s Channel Divinity, you can choose which effect to create. You can use this class’s Channel Divinity 2 times per Long Rest, but can regain one expended use after finishing a Short Rest. If your Channel Divinity requires a saving throw, the DC equals your Paladin spell save DC (DC 14).",
@@ -1028,7 +1028,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-5",
         "name": "Inspiring Smite",
-        "source": "Inspiring Smite",
+        "source": "Class",
         "group": "special",
         "originType": "class",
         "description": "Immediately after you cast Divine Smite, you can expend one use of Channel Divinity and distribute **2d8**+5 Temporary HP to creatures of your choice within 30 ft., including yourself."
@@ -1861,7 +1861,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-0",
         "name": "Innate Sorcery",
-        "source": "Innate Sorcery",
+        "source": "Class",
         "group": "bonusAction",
         "originType": "class",
         "description": "Twice per Long Rest, you can take a Bonus Action to unleash the simmering magic within you for 1 minute.",
@@ -1915,7 +1915,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-6",
         "name": "Sorcerous Restoration",
-        "source": "Sorcerous Restoration",
+        "source": "Class",
         "group": "special",
         "originType": "class",
         "description": "When you finish a Short Rest, you can regain up to 2 Sorcery Points. Once used, you can’t use this feature again until you finish a Long Rest.",
@@ -2588,7 +2588,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-0",
         "name": "Bardic Inspiration",
-        "source": "Bardic Inspiration",
+        "source": "Class",
         "group": "bonusAction",
         "originType": "class",
         "description": "As a Bonus Action, you can inspire another creature within 60 ft. that can see or hear you. That creature gains one of your Bardic Inspiration dice (5). Once within the next hour, when the creature fails a D20 Test, the creature can roll the Bardic Inspiration die and add the number rolled to the total, potentially turning the failure into a success. You can confer your Bardic Inspiration die 5 times per Long Rest.",
@@ -2623,7 +2623,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-11",
         "name": "Lucky",
-        "source": "Lucky",
+        "source": "Feat",
         "group": "action",
         "originType": "feat",
         "description": "You have 3 luck points per long rest. Whenever you make an attack roll, an ability check, or a saving throw (or when an attack roll is made against you), you can spend one to roll an additional d20 and you choose which die to use. You can choose to spend luck points after you roll the die, but before the outcome is determined.",
