@@ -1,4 +1,5 @@
 import { RECOVERY_LABELS, RECOVERY_SHORT_LABELS, RecoveryType } from "@/lib/types";
+import { HintFact } from "./HintFact";
 import { MetaBadge } from "./MetaBadge";
 
 /**
@@ -22,13 +23,13 @@ export function RecoveryBadge({ recovery }: { recovery: RecoveryType }) {
 /**
  * The "can I use this right now" line every trackable-ability hover-hint
  * shows for a pool-kind resource (`AbilityHintPanel`'s `status` prop,
- * `SpellHintPanel`) — a labeled "Recovery" line matching the same "muted
- * label, bold sky value" grammar every other line in these hints already
- * uses (`Duration`, `Components`, `Save DC`). Used to be a bare sentence
- * ("Short Rest recovery · 1/2") with no label of its own and a lighter font
- * weight than its neighbors — the one line in the panel that didn't follow
- * that grammar, which read as bolted on rather than part of the same list.
- * One shared source instead of each caller hand-rolling its own
+ * `SpellHintPanel`) — a labeled "Recovery" line matching the same
+ * `HintFact` grammar every other line in these hints already uses
+ * (`Duration`, `Components`, `Save DC`). Used to be a bare sentence ("Short
+ * Rest recovery · 1/2") with no label of its own and a lighter font weight
+ * than its neighbors — the one line in the panel that didn't follow that
+ * grammar, which read as bolted on rather than part of the same list. One
+ * shared source instead of each caller hand-rolling its own
  * `<span className="text-sky-400">...</span>` (this used to be duplicated
  * byte-for-byte across `CharacterDetailsModal.tsx`, `aiGlossary.tsx` ×2,
  * `ResourceMeter.tsx`, `ResourceCoveragePanel.tsx`,
@@ -37,12 +38,10 @@ export function RecoveryBadge({ recovery }: { recovery: RecoveryType }) {
  */
 export function recoveryStatusLine(recovery: RecoveryType, current?: number, max?: number) {
   return (
-    <span className="block">
-      <span className="text-slate-500">Recovery</span>{" "}
-      <span className="font-semibold text-sky-400">
-        {RECOVERY_LABELS[recovery]}
-        {current !== undefined && max !== undefined ? ` · ${current}/${max}` : ""}
-      </span>
-    </span>
+    <HintFact
+      label="Recovery"
+      value={RECOVERY_LABELS[recovery]}
+      trailing={current !== undefined && max !== undefined ? ` · ${current}/${max}` : undefined}
+    />
   );
 }

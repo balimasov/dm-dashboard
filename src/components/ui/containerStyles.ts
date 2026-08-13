@@ -119,3 +119,18 @@ export const TOOLBAR_SHELL_CLS = "rounded-lg bg-white/[0.035]";
  * stay the same divider if it ever changes.
  */
 export const HINT_PANEL_DIVIDER_CLS = "border-t border-slate-800 pt-1.5";
+
+/**
+ * Flex-wrap row for grouping a few `HintFact` lines on one line when they
+ * fit (e.g. To Hit + Damage, or Save DC + Effect) instead of each getting
+ * its own full-width row — wraps to a new line on its own once the popover
+ * is too narrow. Was duplicated inline in `AttackDisplay.tsx`,
+ * `SpellDisplay.tsx`, and `CreatureAbilitiesPanel.tsx` before being named
+ * here. `gap-y-1.5` matches `space-y-1.5`'s vertical rhythm between every
+ * other line in these panels (and `HINT_PANEL_DIVIDER_CLS`'s own `pt-1.5`)
+ * — a smaller `gap-y-0.5` here once made two wrapped facts (e.g. a
+ * creature's long "Damage ... / Save DC ..." pair) sit visibly closer
+ * together than the line right after them, breaking the panel's otherwise
+ * consistent line-to-line spacing.
+ */
+export const HINT_FACT_ROW_CLS = "flex flex-wrap items-center gap-x-3 gap-y-1.5";

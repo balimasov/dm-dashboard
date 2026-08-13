@@ -4,7 +4,8 @@ import { formatModifier } from "@/lib/format";
 import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
-import { HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
@@ -52,15 +53,9 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
                 .filter(Boolean)
                 .join(" · ")}
             </span>
-            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-              <span>
-                <span className="text-slate-500">To Hit</span>{" "}
-                <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
-              </span>
-              <span>
-                <span className="text-slate-500">Damage</span> <span className="font-semibold text-sky-400">{attack.damage}</span>
-                {attack.damageType && <span> {attack.damageType}</span>}
-              </span>
+            <span className={HINT_FACT_ROW_CLS}>
+              <HintFact label="To Hit" value={formatModifier(attack.attackBonus)} />
+              <HintFact label="Damage" value={attack.damage} trailing={attack.damageType && ` ${attack.damageType}`} />
             </span>
             {!attack.proficient && (
               <span className="block">

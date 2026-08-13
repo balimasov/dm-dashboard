@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { RichText } from "../RichText";
-import { HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
@@ -88,40 +89,27 @@ export function SpellHintPanel({
                 </span>
               )}
               {(hitOrDc || spell.effect) && (
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  {hitOrDc && (
-                    <span>
-                      <span className="text-slate-500">{hitOrDc.label}</span>{" "}
-                      <span className="font-semibold text-sky-400">{hitOrDc.value}</span>
-                    </span>
-                  )}
+                <span className={HINT_FACT_ROW_CLS}>
+                  {hitOrDc && <HintFact label={hitOrDc.label} value={hitOrDc.value} />}
                   {spell.effect && (
-                    <span>
-                      <span className="text-slate-500">Effect</span> <span className="font-semibold text-sky-400">{spell.effect}</span>
-                      {spell.effectType && <span> {spell.effectType}</span>}
-                    </span>
+                    <HintFact label="Effect" value={spell.effect} trailing={spell.effectType && ` ${spell.effectType}`} />
                   )}
                 </span>
               )}
               {status}
               {spell.duration && (
-                <span className="block">
-                  <span className="text-slate-500">Duration</span>{" "}
-                  {isConcentration ? (
-                    <>
-                      <span className="font-semibold text-sky-400">Concentration</span>
-                      {`, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}`}
-                    </>
-                  ) : (
-                    <span className="font-semibold text-sky-400">{spell.duration}</span>
-                  )}
-                </span>
+                <HintFact
+                  label="Duration"
+                  value={isConcentration ? "Concentration" : spell.duration}
+                  trailing={isConcentration ? `, ${spell.duration.slice(CONCENTRATION_PREFIX.length)}` : undefined}
+                />
               )}
               {(spell.components || spell.materialComponent) && (
-                <span className="block">
-                  <span className="text-slate-500">Components</span>{" "}
-                  {[spell.components, spell.materialComponent ? `(${spell.materialComponent})` : undefined].filter(Boolean).join(" ")}
-                </span>
+                <HintFact
+                  label="Components"
+                  tone="text"
+                  value={[spell.components, spell.materialComponent ? `(${spell.materialComponent})` : undefined].filter(Boolean).join(" ")}
+                />
               )}
             </span>
           )}

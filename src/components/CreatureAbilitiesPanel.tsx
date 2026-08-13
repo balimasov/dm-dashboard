@@ -8,7 +8,9 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { HINT_FACT_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { HintFact } from "./ui/HintFact";
 import { MetaBadge } from "./ui/MetaBadge";
 import { MICRO_ITEM_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
@@ -125,18 +127,22 @@ const ABILITY_FULL_NAMES: Record<keyof AbilityScores, string> = {
  * in the same group as its numbers rather than splitting it into its own
  * identity block (previously this trait's type/range sat in block 1 next
  * to the group, the one place on the character *or* creature side where
- * that meta line didn't travel with its numbers). Numbers a DM actually
- * tracks mid-combat (To Hit/Damage/Save DC, dice-based heal/temp-HP/AC
- * amounts) are colored `sky-400`, the same "this is a number" signal
- * `AttackHintPanel`/`SpellHintPanel` already use — previously these were
- * plain white, indistinguishable from a descriptive aside like "Not
- * proficient". `recharge` gets its own labeled line ("Recharge **5-6**")
- * right after the numbers, the same grammar `recoveryStatusLine` gives a
- * spell's charge pool — previously `recharge` only showed as the row's own
- * trailing badge and was invisible in the hint itself. A damage-only
- * attack with no `attackBonus` (a save-based breath weapon) skips the
- * type/range meta line entirely — "Ranged Weapon" means nothing without a
- * to-hit roll to attach it to.
+ * that meta line didn't travel with its numbers). Every "label: value" line
+ * here (To Hit, Damage, Save DC, Recharge, Effect, Casts, Area) is a shared
+ * `HintFact` — the same primitive `AttackHintPanel`/`SpellHintPanel`/
+ * `recoveryStatusLine` build their own fact lines from, so a color/weight
+ * change to that one component reaches every hint in the app at once
+ * instead of drifting per file. `HintFact` defaults to the `sky-400`
+ * "trackable fact" color; nothing here opts into a different tone, so
+ * Casts/Area/Effect read the same accent as To Hit/Damage/Save DC/Recharge
+ * — previously plain white, indistinguishable from a descriptive aside
+ * like "Not proficient". `recharge` gets its own labeled line ("Recharge
+ * **5-6**") right after the numbers, the same `HintFact` grammar
+ * `recoveryStatusLine` gives a spell's charge pool — previously `recharge`
+ * only showed as the row's own trailing badge and was invisible in the
+ * hint itself. A damage-only attack with no `attackBonus` (a save-based
+ * breath weapon) skips the type/range meta line entirely — "Ranged Weapon"
+ * means nothing without a to-hit roll to attach it to.
  *
  * Two fields are editable (via `EditCreatureModal`) but had nowhere to show
  * at all before this — `attack.attackType`/`attack.attackKind` (e.g. "Melee
@@ -144,7 +150,9 @@ const ABILITY_FULL_NAMES: Record<keyof AbilityScores, string> = {
  * spelled out in full ("Dexterity") here, since the row itself only has
  * room for the three-letter abbreviation. Any non-damage `effects`
  * (heal/temp HP/AC bonus/other) get their own line too, same "amount +
- * optional note" shape as the row's own `EffectBadge`.
+ * optional note" shape as the row's own `EffectBadge` — an "other" effect
+ * (a push, a condition) uses its own `label` as the fact's label instead
+ * of a fixed kind name, since there's no fixed vocabulary for it.
  */
 export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
   const attack = trait.attack;
@@ -173,68 +181,38 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
               </span>
             )}
             {showNumbers && (
-              <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              <span className={HINT_FACT_ROW_CLS}>
                 {attack && attack.damage.length > 0 && (
-                  <span>
-                    {attack.attackBonus !== undefined && (
-                      <>
-                        <span className="text-slate-500">To Hit</span>{" "}
-                        <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
-                        {" · "}
-                      </>
-                    )}
-                    <span className="text-slate-500">Damage</span>{" "}
-                    {attack.damage.map((roll, i) => (
-                      <span key={i}>
-                        {i > 0 && <span className="text-slate-500"> + </span>}
-                        <span className="font-semibold text-sky-400">{roll.dice}</span>
-                        {roll.damageType && <span> {roll.damageType}</span>}
-                      </span>
-                    ))}
-                  </span>
+                  <>
+                    {attack.attackBonus !== undefined && <HintFact label="To Hit" value={formatModifier(attack.attackBonus)} />}
+                    <HintFact
+                      label="Damage"
+                      tone="raw"
+                      value={attack.damage.map((roll, i) => (
+                        <span key={i}>
+                          {i > 0 && <span className="text-slate-500"> + </span>}
+                          <span className="font-semibold text-sky-400">{roll.dice}</span>
+                          {roll.damageType && <span> {roll.damageType}</span>}
+                        </span>
+                      ))}
+                    />
+                  </>
                 )}
                 {trait.save && (
-                  <span>
-                    <span className="text-slate-500">Save DC</span> <span className="font-semibold text-sky-400">{trait.save.dc}</span>{" "}
-                    {ABILITY_FULL_NAMES[trait.save.ability]}
-                  </span>
+                  <HintFact label="Save DC" value={trait.save.dc} trailing={` ${ABILITY_FULL_NAMES[trait.save.ability]}`} />
                 )}
               </span>
             )}
-            {trait.recharge && (
-              <span className="block">
-                <span className="text-slate-500">Recharge</span>{" "}
-                <span className="font-semibold text-sky-400">{trait.recharge.replace(/^Recharge\s+/i, "")}</span>
-              </span>
+            {trait.recharge && <HintFact label="Recharge" value={trait.recharge.replace(/^Recharge\s+/i, "")} />}
+            {(trait.effects ?? []).map((effect, i) =>
+              effect.kind === "other" ? (
+                <HintFact key={i} label="Effect" value={effect.label ? `${effect.label} ${effect.amount}` : effect.amount} />
+              ) : (
+                <HintFact key={i} label={EFFECT_KIND_LABELS[effect.kind]} value={effect.amount} trailing={effect.label && ` — ${effect.label}`} />
+              )
             )}
-            {(trait.effects ?? []).map((effect, i) => (
-              <span key={i} className="block">
-                {effect.kind === "other" ? (
-                  <>
-                    <span className="text-slate-500">Effect</span>{" "}
-                    <span className="font-semibold text-slate-100">
-                      {effect.label ? `${effect.label} ${effect.amount}` : effect.amount}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-slate-500">{EFFECT_KIND_LABELS[effect.kind]}</span>{" "}
-                    <span className="font-semibold text-sky-400">{effect.amount}</span>
-                    {effect.label && ` — ${effect.label}`}
-                  </>
-                )}
-              </span>
-            ))}
-            {trait.spell && (
-              <span className="block">
-                <span className="text-slate-500">Casts</span> <span className="font-semibold text-slate-100">{trait.spell}</span>
-              </span>
-            )}
-            {trait.aoe && (
-              <span className="block">
-                <span className="text-slate-500">Area</span> <span className="font-semibold text-slate-100">{formatAoe(trait.aoe)}</span>
-              </span>
-            )}
+            {trait.spell && <HintFact label="Casts" value={trait.spell} />}
+            {trait.aoe && <HintFact label="Area" value={formatAoe(trait.aoe)} />}
           </span>
         )
       }
