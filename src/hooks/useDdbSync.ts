@@ -19,9 +19,19 @@ export function useDdbSync(character: Character, onUpdate?: (id: string, updates
     setError(null);
     try {
       const synced = await fetchAndParseDdbCharacter(character);
-      await onUpdate(character.id, synced);
+      // `lastSyncError` cleared alongside every other freshly-synced field —
+      // a successful sync means whatever failed last time doesn't apply
+      // anymore, persisted (not just this component's own `error` state
+      // below) so the card's own failure indicator clears too.
+      await onUpdate(character.id, { ...synced, lastSyncError: "" });
     } catch (err) {
-      setError(`Sync failed: ${err instanceof Error ? err.message : "Unknown error."}`);
+      const message = `Sync failed: ${err instanceof Error ? err.message : "Unknown error."}`;
+      setError(message);
+      // Persisted separately from the `throw`-free happy path above — this
+      // is the one write that survives closing the card or reloading the
+      // page, unlike `error` above which resets the moment this hook
+      // remounts. See `Character.lastSyncError`'s own doc comment.
+      await onUpdate(character.id, { lastSyncError: message });
     } finally {
       setSyncing(false);
     }

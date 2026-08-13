@@ -314,6 +314,7 @@ export const characterUpdateSchema = z
     dndBeyondUrl: z.string().optional(),
     synced: z.boolean().optional(),
     lastSyncedAt: z.string().optional(),
+    lastSyncError: z.string().optional(),
     hidden: z.boolean().optional(),
   })
   .partial();

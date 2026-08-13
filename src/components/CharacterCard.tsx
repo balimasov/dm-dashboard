@@ -35,6 +35,7 @@ import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
+import { SyncFailedPill } from "./ui/SyncFailedPill";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 import { NotesSection } from "./ui/NotesSection";
@@ -143,6 +144,9 @@ export function CharacterCard({
           onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
         />
         <AskAiPill onClick={() => setAiOpen(true)} />
+        {c.lastSyncError && (
+          <SyncFailedPill error={c.lastSyncError} onRetry={onUpdate ? sync : undefined} syncing={syncing} />
+        )}
         <div className="ml-auto">
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}

@@ -554,8 +554,19 @@ export function DashboardClient({
 
     const results = await Promise.allSettled(
       linkedCharacters.map(async (character) => {
-        const synced = await fetchAndParseDdbCharacter(character);
-        await updateCharacter(character.id, synced);
+        try {
+          const synced = await fetchAndParseDdbCharacter(character);
+          await updateCharacter(character.id, { ...synced, lastSyncError: "" });
+        } catch (err) {
+          // Persisted per-character (not just the one-line toast below,
+          // which is gone the moment it's dismissed) — same
+          // `lastSyncError` field an individual card's own "Sync" click
+          // writes, so a bulk failure here shows up exactly the same way
+          // on that character's card as a one-off failure would.
+          const message = err instanceof Error ? err.message : "Unknown error.";
+          await updateCharacter(character.id, { lastSyncError: message });
+          throw err;
+        }
       })
     );
 

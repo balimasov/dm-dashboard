@@ -30,7 +30,24 @@ export function CharacterHeader({
   const c = character;
   const content = (
     <>
-      <CharacterAvatar character={c} size="md" />
+      <div className="relative shrink-0">
+        <CharacterAvatar character={c} size="md" />
+        {/* Same "1 available, until fully spent" logic doesn't apply here —
+            this is boolean, not a pool — but the same "unmissable at a
+            glance across a full roster" reasoning as the status rail's own
+            badges is why this lives on the avatar itself rather than only
+            in the toolbar pill below: a DM scrolling a long party list
+            catches this corner before reading any card's actual text. */}
+        {c.lastSyncError && (
+          <span
+            aria-hidden="true"
+            title="Last sync failed"
+            className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-slate-950 bg-red-600 text-[9px] font-bold leading-none text-white"
+          >
+            !
+          </span>
+        )}
+      </div>
       <div className="min-w-0 flex-1">
         <h2 title={c.name} className={CARD_TITLE_CLS}>
           {c.name}

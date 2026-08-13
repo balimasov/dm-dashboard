@@ -90,12 +90,19 @@ export function CampaignRosterEditor({
 
     try {
       const synced = await fetchAndParseDdbCharacter(character);
-      await updateCharacter(character.id, synced);
+      await updateCharacter(character.id, { ...synced, lastSyncError: "" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown sync error.";
       setSyncError(
         `Failed to sync "${character.name}": ${message} You can fill in the data manually on the edit page.`
       );
+      // Persisted (not just this modal's own transient `syncError` above,
+      // gone the moment it's closed) — the freshly-added character already
+      // has `synced: false` from `createBlankCharacter`, which covers "never
+      // synced" on its own, but this is what makes the failure itself (the
+      // *why*) survive past this modal closing, same field a later failed
+      // re-sync attempt writes.
+      await updateCharacter(character.id, { lastSyncError: message });
     }
   }
 

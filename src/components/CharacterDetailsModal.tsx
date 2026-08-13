@@ -63,6 +63,7 @@ import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
+import { SyncFailedPill } from "./ui/SyncFailedPill";
 import { SubHeading } from "./ui/SubHeading";
 import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
@@ -319,6 +320,9 @@ export function CharacterDetailsModal({
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
           />
           <AskAiPill onClick={() => setAiOpen(true)} />
+          {c.lastSyncError && (
+            <SyncFailedPill error={c.lastSyncError} onRetry={onUpdate ? sync : undefined} syncing={syncing} />
+          )}
           <div className="ml-auto">
             <EntityActionsMenu
               onEdit={() => setEditOpen(true)}

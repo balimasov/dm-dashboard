@@ -248,6 +248,20 @@ export interface Character {
   synced?: boolean;
   lastSyncedAt?: string;
   /**
+   * The message from the most recent FAILED sync attempt (individual "Sync",
+   * "Sync All", or the automatic first sync right after adding a character
+   * by URL) — `undefined` again the moment any later attempt succeeds.
+   * Deliberately separate from `synced`/`lastSyncedAt`, which only ever
+   * describe the last *successful* sync: a character that synced fine
+   * yesterday and just failed a retry today still has `synced: true` and a
+   * recent `lastSyncedAt` (correctly — that's still good, if stale, data),
+   * but with nothing to say *this* attempt didn't go through. This is that
+   * signal, persisted so it survives closing the card/reloading the page
+   * instead of vanishing the moment the component that triggered the sync
+   * unmounts.
+   */
+  lastSyncError?: string;
+  /**
    * Toggled from the roster list in Settings — hides this character from the
    * dashboard's Party row (and from `RemindersPanel`) without removing it
    * from the campaign, for a character not in play this session but not
