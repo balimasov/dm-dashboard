@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTooltip } from "@/components/InfoTooltip";
 import { ReminderGroup } from "@/lib/reminders";
 import { MoreMenu } from "./MoreMenu";
 import { ReminderRow } from "./ReminderRow";
@@ -36,11 +37,23 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
             e.stopPropagation();
             toggle();
           }}
-          title={label}
           className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
         >
-          <span aria-hidden="true">🔥</span>
-          {group.entries.length}
+          {/* `disableTap` — this button already has its own `onClick`
+              (toggling the reminders popover); without it, a tap on a touch
+              screen would fight between opening this hint and opening the
+              popover instead, same reasoning as every other `InfoTooltip`
+              nested inside its own clickable parent. */}
+          <InfoTooltip
+            hoverOnly
+            disableTap
+            panel={<p>{label} — abilities and traits you flagged to remember mid-combat.</p>}
+          >
+            <span className="flex items-center gap-1">
+              <span aria-hidden="true">🔥</span>
+              {group.entries.length}
+            </span>
+          </InfoTooltip>
         </button>
       )}
     >

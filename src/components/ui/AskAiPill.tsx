@@ -1,5 +1,7 @@
 "use client";
 
+import { InfoTooltip } from "@/components/InfoTooltip";
+
 /**
  * Explicit "✨ Ask AI" pill on `CharacterCard`/`CreatureCard`'s sync+actions
  * row — same box model as `ReminderBadge`'s "🔥 N" pill (rounded-full,
@@ -15,11 +17,23 @@ export function AskAiPill({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      title="Ask AI"
       className="flex shrink-0 items-center gap-1 rounded-full border border-sky-600/35 bg-sky-600/10 px-2 py-0.5 text-xs font-semibold text-sky-300 hover:bg-sky-600/20"
     >
-      <span aria-hidden="true">✨</span>
-      Ask AI
+      {/* `disableTap` — this button already has its own `onClick` (opening
+          `AiAssistantModal`); without it, a tap on a touch screen would
+          fight between opening this hint and opening the modal instead,
+          same reasoning as every other `InfoTooltip` nested inside its own
+          clickable parent (e.g. `StatusRail`'s `ConcentrationToggleRow`). */}
+      <InfoTooltip
+        hoverOnly
+        disableTap
+        panel={<p>Ask AI — quick rules answers or a suggested move, right from this card.</p>}
+      >
+        <span className="flex items-center gap-1">
+          <span aria-hidden="true">✨</span>
+          Ask AI
+        </span>
+      </InfoTooltip>
     </button>
   );
 }
