@@ -189,8 +189,20 @@ export function computeArmorClass(data: RawDdbData, abilities: AbilityScores, mo
   );
   const equippedShields = inventory.filter((i) => i.equipped && i.definition?.armorTypeId === 4);
 
+  // Two distinct flat-AC-bonus subtypes, not one: plain `"armor-class"` for
+  // an unconditional bonus, and `"armored-armor-class"` for one that only
+  // applies while wearing armor — the Fighting Style: Defense feature (+1
+  // AC in armor) uses the latter, confirmed on a real level-20 Fighter
+  // export where omitting it undercounted AC by exactly that 1 (16 instead
+  // of D&D Beyond's own 17). `isGranted` is the same pre-resolved
+  // "does this conditional bonus currently apply" signal `computeSpeed`'s
+  // Fast Movement and `computeUnarmoredAbilityBonus` already rely on, not
+  // the unreliable "was this choice picked" flag skills/languages/tools
+  // have to work around — no extra armor-worn check needed here.
   const flatBonus = mods
-    .filter((m) => m.type === "bonus" && m.subType === "armor-class" && m.isGranted)
+    .filter(
+      (m) => m.type === "bonus" && (m.subType === "armor-class" || m.subType === "armored-armor-class") && m.isGranted
+    )
     .reduce((sum, m) => sum + (m.value ?? 0), 0);
   const shieldBonus = equippedShields.reduce(
     (sum: number, i) => sum + (i.definition?.armorClass ?? 0),

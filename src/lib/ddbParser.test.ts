@@ -18,6 +18,13 @@ function load(name: string) {
 // correct values (cross-checked against the character's real D&D Beyond
 // sheet at the time), not just "whatever the code currently outputs".
 
+describe("Armor Class", () => {
+  test("Fighter (Eldritch Knight 20) — Fighting Style: Defense's +1 AC (armored-armor-class, not the plain armor-class subtype) is included", () => {
+    const c = load("fighter-eldritch-knight-20");
+    expect(c.combat.ac).toBe(17); // 16 (Chain Mail) + 1 (Defense) — matches this character's real D&D Beyond sheet.
+  });
+});
+
 describe("half-proficiency (Jack of All Trades) passive senses", () => {
   test("Esmeralda (Bard 5) — blanket half-proficiency grant raises all three passives by +1", () => {
     const c = load("esmeralda-bard");
