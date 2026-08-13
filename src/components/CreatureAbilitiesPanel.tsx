@@ -10,7 +10,7 @@ import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { MetaBadge } from "./ui/MetaBadge";
-import { MICRO_ITEM_LABEL_CLS } from "./ui/typography";
+import { MICRO_ITEM_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
 import { SectionDivider } from "./ui/SectionDivider";
 import { StatBox } from "./ui/StatBox";
@@ -115,76 +115,117 @@ const ABILITY_FULL_NAMES: Record<keyof AbilityScores, string> = {
  * flagged trait in the Reminders panel/FAB — those used to build their own,
  * much thinner `AbilityHintPanel` call with no attack/save/effects data at
  * all, so the same trait's hint read differently depending on where a DM
- * saw it. The group (`Action`/`Bonus Action`/.../`Trait`) always leads the
- * meta lines now too — previously only `creatureReminders` showed it (since
- * the Features tab already had a group section header to lean on, Reminders
- * doesn't), so a trait's hint was missing its own type in the one place a
- * DM has no other cue for it. Two fields are editable (via
- * `EditCreatureModal`) but had nowhere to show at all before this —
- * `attack.attackType`/`attack.attackKind` (e.g. "Melee Weapon"/"Ranged
- * Spell") and `attack.range` — both surface here as a meta line, same
- * "Melee Weapon · 5 ft." convention `AttackHintPanel` uses.
- * `save.ability` also gets spelled out in full ("Wisdom saving throw")
- * here, since the row itself only has room for the three-letter
- * abbreviation. Any non-damage `effects` (heal/temp HP/AC bonus/other) get
- * their own line too, same "amount + optional note" shape as the row's own
- * `EffectBadge`.
+ * saw it.
+ *
+ * Block 1 (`metaLines`) is just the trait's group (`Action`/`Bonus
+ * Action`/.../`Trait`) — the same "identity" role a spell's `source` plays.
+ * Everything else — type/range, the to-hit/damage/save-DC numbers,
+ * recharge, effects, spell, area — lives together in block 2 (`status`),
+ * matching how `AttackHintPanel` keeps a weapon's own type/range meta line
+ * in the same group as its numbers rather than splitting it into its own
+ * identity block (previously this trait's type/range sat in block 1 next
+ * to the group, the one place on the character *or* creature side where
+ * that meta line didn't travel with its numbers). Numbers a DM actually
+ * tracks mid-combat (To Hit/Damage/Save DC, dice-based heal/temp-HP/AC
+ * amounts) are colored `sky-400`, the same "this is a number" signal
+ * `AttackHintPanel`/`SpellHintPanel` already use — previously these were
+ * plain white, indistinguishable from a descriptive aside like "Not
+ * proficient". `recharge` gets its own labeled line ("Recharge **5-6**")
+ * right after the numbers, the same grammar `recoveryStatusLine` gives a
+ * spell's charge pool — previously `recharge` only showed as the row's own
+ * trailing badge and was invisible in the hint itself. A damage-only
+ * attack with no `attackBonus` (a save-based breath weapon) skips the
+ * type/range meta line entirely — "Ranged Weapon" means nothing without a
+ * to-hit roll to attach it to.
+ *
+ * Two fields are editable (via `EditCreatureModal`) but had nowhere to show
+ * at all before this — `attack.attackType`/`attack.attackKind` (e.g. "Melee
+ * Weapon"/"Ranged Spell") and `attack.range`. `save.ability` also gets
+ * spelled out in full ("Dexterity") here, since the row itself only has
+ * room for the three-letter abbreviation. Any non-damage `effects`
+ * (heal/temp HP/AC bonus/other) get their own line too, same "amount +
+ * optional note" shape as the row's own `EffectBadge`.
  */
 export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
-  const metaLines: Array<string | undefined> = [GROUP_LABELS[trait.group ?? "trait"]];
-  if (trait.attack) {
-    const range = formatRange(trait.attack.range);
-    const type = trait.attack.attackType === "melee" ? "Melee" : "Ranged";
-    const kind = trait.attack.attackKind === "spell" ? "Spell" : "Weapon";
-    metaLines.push(`${type} ${kind}${range ? ` · ${range}` : ""}`);
-  }
-  const hasStatus = trait.attack || trait.save || trait.spell || trait.aoe || (trait.effects ?? []).length > 0;
+  const attack = trait.attack;
+  // A damage-only attack (no `attackBonus` — a save-based breath weapon) has
+  // no real "type" to report: Melee/Ranged Weapon/Spell describes a to-hit
+  // roll that doesn't exist here, so the meta line would just mislead.
+  const showAttackMeta = Boolean(attack) && attack!.attackBonus !== undefined;
+  const showNumbers = Boolean(attack && attack.damage.length > 0) || Boolean(trait.save);
+  const hasStatus =
+    showAttackMeta || showNumbers || Boolean(trait.recharge) || Boolean(trait.spell) || Boolean(trait.aoe) || (trait.effects ?? []).length > 0;
   return (
     <AbilityHintPanel
       name={trait.name}
-      metaLines={metaLines}
+      metaLines={[GROUP_LABELS[trait.group ?? "trait"]]}
       status={
         hasStatus && (
-          <span className="block space-y-0.5">
-            {trait.attack && trait.attack.damage.length > 0 && (
-              <span className="block">
-                {trait.attack.attackBonus !== undefined && (
-                  <>
-                    <span className="text-slate-500">To Hit</span>{" "}
-                    <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
-                    {" · "}
-                  </>
-                )}
-                <span className="text-slate-500">Damage</span>{" "}
-                <span className="font-semibold text-slate-100">
-                  {trait.attack.damage
-                    .map((roll) => (roll.damageType ? `${roll.dice} ${roll.damageType}` : roll.dice))
-                    .join(" + ")}
-                </span>
+          <span className="block space-y-1.5">
+            {showAttackMeta && (
+              <span className={`block ${MICRO_LABEL_STRONG_CLS}`}>
+                {[
+                  `${attack!.attackType === "melee" ? "Melee" : "Ranged"} ${attack!.attackKind === "spell" ? "Spell" : "Weapon"}`,
+                  formatRange(attack!.range),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             )}
-            {trait.save && (
+            {showNumbers && (
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                {attack && attack.damage.length > 0 && (
+                  <span>
+                    {attack.attackBonus !== undefined && (
+                      <>
+                        <span className="text-slate-500">To Hit</span>{" "}
+                        <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
+                        {" · "}
+                      </>
+                    )}
+                    <span className="text-slate-500">Damage</span>{" "}
+                    <span className="font-semibold text-sky-400">
+                      {attack.damage.map((roll) => (roll.damageType ? `${roll.dice} ${roll.damageType}` : roll.dice)).join(" + ")}
+                    </span>
+                  </span>
+                )}
+                {trait.save && (
+                  <span>
+                    <span className="text-slate-500">Save DC</span> <span className="font-semibold text-sky-400">{trait.save.dc}</span>{" "}
+                    {ABILITY_FULL_NAMES[trait.save.ability]}
+                  </span>
+                )}
+              </span>
+            )}
+            {trait.recharge && (
               <span className="block">
-                <span className="font-semibold text-slate-100">DC {trait.save.dc}</span>{" "}
-                {ABILITY_FULL_NAMES[trait.save.ability]} saving throw
+                <span className="text-slate-500">Recharge</span>{" "}
+                <span className="font-semibold text-sky-400">{trait.recharge.replace(/^Recharge\s+/i, "")}</span>
               </span>
             )}
             {(trait.effects ?? []).map((effect, i) => (
               <span key={i} className="block">
-                <span className="font-semibold text-slate-100">
-                  {effect.kind === "other" ? effect.label || "Effect" : EFFECT_KIND_LABELS[effect.kind]} {effect.amount}
-                </span>
-                {effect.kind !== "other" && effect.label && ` — ${effect.label}`}
+                {effect.kind === "other" ? (
+                  <span className="font-semibold text-slate-100">
+                    {effect.label || "Effect"} {effect.amount}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-slate-500">{EFFECT_KIND_LABELS[effect.kind]}</span>{" "}
+                    <span className="font-semibold text-sky-400">{effect.amount}</span>
+                    {effect.label && ` — ${effect.label}`}
+                  </>
+                )}
               </span>
             ))}
             {trait.spell && (
               <span className="block">
-                <span className="font-semibold text-slate-100">Casts:</span> {trait.spell}
+                <span className="text-slate-500">Casts</span> <span className="font-semibold text-slate-100">{trait.spell}</span>
               </span>
             )}
             {trait.aoe && (
               <span className="block">
-                <span className="font-semibold text-slate-100">Area:</span> {formatAoe(trait.aoe)}
+                <span className="text-slate-500">Area</span> <span className="font-semibold text-slate-100">{formatAoe(trait.aoe)}</span>
               </span>
             )}
           </span>
