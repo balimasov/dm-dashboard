@@ -94,6 +94,28 @@ export function computeSavingThrowProficiencies(mods: RawDdbModifier[]): Array<k
   );
 }
 
+/**
+ * A blanket bonus to every saving throw, regardless of proficiency — a
+ * Paladin's Aura of Protection ("you and your allies... gain a bonus to
+ * saving throws equal to your Charisma modifier, minimum bonus of +1") is
+ * modeled as `type: "bonus", subType: "saving-throws"` (no ability prefix,
+ * unlike the per-ability `SAVE_SUBTYPE` proficiency keys above) with
+ * `statId` naming Charisma and no flat `value` — confirmed on a real
+ * level-20 Paladin export where omitting this undercounted all six of her
+ * saves by the same amount (her own Charisma modifier). The `min:1` floor
+ * is this feature's own specific RAW wording, not a general modifier-shape
+ * rule, but it's the only known real source of this exact modifier shape.
+ */
+export function computeSavingThrowBonus(mods: RawDdbModifier[], abilities: AbilityScores): number {
+  return mods
+    .filter((m) => m.type === "bonus" && m.subType === "saving-throws" && m.isGranted)
+    .reduce((sum, m) => {
+      if (typeof m.value === "number") return sum + m.value;
+      const ability = m.statId ? ABILITY_BY_ID[m.statId] : undefined;
+      return ability ? sum + Math.max(1, abilityModifier(abilities[ability])) : sum;
+    }, 0);
+}
+
 /** Equipped armor/shields expose `stealthCheck: 2` when they impose disadvantage on Stealth (1 = normal). */
 export function hasArmorStealthDisadvantage(data: RawDdbData): boolean {
   return (data.inventory ?? []).some((i) => i.equipped && i.definition?.stealthCheck === 2);

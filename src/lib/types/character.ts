@@ -207,6 +207,8 @@ export interface Character {
   /** Non-spell weapon attacks (see `Attack`'s own doc comment for scope) — shown on the character card's "Combat" tab. */
   attacks: Attack[];
   savingThrowProficiencies: Array<keyof AbilityScores>;
+  /** A flat bonus applying to every saving throw regardless of proficiency (e.g. a Paladin's Aura of Protection, Charisma-modifier-based) — see `characterMath.ts`'s `savingThrowBonus`. */
+  extraSavingThrowBonus?: number;
   skillProficiencies: SkillProficiency[];
   resistances: string[];
   immunities: string[];

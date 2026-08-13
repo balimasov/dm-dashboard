@@ -3,6 +3,7 @@ import { abilityModifier, collectModifiers } from "./ddbParser/shared";
 import { RawDdbResponse } from "./ddbParser/rawTypes";
 import {
   computeAbilityScores,
+  computeSavingThrowBonus,
   computeSavingThrowProficiencies,
   computeSkillProficiencies,
   computePassiveSkill,
@@ -66,6 +67,7 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
   const intMod = abilityModifier(abilities.int);
   const { level, className, subclass } = computeClassSummary(data);
   const profBonus = proficiencyBonus(level);
+  const extraSavingThrowBonus = computeSavingThrowBonus(mods, abilities);
   const { hp, maxHp, tempHp } = computeHp(data, mods, conMod, level);
   const { conditions, exhaustion } = computeConditionsAndExhaustion(data);
   const speed = computeSpeed(data, mods);
@@ -116,6 +118,7 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
     features: computeFeatures(data, resources, abilities, profBonus, level, speed),
     attacks: computeAttacks(data, abilities, profBonus, mods),
     savingThrowProficiencies: computeSavingThrowProficiencies(mods),
+    ...(extraSavingThrowBonus ? { extraSavingThrowBonus } : {}),
     skillProficiencies: computeSkillProficiencies(mods, hasArmorStealthDisadvantage(data), abilities),
     ...computeDamageModifiers(mods, data.customDefenseAdjustments),
     advantages: computeAdvantages(mods),

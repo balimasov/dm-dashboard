@@ -297,6 +297,7 @@ export const characterUpdateSchema = z
     features: z.array(featureSchema),
     attacks: z.array(attackSchema),
     savingThrowProficiencies: z.array(z.enum(["str", "dex", "con", "int", "wis", "cha"])),
+    extraSavingThrowBonus: z.number().optional(),
     skillProficiencies: z.array(skillProficiencySchema),
     resistances: z.array(z.string()),
     immunities: z.array(z.string()),

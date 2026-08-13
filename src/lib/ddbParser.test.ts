@@ -4,6 +4,7 @@ import path from "node:path";
 import { parseDdbCharacter } from "./ddbParser";
 import { Character } from "./types";
 import { formatModifier } from "./format";
+import { savingThrowBonus } from "./characterMath";
 
 const FIXTURES_DIR = path.join(__dirname, "__fixtures__");
 const blank = { id: "x", campaignId: "x", name: "" } as unknown as Character;
@@ -22,6 +23,21 @@ describe("Armor Class", () => {
   test("Fighter (Eldritch Knight 20) — Fighting Style: Defense's +1 AC (armored-armor-class, not the plain armor-class subtype) is included", () => {
     const c = load("fighter-eldritch-knight-20");
     expect(c.combat.ac).toBe(17); // 16 (Chain Mail) + 1 (Defense) — matches this character's real D&D Beyond sheet.
+  });
+});
+
+describe("Saving Throws", () => {
+  test("Paladin (Oath of Vengeance 20) — Aura of Protection (blanket bonus = Charisma modifier) is added to all six saves, not just the two she's proficient in", () => {
+    const c = load("paladin-oath-of-vengeance-20");
+    // Real D&D Beyond sheet: STR +5, DEX +3, CON +4, INT +1, WIS +9, CHA +10 —
+    // each exactly 2 (her Charisma modifier) above the plain ability-mod/
+    // proficiency total, confirming the aura applies uniformly to every save.
+    expect(savingThrowBonus(c, "str")).toBe(5);
+    expect(savingThrowBonus(c, "dex")).toBe(3);
+    expect(savingThrowBonus(c, "con")).toBe(4);
+    expect(savingThrowBonus(c, "int")).toBe(1);
+    expect(savingThrowBonus(c, "wis")).toBe(9);
+    expect(savingThrowBonus(c, "cha")).toBe(10);
   });
 });
 
@@ -171,6 +187,13 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       weaponType: "Quarterstaff",
       rarity: "Rare",
     });
+  });
+
+  test("Paladin (Oath of Vengeance 20, Str +3) — the Thrown Weapon Fighting style's +2 damage lands on the Javelin (has the Thrown property) but not the Longsword or Sickle (don't), matching D&D Beyond's own Actions tab (Javelin 1d6+5, Longsword 1d8+3, Sickle 1d4+3)", () => {
+    const c = load("paladin-oath-of-vengeance-20");
+    expect(c.attacks.find((a) => a.name === "Javelin")).toMatchObject({ attackBonus: 9, damage: "1d6 +5" });
+    expect(c.attacks.find((a) => a.name === "Longsword")).toMatchObject({ attackBonus: 9, damage: "1d8 +3" });
+    expect(c.attacks.find((a) => a.name === "Sickle")).toMatchObject({ attackBonus: 9, damage: "1d4 +3" });
   });
 
   test("Monk (Warrior of the Open Hand 20, unarmored, Dex +6) — Martial Arts' Dexterous Attacks + the level-20 1d12 Martial Arts die apply to every equipped Monk weapon (Simple Melee Club/Dagger/Spear), not just the ones that also happen to have Finesse, matching D&D Beyond's own Actions tab (all four at +12, 1d12+6)", () => {

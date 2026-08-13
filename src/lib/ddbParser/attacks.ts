@@ -219,6 +219,18 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
   const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus)];
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
+  // The Thrown Weapon Fighting style ("when you hit with a ranged attack
+  // roll using a weapon that has the Thrown property, you gain a +2 bonus
+  // to the damage roll") is modeled as a flat `type: "damage", subType:
+  // "thrown-weapon-attacks"` modifier — confirmed on a real level-20
+  // Paladin export whose Javelin (Thrown) undercounted damage by exactly
+  // this +2 while every non-Thrown weapon's damage already matched. This
+  // app shows one row per weapon rather than separate melee/thrown attack
+  // modes, so it's applied whenever the weapon has Thrown, matching D&D
+  // Beyond's own single-row display for the same weapon.
+  const thrownWeaponDamageBonus = mods
+    .filter((m) => m.type === "damage" && m.subType === "thrown-weapon-attacks" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
 
   for (const item of (data.inventory ?? []) as RawDdbAny[]) {
     const df = item.definition ?? {};
@@ -273,7 +285,7 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
 
     const proficient = isProficientWithWeapon(weapon.type || weapon.name, weapon.categoryId, profSubtypes);
     const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus;
-    const damageBonus = abilityMod + magicBonus;
+    const damageBonus = abilityMod + magicBonus + (isThrown ? thrownWeaponDamageBonus : 0);
     // The RAW wording ("in place of the normal damage") lets the die roll
     // the Martial Arts die *or* the weapon's own — whichever is bigger —
     // rather than unconditionally overriding it, matching the same

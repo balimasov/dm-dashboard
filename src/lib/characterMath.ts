@@ -10,12 +10,11 @@ export function proficiencyBonus(level: number): number {
   return 2 + Math.floor((Math.max(level, 1) - 1) / 4);
 }
 
-/** Ability-mod + proficiency bonus if proficient in that save, else the plain ability mod. */
+/** Ability-mod + proficiency bonus if proficient in that save, else the plain ability mod — plus `extraSavingThrowBonus` (e.g. a Paladin's Aura of Protection), which applies to every save regardless of proficiency. */
 export function savingThrowBonus(character: Character, ability: keyof AbilityScores): number {
   const mod = abilityModifier(character.stats[ability]);
-  return character.savingThrowProficiencies.includes(ability)
-    ? mod + proficiencyBonus(character.level)
-    : mod;
+  const base = character.savingThrowProficiencies.includes(ability) ? mod + proficiencyBonus(character.level) : mod;
+  return base + (character.extraSavingThrowBonus ?? 0);
 }
 
 /** Ability-mod + proficiency bonus (doubled for expertise) — plain ability mod if not actually proficient. */
