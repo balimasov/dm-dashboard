@@ -50,7 +50,7 @@ export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
                 than the label. `align-middle` on the bare icon plus
                 `InfoTooltip`'s own `inline-block` trigger both baseline-align
                 against `e.value` the normal, reliable way instead. */}
-            {Icon && <Icon className="mr-1 inline-block h-3.5 w-3.5 align-middle text-slate-500" />}
+            {Icon && <Icon className="mr-1 inline-block h-4 w-4 align-middle text-slate-500" />}
             <InfoTooltip inline panel={e.panel}>
               <span className="text-slate-500">{e.label}:</span>
             </InfoTooltip>{" "}

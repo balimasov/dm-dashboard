@@ -27,7 +27,7 @@ export function SenseEntries({ senses }: { senses: Array<{ name: string; range: 
         const nameLabel = <span className="text-slate-500">{s.name}:</span>;
         return (
           <span key={s.name} className="flex items-center gap-1">
-            {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            {Icon && <Icon className="h-4 w-4 shrink-0 text-slate-500" />}
             {info ? <InfoTooltip panel={<p>{info}</p>}>{nameLabel}</InfoTooltip> : nameLabel}
             <span>{s.range} ft</span>
           </span>
