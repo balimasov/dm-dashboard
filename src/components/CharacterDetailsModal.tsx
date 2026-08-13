@@ -22,6 +22,7 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
 import { characterReminders } from "@/lib/reminders";
+import { characterSyncIssue } from "@/lib/sync";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterHeader } from "./CharacterHeader";
 import { EditCharacterModal } from "./EditCharacterModal";
@@ -63,14 +64,13 @@ import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
-import { SyncFailedPill } from "./ui/SyncFailedPill";
+import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SubHeading } from "./ui/SubHeading";
 import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
-import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
@@ -207,7 +207,8 @@ export function CharacterDetailsModal({
   onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const c = character;
-  const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
+  const { syncing, sync } = useDdbSync(c, onUpdate);
+  const syncIssue = characterSyncIssue(c);
   const [editOpen, setEditOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 
@@ -301,13 +302,10 @@ export function CharacterDetailsModal({
       }`}
     >
         {/* D&D Beyond link lives inline on the header's "Lvl N" line now (see
-            `CharacterHeader`) — only the "not synced"/error banners still
-            need space here, and only when there's actually one to show (see
-            `CharacterCard`'s own comment on why this is conditionally
-            mounted rather than always-there-but-usually-empty). */}
-        {c.dndBeyondUrl && (!c.synced || syncError) && (
-          <DdbSyncStatus dndBeyondUrl={c.dndBeyondUrl} synced={c.synced} lastSyncedAt={c.lastSyncedAt} syncing={syncing} error={syncError} showLink={false} />
-        )}
+            `CharacterHeader`), and any sync problem shows as the toolbar's
+            own `SyncIssuePill` below plus the header's avatar-corner dot —
+            no separate banner needed here anymore (see `CharacterCard`'s own
+            comment on the redundant amber banner this replaced). */}
 
         {/* Reminder/AI/kebab — same bordered toolbar as the compact card's
             own row (`CharacterCard`), not a bare flex row — this modal is a
@@ -320,8 +318,13 @@ export function CharacterDetailsModal({
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
           />
           <AskAiPill onClick={() => setAiOpen(true)} />
-          {c.lastSyncError && (
-            <SyncFailedPill error={c.lastSyncError} onRetry={onUpdate ? sync : undefined} syncing={syncing} />
+          {syncIssue && (
+            <SyncIssuePill
+              label={syncIssue.label}
+              message={syncIssue.message}
+              onRetry={onUpdate ? sync : undefined}
+              syncing={syncing}
+            />
           )}
           <div className="ml-auto">
             <EntityActionsMenu

@@ -1,5 +1,6 @@
 import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
+import { characterSyncIssue } from "@/lib/sync";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
 import { CARD_META_CLS, CARD_SUBTITLE_CLS, CARD_TITLE_CLS } from "@/components/ui/typography";
 
@@ -28,20 +29,22 @@ export function CharacterHeader({
   dragHandleProps?: Record<string, unknown>;
 }) {
   const c = character;
+  const syncIssue = characterSyncIssue(c);
   const content = (
     <>
       <div className="relative shrink-0">
         <CharacterAvatar character={c} size="md" />
-        {/* Same "1 available, until fully spent" logic doesn't apply here —
-            this is boolean, not a pool — but the same "unmissable at a
-            glance across a full roster" reasoning as the status rail's own
-            badges is why this lives on the avatar itself rather than only
-            in the toolbar pill below: a DM scrolling a long party list
-            catches this corner before reading any card's actual text. */}
-        {c.lastSyncError && (
+        {/* Same "unmissable at a glance across a full roster" reasoning as
+            the status rail's own badges is why this lives on the avatar
+            itself rather than only in the toolbar pill below: a DM
+            scrolling a long party list catches this corner before reading
+            any card's actual text. `characterSyncIssue` is the one place
+            deciding "sync failed" vs. "never synced" — this dot doesn't
+            care which, just that there's *something* to look at. */}
+        {syncIssue && (
           <span
             aria-hidden="true"
-            title="Last sync failed"
+            title={syncIssue.label}
             className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-slate-950 bg-red-600 text-[9px] font-bold leading-none text-white"
           >
             !

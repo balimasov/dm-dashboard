@@ -5,6 +5,7 @@ import { Character, CustomConditionTemplate, SKILL_ABBR, STAT_ORDER } from "@/li
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { characterReminders } from "@/lib/reminders";
+import { characterSyncIssue } from "@/lib/sync";
 import { useCardSortable } from "@/hooks/useCardSortable";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { ResourceTrackerBar } from "./ResourceMeter";
@@ -34,8 +35,7 @@ import { ReminderBadge } from "./ui/ReminderBadge";
 import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
 import { DamageInfoList } from "./ui/DamageInfoList";
-import { DdbSyncStatus } from "./ui/DdbSyncStatus";
-import { SyncFailedPill } from "./ui/SyncFailedPill";
+import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 import { NotesSection } from "./ui/NotesSection";
@@ -66,7 +66,8 @@ export function CharacterCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
-  const { syncing, error: syncError, sync } = useDdbSync(c, onUpdate);
+  const { syncing, sync } = useDdbSync(c, onUpdate);
+  const syncIssue = characterSyncIssue(c);
   const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(c.id, dragEnabled);
   // Half-proficiency-only skills (Jack of All Trades) are real proficiency
   // bonuses, but on a compact card they read as noise next to actual trained
@@ -115,17 +116,13 @@ export function CharacterCard({
       />
 
       {/* Header — D&D Beyond link now lives inline on its own "Lvl N" line
-          (see `CharacterHeader`), so only the "not synced"/error banners
-          (conditional, `showLink={false}`) still need their own space here.
-          Only rendered when there's actually a banner/error to show — the
-          card's own `gap-3.5` inserts a full gap between every flex child
-          regardless of whether that child is empty, so an always-mounted
-          (but usually-empty) block here would have quietly added a stray
-          14px of card height in the common synced-fine case. */}
+          (see `CharacterHeader`), and any sync problem shows as the
+          toolbar's own `SyncIssuePill` below plus the header's avatar-corner
+          dot — no separate banner needed here anymore (a prior version had
+          both at once, confirmed redundant against a real screenshot: the
+          old amber "Not synced"/error text sat right next to the new pill
+          saying the same thing). */}
       <CharacterHeader character={c} onClick={() => setDetailsOpen(true)} dragHandleProps={dragHandleProps} />
-      {c.dndBeyondUrl && (!c.synced || syncError) && (
-        <DdbSyncStatus dndBeyondUrl={c.dndBeyondUrl} synced={c.synced} lastSyncedAt={c.lastSyncedAt} syncing={syncing} error={syncError} showLink={false} />
-      )}
 
       {/* Reminder/AI/kebab — one bordered toolbar instead of a bare flex
           row (the row used to read as controls scattered in a spot, not a
@@ -144,8 +141,13 @@ export function CharacterCard({
           onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
         />
         <AskAiPill onClick={() => setAiOpen(true)} />
-        {c.lastSyncError && (
-          <SyncFailedPill error={c.lastSyncError} onRetry={onUpdate ? sync : undefined} syncing={syncing} />
+        {syncIssue && (
+          <SyncIssuePill
+            label={syncIssue.label}
+            message={syncIssue.message}
+            onRetry={onUpdate ? sync : undefined}
+            syncing={syncing}
+          />
         )}
         <div className="ml-auto">
           <EntityActionsMenu
