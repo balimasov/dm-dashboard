@@ -3,7 +3,7 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
 
 /**
- * "⚠ Sync failed" / "⚠ Not synced" toolbar pill — same rounded-full/px-2/
+ * "⚠️ Sync failed" / "⚠️ Not synced" toolbar pill — same rounded-full/px-2/
  * py-0.5/text-xs shape as `ReminderBadge`'s "🔥 N" and `AskAiPill`'s
  * "✨ Ask AI" on the same row, red instead of amber/sky. Renders whatever
  * `characterSyncIssue` (`lib/sync.ts`) resolved — that's the one place
@@ -53,7 +53,7 @@ export function SyncIssuePill({
         </div>
       }
     >
-      <span aria-hidden="true">⚠</span>
+      <span aria-hidden="true">⚠️</span>
       {label}
     </InfoTooltip>
   );
