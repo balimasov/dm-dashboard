@@ -38,6 +38,11 @@ no need to ask for confirmation first, as long as it's a clean fast-forward
 (no merge commit, no conflicts). If it's not a fast-forward, or anything
 about the change is ambiguous, stop and ask.
 
+The CI workflow itself typically finishes in ~1-1.5 minutes (confirmed
+repeatedly — e.g. 1m9s for commit `903333c`). When scheduling a wakeup to
+check its status before merging, ~90 seconds is enough; no need to default
+to 5 minutes.
+
 ## Commit message format
 
 Every commit that bumps `package.json`'s version prefixes its subject line
