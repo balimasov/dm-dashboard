@@ -23,6 +23,17 @@ const RESET_TYPE_MAP: Record<number, RecoveryType> = {
   4: "manual",
 };
 
+/**
+ * The gate behind every "only while not wearing armor or wielding a Shield"
+ * feature (a Barbarian's/Monk's Unarmored Movement, a Monk's Martial Arts)
+ * — a shield is `filterType: "Armor"` too (`armorTypeId: 4`, see
+ * `computeArmorClass`'s own equipped-shield check), so one inventory scan
+ * already covers both halves of the condition.
+ */
+export function isUnarmoredAndShieldless(data: RawDdbData): boolean {
+  return !(data.inventory ?? []).some((i) => i.equipped && i.definition?.filterType === "Armor");
+}
+
 export function titleCase(kebab: string): string {
   return kebab
     .split("-")

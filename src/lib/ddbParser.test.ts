@@ -172,6 +172,20 @@ describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
       rarity: "Rare",
     });
   });
+
+  test("Monk (Warrior of the Open Hand 20, unarmored, Dex +6) — Martial Arts' Dexterous Attacks + the level-20 1d12 Martial Arts die apply to every equipped Monk weapon (Simple Melee Club/Dagger/Spear), not just the ones that also happen to have Finesse, matching D&D Beyond's own Actions tab (all four at +12, 1d12+6)", () => {
+    const c = load("monk-warrior-open-hand-20");
+    for (const name of ["Club", "Dagger", "Spear"]) {
+      const attack = c.attacks.find((a) => a.name === name)!;
+      expect(attack, name).toMatchObject({
+        attackType: "melee",
+        attackBonus: 12, // dex +6 + proficiency +6
+        damage: "1d12 +6",
+        category: "Simple",
+        proficient: true,
+      });
+    }
+  });
 });
 
 describe("Unarmed Strike — always present, computed without needing weapon data", () => {
@@ -192,13 +206,25 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
     expect(unarmed.description).toBeUndefined();
   });
 
-  test("Chem (Monk 8, has the Tavern Brawler feat, Str 12) — D&D Beyond's resolved 'Enhanced Unarmed Strike' action (1d4, Str-based) replaces the flat baseline", () => {
+  test("Chem (Monk 8, has the Tavern Brawler feat, unarmored) — D&D Beyond's resolved 'Enhanced Unarmed Strike' action (1d4, Str-based) is only the feat's own raw baseline; Martial Arts still stacks on top (Dexterous Attacks + the level-8 1d8 Martial Arts die beats the feat's 1d4)", () => {
     const c = load("chem-monk");
     const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
     expect(unarmed).toMatchObject({
       attackType: "melee",
-      attackBonus: 4, // str +1 + proficiency +3
-      damage: "1d4 +1",
+      attackBonus: 6, // dex +3 (Martial Arts' Dexterous Attacks beats str +1) + proficiency +3
+      damage: "1d8 +3", // Martial Arts die at level 8 (1d8) beats the feat's own 1d4
+      damageType: "Bludgeoning",
+      proficient: true,
+    });
+  });
+
+  test("Monk (Warrior of the Open Hand 20, unarmored, Dex +6) — Unarmed Strike matches D&D Beyond's own displayed +12, 1d12+6, not the feat-resolved 'Enhanced Unarmed Strike' action's own raw 1d4/Str baseline", () => {
+    const c = load("monk-warrior-open-hand-20");
+    const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
+    expect(unarmed).toMatchObject({
+      attackType: "melee",
+      attackBonus: 12, // dex +6 + proficiency +6
+      damage: "1d12 +6",
       damageType: "Bludgeoning",
       proficient: true,
     });

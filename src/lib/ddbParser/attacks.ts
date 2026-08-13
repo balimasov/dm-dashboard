@@ -1,6 +1,6 @@
 import { AbilityScores, Attack, WEAPON_MASTERY_PROPERTIES } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier, rarityFromDdb, shortDescription, titleCase } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, isUnarmoredAndShieldless, rarityFromDdb, shortDescription, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 
 /** "150" + "600" -> "150/600 ft."; "150" + null/same -> "150 ft." */
@@ -77,6 +77,46 @@ function hasMasteryAccess(weaponType: string, mastery: string, data: RawDdbData)
 }
 
 /**
+ * A Monk's Martial Arts die (2024: 1d6 at level 1, scaling up to 1d12 at
+ * level 17+, only while unarmed or wielding Monk weapons and not wearing
+ * armor or wielding a Shield) is exposed the same way Unarmored Movement's
+ * per-level value is (see `computeUnarmoredMovementBonus` in `combat.ts`):
+ * already resolved for this character's level on the class feature's own
+ * `levelScale`, just under `.dice` instead of `.fixedValue`. Confirmed on a
+ * real level-20 Monk export (`levelScale.dice.diceString === "1d12"`) — not
+ * exposed anywhere under `actions.*`, so neither `computeUnarmedStrike`'s
+ * resolved-action branch nor a Monk weapon's own `damage.diceString` ever
+ * reflects it on their own; both fold this in separately below.
+ */
+function martialArtsDie(data: RawDdbData): string | undefined {
+  for (const c of data.classes ?? []) {
+    const feature = (c.classFeatures ?? []).find((f: RawDdbAny) => f.definition?.name === "Martial Arts");
+    const diceString = feature?.levelScale?.dice?.diceString;
+    if (diceString) return diceString;
+  }
+  return undefined;
+}
+
+/** "1d12" -> 6.5, "2d6" -> 7 — lets a Monk's weapon/unarmed damage compare its own die against the Martial Arts die and keep whichever rolls higher on average, matching the RAW wording ("in place of the normal damage") rather than always preferring one over the other. */
+function diceStringAverage(diceString: string): number {
+  const match = /^(\d+)d(\d+)$/.exec(diceString);
+  if (!match) return 0;
+  return (Number(match[1]) * (Number(match[2]) + 1)) / 2;
+}
+
+/**
+ * 2024 Martial Arts weapon eligibility, confirmed on the feature's own
+ * description text in a real Monk export: Simple Melee weapons, or Martial
+ * Melee weapons that have the Light property. Unarmed strikes are always
+ * eligible and handled separately in `computeUnarmedStrike`.
+ */
+function isMonkWeapon(weapon: RawDdbAny, propertyNames: string[]): boolean {
+  if (weapon.attackType !== 1) return false;
+  if (weapon.categoryId === 1) return true;
+  return weapon.categoryId === 2 && propertyNames.includes("Light");
+}
+
+/**
  * Every creature can make an Unarmed Strike — the 2024 PHB baseline is
  * always-proficient, melee, "1 + Strength modifier" Bludgeoning damage
  * (never below 0), no dice roll involved at all. That baseline needs no
@@ -90,29 +130,35 @@ function hasMasteryAccess(weaponType: string, mastery: string, data: RawDdbData)
  * level-scale table) carries a fully resolved `dice`/`abilityModifierStatId`/
  * `isProficient` — confirmed on a real Monk-with-Tavern-Brawler export
  * ("Enhanced Unarmed Strike": `dice: "1d4"`, `abilityModifierStatId: 1`,
- * `attackTypeRange: 1`, `isProficient: true`). That resolved entry replaces
- * the baseline outright, since a DM wants the character's *best* unarmed
- * option, not the RAW default listed alongside its own upgrade.
- *
- * What this still can't compute: a Monk's Martial Arts die size, which
- * scales by class level and isn't exposed anywhere in `actions.*` — a Monk
- * without a feat like Tavern Brawler shows the plain 2024 baseline here,
- * undercounting their real (better) unarmed damage. Disclosed rather than
- * guessed at.
+ * `attackTypeRange: 1`, `isProficient: true`). That resolved entry's own
+ * numbers are just this feat's RAW baseline though, not the character's
+ * actual best unarmed strike — a Monk's Martial Arts (Dexterous Attacks +
+ * the scaling Martial Arts die, see `martialArtsDie`) still applies on top
+ * whenever it's active, confirmed against a real level-20 Monk export where
+ * D&D Beyond's own displayed Unarmed Strike (+12, 1d12+6) matched the
+ * Martial-Arts-boosted result, not this feat action's raw 1d4/STR alone.
  */
 function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack {
+  const monkDie = martialArtsDie(data);
+  const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
+
   for (const group of ["feat", "class", "race"] as const) {
     for (const action of (data.actions?.[group] ?? []) as RawDdbAny[]) {
       if (!action.name?.includes("Unarmed Strike") || !action.dice?.diceString || action.attackTypeRange == null) continue;
       const abilityKey = ABILITY_BY_ID[action.abilityModifierStatId as number] ?? "str";
-      const abilityMod = abilityModifier(abilities[abilityKey]);
+      const baseAbilityMod = abilityModifier(abilities[abilityKey]);
+      const abilityMod = martialArtsActive ? Math.max(baseAbilityMod, abilityModifier(abilities.dex)) : baseAbilityMod;
       const proficient = action.isProficient !== false;
+      const dieString =
+        martialArtsActive && monkDie && diceStringAverage(monkDie) > diceStringAverage(action.dice.diceString)
+          ? monkDie
+          : action.dice.diceString;
       return {
         id: "attack-unarmed",
         name: "Unarmed Strike",
         attackType: "melee",
         attackBonus: abilityMod + (proficient ? profBonus : 0),
-        damage: `${action.dice.diceString}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
+        damage: `${dieString}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
         damageType: "Bludgeoning",
         properties: [],
         range: "5 ft.",
@@ -122,6 +168,21 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
   }
 
   const strMod = abilityModifier(abilities.str);
+  if (martialArtsActive && monkDie) {
+    const abilityMod = Math.max(strMod, abilityModifier(abilities.dex));
+    return {
+      id: "attack-unarmed",
+      name: "Unarmed Strike",
+      attackType: "melee",
+      attackBonus: abilityMod + profBonus,
+      damage: `${monkDie}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
+      damageType: "Bludgeoning",
+      properties: [],
+      range: "5 ft.",
+      proficient: true,
+    };
+  }
+
   return {
     id: "attack-unarmed",
     name: "Unarmed Strike",
@@ -156,6 +217,8 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
   const profSubtypes = new Set(mods.filter((m) => m.type === "proficiency").map((m) => m.subType));
   const seen = new Set<string>();
   const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus)];
+  const monkDie = martialArtsDie(data);
+  const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
 
   for (const item of (data.inventory ?? []) as RawDdbAny[]) {
     const df = item.definition ?? {};
@@ -180,10 +243,15 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
     const properties = propertyNames.filter((p) => p !== masteryCandidate);
     const isFinesse = propertyNames.includes("Finesse");
     const isThrown = propertyNames.includes("Thrown");
+    // Dexterous Attacks: a Monk's Martial Arts lets Dex stand in for Str on
+    // an eligible weapon exactly like Finesse does — folded into the same
+    // ternary rather than a separate branch, since both grants resolve the
+    // same way (better of the two ability modifiers).
+    const isMonkEligible = !isRanged && martialArtsActive && isMonkWeapon(weapon, propertyNames);
 
     const abilityMod = isRanged
       ? abilityModifier(abilities.dex)
-      : isFinesse
+      : isFinesse || isMonkEligible
         ? Math.max(abilityModifier(abilities.str), abilityModifier(abilities.dex))
         : abilityModifier(abilities.str);
 
@@ -206,6 +274,14 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
     const proficient = isProficientWithWeapon(weapon.type || weapon.name, weapon.categoryId, profSubtypes);
     const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus;
     const damageBonus = abilityMod + magicBonus;
+    // The RAW wording ("in place of the normal damage") lets the die roll
+    // the Martial Arts die *or* the weapon's own — whichever is bigger —
+    // rather than unconditionally overriding it, matching the same
+    // average-roll comparison `computeUnarmedStrike` applies.
+    const damageDie =
+      isMonkEligible && monkDie && diceStringAverage(monkDie) > diceStringAverage(weapon.damage.diceString)
+        ? monkDie
+        : weapon.damage.diceString;
 
     // Every melee weapon's range is its reach (10 ft. only with the Reach
     // property, 5 ft. otherwise) — D&D Beyond's own Range column shows this
@@ -233,7 +309,7 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
       name: weapon.name,
       attackType: isRanged ? "ranged" : "melee",
       attackBonus,
-      damage: `${weapon.damage.diceString}${damageBonus !== 0 ? ` ${formatModifier(damageBonus)}` : ""}`,
+      damage: `${damageDie}${damageBonus !== 0 ? ` ${formatModifier(damageBonus)}` : ""}`,
       ...(weapon.damageType ? { damageType: weapon.damageType } : {}),
       properties,
       ...(mastery ? { mastery } : {}),

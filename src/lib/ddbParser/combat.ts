@@ -1,5 +1,5 @@
 import { AbilityScores, Sense } from "../types";
-import { ABILITY_BY_ID, abilityModifier, titleCase } from "./shared";
+import { ABILITY_BY_ID, abilityModifier, isUnarmoredAndShieldless, titleCase } from "./shared";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 
 const CONDITION_LABELS: Record<number, string> = {
@@ -116,10 +116,7 @@ export function computeClassSummary(data: RawDdbData) {
  * that scales this way (rather than hardcoding the level breakpoints here).
  */
 function computeUnarmoredMovementBonus(data: RawDdbData): number {
-  const wearingArmorOrShield = (data.inventory ?? []).some(
-    (i) => i.equipped && i.definition?.filterType === "Armor"
-  );
-  if (wearingArmorOrShield) return 0;
+  if (!isUnarmoredAndShieldless(data)) return 0;
   for (const c of data.classes ?? []) {
     const feature = (c.classFeatures ?? []).find((f: RawDdbAny) => f.definition?.name === "Unarmored Movement");
     if (feature?.levelScale?.fixedValue) return feature.levelScale.fixedValue;
