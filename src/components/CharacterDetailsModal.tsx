@@ -35,7 +35,7 @@ import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconButton } from "./ui/IconButton";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon, ToolIcon } from "./ui/icons";
 import {
   AC_HINT_PANEL,
   IMMUNE_HINT_PANEL,
@@ -47,6 +47,7 @@ import {
   PROFICIENCY_HINT_PANEL,
   RESIST_HINT_PANEL,
   SPEED_HINT_PANEL,
+  TOOLS_HINT_PANEL,
   VULNERABLE_HINT_PANEL,
 } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
@@ -382,6 +383,17 @@ export function CharacterDetailsModal({
                 valueTitle={c.languages.join(", ")}
               >
                 {c.languages.join(", ")}
+              </IconStat>
+            )}
+            {c.toolProficiencies.length > 0 && (
+              <IconStat
+                className="col-span-2"
+                icon={<ToolIcon className="h-4 w-4 shrink-0 text-slate-500" />}
+                panel={TOOLS_HINT_PANEL}
+                label="Tools"
+                valueTitle={c.toolProficiencies.join(", ")}
+              >
+                {c.toolProficiencies.join(", ")}
               </IconStat>
             )}
           </div>

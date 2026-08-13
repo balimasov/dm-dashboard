@@ -22,6 +22,7 @@ export const PROFICIENCY_HINT_PANEL = (
   <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
 );
 export const LANGUAGES_HINT_PANEL = <p>Languages — the languages you can speak, read, or understand.</p>;
+export const TOOLS_HINT_PANEL = <p>Tools — the tool, kit, or vehicle proficiencies you have.</p>;
 
 export const CREATURE_AC_HINT_PANEL = <p>Armor Class — the number an attack roll must meet or beat to hit it.</p>;
 export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move on its turn.</p>;
