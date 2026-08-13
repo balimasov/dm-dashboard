@@ -205,6 +205,30 @@ function ResourceTrackerHint({
  * interactive, same idea as `res-bar-row:hover` in the prototype this was
  * built from.
  */
+/**
+ * The "Limited Use X/Y" quick-glance total below the bar — unlike
+ * `averageResourcePercent`'s ratio-based voting (already fair regardless of
+ * pool size), a raw sum of `current`/`max` across resources lets one big
+ * variable-cost pool's absolute size swamp everything else: Lay on Hands'
+ * ~5-per-level HP pool next to a 2-charge Rage would show as e.g. "16/27",
+ * a number that's really just "how much healing is left," not "how many
+ * uses do you have." A resource with more than 6 max — the same threshold
+ * `ResourceMeter`'s own `showDots` uses to decide "too big to render as
+ * discrete charges" — is that kind of pool rather than a handful of
+ * discrete uses, so it's counted as a single "1" (available) until it's
+ * fully spent to 0, same as any other resource once its last discrete
+ * charge is gone.
+ */
+function limitedUseTally(resources: Resource[]): { current: number; max: number } {
+  return resources.reduce(
+    (acc, r) =>
+      r.max > 6
+        ? { current: acc.current + (r.current > 0 ? 1 : 0), max: acc.max + 1 }
+        : { current: acc.current + r.current, max: acc.max + r.max },
+    { current: 0, max: 0 }
+  );
+}
+
 export function ResourceTrackerBar({
   resources,
   spellSlots,
@@ -220,8 +244,7 @@ export function ResourceTrackerBar({
   const resourcesPercent = averageResourcePercent(resources);
   const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
 
-  const resourcesCurrent = resources.reduce((sum, r) => sum + r.current, 0);
-  const resourcesMax = resources.reduce((sum, r) => sum + r.max, 0);
+  const { current: resourcesCurrent, max: resourcesMax } = limitedUseTally(resources);
   const spellSlotsCurrent = spellSlots.reduce((sum, s) => sum + s.current, 0);
   const spellSlotsMax = spellSlots.reduce((sum, s) => sum + s.max, 0);
 
