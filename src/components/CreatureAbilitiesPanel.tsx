@@ -210,9 +210,12 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
             {(trait.effects ?? []).map((effect, i) => (
               <span key={i} className="block">
                 {effect.kind === "other" ? (
-                  <span className="font-semibold text-slate-100">
-                    {effect.label || "Effect"} {effect.amount}
-                  </span>
+                  <>
+                    <span className="text-slate-500">Effect</span>{" "}
+                    <span className="font-semibold text-slate-100">
+                      {effect.label ? `${effect.label} ${effect.amount}` : effect.amount}
+                    </span>
+                  </>
                 ) : (
                   <>
                     <span className="text-slate-500">{EFFECT_KIND_LABELS[effect.kind]}</span>{" "}
