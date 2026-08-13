@@ -74,11 +74,14 @@ export function CreatureStatBlock({
   creature,
   onUpdate,
   compact = false,
+  showLanguages = true,
 }: {
   creature: Creature;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
-  /** Passed straight through to each `SectionDivider` — see its own doc comment. `CreatureCard` passes it, `CreatureDetailsModal` doesn't. */
+  /** Passed straight through to each `SectionDivider` — see its own doc comment. Both `CreatureCard` and `CreatureDetailsModal` pass it, for the same tight rhythm in the card and the modal it opens into. */
   compact?: boolean;
+  /** `CreatureCard` passes `false` — the compact card has less room to spend on a stat that rarely changes DM decisions mid-combat; `CreatureDetailsModal` leaves it at the default so the full detail view still shows it. */
+  showLanguages?: boolean;
 }) {
   const isDown = creature.hp <= 0;
   const skills = parseCreatureSkills(creature.skills);
@@ -136,14 +139,16 @@ export function CreatureStatBlock({
           >
             {creature.initiativeBonus !== undefined ? formatModifier(creature.initiativeBonus) : "—"}
           </IconStat>
-          <IconStat
-            icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-            panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
-            label="Languages"
-            valueTitle={creature.languages}
-          >
-            {creature.languages || "—"}
-          </IconStat>
+          {showLanguages && (
+            <IconStat
+              icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
+              panel={<p>Languages — the languages this creature can speak, read, or understand.</p>}
+              label="Languages"
+              valueTitle={creature.languages}
+            >
+              {creature.languages || "—"}
+            </IconStat>
+          )}
         </div>
       </div>
 

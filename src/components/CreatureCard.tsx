@@ -124,7 +124,7 @@ export function CreatureCard({
         </div>
       </div>
 
-      <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />
+      <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact showLanguages={false} />
 
       {detailsOpen && (
         <CreatureDetailsModal
