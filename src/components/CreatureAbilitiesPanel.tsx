@@ -184,9 +184,13 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
                       </>
                     )}
                     <span className="text-slate-500">Damage</span>{" "}
-                    <span className="font-semibold text-sky-400">
-                      {attack.damage.map((roll) => (roll.damageType ? `${roll.dice} ${roll.damageType}` : roll.dice)).join(" + ")}
-                    </span>
+                    {attack.damage.map((roll, i) => (
+                      <span key={i}>
+                        {i > 0 && <span className="text-slate-500"> + </span>}
+                        <span className="font-semibold text-sky-400">{roll.dice}</span>
+                        {roll.damageType && <span> {roll.damageType}</span>}
+                      </span>
+                    ))}
                   </span>
                 )}
                 {trait.save && (
