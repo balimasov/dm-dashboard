@@ -24,16 +24,21 @@ describe("Armor Class", () => {
     const c = load("fighter-eldritch-knight-20");
     expect(c.combat.ac).toBe(17); // 16 (Chain Mail) + 1 (Defense) — matches this character's real D&D Beyond sheet.
   });
+
+  test("Paladin (Oath of Vengeance 20, Medium armor, Dex +4) — Medium Armor Master raises the Medium-armor Dex cap from +2 to +3 (ac-max-dex-armored-modifier), not the plain default", () => {
+    const c = load("paladin-oath-of-vengeance-20");
+    expect(c.combat.ac).toBe(21); // 15 (Enspelled Half Plate) + 3 (Dex, capped by Medium Armor Master not +2) + 2 (Shield) + 1 (Fighting Style: Defense) — matches this character's real D&D Beyond sheet.
+  });
 });
 
 describe("Saving Throws", () => {
   test("Paladin (Oath of Vengeance 20) — Aura of Protection (blanket bonus = Charisma modifier) is added to all six saves, not just the two she's proficient in", () => {
     const c = load("paladin-oath-of-vengeance-20");
-    // Real D&D Beyond sheet: STR +5, DEX +3, CON +4, INT +1, WIS +9, CHA +10 —
+    // Real D&D Beyond sheet: STR +5, DEX +6, CON +4, INT +1, WIS +9, CHA +10 —
     // each exactly 2 (her Charisma modifier) above the plain ability-mod/
     // proficiency total, confirming the aura applies uniformly to every save.
     expect(savingThrowBonus(c, "str")).toBe(5);
-    expect(savingThrowBonus(c, "dex")).toBe(3);
+    expect(savingThrowBonus(c, "dex")).toBe(6);
     expect(savingThrowBonus(c, "con")).toBe(4);
     expect(savingThrowBonus(c, "int")).toBe(1);
     expect(savingThrowBonus(c, "wis")).toBe(9);

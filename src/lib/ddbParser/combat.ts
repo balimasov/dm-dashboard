@@ -178,6 +178,23 @@ function computeCustomAcBonus(data: RawDdbData): number {
     .reduce((sum, v) => sum + (v.value as number), 0);
 }
 
+/**
+ * Medium armor's normal Dex cap is +2 — but the Medium Armor Master feat
+ * ("while wearing Medium armor, you can add 3, rather than 2, to your AC if
+ * you have a Dexterity score of 16 or higher") overrides that specific cap.
+ * Modeled as `type: "set", subType: "ac-max-dex-armored-modifier"` — a
+ * generic override value, not a Medium-Armor-Master-specific flag — read
+ * the same trusting-`isGranted` way `computeArmorClass`'s own flat-bonus
+ * filter already does, confirmed on a real level-20 Paladin export where
+ * omitting it undercounted her AC by exactly 1 (20 instead of D&D Beyond's
+ * own 21).
+ */
+function mediumArmorDexCap(mods: RawDdbModifier[]): number {
+  return mods
+    .filter((m) => m.type === "set" && m.subType === "ac-max-dex-armored-modifier" && m.isGranted)
+    .reduce((max, m) => Math.max(max, m.value ?? m.fixedValue ?? 0), 2);
+}
+
 export function computeArmorClass(data: RawDdbData, abilities: AbilityScores, mods: RawDdbModifier[]): number {
   const dexMod = abilityModifier(abilities.dex);
   const inventory = data.inventory ?? [];
@@ -223,7 +240,7 @@ export function computeArmorClass(data: RawDdbData, abilities: AbilityScores, mo
   // overcounted her AC by exactly that modifier.
   const armorTypeId = armor.definition?.armorTypeId;
   let dexContribution = dexMod;
-  if (armorTypeId === 2) dexContribution = Math.min(dexMod, 2);
+  if (armorTypeId === 2) dexContribution = Math.min(dexMod, mediumArmorDexCap(mods));
   else if (armorTypeId === 3) dexContribution = 0;
 
   return base + dexContribution + shieldBonus + flatBonus + customBonus;
