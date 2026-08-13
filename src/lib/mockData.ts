@@ -105,7 +105,7 @@ export const demoCharacters: Character[] = [
       }
     ],
     "languages": ["Common", "Orc"],
-    "toolProficiencies": ["Vehicles (Land)"],
+    "toolProficiencies": ["Dice Set", "Vehicles (Land)"],
     "inventory": [
       {
         "id": "item-0",

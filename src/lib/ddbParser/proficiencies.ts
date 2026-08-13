@@ -2,12 +2,14 @@ import { titleCase } from "./shared";
 import { RawDdbModifier } from "./rawTypes";
 
 /**
- * Standard 5e tool proficiencies — artisan's tools, kits, and navigation/
- * vehicle proficiencies. Deliberately excludes musical instruments and
- * gaming sets: those share the same `type: "proficiency"` modifier stream
- * (alongside weapon and armor proficiencies, which are excluded too) but
- * don't come up as mid-session DM utility the way a lockpicking or
- * herbalism proficiency does.
+ * Standard 5e tool proficiencies — artisan's tools, kits, navigation/
+ * vehicle proficiencies, musical instruments, and gaming sets, matching
+ * exactly what D&D Beyond's own character sheet groups under its "Tools"
+ * heading (confirmed against a real sheet: Drum/Horn/Lute and Dice Set
+ * both list there, not separately). Weapon and armor proficiencies share
+ * the same `type: "proficiency"` modifier stream but are excluded — those
+ * already show elsewhere (attacks, AC) rather than needing their own list
+ * here.
  */
 const TOOL_SUBTYPES = new Set([
   "alchemists-supplies",
@@ -36,6 +38,22 @@ const TOOL_SUBTYPES = new Set([
   "vehicles-land",
   "vehicles-water",
   "vehicles-air",
+  // Musical instruments.
+  "bagpipes",
+  "drum",
+  "dulcimer",
+  "flute",
+  "horn",
+  "lute",
+  "lyre",
+  "pan-flute",
+  "shawm",
+  "viol",
+  // Gaming sets.
+  "dice-set",
+  "dragonchess-set",
+  "playing-card-set",
+  "three-dragon-ante-set",
 ]);
 
 /**

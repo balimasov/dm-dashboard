@@ -215,7 +215,7 @@ export interface Character {
   senses: Sense[];
   /** Known languages, e.g. ["Common", "Infernal"] — display names straight from D&D Beyond, no manual editing UI yet. */
   languages: string[];
-  /** Tool proficiencies (artisan's tools, kits, navigator's/vehicles) — deliberately excludes musical instruments and gaming sets, which don't come up as mid-session DM utility the way a Thieves' Tools or Herbalism Kit proficiency does. */
+  /** Tool proficiencies — artisan's tools, kits, navigator's/vehicles, musical instruments, and gaming sets, matching D&D Beyond's own "Tools" grouping exactly. */
   toolProficiencies: string[];
   inventory: InventoryItem[];
   currency: Currency;

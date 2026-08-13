@@ -431,10 +431,10 @@ describe("languages and tool proficiencies — no isGranted filter, same reasoni
     expect(c.toolProficiencies).toEqual(["Cartographer's Tools", "Thieves' Tools"]);
   });
 
-  test("Esmeralda (Bard) — Thieves' Tools is isGranted:false but a resolved choice, so it's included", () => {
+  test("Esmeralda (Bard) — Thieves' Tools and her three musical instruments are all isGranted:false but resolved choices, so all four are included", () => {
     const c = load("esmeralda-bard");
     expect(c.languages).toEqual(["Common", "Infernal"]);
-    expect(c.toolProficiencies).toEqual(["Thieves' Tools"]);
+    expect(c.toolProficiencies).toEqual(["Drum", "Horn", "Lute", "Thieves' Tools"]);
   });
 
   test("Alor (Fighter) — two resolved 'Select a Standard Language' choices (Elvish, Common Sign Language) both show isGranted:false despite being genuinely picked", () => {
