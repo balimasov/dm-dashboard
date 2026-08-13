@@ -8,11 +8,10 @@ import { DamageInfoList } from "./ui/DamageInfoList";
 import { HintPanel } from "./ui/HintPanel";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { InitiativeIcon, LanguageIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import {
   CREATURE_AC_HINT_PANEL,
   CREATURE_PASSIVE_PERCEPTION_HINT_PANEL,
-  CREATURE_PROFICIENCY_HINT_PANEL,
   CREATURE_SPEED_HINT_PANEL,
   IMMUNE_HINT_PANEL,
   INITIATIVE_HINT_PANEL,
@@ -136,13 +135,6 @@ export function CreatureStatBlock({
             label="Initiative"
           >
             {creature.initiativeBonus !== undefined ? formatModifier(creature.initiativeBonus) : "—"}
-          </IconStat>
-          <IconStat
-            icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-            panel={CREATURE_PROFICIENCY_HINT_PANEL}
-            label="Prof"
-          >
-            {creature.proficiencyBonus !== undefined ? formatModifier(creature.proficiencyBonus) : "—"}
           </IconStat>
           <IconStat
             icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}

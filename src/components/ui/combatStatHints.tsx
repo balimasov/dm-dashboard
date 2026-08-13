@@ -3,10 +3,14 @@
  * `CharacterCard.tsx` and `CharacterDetailsModal.tsx` used to hand-type the
  * same four strings independently (a real, byte-identical duplication, per a
  * UI-kit audit); both now import these instead. `CreatureStatBlock.tsx`'s
- * own AC/Speed/Prof wording is genuinely different (a creature is "it", not
- * "you"; a creature has no skill checks to earn proficiency in) rather than
- * a near-duplicate worth forcing into one string — only Initiative's wording
- * happens to be identical for both, so that one constant is shared as-is.
+ * own AC/Speed wording is genuinely different (a creature is "it", not
+ * "you") rather than a near-duplicate worth forcing into one string — only
+ * Initiative's wording happens to be identical for both, so that one
+ * constant is shared as-is. Proficiency Bonus isn't shown on a creature's
+ * card/details at all (it rarely matters at a glance the way it does for a
+ * player's own skill checks — still editable/importable, just not surfaced
+ * here), so there's no creature-specific Prof hint to pair with the
+ * character one below.
  */
 export const INITIATIVE_HINT_PANEL = (
   <p>Initiative — added to a d20 roll at the start of combat to determine turn order.</p>
@@ -21,9 +25,6 @@ export const LANGUAGES_HINT_PANEL = <p>Languages — the languages you can speak
 
 export const CREATURE_AC_HINT_PANEL = <p>Armor Class — the number an attack roll must meet or beat to hit it.</p>;
 export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move on its turn.</p>;
-export const CREATURE_PROFICIENCY_HINT_PANEL = (
-  <p>Proficiency Bonus — added to attacks/saving throws where applicable.</p>
-);
 
 /**
  * Same duplication, found one layer down in the same three files: the

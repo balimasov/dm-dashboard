@@ -190,7 +190,7 @@ function ExhaustionBadge({ level }: { level: number }) {
  */
 export const CONCENTRATION_HINT_TEXT = (
   <p>
-    <span className="font-semibold text-violet-300">Concentration</span> — required to keep certain spells active;
+    <span className="font-semibold text-violet-300">Concentration</span>: required to keep certain spells active;
     taking damage forces a Constitution save or the spell ends.
   </p>
 );
