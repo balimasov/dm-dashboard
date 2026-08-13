@@ -86,7 +86,7 @@ export function AbilityHintPanel({
             {hasSpecifics && (
               <span className={`block space-y-1 ${hasMeta ? HINT_PANEL_DIVIDER_CLS : ""}`}>
                 {note && <span className="block text-slate-500">{note}</span>}
-                {status && <span className="block text-xs font-medium">{status}</span>}
+                {status && <span className="block">{status}</span>}
               </span>
             )}
             {hasBodyText && (
