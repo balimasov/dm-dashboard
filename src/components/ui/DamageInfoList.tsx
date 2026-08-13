@@ -42,19 +42,26 @@ export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
           // React renders that panel into the DOM even while hidden (only its
           // `hidden`/`block` class toggles), so a `<p>` wrapper here would put
           // a `<p>` inside a `<p>` and trip a hydration mismatch (confirmed).
-          <div key={e.label}>
-            {/* No wrapping `inline-flex` box around icon+label anymore — its
-                own baseline (an `inline-flex` box has no well-defined one)
-                sat differently from `e.value`'s plain-text baseline right
-                after it, which is what made the value read as sitting lower
-                than the label. `align-middle` on the bare icon plus
-                `InfoTooltip`'s own `inline-block` trigger both baseline-align
-                against `e.value` the normal, reliable way instead. */}
-            {Icon && <Icon className="mr-1 inline-block h-4 w-4 align-middle text-slate-500" />}
-            <InfoTooltip inline panel={e.panel}>
-              <span className="text-slate-500">{e.label}:</span>
-            </InfoTooltip>{" "}
-            {e.value}
+          //
+          // `IconStat`'s own nested-flex recipe, not a bare `inline-block`/
+          // `align-middle` icon followed by plain sibling text — that earlier
+          // shape put the icon, the `InfoTooltip`-forced-`align-top` label,
+          // and the plain-baseline `e.value` on three different vertical
+          // anchors in the same line box, which is what made the icon read as
+          // sitting visibly lower than `IconStat`'s AC/Speed/Initiative rows
+          // above it (confirmed against a real screenshot). Outer `flex
+          // items-center` centers the icon against the row the same way
+          // `IconStat` does; inner `flex items-baseline` keeps label and
+          // value aligned against *each other*, same as `IconStat`'s own
+          // inner span.
+          <div key={e.label} className="flex items-center gap-1.5">
+            {Icon && <Icon className="h-4 w-4 shrink-0 text-slate-500" />}
+            <span className="flex items-baseline gap-1">
+              <InfoTooltip inline panel={e.panel}>
+                <span className="text-slate-500">{e.label}:</span>
+              </InfoTooltip>
+              <span>{e.value}</span>
+            </span>
           </div>
         );
       })}

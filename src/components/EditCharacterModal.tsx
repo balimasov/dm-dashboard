@@ -516,8 +516,8 @@ export function EditCharacterModal({
                 </Field>
               </div>
               <Field
-                label="Advantages (one per line)"
-                hint='e.g. "Advantage: Saving Throws — to avoid or end the Charmed condition"'
+                label="Advantages / Disadvantages (one per line)"
+                hint='e.g. "Advantage: Saving Throws — to avoid or end the Charmed condition" or "Disadvantage: Stealth checks — while wearing heavy armor"'
               >
                 <textarea
                   className={`${inputCls} w-full`}
