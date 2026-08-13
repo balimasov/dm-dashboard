@@ -21,13 +21,13 @@ function ExhaustionPanel({ level }: { level: number }) {
   const effect = getExhaustionEffect(level);
   return (
     <div className="space-y-2">
-      {/* Same "bold name: description" shape `ConditionHintPanel` uses for every standard condition — the level lives inside the bold part since it's what the name refers to, not extra detail tacked on after the colon (that's what the "Right now" line below is for). */}
+      {/* Same "bold name: description" shape `ConditionHintPanel` uses for every standard condition — the level lives inside the bold part since it's what the name refers to, not extra detail tacked on after the colon (that's what the current-effect line below is for). That line is the same `text-slate-100` as this title, not a separate accent color — it's still just Exhaustion's own text, not a second signal competing for attention. */}
       <p>
         <span className="font-semibold text-slate-100">Exhaustion (level {level})</span>: {EXHAUSTION_RULES_TEXT}
       </p>
       {effect && (
-        <p className="border-t border-slate-700 pt-2 font-semibold text-amber-300">
-          Right now (level {level}): −{effect.d20Penalty} to d20 rolls, speed −{effect.speedPenalty} ft.
+        <p className="border-t border-slate-700 pt-2 font-semibold text-slate-100">
+          Level {level}: −{effect.d20Penalty} to d20 rolls, −{effect.speedPenalty} ft Speed
         </p>
       )}
     </div>

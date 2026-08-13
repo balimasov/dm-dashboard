@@ -1,3 +1,4 @@
+import { parseAdvantageEntry } from "@/lib/advantages";
 import { AbilityScores } from "@/lib/types";
 import { AdvantageLine } from "./AdvantageLine";
 
@@ -40,16 +41,12 @@ export function findAbilityAdvantage(
 ): { kind: "Advantage" | "Disadvantage"; subject: string; restriction?: string } | undefined {
   const fullName = ABILITY_FULL_NAMES[key];
   for (const raw of advantages) {
-    const match = raw.match(/^(Advantage|Disadvantage): (.+)$/);
-    if (!match) continue;
-    const [, kind, rest] = match;
-    if (rest !== fullName && !rest.startsWith(`${fullName} `)) continue;
-    const dashIndex = rest.indexOf(" — ");
-    const subjectPart = dashIndex >= 0 ? rest.slice(0, dashIndex) : rest;
-    const restriction = dashIndex >= 0 ? rest.slice(dashIndex + 3) : undefined;
+    const parsed = parseAdvantageEntry(raw);
+    if (!parsed.matched) continue;
+    if (parsed.subject !== fullName && !parsed.subject.startsWith(`${fullName} `)) continue;
     const subject =
-      subjectPart === fullName ? "ability checks and saving throws" : subjectPart.slice(fullName.length).trim().toLowerCase();
-    return { kind: kind as "Advantage" | "Disadvantage", subject, restriction };
+      parsed.subject === fullName ? "ability checks and saving throws" : parsed.subject.slice(fullName.length).trim().toLowerCase();
+    return { kind: parsed.kind === "disadvantage" ? "Disadvantage" : "Advantage", subject, restriction: parsed.restriction };
   }
   return undefined;
 }

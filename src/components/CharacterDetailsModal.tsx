@@ -16,6 +16,7 @@ import {
   SkillName,
   STAT_ORDER,
 } from "@/lib/types";
+import { advantagesHeading, parseAdvantageEntry } from "@/lib/advantages";
 import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
@@ -438,18 +439,25 @@ export function CharacterDetailsModal({
           </div>
         </SectionDivider>
 
-        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. */}
+        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
         {c.advantages.length > 0 && (
           <div>
-            <SubHeading>Advantages</SubHeading>
-            <ul className="space-y-1 text-sm text-slate-300">
-              {c.advantages.map((a) => (
-                // The section header already says "Advantages" — repeating
-                // "Advantage: " on every plain-advantage line is redundant.
-                // "Disadvantage: " stays, since that's the exception worth
-                // calling out against the section's own default.
-                <li key={a}>{a.replace(/^Advantage: /, "")}</li>
-              ))}
+            <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
+            <ul className="space-y-1.5 text-sm text-slate-300">
+              {c.advantages.map((a) => {
+                const { kind, subject, restriction } = parseAdvantageEntry(a);
+                return (
+                  <li key={a} className="flex items-start gap-1.5">
+                    <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
+                      {kind === "advantage" ? "▲" : "▼"}
+                    </span>
+                    <span>
+                      <b className="font-semibold text-slate-100">{subject}</b>
+                      {restriction && `: ${restriction}`}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
