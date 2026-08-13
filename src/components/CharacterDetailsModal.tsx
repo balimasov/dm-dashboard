@@ -439,29 +439,6 @@ export function CharacterDetailsModal({
           </div>
         </SectionDivider>
 
-        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
-        {c.advantages.length > 0 && (
-          <div>
-            <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
-            <ul className="space-y-1.5 text-sm text-slate-300">
-              {c.advantages.map((a) => {
-                const { kind, subject, restriction } = parseAdvantageEntry(a);
-                return (
-                  <li key={a} className="flex items-start gap-1.5">
-                    <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
-                      {kind === "advantage" ? "▲" : "▼"}
-                    </span>
-                    <span>
-                      <b className="font-semibold text-slate-100">{subject}</b>
-                      {restriction && `: ${restriction}`}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
         {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
         <DamageInfoList
           entries={[
@@ -474,6 +451,30 @@ export function CharacterDetailsModal({
             },
           ]}
         />
+
+        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. Placed after Resist/Immune/Vulnerable (not between Ability Scores and it) and in its own `SectionDivider` like every other section here — it used to be a bare, borderless `<div>` wedged between two bordered sections, which read as a stray fragment rather than a section of its own. */}
+        {c.advantages.length > 0 && (
+          <SectionDivider compact>
+            <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
+            <ul className="space-y-1.5 text-sm text-slate-300">
+              {c.advantages.map((a) => {
+                const { kind, subject, restriction } = parseAdvantageEntry(a);
+                return (
+                  <li key={a} className="flex items-start gap-1.5">
+                    <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
+                      {kind === "advantage" ? "▲" : "▼"}
+                    </span>
+                    <span>
+                      {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
+                      <b className="font-semibold text-slate-200">{subject}</b>
+                      {restriction && `: ${restriction}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </SectionDivider>
+        )}
 
         {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
         <SectionDivider compact>
