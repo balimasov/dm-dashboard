@@ -17,6 +17,7 @@ export const SPEED_HINT_PANEL = <p>Speed — how many feet you can move on your 
 export const PROFICIENCY_HINT_PANEL = (
   <p>Proficiency Bonus — added to attack rolls, saving throws, and skill checks you&apos;re proficient in.</p>
 );
+export const LANGUAGES_HINT_PANEL = <p>Languages — the languages you can speak, read, or understand.</p>;
 
 export const CREATURE_AC_HINT_PANEL = <p>Armor Class — the number an attack roll must meet or beat to hit it.</p>;
 export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move on its turn.</p>;

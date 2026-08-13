@@ -34,11 +34,12 @@ import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconButton } from "./ui/IconButton";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
+import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import {
   AC_HINT_PANEL,
   IMMUNE_HINT_PANEL,
   INITIATIVE_HINT_PANEL,
+  LANGUAGES_HINT_PANEL,
   PASSIVE_INSIGHT_HINT_PANEL,
   PASSIVE_INVESTIGATION_HINT_PANEL,
   PASSIVE_PERCEPTION_HINT_PANEL,
@@ -371,6 +372,17 @@ export function CharacterDetailsModal({
             >
               {formatModifier(proficiencyBonus(c.level))}
             </IconStat>
+            {c.languages.length > 0 && (
+              <IconStat
+                className="col-span-2"
+                icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
+                panel={LANGUAGES_HINT_PANEL}
+                label="Languages"
+                valueTitle={c.languages.join(", ")}
+              >
+                {c.languages.join(", ")}
+              </IconStat>
+            )}
           </div>
         </div>
 
