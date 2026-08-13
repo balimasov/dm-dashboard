@@ -38,29 +38,33 @@ export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
       {visible.map((e) => {
         const Icon = DAMAGE_ICONS[e.label];
         return (
-          // A `div`, not a `p` — the tooltip's own hint text is a `<p>`, and
-          // React renders that panel into the DOM even while hidden (only its
-          // `hidden`/`block` class toggles), so a `<p>` wrapper here would put
-          // a `<p>` inside a `<p>` and trip a hydration mismatch (confirmed).
-          //
-          // `IconStat`'s own nested-flex recipe, not a bare `inline-block`/
-          // `align-middle` icon followed by plain sibling text — that earlier
-          // shape put the icon, the `InfoTooltip`-forced-`align-top` label,
-          // and the plain-baseline `e.value` on three different vertical
-          // anchors in the same line box, which is what made the icon read as
-          // sitting visibly lower than `IconStat`'s AC/Speed/Initiative rows
-          // above it (confirmed against a real screenshot). Outer `flex
-          // items-center` centers the icon against the row the same way
-          // `IconStat` does; inner `flex items-baseline` keeps label and
-          // value aligned against *each other*, same as `IconStat`'s own
-          // inner span.
-          <div key={e.label} className="flex items-center gap-1.5">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-slate-500" />}
-            <span className="flex items-baseline gap-1">
+          // A previous pass here nested `label`+`value` inside their own
+          // `flex items-baseline` box to fix the icon's vertical position —
+          // that fixed single-line rows but broke long, wrapping values
+          // (confirmed against a real screenshot): a flex child has no
+          // hanging indent, so a long `value` either wrapped flush against
+          // the row's left edge instead of under its own first line, or (for
+          // "Condition Immunities") the *label* itself split mid-phrase once
+          // shrunk for space. Back to plain inline text flow for label+value
+          // — the shape that already wrapped correctly before that pass —
+          // wrapped in a `<span>`, not a `<p>` (the tooltip's own hint text
+          // is a `<p>`, and a `<p>` wrapper here would nest one inside the
+          // other and trip a hydration mismatch, confirmed). The icon's
+          // vertical position is fixed separately: `items-start` on the
+          // outer row plus a small `mt-0.5` nudge on the icon centers it
+          // against the label's first line specifically (same recipe the
+          // Advantages list already uses for its ▲/▼ glyph, `mt-px` there
+          // since a bold text glyph and a 16px stroke icon don't sit at
+          // quite the same offset) instead of centering against the whole
+          // (possibly multi-line) block, which would push it too low again
+          // the moment a value wraps.
+          <div key={e.label} className="flex items-start gap-1">
+            {Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+            <span>
               <InfoTooltip inline panel={e.panel}>
-                <span className="text-slate-500">{e.label}:</span>
-              </InfoTooltip>
-              <span>{e.value}</span>
+                <span className="whitespace-nowrap text-slate-500">{e.label}:</span>
+              </InfoTooltip>{" "}
+              {e.value}
             </span>
           </div>
         );

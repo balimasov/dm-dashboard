@@ -66,6 +66,24 @@ export function EditCharacterModal({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Raw text for every comma/newline-separated list field below, kept as its
+  // own state instead of deriving the input's `value` straight from
+  // `draft`'s parsed array on every keystroke. That derive-and-feed-back
+  // loop was the actual cause behind "can't type spaces/commas" here: typing
+  // a trailing comma (or a blank line in Advantages) produces an empty
+  // segment that `.filter(Boolean)` drops immediately, so the very next
+  // render fed back a `value` with that trailing character already erased —
+  // the input fighting the user on every keystroke that touched a
+  // separator. These stay in sync with `draft` (each `onChange` below still
+  // calls the existing `set*` parser so Save keeps working off the same
+  // normalized arrays), they just aren't *sourced* from it.
+  const [conditionsText, setConditionsText] = useState(character.combat.conditions.join(", "));
+  const [resistancesText, setResistancesText] = useState(character.resistances.join(", "));
+  const [immunitiesText, setImmunitiesText] = useState(character.immunities.join(", "));
+  const [vulnerabilitiesText, setVulnerabilitiesText] = useState(character.vulnerabilities.join(", "));
+  const [advantagesText, setAdvantagesText] = useState(character.advantages.join("\n"));
+  const [languagesText, setLanguagesText] = useState(character.languages.join(", "));
+
   useEscapeToClose(onClose);
   useScrollLock();
 
@@ -382,16 +400,17 @@ export function EditCharacterModal({
                 <Field label="Conditions (comma-separated)">
                   <input
                     className={`${inputCls} w-full`}
-                    value={draft.combat.conditions.join(", ")}
-                    onChange={(e) =>
+                    value={conditionsText}
+                    onChange={(e) => {
+                      setConditionsText(e.target.value);
                       setCombat(
                         "conditions",
                         e.target.value
                           .split(",")
                           .map((s) => s.trim())
                           .filter(Boolean)
-                      )
-                    }
+                      );
+                    }}
                   />
                 </Field>
                 {/* Only ever populated by a D&D Beyond sync while the character was at 0 HP — there's
@@ -496,22 +515,31 @@ export function EditCharacterModal({
                 <Field label="Resistances (comma-separated)">
                   <input
                     className={`${inputCls} w-full`}
-                    value={draft.resistances.join(", ")}
-                    onChange={(e) => setDamageList("resistances", e.target.value)}
+                    value={resistancesText}
+                    onChange={(e) => {
+                      setResistancesText(e.target.value);
+                      setDamageList("resistances", e.target.value);
+                    }}
                   />
                 </Field>
                 <Field label="Immunities (comma-separated)">
                   <input
                     className={`${inputCls} w-full`}
-                    value={draft.immunities.join(", ")}
-                    onChange={(e) => setDamageList("immunities", e.target.value)}
+                    value={immunitiesText}
+                    onChange={(e) => {
+                      setImmunitiesText(e.target.value);
+                      setDamageList("immunities", e.target.value);
+                    }}
                   />
                 </Field>
                 <Field label="Vulnerabilities (comma-separated)">
                   <input
                     className={`${inputCls} w-full`}
-                    value={draft.vulnerabilities.join(", ")}
-                    onChange={(e) => setDamageList("vulnerabilities", e.target.value)}
+                    value={vulnerabilitiesText}
+                    onChange={(e) => {
+                      setVulnerabilitiesText(e.target.value);
+                      setDamageList("vulnerabilities", e.target.value);
+                    }}
                   />
                 </Field>
               </div>
@@ -522,8 +550,11 @@ export function EditCharacterModal({
                 <textarea
                   className={`${inputCls} w-full`}
                   rows={2}
-                  value={draft.advantages.join("\n")}
-                  onChange={(e) => setAdvantages(e.target.value)}
+                  value={advantagesText}
+                  onChange={(e) => {
+                    setAdvantagesText(e.target.value);
+                    setAdvantages(e.target.value);
+                  }}
                 />
               </Field>
             </section>
@@ -561,8 +592,11 @@ export function EditCharacterModal({
               <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
                 <input
                   className={`${inputCls} w-full`}
-                  value={draft.languages.join(", ")}
-                  onChange={(e) => setLanguages(e.target.value)}
+                  value={languagesText}
+                  onChange={(e) => {
+                    setLanguagesText(e.target.value);
+                    setLanguages(e.target.value);
+                  }}
                 />
               </Field>
             </section>
