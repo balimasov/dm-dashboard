@@ -10,11 +10,11 @@ import { EditCreatureModal } from "./EditCreatureModal";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { CreatureStatusRail } from "./CreatureStatusRail";
 import { AskAiPill } from "./ui/AskAiPill";
-import { ENTITY_CARD_BASE_CLS, TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
+import { ENTITY_CARD_BASE_CLS, TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { ReminderBadge } from "./ui/ReminderBadge";
-import { StatusRail } from "./ui/StatusRail";
 
 /**
  * A deliberately lighter sibling of `CharacterCard` for companions/summoned
@@ -82,16 +82,10 @@ export function CreatureCard({
             : "border-slate-800 bg-slate-900/60"
       }`}
     >
-      <StatusRail
-        conditions={creature.conditions}
-        exhaustion={creature.exhaustion}
-        concentrating={Boolean(creature.concentrating)}
-        customConditionIds={creature.customConditionIds ?? []}
+      <CreatureStatusRail
+        creature={creature}
+        onUpdate={onUpdate}
         customConditionLibrary={customConditionLibrary}
-        onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
-        onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
-        onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
-        onCustomConditionIdsChange={onUpdate ? (customConditionIds) => onUpdate(creature.id, { customConditionIds }) : undefined}
         onCustomConditionLibraryChange={onCustomConditionLibraryChange}
       />
 
@@ -103,7 +97,7 @@ export function CreatureCard({
           toolbar (same `TOOLBAR_SHELL_CLS` as `CharacterCard`'s equivalent
           row) instead of a bare flex row. `-mb-2` trims the leftover gap
           before the stat block — see `CharacterCard`'s own comment. */}
-      <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+      <div className={TOOLBAR_ROW_CLS}>
         <AskAiPill onClick={() => setAiOpen(true)} />
         <ReminderBadge
           group={creatureReminders(creature)}

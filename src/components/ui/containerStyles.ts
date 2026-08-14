@@ -109,6 +109,20 @@ export const AI_CHIP_CLS =
 export const TOOLBAR_SHELL_CLS = "rounded-lg bg-white/[0.035]";
 
 /**
+ * Full class string for the reminder/AI/kebab toolbar row — `TOOLBAR_SHELL_CLS`
+ * above plus the negative-margin/padding recipe that positions it, which was
+ * duplicated byte-for-byte as an inline template literal across
+ * `CharacterCard.tsx`, `CharacterDetailsModal.tsx`, `CreatureCard.tsx`, and
+ * `CreatureDetailsModal.tsx` (confirmed by a UI-kit audit) rather than
+ * referencing one name. `-mx-2` matches the header button's own inset so the
+ * toolbar and header read as one aligned column; `-mb-2` trims the card's
+ * uniform `gap-3.5` down for just this one gap now that the toolbar has a
+ * visible tint (that same 14px read as more leftover space than it did as a
+ * plain unbordered row).
+ */
+export const TOOLBAR_ROW_CLS = `-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`;
+
+/**
  * Light divider between grouped zones inside a compact ability/spell/attack
  * hover-hint (`AbilityHintPanel`, `SpellHintPanel`, `AttackHintPanel`) —
  * tighter than `SectionDivider`'s `pt-2.5`/`pt-3` (deliberately rejected

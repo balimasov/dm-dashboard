@@ -10,14 +10,8 @@ import {
   KnownSpell,
   RARITY_COLOR,
   RecoveryType,
-  SKILL_ABBR,
-  SKILL_LABELS,
-  SkillProficiency,
-  SkillName,
-  STAT_ORDER,
 } from "@/lib/types";
 import { advantagesHeading, parseAdvantageEntry } from "@/lib/advantages";
-import { abilityModifier, proficiencyBonus, savingThrowBonus, skillBonus } from "@/lib/characterMath";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier, ordinalLevel } from "@/lib/format";
 import { dedupeInventoryItems, groupConsumablesByType } from "@/lib/partyToolkit";
@@ -25,45 +19,25 @@ import { characterReminders } from "@/lib/reminders";
 import { characterSyncIssue } from "@/lib/sync";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterHeader } from "./CharacterHeader";
+import { CharacterStatBlock } from "./CharacterStatBlock";
+import { CharacterStatusRail } from "./CharacterStatusRail";
 import { EditCharacterModal } from "./EditCharacterModal";
-import { SkillPanel } from "./SkillPanel";
 import { AskAiPill } from "./ui/AskAiPill";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { ConsumableQuantity } from "./ui/ConsumableQuantity";
-import { TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
+import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
-import { HpBar } from "./ui/HpBar";
 import { IconButton } from "./ui/IconButton";
 import { IconInfoList } from "./ui/IconInfoList";
-import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
-import {
-  AC_HINT_PANEL,
-  IMMUNE_HINT_PANEL,
-  INITIATIVE_HINT_PANEL,
-  LANGUAGES_HINT_PANEL,
-  PASSIVE_INSIGHT_HINT_PANEL,
-  PASSIVE_INVESTIGATION_HINT_PANEL,
-  PASSIVE_PERCEPTION_HINT_PANEL,
-  PROFICIENCY_HINT_PANEL,
-  RESIST_HINT_PANEL,
-  SPEED_HINT_PANEL,
-  TOOLS_HINT_PANEL,
-  VULNERABLE_HINT_PANEL,
-} from "./ui/combatStatHints";
+import { LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
-import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { RecoveryBadge, recoveryStatusLine } from "./ui/RecoveryBadge";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { SectionDivider } from "./ui/SectionDivider";
-import { SenseEntries } from "./ui/SenseEntries";
 import { Modal } from "./ui/Modal";
-import { AbilityScoreBox } from "./ui/AbilityScoreBox";
-import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { StatBox } from "./ui/StatBox";
-import { StatusRail } from "./ui/StatusRail";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
 import { SubHeading } from "./ui/SubHeading";
@@ -71,7 +45,7 @@ import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceMeter";
+import { DotMeter } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
@@ -225,12 +199,6 @@ export function CharacterDetailsModal({
 
   useScrollLock();
 
-  const isDown = c.combat.hp <= 0;
-
-  const allSkills: SkillProficiency[] = (Object.keys(SKILL_LABELS) as SkillName[])
-    .map((name) => c.skillProficiencies.find((s) => s.name === name) ?? { name, proficient: false, expertise: false })
-    .sort((a, b) => SKILL_LABELS[a.name].localeCompare(SKILL_LABELS[b.name]));
-
   const spellsByLevel = new Map<number, KnownSpell[]>();
   for (const spell of c.knownSpells) {
     const list = spellsByLevel.get(spell.level) ?? [];
@@ -272,17 +240,10 @@ export function CharacterDetailsModal({
       onClose={onClose}
       header={
         <>
-          <StatusRail
-            conditions={c.combat.conditions}
-            exhaustion={c.combat.exhaustion}
-            concentrating={Boolean(c.concentrating)}
-            heroicInspiration={c.heroicInspiration}
-            customConditionIds={c.combat.customConditionIds ?? []}
+          <CharacterStatusRail
+            character={c}
+            onUpdate={onUpdate}
             customConditionLibrary={customConditionLibrary}
-            onToggleConcentration={onUpdate ? () => onUpdate(c.id, { concentrating: !c.concentrating }) : undefined}
-            onCustomConditionIdsChange={
-              onUpdate ? (customConditionIds) => onUpdate(c.id, { combat: { ...c.combat, customConditionIds } }) : undefined
-            }
             onCustomConditionLibraryChange={onCustomConditionLibraryChange}
           />
 
@@ -313,7 +274,7 @@ export function CharacterDetailsModal({
             superset of the card, not a different view of the same actions.
             `-mb-2` trims the leftover gap the same way — see that file's
             own comment. */}
-        <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <div className={TOOLBAR_ROW_CLS}>
           <AskAiPill onClick={() => setAiOpen(true)} />
           <SyncStatusChip
             dndBeyondUrl={c.dndBeyondUrl}
@@ -348,201 +309,57 @@ export function CharacterDetailsModal({
           </div>
         </div>
 
-        {/* Combat state — same block as the main card (no divider above it, matching the card's own spacing between this and the sync block), so this modal is a superset of it rather than a different view. */}
-        <div>
-          <HpBar
-            hp={c.combat.hp}
-            maxHp={c.combat.maxHp}
-            tempHp={c.combat.tempHp}
-            isDown={isDown}
-            deathSaves={c.combat.deathSaves}
-          />
-          <div className="mt-2 grid grid-cols-2 gap-1.5 text-sm text-slate-300">
-            <IconStat
-              icon={<ShieldIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-              panel={AC_HINT_PANEL}
-              label="AC"
-            >
-              {c.combat.ac}
-            </IconStat>
-            <IconStat
-              className="pl-4"
-              icon={<SpeedIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-              panel={SPEED_HINT_PANEL}
-              label="Speed"
-            >
-              {c.combat.speed}ft
-            </IconStat>
-            <IconStat
-              icon={<InitiativeIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-              panel={INITIATIVE_HINT_PANEL}
-              label="Initiative"
-            >
-              {formatModifier(c.initiative)}
-            </IconStat>
-            <IconStat
-              className="pl-4"
-              icon={<ProficiencyIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-              panel={PROFICIENCY_HINT_PANEL}
-              label="Prof"
-            >
-              {formatModifier(proficiencyBonus(c.level))}
-            </IconStat>
-          </div>
-        </div>
-
-        {/* Proficiencies — Languages/Tools, split out of the AC/Speed/
-            Initiative/Prof grid above into their own group (previously
-            tacked on as two full-width rows at the bottom of that grid,
-            which read as stuck-on rather than its own group), rendered via
-            `IconInfoList` — the same shared "icon + label + wrapping value"
-            row Resist/Immune/Vulnerable use below, not a bespoke layout:
-            an `IconStat`-based attempt here first (a `flex` box for
-            label+value) turned out to be exactly the bug `IconInfoList`'s
-            own doc comment already warns about — a flex child has no
-            hanging indent, so a long comma list (six-plus languages isn't
-            rare) wrapped flush against the row's left edge instead of
-            under its own first line, and the block lost its ambient
-            `text-sm text-slate-300` sizing/color along the way too.
-            `SectionDivider`+`SubHeading` here (unlike Resist/Immune below,
-            which never had one) restores this section's own heading/divider
-            — dropped by mistake in the `IconInfoList` swap, not a
-            deliberate change from the round before it. Gated the same as
-            the list itself so an empty pair doesn't leave a bare heading
-            with nothing under it. */}
-        {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
-          <SectionDivider compact>
-            <SubHeading>Proficiencies</SubHeading>
-            <IconInfoList
-              entries={[
-                { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
-                { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
-              ]}
-            />
-          </SectionDivider>
-        )}
-
-        {/* Senses — same block as the main card. */}
-        <SectionDivider compact>
-          <SubHeading>Senses</SubHeading>
-          <div className="grid grid-cols-3 gap-1.5">
-            <Pill panel={PASSIVE_PERCEPTION_HINT_PANEL}>
-              {SKILL_ABBR.perception} {c.combat.passivePerception}
-            </Pill>
-            <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
-              {SKILL_ABBR.investigation} {c.combat.passiveInvestigation}
-            </Pill>
-            <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
-              {SKILL_ABBR.insight} {c.combat.passiveInsight}
-            </Pill>
-          </div>
-          {c.senses.length > 0 && (
-            <div className="mt-4">
-              <SenseEntries senses={c.senses} />
-            </div>
-          )}
-        </SectionDivider>
-
-        {/* Ability Scores — same block as the main card (Stats + Saving Throws merged, see `AbilityScoreBox`'s own doc comment). */}
-        <SectionDivider compact>
-          <SubHeading>Ability Scores</SubHeading>
-          <div className="grid grid-cols-6 gap-1.5">
-            {STAT_ORDER.map((key) => {
-              const mod = abilityModifier(c.stats[key]);
-              const save = savingThrowBonus(c, key);
-              const proficient = c.savingThrowProficiencies.includes(key);
-              return (
-                <AbilityScoreBox
-                  key={key}
-                  label={key.toUpperCase()}
-                  modifier={formatModifier(mod)}
-                  save={formatModifier(save)}
-                  highlight={proficient}
-                  panel={
-                    <AbilityScoreHintPanel
-                      abilityKey={key}
-                      score={c.stats[key]}
-                      modifier={formatModifier(mod)}
-                      save={formatModifier(save)}
-                      highlight={proficient}
-                      advantages={c.advantages}
-                    />
-                  }
+        {/* HP through Resources — shared with the main card via
+            `CharacterStatBlock` (see its own doc comment for why: a UI-kit
+            audit found this whole block byte-identical between the two,
+            after a fix landed in one and not the other for the third time
+            this session). Languages/Tools "Proficiencies" and the full
+            Advantages list are this modal's own two additions, injected at
+            their exact positions via `afterCombatGrid`/`afterDamageInfo`
+            rather than duplicated inline — both stayed modal-only, the
+            compact card has no room for either. */}
+        <CharacterStatBlock
+          character={c}
+          compact
+          afterCombatGrid={
+            (c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+              <SectionDivider compact>
+                <SubHeading>Proficiencies</SubHeading>
+                <IconInfoList
+                  entries={[
+                    { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
+                    { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+                  ]}
                 />
-              );
-            })}
-          </div>
-        </SectionDivider>
-
-        {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
-        <IconInfoList
-          entries={[
-            { label: "Resist", value: c.resistances.join(", "), panel: RESIST_HINT_PANEL },
-            { label: "Immune", value: c.immunities.join(", "), panel: IMMUNE_HINT_PANEL },
-            {
-              label: "Vulnerable",
-              value: c.vulnerabilities.join(", "),
-              panel: VULNERABLE_HINT_PANEL,
-            },
-          ]}
+              </SectionDivider>
+            )
+          }
+          afterDamageInfo={
+            // Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can.
+            c.advantages.length > 0 && (
+              <SectionDivider compact>
+                <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
+                <ul className="space-y-1.5 text-sm text-slate-300">
+                  {c.advantages.map((a) => {
+                    const { kind, subject, restriction } = parseAdvantageEntry(a);
+                    return (
+                      <li key={a} className="flex items-start gap-1.5">
+                        <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
+                          {kind === "advantage" ? "▲" : "▼"}
+                        </span>
+                        <span>
+                          {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
+                          <b className="font-semibold text-slate-200">{subject}</b>
+                          {restriction && `: ${restriction}`}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </SectionDivider>
+            )
+          }
         />
-
-        {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. Placed after Resist/Immune/Vulnerable (not between Ability Scores and it) and in its own `SectionDivider` like every other section here — it used to be a bare, borderless `<div>` wedged between two bordered sections, which read as a stray fragment rather than a section of its own. */}
-        {c.advantages.length > 0 && (
-          <SectionDivider compact>
-            <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
-            <ul className="space-y-1.5 text-sm text-slate-300">
-              {c.advantages.map((a) => {
-                const { kind, subject, restriction } = parseAdvantageEntry(a);
-                return (
-                  <li key={a} className="flex items-start gap-1.5">
-                    <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
-                      {kind === "advantage" ? "▲" : "▼"}
-                    </span>
-                    <span>
-                      {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
-                      <b className="font-semibold text-slate-200">{subject}</b>
-                      {restriction && `: ${restriction}`}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </SectionDivider>
-        )}
-
-        {/* Skills — full width, since wrapped chips make better use of a wide row than a half-width column would */}
-        <SectionDivider compact>
-          <SubHeading>Skills</SubHeading>
-          <div className="flex flex-wrap gap-1.5">
-            {allSkills.map((skill) => {
-              const color = skill.expertise
-                ? "rose"
-                : skill.proficient
-                  ? "amber"
-                  : skill.halfProficiency
-                    ? "orange"
-                    : "slate";
-              return (
-                <Pill key={skill.name} panel={<SkillPanel skill={skill} />} color={color}>
-                  {formatModifier(skillBonus(c, skill))} {SKILL_ABBR[skill.name]}
-                  {skill.advantage === "advantage" && <span className="ml-0.5 text-emerald-400">▲</span>}
-                  {skill.advantage === "disadvantage" && <span className="ml-0.5 text-red-400">▼</span>}
-                </Pill>
-              );
-            })}
-          </div>
-        </SectionDivider>
-
-        {/* Resources tracker — same block as the main card (own "Resources"
-            label baked in, see ResourceTrackerBar's doc comment), quick-glance
-            "how topped-up is this character" before diving into the
-            Features/Spells tabs below (which don't otherwise show it). */}
-        {averageOverallPercent(c.resources, c.spellSlots) !== null && (
-          <SectionDivider compact>
-            <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
-          </SectionDivider>
-        )}
 
         {/* Weapons / Features / Spells / Consumables — tabbed instead of
             side-by-side columns so each reads as a single, comfortably narrow

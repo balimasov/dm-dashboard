@@ -8,16 +8,16 @@ import { CreatureAbilitiesPanel } from "./CreatureAbilitiesPanel";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
 import { CreatureStatBlock } from "./CreatureStatBlock";
+import { CreatureStatusRail } from "./CreatureStatusRail";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { AskAiPill } from "./ui/AskAiPill";
-import { TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
+import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { IconButton } from "./ui/IconButton";
 import { Modal } from "./ui/Modal";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { ReminderBadge } from "./ui/ReminderBadge";
-import { StatusRail } from "./ui/StatusRail";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 
@@ -75,16 +75,10 @@ export function CreatureDetailsModal({
       // to scroll back up to it.
       header={
         <>
-          <StatusRail
-            conditions={creature.conditions}
-            exhaustion={creature.exhaustion}
-            concentrating={Boolean(creature.concentrating)}
-            customConditionIds={creature.customConditionIds ?? []}
+          <CreatureStatusRail
+            creature={creature}
+            onUpdate={onUpdate}
             customConditionLibrary={customConditionLibrary}
-            onToggleConcentration={onUpdate ? () => onUpdate(creature.id, { concentrating: !creature.concentrating }) : undefined}
-            onConditionsChange={onUpdate ? (conditions) => onUpdate(creature.id, { conditions }) : undefined}
-            onExhaustionChange={onUpdate ? (exhaustion) => onUpdate(creature.id, { exhaustion }) : undefined}
-            onCustomConditionIdsChange={onUpdate ? (customConditionIds) => onUpdate(creature.id, { customConditionIds }) : undefined}
             onCustomConditionLibraryChange={onCustomConditionLibraryChange}
           />
 
@@ -109,7 +103,7 @@ export function CreatureDetailsModal({
             now lives inline on the header's own "CR N" line instead (see
             `CreatureHeader`). `-mb-2` trims the leftover gap — see
             `CharacterCard`'s own comment. */}
-        <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <div className={TOOLBAR_ROW_CLS}>
           <AskAiPill onClick={() => setAiOpen(true)} />
           <ReminderBadge
             group={creatureReminders(creature)}
