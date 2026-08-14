@@ -236,7 +236,9 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
 
   test("Chem (Monk 8, has the Tavern Brawler feat, unarmored) — D&D Beyond's resolved 'Enhanced Unarmed Strike' action (1d4, Str-based) is only the feat's own raw baseline; Martial Arts still stacks on top (Dexterous Attacks + the level-8 1d8 Martial Arts die beats the feat's 1d4)", () => {
     const c = load("chem-monk");
-    const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
+    // Named "Enhanced Unarmed Strike", not "Unarmed Strike" — it's the feat's
+    // own resolved action, and D&D Beyond lists it as its own separate row.
+    const unarmed = c.attacks.find((a) => a.name === "Enhanced Unarmed Strike")!;
     expect(unarmed).toMatchObject({
       attackType: "melee",
       attackBonus: 6, // dex +3 (Martial Arts' Dexterous Attacks beats str +1) + proficiency +3
@@ -246,9 +248,9 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
     });
   });
 
-  test("Monk (Warrior of the Open Hand 20, unarmored, Dex +6) — Unarmed Strike matches D&D Beyond's own displayed +12, 1d12+6, not the feat-resolved 'Enhanced Unarmed Strike' action's own raw 1d4/Str baseline", () => {
+  test("Monk (Warrior of the Open Hand 20, unarmored, Dex +6) — the resolved 'Enhanced Unarmed Strike' action's numbers get Martial Arts applied on top, matching D&D Beyond's own displayed +12, 1d12+6, not the feat's own raw 1d4/Str baseline", () => {
     const c = load("monk-warrior-open-hand-20");
-    const unarmed = c.attacks.find((a) => a.name === "Unarmed Strike")!;
+    const unarmed = c.attacks.find((a) => a.name === "Enhanced Unarmed Strike")!;
     expect(unarmed).toMatchObject({
       attackType: "melee",
       attackBonus: 12, // dex +6 + proficiency +6
@@ -256,6 +258,21 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
       damageType: "Bludgeoning",
       proficient: true,
     });
+  });
+
+  test("Warlock (Fiend Patron 20, Tavern Brawler, Str -1, not a Monk) — the resolved unarmed-strike entry keeps the feat's own name 'Enhanced Unarmed Strike' instead of being relabeled 'Unarmed Strike', matching D&D Beyond's Actions tab where both are separate rows", () => {
+    const c = load("warlock-fiend-patron-20");
+    expect(c.attacks.find((a) => a.name === "Enhanced Unarmed Strike")).toMatchObject({
+      attackType: "melee",
+      attackBonus: 5, // str -1 + proficiency +6
+      damage: "1d4 -1",
+      damageType: "Bludgeoning",
+      proficient: true,
+    });
+    // No separate plain "Unarmed Strike" row — this app shows one row per
+    // unarmed strike (the character's best resolved option), not every
+    // variant D&D Beyond lists.
+    expect(c.attacks.find((a) => a.name === "Unarmed Strike")).toBeUndefined();
   });
 });
 

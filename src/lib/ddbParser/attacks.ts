@@ -137,6 +137,15 @@ function isMonkWeapon(weapon: RawDdbAny, propertyNames: string[]): boolean {
  * whenever it's active, confirmed against a real level-20 Monk export where
  * D&D Beyond's own displayed Unarmed Strike (+12, 1d12+6) matched the
  * Martial-Arts-boosted result, not this feat action's raw 1d4/STR alone.
+ *
+ * The resolved entry keeps its own real name (e.g. "Enhanced Unarmed
+ * Strike") rather than being relabeled "Unarmed Strike" — D&D Beyond's own
+ * Actions tab lists it as a second, separate row alongside the plain
+ * "Unarmed Strike" (confirmed on a real level-20 Warlock/Tavern Brawler
+ * export: DDB shows both "Unarmed Strike" at the flat 1+Str baseline *and*
+ * "Enhanced Unarmed Strike" at 1d4+Str side by side). Silently showing the
+ * better numbers under the plain name was misleading — it read as if the
+ * character's *baseline* Unarmed Strike had that damage.
  */
 function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack {
   const monkDie = martialArtsDie(data);
@@ -155,7 +164,7 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
           : action.dice.diceString;
       return {
         id: "attack-unarmed",
-        name: "Unarmed Strike",
+        name: action.name,
         attackType: "melee",
         attackBonus: abilityMod + (proficient ? profBonus : 0),
         damage: `${dieString}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
