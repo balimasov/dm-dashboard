@@ -80,6 +80,8 @@ export interface KnownSpell {
   isReaction?: boolean;
   /** Requires concentration to maintain (`duration.durationType === "Concentration"` on the definition) — a real sheet fact computed once here, same as `isAreaEffect`/`isReaction`, rather than re-derived later by string-matching the human-readable `duration` text below. */
   isConcentration?: boolean;
+  /** Castable as a Ritual (10 minutes longer, no spell slot spent) — straight passthrough from the spell definition's own `ritual` flag. */
+  isRitual?: boolean;
   /** e.g. "1 action", "1 bonus action", "1 reaction", "1 minute" — D&D Beyond's own "Time" column, shown in the hint since a spell's Action/Bonus Action/Reaction split isn't visible anywhere else on the card. */
   castingTime?: string;
   /** e.g. "Self", "Touch", "150 ft.", "150 ft. (20 ft. Sphere)" for an area spell — D&D Beyond's "Range" column. */

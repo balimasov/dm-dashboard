@@ -67,6 +67,7 @@ const knownSpellSchema = z.object({
   isAreaEffect: z.boolean().optional(),
   isReaction: z.boolean().optional(),
   isConcentration: z.boolean().optional(),
+  isRitual: z.boolean().optional(),
   castingTime: z.string().optional(),
   range: z.string().optional(),
   hitOrDc: z.string().optional(),

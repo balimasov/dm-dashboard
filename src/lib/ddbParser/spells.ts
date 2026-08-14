@@ -228,6 +228,7 @@ export function computeSpells(
       // prompt context) doesn't have to re-derive it by string-matching that
       // already-formatted text.
       ...(df.duration?.durationType === "Concentration" ? { isConcentration: true } : {}),
+      ...(df.ritual ? { isRitual: true } : {}),
       ...(formatCastingTime(df.activation) ? { castingTime: formatCastingTime(df.activation) } : {}),
       ...(formatRange(df.range) ? { range: formatRange(df.range) } : {}),
       ...(formatHitOrDc(df, spellcasting) ? { hitOrDc: formatHitOrDc(df, spellcasting) } : {}),

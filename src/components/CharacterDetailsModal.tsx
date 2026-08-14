@@ -74,7 +74,7 @@ import { DotMeter, ResourceTrackerBar, averageOverallPercent } from "./ResourceM
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
+import { SpellBadges, SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
 import { TabBar } from "./ui/TabBar";
 
 function spellLevelLabel(level: number): string {
@@ -645,16 +645,20 @@ export function CharacterDetailsModal({
                                   </>
                                 }
                               >
-                                <InfoTooltip
-                                  panel={
-                                    <SpellHintPanel
-                                      spell={spell}
-                                      status={spell.max !== undefined && recoveryStatusLine(spell.recovery!, spell.current, spell.max)}
-                                    />
-                                  }
-                                >
-                                  {spell.name}
-                                </InfoTooltip>
+                                <span className="flex min-w-0 items-center gap-1.5">
+                                  <InfoTooltip
+                                    className="min-w-0 flex-1"
+                                    panel={
+                                      <SpellHintPanel
+                                        spell={spell}
+                                        status={spell.max !== undefined && recoveryStatusLine(spell.recovery!, spell.current, spell.max)}
+                                      />
+                                    }
+                                  >
+                                    {spell.name}
+                                  </InfoTooltip>
+                                  <SpellBadges spell={spell} />
+                                </span>
                               </FlaggableRow>
                             );
                           })}

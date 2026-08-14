@@ -323,6 +323,18 @@ describe("spell tags/isAreaEffect/isReaction/isConcentration — Party Toolkit c
     const c = load("yorun-all-immunities");
     expect(c.knownSpells.find((s) => s.name === "Fireball")?.isConcentration).toBeUndefined();
   });
+
+  test("Detect Magic (Wizard, Diviner 20) is flagged isRitual (definition.ritual: true) — also still concentration, both at once", () => {
+    const c = load("wizard-diviner-20");
+    const detectMagic = c.knownSpells.find((s) => s.name === "Detect Magic");
+    expect(detectMagic?.isRitual).toBe(true);
+    expect(detectMagic?.isConcentration).toBe(true);
+  });
+
+  test("Fireball (not a ritual) has no isRitual flag", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.find((s) => s.name === "Fireball")?.isRitual).toBeUndefined();
+  });
 });
 
 describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matches D&D Beyond's own Time/Range/Hit-DC/Effect/Notes columns", () => {

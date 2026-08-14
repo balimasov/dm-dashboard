@@ -111,26 +111,26 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
           a seam *between* the bonus and damage specifically, not another
           item spaced the same as the mastery badge is from everything else. */}
       <span className="flex items-center gap-1">
-        <span className="font-semibold text-slate-100">{formatModifier(attack.attackBonus)}</span>
+        {/* `text-sky-400` on both numbers, and `text-slate-300` (not a
+            dimmed/shrunk tag) on the damage type — matches `AttackHintPanel`'s
+            own `HintFact` exactly: its default "sky" tone for the roll, and
+            its `trailing` prop (the damage type) carrying no color/size
+            override of its own, so it inherits the hint panel's plain
+            `text-slate-300` at full size. This row used to show bold white
+            numbers and a dimmed 10px type tag instead — a drift from the
+            hint that was never a deliberate difference. */}
+        <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
         {/* Same middle-dot `HpBar`'s death-save pair and every "kind · source"
             meta line elsewhere already use — the attack bonus and damage roll
-            are both bold/bright now (see the damage-type comment below), which
-            reads as one continuous run of digits without some seam between
-            them. Bumped up from `text-slate-600` at the row's own small text
-            size — too faint to register as a seam there; bigger and lighter
-            reads as a deliberate divider instead of a stray period. */}
+            are both bold/bright now, which reads as one continuous run of
+            digits without some seam between them. Bumped up from
+            `text-slate-600` at the row's own small text size — too faint to
+            register as a seam there; bigger and lighter reads as a
+            deliberate divider instead of a stray period. */}
         <span className="text-base font-bold leading-none text-slate-500">·</span>
-        {/* Damage roll gets the same weight as the attack bonus above — it's
-            the other number a DM actually reads mid-combat. The damage *type*
-            demotes to a small tag instead of running on in the same
-            color/weight as the roll, which used to read as one undifferentiated
-            gray blob ("1d4 +2 Piercing") with no visual seam between the two.
-            Not uppercased — all-caps at this size drew more attention than a
-            secondary label should, competing with the roll instead of quietly
-            sitting under it. */}
         <span className="flex items-baseline gap-1">
-          <span className="font-semibold text-slate-100">{attack.damage}</span>
-          {attack.damageType && <span className="text-[10px] text-slate-500">{attack.damageType}</span>}
+          <span className="font-semibold text-sky-400">{attack.damage}</span>
+          {attack.damageType && <span className="text-slate-300">{attack.damageType}</span>}
         </span>
       </span>
     </span>

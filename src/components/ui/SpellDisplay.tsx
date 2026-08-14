@@ -3,6 +3,8 @@ import { RichText } from "../RichText";
 import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
+import { MetaBadge } from "./MetaBadge";
+import { CONCENTRATION_HINT_TEXT } from "./StatusRail";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 const CONCENTRATION_PREFIX = "Concentration, ";
@@ -28,6 +30,8 @@ export interface SpellDisplayData {
   components?: string;
   materialComponent?: string;
   description?: string;
+  isConcentration?: boolean;
+  isRitual?: boolean;
 }
 
 /** Splits `hitOrDc` (e.g. "+6", "DC 15 DEX") into a label + a value with the "DC " prefix stripped, so the hint can show "Save DC" as its own label instead of repeating "DC" in both places. */
@@ -126,12 +130,20 @@ export function SpellHintPanel({
 
 /**
  * The at-a-glance to-hit/save-DC + effect summary shown right on a spell
- * row — same idea and visual weight as `AttackTrailing` (bold white numbers,
- * a middle-dot seam between the two halves, the effect's type demoted to a
- * small muted tag) so a DM reads a spell's combat-relevant numbers the same
- * way as a weapon's, without opening the hint. Replaces the old plain
- * components (V/S/M) badge here — that's prep-time info, not something a DM
- * needs mid-fight, and now lives in the hint instead (see `SpellHintPanel`).
+ * row — same idea and visual weight as `AttackTrailing` (a middle-dot seam
+ * between the two halves) so a DM reads a spell's combat-relevant numbers
+ * the same way as a weapon's, without opening the hint. Replaces the old
+ * plain components (V/S/M) badge here — that's prep-time info, not
+ * something a DM needs mid-fight, and now lives in the hint instead (see
+ * `SpellHintPanel`).
+ *
+ * Both the roll and its type/label share the same `text-sky-400`/
+ * `text-slate-300` colors `SpellHintPanel`'s own `HintFact` already uses for
+ * these exact values — confirmed against the hint's actual rendering (its
+ * `trailing` text carries no color/size override of its own, so it inherits
+ * the panel's plain `text-slate-300` at full size), not the dimmed 10px tag
+ * this row used to show, which drifted from that without ever being
+ * deliberately different.
  *
  * Only shows `effect` when `effectType` is there too (a real damage/healing
  * die, e.g. "4d6 Fire"/"2d8 Healing") — `formatEffect` in `ddbParser/spells.ts`
@@ -150,14 +162,48 @@ export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
   if (!spell.hitOrDc && !hasEffect) return null;
   return (
     <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
-      {spell.hitOrDc && <span className="font-semibold text-slate-100">{spell.hitOrDc}</span>}
+      {spell.hitOrDc && <span className="font-semibold text-sky-400">{spell.hitOrDc}</span>}
       {spell.hitOrDc && hasEffect && <span className="text-sm font-bold leading-none text-slate-500">·</span>}
       {hasEffect && (
         <span className="flex items-baseline gap-1">
-          <span className="font-semibold text-slate-100">{spell.effect}</span>
-          <span className="text-[10px] text-slate-500">{spell.effectType}</span>
+          <span className="font-semibold text-sky-400">{spell.effect}</span>
+          <span className="text-slate-300">{spell.effectType}</span>
         </span>
       )}
     </span>
+  );
+}
+
+/**
+ * Concentration/Ritual status pills for a spell row — sit right after the
+ * name (not in `SpellTrailing`'s numbers group), the same `MetaBadge`
+ * primitive `RecoveryBadge`/mastery already use in this same row, just with
+ * their own `colorClassName`. Concentration reuses `LevelBadge`'s own
+ * violet (`border-violet-800 text-violet-400`) — the one color already
+ * meaning "concentration" on this card (`StatusRail`'s toggle uses the same
+ * family) — and shares its hover hint (`CONCENTRATION_HINT_TEXT`) rather
+ * than duplicating that copy. Ritual has no established color of its own,
+ * so it borrows `RecoveryBadge`'s neutral slate.
+ */
+export function SpellBadges({ spell }: { spell: Pick<SpellDisplayData, "isConcentration" | "isRitual"> }) {
+  if (!spell.isConcentration && !spell.isRitual) return null;
+  return (
+    <>
+      {spell.isConcentration && (
+        <MetaBadge label="C" panel={CONCENTRATION_HINT_TEXT} colorClassName="border-violet-800 text-violet-400" />
+      )}
+      {spell.isRitual && (
+        <MetaBadge
+          label="R"
+          panel={
+            <p>
+              <span className="font-semibold text-slate-200">Ritual</span>: castable without expending a spell
+              slot, but takes 10 minutes longer.
+            </p>
+          }
+          colorClassName="border-slate-700 text-slate-500"
+        />
+      )}
+    </>
   );
 }
