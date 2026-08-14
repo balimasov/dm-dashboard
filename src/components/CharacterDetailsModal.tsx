@@ -394,7 +394,7 @@ export function CharacterDetailsModal({
         {/* Proficiencies — Languages/Tools, split out of the AC/Speed/
             Initiative/Prof grid above into their own group (previously
             tacked on as two full-width rows at the bottom of that grid,
-            which read as stuck-on rather than its own group) via
+            which read as stuck-on rather than its own group), rendered via
             `IconInfoList` — the same shared "icon + label + wrapping value"
             row Resist/Immune/Vulnerable use below, not a bespoke layout:
             an `IconStat`-based attempt here first (a `flex` box for
@@ -403,15 +403,24 @@ export function CharacterDetailsModal({
             hanging indent, so a long comma list (six-plus languages isn't
             rare) wrapped flush against the row's left edge instead of
             under its own first line, and the block lost its ambient
-            `text-sm text-slate-300` sizing/color along the way too. No
-            heading here, same as Resist/Immune/Vulnerable below — spacing
-            between blocks already reads as separate groups without one. */}
-        <IconInfoList
-          entries={[
-            { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
-            { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
-          ]}
-        />
+            `text-sm text-slate-300` sizing/color along the way too.
+            `SectionDivider`+`SubHeading` here (unlike Resist/Immune below,
+            which never had one) restores this section's own heading/divider
+            — dropped by mistake in the `IconInfoList` swap, not a
+            deliberate change from the round before it. Gated the same as
+            the list itself so an empty pair doesn't leave a bare heading
+            with nothing under it. */}
+        {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+          <SectionDivider compact>
+            <SubHeading>Proficiencies</SubHeading>
+            <IconInfoList
+              entries={[
+                { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
+                { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+              ]}
+            />
+          </SectionDivider>
+        )}
 
         {/* Senses — same block as the main card. */}
         <SectionDivider compact>
