@@ -113,7 +113,11 @@ function ResourceTrackerHint({
   pactSlots?: boolean;
 }) {
   return (
-    <div className="w-56">
+    // `w-[272px]` matches `CharacterCard`'s own resource block width
+    // (its `w-[300px]` card minus `p-3.5` padding on both sides) — was
+    // `w-56` (224px), noticeably narrower than the block this hint explains,
+    // which read as a cramped popover next to the row it was hovering.
+    <div className="w-[272px]">
       <div className="space-y-1.5">
         <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
         <div className="flex items-center gap-1.5">

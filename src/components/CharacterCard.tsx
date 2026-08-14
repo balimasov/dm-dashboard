@@ -138,7 +138,12 @@ export function CharacterCard({
           leftover space than it did as a plain unbordered row. */}
       <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
         <AskAiPill onClick={() => setAiOpen(true)} />
-        <SyncStatusChip dndBeyondUrl={c.dndBeyondUrl} syncing={syncing} lastSyncedAt={c.lastSyncedAt} />
+        <SyncStatusChip
+          dndBeyondUrl={c.dndBeyondUrl}
+          syncing={syncing}
+          lastSyncedAt={c.lastSyncedAt}
+          onSync={onUpdate && c.dndBeyondUrl ? sync : undefined}
+        />
         <ReminderBadge
           group={characterReminders(c)}
           onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
