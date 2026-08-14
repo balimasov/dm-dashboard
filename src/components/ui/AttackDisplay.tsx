@@ -93,7 +93,7 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
  */
 export function AttackTrailing({ attack }: { attack: Attack }) {
   return (
-    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[13px]">
       {attack.mastery && (
         <MetaBadge
           label={attack.mastery}
@@ -116,11 +116,14 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
             white this row used to show, a drift from the hint that was never
             a deliberate difference. The damage type stays its own small
             secondary label (`text-[10px]`, demoted below the row's own
-            text-sm) rather than matching the hint's full-size trailing text —
-            a hint panel has room to spell it out plainly, but at this row's
-            denser size a full-size type reads as competing with the roll
-            instead of quietly labeling it; `text-slate-300` (not the old
-            `text-slate-500`) keeps it legible at that smaller size. */}
+            `text-[13px]` — the same size `SpellTrailing`/`AbilityTraitTrailing`
+            use, previously inherited unset here and drifting to the row's
+            ambient `text-sm`) rather than matching the hint's full-size
+            trailing text — a hint panel has room to spell it out plainly,
+            but at this row's denser size a full-size type reads as competing
+            with the roll instead of quietly labeling it; `text-slate-300`
+            (not the old `text-slate-500`) keeps it legible at that smaller
+            size. */}
         <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
         {/* Same middle-dot `HpBar`'s death-save pair and every "kind · source"
             meta line elsewhere already use — the attack bonus and damage roll

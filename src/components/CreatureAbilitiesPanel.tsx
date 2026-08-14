@@ -72,7 +72,7 @@ function EffectBadge({ effect }: { effect: CreatureEffect }) {
  */
 function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   return (
-    <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-xs">
+    <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-[13px]">
       {trait.attack && trait.attack.damage.length > 0 && (
         <span className="flex items-center gap-1">
           {trait.attack.attackBonus !== undefined && (

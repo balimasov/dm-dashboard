@@ -4,7 +4,6 @@ import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
-import { CONCENTRATION_HINT_TEXT } from "./StatusRail";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 const CONCENTRATION_PREFIX = "Concentration, ";
@@ -163,7 +162,7 @@ export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
   const hasEffect = Boolean(spell.effect && spell.effectType);
   if (!spell.hitOrDc && !hasEffect) return null;
   return (
-    <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
+    <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px]">
       {spell.hitOrDc && <span className="font-semibold text-sky-400">{spell.hitOrDc}</span>}
       {spell.hitOrDc && hasEffect && <span className="text-sm font-bold leading-none text-slate-500">·</span>}
       {hasEffect && (
@@ -183,16 +182,29 @@ export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
  * their own `colorClassName`. Concentration reuses `LevelBadge`'s own
  * violet (`border-violet-800 text-violet-400`) — the one color already
  * meaning "concentration" on this card (`StatusRail`'s toggle uses the same
- * family) — and shares its hover hint (`CONCENTRATION_HINT_TEXT`) rather
- * than duplicating that copy. Ritual has no established color of its own,
- * so it borrows `RecoveryBadge`'s neutral slate.
+ * family) — for the badge itself, but its hover hint stays plain text (no
+ * `text-violet-300` highlight on the word "Concentration" the way
+ * `StatusRail`'s own `CONCENTRATION_HINT_TEXT` does): that highlight reads
+ * right on a big toggle row that's otherwise all-neutral, but redundant
+ * inches from a badge that's already colored violet itself. Ritual has no
+ * established color of its own, so it borrows `RecoveryBadge`'s neutral
+ * slate, and its hint was already plain text.
  */
 export function SpellBadges({ spell }: { spell: Pick<SpellDisplayData, "isConcentration" | "isRitual"> }) {
   if (!spell.isConcentration && !spell.isRitual) return null;
   return (
     <>
       {spell.isConcentration && (
-        <MetaBadge label="C" panel={CONCENTRATION_HINT_TEXT} colorClassName="border-violet-800 text-violet-400" />
+        <MetaBadge
+          label="C"
+          panel={
+            <p>
+              <span className="font-semibold text-slate-200">Concentration</span>: required to keep this spell
+              active; taking damage forces a Constitution save or the spell ends.
+            </p>
+          }
+          colorClassName="border-violet-800 text-violet-400"
+        />
       )}
       {spell.isRitual && (
         <MetaBadge
