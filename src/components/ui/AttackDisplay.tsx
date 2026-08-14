@@ -111,14 +111,16 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
           a seam *between* the bonus and damage specifically, not another
           item spaced the same as the mastery badge is from everything else. */}
       <span className="flex items-center gap-1">
-        {/* `text-sky-400` on both numbers, and `text-slate-300` (not a
-            dimmed/shrunk tag) on the damage type — matches `AttackHintPanel`'s
-            own `HintFact` exactly: its default "sky" tone for the roll, and
-            its `trailing` prop (the damage type) carrying no color/size
-            override of its own, so it inherits the hint panel's plain
-            `text-slate-300` at full size. This row used to show bold white
-            numbers and a dimmed 10px type tag instead — a drift from the
-            hint that was never a deliberate difference. */}
+        {/* `text-sky-400` on both numbers — matches `AttackHintPanel`'s own
+            `HintFact` "sky" tone for To Hit/Damage, replacing the plain bold
+            white this row used to show, a drift from the hint that was never
+            a deliberate difference. The damage type stays its own small
+            secondary label (`text-[10px]`, demoted below the row's own
+            text-sm) rather than matching the hint's full-size trailing text —
+            a hint panel has room to spell it out plainly, but at this row's
+            denser size a full-size type reads as competing with the roll
+            instead of quietly labeling it; `text-slate-300` (not the old
+            `text-slate-500`) keeps it legible at that smaller size. */}
         <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
         {/* Same middle-dot `HpBar`'s death-save pair and every "kind · source"
             meta line elsewhere already use — the attack bonus and damage roll
@@ -130,7 +132,7 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
         <span className="text-base font-bold leading-none text-slate-500">·</span>
         <span className="flex items-baseline gap-1">
           <span className="font-semibold text-sky-400">{attack.damage}</span>
-          {attack.damageType && <span className="text-slate-300">{attack.damageType}</span>}
+          {attack.damageType && <span className="text-[10px] text-slate-300">{attack.damageType}</span>}
         </span>
       </span>
     </span>

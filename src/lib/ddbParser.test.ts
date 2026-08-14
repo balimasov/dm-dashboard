@@ -102,6 +102,25 @@ describe("non-caster classes", () => {
   });
 });
 
+describe("prepared-spellbook casters (spellPrepareType 1) show only what's actually prepared, not the whole spellbook", () => {
+  test("Wizard (Diviner 20) — Feather Fall/Thunderwave sit in her spellbook (countsAsKnownSpell) but aren't prepared today, so they're excluded; Mage Armor/Magic Missile/Sleep/Detect Magic (prepared: true) are included; her cantrips (Ray of Frost/Light/Mage Hand — never need preparing) show regardless of their own prepared: false", () => {
+    const c = load("wizard-diviner-20");
+    const names = c.knownSpells.map((s) => s.name).sort();
+    expect(names).not.toContain("Feather Fall");
+    expect(names).not.toContain("Thunderwave");
+    expect(names).toEqual(
+      expect.arrayContaining(["Mage Armor", "Magic Missile", "Sleep", "Detect Magic", "Ray of Frost", "Light", "Mage Hand"])
+    );
+  });
+
+  test("Sorcerer (a known-spell caster, spellPrepareType not 1) is unaffected — every classSpells entry has prepared: false on a real export since the field is never toggled for her, so countsAsKnownSpell alone still includes the whole list", () => {
+    const c = load("yorun-all-immunities");
+    expect(c.knownSpells.map((s) => s.name)).toEqual(
+      expect.arrayContaining(["Fireball", "Counterspell", "Misty Step", "Shield"])
+    );
+  });
+});
+
 describe("weapon attacks (Combat tab) — equipped, non-spell", () => {
   test("Alor (Fighter 5, computed Dex 18) — martial-weapons proficiency covers Scimitar/Shortsword/Longbow, Finesse picks the better modifier, unequipped Spear/Whisper of the Underdark are excluded, Weapon Mastery is unlocked via his Fighter feat's actions/options entries", () => {
     const c = load("alor-fighter");

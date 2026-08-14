@@ -645,9 +645,9 @@ export function CharacterDetailsModal({
                                   </>
                                 }
                               >
-                                <span className="flex min-w-0 items-center gap-1.5">
+                                <span className="flex min-w-0 flex-1 items-center gap-1.5">
                                   <InfoTooltip
-                                    className="min-w-0 flex-1"
+                                    className="min-w-0"
                                     panel={
                                       <SpellHintPanel
                                         spell={spell}

@@ -140,15 +140,29 @@ export function classCastsSpells(c: RawDdbAny): boolean {
  * choose between, so both are kept as separate spells (keyed on name *and*
  * whether the entry actually resolves to a charge pool, not name alone).
  *
- * `countsAsKnownSpell` only covers "fixed spellbook" casters (Wizard-style —
- * every spell copied into the book is known regardless of what's prepared
- * today) and `alwaysPrepared` only covers the handful of spells a subclass
- * grants automatically (e.g. domain/oath spells). Neither one is set for a
- * "prepare from the full class list" caster's (Cleric/Druid/Paladin) actual
- * daily choices — those live on the same entry under `prepared`, which is
- * why a Cleric's manually-selected prepared spells were silently dropped
- * without checking it too.
+ * `countsAsKnownSpell` only covers a *known*-spell caster (Sorcerer/Bard/
+ * Warlock/Paladin/Ranger-style — every spell on the list is usable, no daily
+ * prep step at all, confirmed on real exports where `prepared` sits `false`
+ * on literally every entry for these classes since the field is simply
+ * never toggled for them) and `alwaysPrepared` only covers the handful of
+ * spells a subclass grants automatically (e.g. domain/oath spells). For a
+ * *prepared*-spellbook caster (Wizard/Cleric/Druid — `classes[].definition.
+ * spellPrepareType === 1`, see `isPreparedSpellbookCaster`), `countsAsKnownSpell`
+ * instead means "copied into the spellbook," true for the character's *entire*
+ * spellbook regardless of what's actually prepared today (confirmed on a real
+ * Wizard export: Feather Fall/Thunderwave both sat `countsAsKnownSpell: true,
+ * prepared: false` — spellbook members she hadn't chosen to prepare) — using
+ * it as a stand-in for "usable" there was silently showing the whole
+ * spellbook instead of the day's actual prepared list. `prepared`/
+ * `alwaysPrepared` are the only signals that matter for these classes,
+ * *except* cantrips (`level === 0`), which D&D never requires preparing at
+ * all and which this same real export left `prepared: false` on too (Ray of
+ * Frost, Light, Mage Hand) — those still need `countsAsKnownSpell` (the only
+ * flag ever set on them) to show up at all.
  */
+function isPreparedSpellbookCaster(data: RawDdbData): boolean {
+  return (data.classes ?? []).some((c) => c.definition?.spellPrepareType === 1);
+}
 const COMPONENT_LABELS: Record<number, string> = { 1: "V", 2: "S", 3: "M" };
 
 export function computeSpells(
@@ -238,9 +252,16 @@ export function computeSpells(
     spells.push(spell);
   }
 
+  const preparedSpellbookCaster = isPreparedSpellbookCaster(data);
   for (const group of data.classSpells ?? []) {
     for (const entry of group.spells ?? []) {
-      if (entry.countsAsKnownSpell || entry.alwaysPrepared || entry.prepared) add(entry, "Class");
+      const isCantrip = (entry.definition?.level ?? 0) === 0;
+      const usable =
+        entry.alwaysPrepared ||
+        entry.prepared ||
+        (isCantrip && entry.countsAsKnownSpell) ||
+        (!preparedSpellbookCaster && entry.countsAsKnownSpell);
+      if (usable) add(entry, "Class");
     }
   }
 

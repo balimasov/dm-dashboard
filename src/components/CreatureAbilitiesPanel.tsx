@@ -60,7 +60,16 @@ function EffectBadge({ effect }: { effect: CreatureEffect }) {
   return <MetaBadge label={`${label} ${effect.amount}`} uppercase={false} colorClassName={EFFECT_KIND_COLOR[effect.kind]} />;
 }
 
-/** Bonus/damage (attack), DC (save), a recharge badge, and any non-damage effects — the fast-glance numbers a DM needs mid-combat without reading `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing` on the character side. */
+/**
+ * Bonus/damage (attack), DC (save), a recharge badge, and any non-damage
+ * effects — the fast-glance numbers a DM needs mid-combat without reading
+ * `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing`
+ * on the character side: `text-sky-400` on the roll/DC (matching
+ * `CreatureAbilityHintPanel`'s own `HintFact` "sky" tone), a small demoted
+ * `text-[10px] text-slate-300` on the damage type/save ability — the same
+ * corrected size+color those two components use, not the plain bold white +
+ * dimmed 10px tag this row used to show.
+ */
 function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   return (
     <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-xs">
@@ -68,22 +77,23 @@ function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
         <span className="flex items-center gap-1">
           {trait.attack.attackBonus !== undefined && (
             <>
-              <span className="font-semibold text-slate-100">{formatModifier(trait.attack.attackBonus)}</span>
+              <span className="font-semibold text-sky-400">{formatModifier(trait.attack.attackBonus)}</span>
               <span className="text-sm font-bold leading-none text-slate-500">·</span>
             </>
           )}
           {trait.attack.damage.map((roll, i) => (
             <span key={i} className="flex items-baseline gap-1">
               {i > 0 && <span className="text-slate-500">+</span>}
-              <span className="font-semibold text-slate-100">{roll.dice}</span>
-              {roll.damageType && <span className="text-[10px] text-slate-500">{roll.damageType}</span>}
+              <span className="font-semibold text-sky-400">{roll.dice}</span>
+              {roll.damageType && <span className="text-[10px] text-slate-300">{roll.damageType}</span>}
             </span>
           ))}
         </span>
       )}
       {trait.save && (
-        <span className="font-semibold text-slate-100">
-          DC {trait.save.dc} <span className="text-slate-500">{trait.save.ability.toUpperCase()}</span>
+        <span className="flex items-baseline gap-1">
+          <span className="font-semibold text-sky-400">DC {trait.save.dc}</span>
+          <span className="text-[10px] text-slate-300">{trait.save.ability.toUpperCase()}</span>
         </span>
       )}
       {trait.recharge && (

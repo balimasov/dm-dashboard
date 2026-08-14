@@ -137,13 +137,15 @@ export function SpellHintPanel({
  * something a DM needs mid-fight, and now lives in the hint instead (see
  * `SpellHintPanel`).
  *
- * Both the roll and its type/label share the same `text-sky-400`/
- * `text-slate-300` colors `SpellHintPanel`'s own `HintFact` already uses for
- * these exact values — confirmed against the hint's actual rendering (its
- * `trailing` text carries no color/size override of its own, so it inherits
- * the panel's plain `text-slate-300` at full size), not the dimmed 10px tag
- * this row used to show, which drifted from that without ever being
- * deliberately different.
+ * The roll shares `SpellHintPanel`'s own `HintFact` "sky" tone (`text-sky-400`)
+ * — replacing the plain bold white this row used to show, a drift from the
+ * hint that was never a deliberate difference. `effectType` keeps its own
+ * small `text-[10px]` secondary label instead of matching the hint's
+ * full-size trailing text: matches `AttackTrailing`'s own damage-type
+ * treatment (same reasoning — a hint panel has room to spell it out
+ * plainly, but at this row's denser size a full-size type competes with the
+ * roll instead of quietly labeling it), just with the corrected
+ * `text-slate-300` instead of the old, too-dim `text-slate-500`.
  *
  * Only shows `effect` when `effectType` is there too (a real damage/healing
  * die, e.g. "4d6 Fire"/"2d8 Healing") — `formatEffect` in `ddbParser/spells.ts`
@@ -167,7 +169,7 @@ export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
       {hasEffect && (
         <span className="flex items-baseline gap-1">
           <span className="font-semibold text-sky-400">{spell.effect}</span>
-          <span className="text-slate-300">{spell.effectType}</span>
+          <span className="text-[10px] text-slate-300">{spell.effectType}</span>
         </span>
       )}
     </span>
