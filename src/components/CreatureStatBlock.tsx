@@ -4,7 +4,7 @@ import { Creature, CreatureTrait, SKILL_ABBR, SKILL_ABILITY, SKILL_DESCRIPTIONS,
 import { abilityModifier } from "@/lib/characterMath";
 import { formatModifier } from "@/lib/format";
 import { computePassiveSkill, ParsedCreatureSkill, parseCreatureSenses, parseCreatureSkills } from "@/lib/creatureStatText";
-import { DamageInfoList } from "./ui/DamageInfoList";
+import { IconInfoList } from "./ui/IconInfoList";
 import { HintPanel } from "./ui/HintPanel";
 import { HpBar } from "./ui/HpBar";
 import { IconStat } from "./ui/IconStat";
@@ -202,7 +202,7 @@ export function CreatureStatBlock({
         </div>
       </SectionDivider>
 
-      <DamageInfoList
+      <IconInfoList
         entries={[
           {
             label: "Resist",

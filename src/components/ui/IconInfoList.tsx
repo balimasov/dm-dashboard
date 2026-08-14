@@ -1,7 +1,7 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
-import { ImmuneIcon, ResistIcon, VulnerableIcon } from "./icons";
+import { ImmuneIcon, LanguageIcon, ResistIcon, ToolIcon, VulnerableIcon } from "./icons";
 
-export interface DamageInfoEntry {
+export interface IconInfoEntry {
   label: string;
   value?: string;
   panel: React.ReactNode;
@@ -17,26 +17,33 @@ export interface DamageInfoEntry {
  * *damage* outcome) and became a plain "blocked" glyph with no damage-only
  * connotation of its own.
  */
-const DAMAGE_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
+const ICON_BY_LABEL: Record<string, (props: { className?: string }) => React.ReactElement> = {
   Resist: ResistIcon,
   Immune: ImmuneIcon,
   Vulnerable: VulnerableIcon,
   "Condition Immunities": ImmuneIcon,
+  Languages: LanguageIcon,
+  Tools: ToolIcon,
 };
 
 /**
- * The Resist/Immune/Vulnerable (and, for a creature, Condition Immunities)
- * list — shared so both cards and the character details modal render it
- * from one place. Entries with no value are skipped; the hint anchors to
- * the label only, same convention as every other hint in these cards.
+ * A row of "icon + label + hover-hint + wrapping value" lines — originally
+ * just the Resist/Immune/Vulnerable (and, for a creature, Condition
+ * Immunities) list, now also Languages/Tools in the character details
+ * modal: same exact shape (a short label, a comma-separated list that can
+ * run long, a hint anchored to the label alone), no domain-specific layer
+ * on top for either use, so one neutrally-named component covers both
+ * rather than a second one duplicating this file's own layout. Entries with
+ * no value are skipped; the hint anchors to the label only, same convention
+ * as every other hint in these cards.
  */
-export function DamageInfoList({ entries }: { entries: DamageInfoEntry[] }) {
+export function IconInfoList({ entries }: { entries: IconInfoEntry[] }) {
   const visible = entries.filter((e) => e.value);
   if (visible.length === 0) return null;
   return (
     <div className="space-y-1 text-sm text-slate-300">
       {visible.map((e) => {
-        const Icon = DAMAGE_ICONS[e.label];
+        const Icon = ICON_BY_LABEL[e.label];
         return (
           // A previous pass here nested `label`+`value` inside their own
           // `flex items-baseline` box to fix the icon's vertical position —

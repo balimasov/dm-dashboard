@@ -34,7 +34,7 @@ import { Pill } from "./ui/Pill";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
-import { DamageInfoList } from "./ui/DamageInfoList";
+import { IconInfoList } from "./ui/IconInfoList";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
 import { HpBar } from "./ui/HpBar";
@@ -271,7 +271,7 @@ export function CharacterCard({
       </SectionDivider>
 
       {/* Resistances / Immunities / Vulnerabilities */}
-      <DamageInfoList
+      <IconInfoList
         entries={[
           { label: "Resist", value: c.resistances.join(", "), panel: RESIST_HINT_PANEL },
           { label: "Immune", value: c.immunities.join(", "), panel: IMMUNE_HINT_PANEL },

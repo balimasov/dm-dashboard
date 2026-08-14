@@ -31,12 +31,12 @@ import { AskAiPill } from "./ui/AskAiPill";
 import { AttackName, AttackTrailing } from "./ui/AttackDisplay";
 import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_SHELL_CLS } from "./ui/containerStyles";
-import { DamageInfoList } from "./ui/DamageInfoList";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HpBar } from "./ui/HpBar";
 import { IconButton } from "./ui/IconButton";
+import { IconInfoList } from "./ui/IconInfoList";
 import { IconStat } from "./ui/IconStat";
-import { InitiativeIcon, LanguageIcon, ProficiencyIcon, ShieldIcon, SpeedIcon, ToolIcon } from "./ui/icons";
+import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import {
   AC_HINT_PANEL,
   IMMUNE_HINT_PANEL,
@@ -392,40 +392,26 @@ export function CharacterDetailsModal({
         </div>
 
         {/* Proficiencies — Languages/Tools, split out of the AC/Speed/
-            Initiative/Prof grid above into their own section (previously
+            Initiative/Prof grid above into their own group (previously
             tacked on as two full-width rows at the bottom of that grid,
-            which read as stuck-on rather than its own group) and given
-            `wrap` instead of a single-line ellipsis — a long comma list
-            (six-plus languages isn't rare) now reads in full on its own
-            lines instead of needing a hover just to see what's past the
-            cut-off. Rendered only when there's at least one of the two, same
-            as the Senses section below skipping its own pills when empty
-            would if it had that option. */}
-        {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
-          <SectionDivider compact className="space-y-1.5">
-            <SubHeading>Proficiencies</SubHeading>
-            {c.languages.length > 0 && (
-              <IconStat
-                icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-                panel={LANGUAGES_HINT_PANEL}
-                label="Languages"
-                wrap
-              >
-                {c.languages.join(", ")}
-              </IconStat>
-            )}
-            {c.toolProficiencies.length > 0 && (
-              <IconStat
-                icon={<ToolIcon className="h-4 w-4 shrink-0 text-slate-500" />}
-                panel={TOOLS_HINT_PANEL}
-                label="Tools"
-                wrap
-              >
-                {c.toolProficiencies.join(", ")}
-              </IconStat>
-            )}
-          </SectionDivider>
-        )}
+            which read as stuck-on rather than its own group) via
+            `IconInfoList` — the same shared "icon + label + wrapping value"
+            row Resist/Immune/Vulnerable use below, not a bespoke layout:
+            an `IconStat`-based attempt here first (a `flex` box for
+            label+value) turned out to be exactly the bug `IconInfoList`'s
+            own doc comment already warns about — a flex child has no
+            hanging indent, so a long comma list (six-plus languages isn't
+            rare) wrapped flush against the row's left edge instead of
+            under its own first line, and the block lost its ambient
+            `text-sm text-slate-300` sizing/color along the way too. No
+            heading here, same as Resist/Immune/Vulnerable below — spacing
+            between blocks already reads as separate groups without one. */}
+        <IconInfoList
+          entries={[
+            { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
+            { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+          ]}
+        />
 
         {/* Senses — same block as the main card. */}
         <SectionDivider compact>
@@ -480,7 +466,7 @@ export function CharacterDetailsModal({
         </SectionDivider>
 
         {/* Resistances / Immunities / Vulnerabilities — same block as the main card. */}
-        <DamageInfoList
+        <IconInfoList
           entries={[
             { label: "Resist", value: c.resistances.join(", "), panel: RESIST_HINT_PANEL },
             { label: "Immune", value: c.immunities.join(", "), panel: IMMUNE_HINT_PANEL },

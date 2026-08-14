@@ -30,7 +30,7 @@ export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move 
 /**
  * Same duplication, found one layer down in the same three files: the
  * Passive Perception/Investigation/Insight hints under Senses, and the
- * Resist/Immune/Vulnerable hints passed into `DamageInfoList`.
+ * Resist/Immune/Vulnerable hints passed into `IconInfoList`.
  * Investigation/Insight and all three damage-type hints turned out to have
  * no "you"/"it" wording at all — genuinely one string each, not just a
  * near-duplicate — so only Perception needs a creature-specific variant, the

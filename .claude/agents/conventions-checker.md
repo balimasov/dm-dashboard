@@ -18,7 +18,7 @@ Before new icon markup, a new class-string "recipe," a new text-style, or a new 
 - `src/components/ui/icons.tsx` — every named icon component. Grep for the concept (e.g. sense names, damage types, status verbs) before assuming an icon is new.
 - `src/components/ui/containerStyles.ts` — shared class-string constants (e.g. `ENTITY_CARD_BASE_CLS`, `ROW_CARD_CLS`, `POPOVER_SHELL_CLS`). Each has a doc comment stating exactly which call sites use it and why — read those comments, don't just skim names.
 - `src/components/ui/typography.ts` — shared text-style tokens (e.g. `MUTED_LABEL_CLS`, `CARD_TITLE_CLS`).
-- Small reusable components already in `src/components/ui/`: `Pill`, `IconStat`, `SectionDivider`, `SubHeading`, `AbilityScoreBox`, `StatusRail`, `DamageInfoList`, `SenseEntries`, `IconFab`, `IconButton`, `InfoTooltip`, `Modal`, and others in that directory — `Glob src/components/ui/*.tsx` to get the current full list, it grows over time.
+- Small reusable components already in `src/components/ui/`: `Pill`, `IconStat`, `SectionDivider`, `SubHeading`, `AbilityScoreBox`, `StatusRail`, `IconInfoList`, `SenseEntries`, `IconFab`, `IconButton`, `InfoTooltip`, `Modal`, and others in that directory — `Glob src/components/ui/*.tsx` to get the current full list, it grows over time.
 
 Report: does a match already exist (cite the exact file and export name)? If yes, is it a genuine fit or a near-miss that should stay separate (explain which, citing the doc comment's stated scope)? If nothing existing fits, say so plainly — that's a valid finding, not a failure to find something.
 
