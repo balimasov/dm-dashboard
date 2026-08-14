@@ -313,51 +313,52 @@ export function CharacterDetailsModal({
             `CharacterStatBlock` (see its own doc comment for why: a UI-kit
             audit found this whole block byte-identical between the two,
             after a fix landed in one and not the other for the third time
-            this session). Languages/Tools "Proficiencies" and the full
-            Advantages list are this modal's own two additions, injected at
-            their exact positions via `afterCombatGrid`/`afterDamageInfo`
-            rather than duplicated inline — both stayed modal-only, the
-            compact card has no room for either. */}
+            this session). The full Advantages list and Languages/Tools
+            "Proficiencies" (in that order) are this modal's own addition,
+            injected via `afterDamageInfo` rather than duplicated inline —
+            both stayed modal-only, the compact card has no room for
+            either. */}
         <CharacterStatBlock
           character={c}
           compact
-          afterCombatGrid={
-            (c.languages.length > 0 || c.toolProficiencies.length > 0) && (
-              <SectionDivider compact>
-                <SubHeading>Proficiencies</SubHeading>
-                <IconInfoList
-                  entries={[
-                    { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
-                    { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
-                  ]}
-                />
-              </SectionDivider>
-            )
-          }
           afterDamageInfo={
-            // Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can.
-            c.advantages.length > 0 && (
-              <SectionDivider compact>
-                <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
-                <ul className="space-y-1.5 text-sm text-slate-300">
-                  {c.advantages.map((a) => {
-                    const { kind, subject, restriction } = parseAdvantageEntry(a);
-                    return (
-                      <li key={a} className="flex items-start gap-1.5">
-                        <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
-                          {kind === "advantage" ? "▲" : "▼"}
-                        </span>
-                        <span>
-                          {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
-                          <b className="font-semibold text-slate-200">{subject}</b>
-                          {restriction && `: ${restriction}`}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </SectionDivider>
-            )
+            <>
+              {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
+              {c.advantages.length > 0 && (
+                <SectionDivider compact>
+                  <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
+                  <ul className="space-y-1.5 text-sm text-slate-300">
+                    {c.advantages.map((a) => {
+                      const { kind, subject, restriction } = parseAdvantageEntry(a);
+                      return (
+                        <li key={a} className="flex items-start gap-1.5">
+                          <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
+                            {kind === "advantage" ? "▲" : "▼"}
+                          </span>
+                          <span>
+                            {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
+                            <b className="font-semibold text-slate-200">{subject}</b>
+                            {restriction && `: ${restriction}`}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </SectionDivider>
+              )}
+
+              {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+                <SectionDivider compact>
+                  <SubHeading>Proficiencies</SubHeading>
+                  <IconInfoList
+                    entries={[
+                      { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
+                      { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+                    ]}
+                  />
+                </SectionDivider>
+              )}
+            </>
           }
         />
 

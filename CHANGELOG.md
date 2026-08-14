@@ -12,6 +12,15 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [1.113.7] - 2026-08-14
+
+### Changed
+- **Блок "Proficiencies" (Languages/Tools) у деталях персонажа перенесено
+  після "Advantages".** Раніше йшов одразу за AC/Speed/Initiative/Prof,
+  перед Senses; тепер порядок: Ability Scores → Resist/Immune/Vulnerable →
+  Advantages → Proficiencies → Skills. Функціонально й стилістично блок
+  не змінився, лише позиція.
+
 ## [1.113.6] - 2026-08-14
 
 ### Fixed

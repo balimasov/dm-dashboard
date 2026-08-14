@@ -36,18 +36,17 @@ import { SubHeading } from "./ui/SubHeading";
  * grid, Ability Scores, and Resist/Immune/Vulnerable JSX independently —
  * byte-identical, confirmed by a UI-kit audit after the third round this
  * session where a fix landed in one of the two and not the other. Two things
- * the modal alone has (Languages/Tools "Proficiencies", and the full
- * Advantages list) stay in `CharacterDetailsModal` itself, same as
- * Traits/Actions/Spellcasting live in `CreatureAbilitiesPanel` rather than
- * `CreatureStatBlock` — a modal-only tab/section doesn't belong in the block
- * both surfaces share.
+ * the modal alone has (the full Advantages list, and Languages/Tools
+ * "Proficiencies" right after it) stay in `CharacterDetailsModal` itself,
+ * same as Traits/Actions/Spellcasting live in `CreatureAbilitiesPanel` rather
+ * than `CreatureStatBlock` — a modal-only section doesn't belong in the
+ * block both surfaces share.
  */
 export function CharacterStatBlock({
   character,
   compact = false,
   alwaysShowSenses = false,
   showAllSkills = true,
-  afterCombatGrid,
   afterDamageInfo,
 }: {
   character: Character;
@@ -70,9 +69,7 @@ export function CharacterStatBlock({
    * still shows on the card, bonus included in its number.
    */
   showAllSkills?: boolean;
-  /** Rendered right after the AC/Speed/Initiative/Prof grid, before Senses — `CharacterDetailsModal`'s own Languages/Tools "Proficiencies" section, which `CharacterCard` has no room for. `undefined` renders nothing. */
-  afterCombatGrid?: ReactNode;
-  /** Rendered right after Resist/Immune/Vulnerable, before Skills — the one other slot `CharacterDetailsModal` needs that `CharacterCard` doesn't (its own Advantages list, "shown here only... this modal is the one place with room for the full restriction text"). `undefined` renders nothing. */
+  /** Rendered right after Resist/Immune/Vulnerable, before Skills — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
   afterDamageInfo?: ReactNode;
 }) {
   const c = character;
@@ -129,8 +126,6 @@ export function CharacterStatBlock({
           </IconStat>
         </div>
       </div>
-
-      {afterCombatGrid}
 
       <SensesSection
         compact={compact}
