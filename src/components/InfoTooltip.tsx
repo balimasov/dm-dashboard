@@ -295,23 +295,36 @@ export function InfoTooltip({
             // other floating layer, mount order alone decided which one
             // painted on top — and the hint, being the deeper-nested
             // portal, didn't reliably mount after its host popover.
-            // `18rem` (288px) — bumped from `16rem` so `ResourceMeter.tsx`'s
-            // `ResourceTrackerHint` (deliberately `w-[272px]`, matching
-            // `CharacterCard`'s own resource block width) has room to
-            // actually reach that width instead of being clipped by this
-            // wrapper's own cap: a panel narrower than its content doesn't
-            // grow to fit it, it just overflows — clipped rows on the right
-            // and an unwanted horizontal scrollbar, confirmed on a live
-            // screenshot. A first pass here landed on exactly `17rem`
-            // (272px) — the content's own width — and still clipped by a
-            // few pixels on the right, confirmed again on a live screenshot:
-            // this wrapper's `p-2` padding (8px each side, 16px total) sits
-            // *outside* the 272px content in the box model, so the wrapper
-            // needs content width *plus* its own padding, not content width
-            // alone. No other panel in the app currently exceeds 15rem
-            // (`AbilityScoreHintPanel`'s own `w-60`), so this only changes
-            // behavior for the one panel that actually wants it.
-            className="pointer-events-none fixed z-[70] w-max max-w-[min(18rem,80vw)] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+            // `19rem` (304px) — bumped from `16rem` in stages so
+            // `ResourceMeter.tsx`'s `ResourceTrackerHint` has room to reach
+            // its own width instead of being clipped by this wrapper's own
+            // cap: a panel narrower than its content doesn't grow to fit it,
+            // it just overflows. Two earlier passes (`17rem` matching the
+            // content's own width, then `18rem` after accounting for this
+            // wrapper's `p-2` padding, 16px total, sitting *outside* the
+            // content in the box model) both still clipped horizontally —
+            // confirmed on a live screenshot — the missing variable was this
+            // `overflow-y: auto` scrollbar itself: it was rendering at the
+            // *browser's* default width (~15-17px, OS/browser-dependent)
+            // because this className never carried `scrollbar-themed` the
+            // way every other scroll surface in the app does, and a
+            // scrollbar's reserved gutter eats into the same content-box
+            // width its sibling content needs. Fixed at the root by adding
+            // `scrollbar-themed` below (shrinks it to a predictable 8px on
+            // WebKit, `scrollbar-width: thin` on Firefox) *and* narrowing
+            // `ResourceTrackerHint` itself from 272px to 256px (`w-64`) so
+            // there's real margin — 288 (18rem, this wrapper's border+
+            // padding budget) − 2 (border) − 16 (padding) − 256 (content) =
+            // 14px spare over the expected 8px scrollbar — instead of
+            // recomputing to the exact zero-margin pixel every time
+            // something here shifts by a few px. This `19rem` cap itself
+            // only needs to clear content(256) + padding(16) + border(2) =
+            // 274px in the no-scrollbar case (plenty of room under 304px) —
+            // the actual binding constraint is the margin above,
+            // not this cap. No other panel in the app currently exceeds
+            // 15rem (`AbilityScoreHintPanel`'s own `w-60`), so this only
+            // changes behavior for the one panel that actually wants it.
+            className="pointer-events-none fixed z-[70] w-max max-w-[min(19rem,80vw)] scrollbar-themed rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
             // No-ops while the panel is `pointer-events: none` (a plain
             // hover preview, never blocking a click on whatever it happens
             // to overlap) — and only actually fire once `computePosition`

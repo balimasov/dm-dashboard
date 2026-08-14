@@ -113,11 +113,19 @@ function ResourceTrackerHint({
   pactSlots?: boolean;
 }) {
   return (
-    // `w-[272px]` matches `CharacterCard`'s own resource block width
-    // (its `w-[300px]` card minus `p-3.5` padding on both sides) — was
-    // `w-56` (224px), noticeably narrower than the block this hint explains,
-    // which read as a cramped popover next to the row it was hovering.
-    <div className="w-[272px]">
+    // `w-64` (256px) — was `w-[272px]` (matching `CharacterCard`'s own
+    // resource block width exactly), narrowed by the 16px this hint's own
+    // `InfoTooltip` wrapper needs as margin for its vertical scrollbar's
+    // reserved gutter once a tall list (many resources, many spell levels)
+    // triggers `overflow-y: auto` — that gutter eats into the same
+    // content-box width this div renders in, and at the old exact-fit
+    // 272px there was zero margin left for it, so a vertical scroll forced
+    // a horizontal one too (confirmed on a live screenshot). See
+    // `InfoTooltip.tsx`'s own comment on its wrapper's `max-w` for the
+    // full margin math. Before `w-56` (224px), which read as noticeably
+    // narrower than the block this hint explains — 256px keeps almost all
+    // of that width back.
+    <div className="w-64">
       <div className="space-y-1.5">
         <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
         <div className="flex items-center gap-1.5">
