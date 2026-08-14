@@ -10,8 +10,6 @@ import {
   AC_HINT_PANEL,
   IMMUNE_HINT_PANEL,
   INITIATIVE_HINT_PANEL,
-  PASSIVE_INSIGHT_HINT_PANEL,
-  PASSIVE_INVESTIGATION_HINT_PANEL,
   PASSIVE_PERCEPTION_HINT_PANEL,
   PROFICIENCY_HINT_PANEL,
   RESIST_HINT_PANEL,
@@ -26,7 +24,7 @@ import { IconStat } from "./ui/IconStat";
 import { InitiativeIcon, ProficiencyIcon, ShieldIcon, SpeedIcon } from "./ui/icons";
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
-import { SenseEntries } from "./ui/SenseEntries";
+import { SensesSection } from "./ui/SensesSection";
 import { SubHeading } from "./ui/SubHeading";
 
 /**
@@ -134,31 +132,15 @@ export function CharacterStatBlock({
 
       {afterCombatGrid}
 
-      <SectionDivider compact={compact}>
-        <SubHeading>Senses</SubHeading>
-        <div className="grid grid-cols-3 gap-1.5">
-          <Pill panel={PASSIVE_PERCEPTION_HINT_PANEL}>
-            {SKILL_ABBR.perception} {c.combat.passivePerception}
-          </Pill>
-          <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
-            {SKILL_ABBR.investigation} {c.combat.passiveInvestigation}
-          </Pill>
-          <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
-            {SKILL_ABBR.insight} {c.combat.passiveInsight}
-          </Pill>
-        </div>
-        {alwaysShowSenses ? (
-          <div className="mt-4 text-sm">
-            {c.senses.length > 0 ? <SenseEntries senses={c.senses} /> : <span className="text-slate-600">No special senses</span>}
-          </div>
-        ) : (
-          c.senses.length > 0 && (
-            <div className="mt-4">
-              <SenseEntries senses={c.senses} />
-            </div>
-          )
-        )}
-      </SectionDivider>
+      <SensesSection
+        compact={compact}
+        passivePerception={c.combat.passivePerception}
+        passivePerceptionPanel={PASSIVE_PERCEPTION_HINT_PANEL}
+        passiveInvestigation={c.combat.passiveInvestigation}
+        passiveInsight={c.combat.passiveInsight}
+        senses={c.senses}
+        alwaysShow={alwaysShowSenses}
+      />
 
       {/* Ability Scores — merged Stats + Saving Throws (see `AbilityScoreBox`'s own doc comment) */}
       <SectionDivider compact={compact}>

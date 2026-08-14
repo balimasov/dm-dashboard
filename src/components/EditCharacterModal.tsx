@@ -23,13 +23,12 @@ import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { NotesEditor } from "./NotesEditor";
 import { NumberInput } from "./NumberInput";
-import { Button } from "./ui/Button";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { checkboxCls, Field, inputCls } from "./ui/Field";
 import { IconButton } from "./ui/IconButton";
-import { Modal } from "./ui/Modal";
+import { EntityEditModal } from "./ui/EntityEditModal";
 import { SelectMenu } from "./ui/SelectMenu";
-import { FORM_SECTION_HEADING_CLS, INLINE_ERROR_CLS, MODAL_TITLE_CLS } from "./ui/typography";
+import { FORM_SECTION_HEADING_CLS } from "./ui/typography";
 
 const RECOVERY_OPTIONS = Object.entries(RECOVERY_LABELS) as Array<[RecoveryType, string]>;
 
@@ -63,8 +62,6 @@ export function EditCharacterModal({
   onUpdate: (id: string, updates: Partial<Character>) => Promise<void> | void;
 }) {
   const [draft, setDraft] = useState<Character>(character);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Raw text for every comma/newline-separated list field below, kept as its
   // own state instead of deriving the input's `value` straight from
@@ -273,42 +270,21 @@ export function EditCharacterModal({
     setDraft((d) => ({ ...d, currency: { ...d.currency, [key]: value } }));
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await onUpdate(draft.id, { ...draft, synced: true });
-      onClose();
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save character.");
-      setSaving(false);
-    }
-  }
-
   return (
-    <Modal
+    <EntityEditModal
+      title="Edit Character"
       onClose={onClose}
-      header={
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h2 className={MODAL_TITLE_CLS}>Edit Character</h2>
-          <IconButton onClick={onClose} aria-label="Close">
-            ✕
-          </IconButton>
-        </div>
-      }
-      panelClassName="h-[85vh] w-full max-w-7xl border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+      onSave={() => onUpdate(draft.id, { ...draft, synced: true })}
+      saveErrorFallback="Failed to save character."
     >
-        <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-hidden">
-          <div className="scrollbar-themed flex-1 space-y-8 overflow-y-auto px-5 py-4">
-            <DdbSyncStatus
-              dndBeyondUrl={draft.dndBeyondUrl}
-              synced={draft.synced}
-              lastSyncedAt={draft.lastSyncedAt}
-            />
+      <DdbSyncStatus
+        dndBeyondUrl={draft.dndBeyondUrl}
+        synced={draft.synced}
+        lastSyncedAt={draft.lastSyncedAt}
+      />
 
-            {/* Basic info */}
-            <section className="space-y-3">
+      {/* Basic info */}
+      <section className="space-y-3">
               <h2 className={FORM_SECTION_HEADING_CLS}>Basic Info</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Field label="Name">
@@ -781,24 +757,12 @@ export function EditCharacterModal({
               </div>
             </section>
 
-            {/* Notes */}
-            <section className="space-y-3">
-              <h2 className={FORM_SECTION_HEADING_CLS}>Notes</h2>
-              <NotesEditor value={ensureNotesHtml(draft.notes)} onChange={(notes) => set("notes", notes)} placeholder="Add notes..." />
-            </section>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 border-t border-slate-800 px-5 py-4">
-            {saveError && <p className={`mr-auto ${INLINE_ERROR_CLS}`}>{saveError}</p>}
-            <Button type="button" variant="ghost" onClick={onClose} className="px-4 py-2 text-sm">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </form>
-    </Modal>
+      {/* Notes */}
+      <section className="space-y-3">
+        <h2 className={FORM_SECTION_HEADING_CLS}>Notes</h2>
+        <NotesEditor value={ensureNotesHtml(draft.notes)} onChange={(notes) => set("notes", notes)} placeholder="Add notes..." />
+      </section>
+    </EntityEditModal>
   );
 }
 

@@ -2,6 +2,7 @@ import { Character } from "@/lib/types";
 import { characterInfoLine } from "@/lib/format";
 import { characterSyncIssue } from "@/lib/sync";
 import { CharacterAvatar } from "@/components/CharacterAvatar";
+import { ClickableCardHeader } from "@/components/ui/ClickableCardHeader";
 import { CARD_META_CLS, CARD_SUBTITLE_CLS, CARD_TITLE_CLS } from "@/components/ui/typography";
 
 /**
@@ -30,8 +31,8 @@ export function CharacterHeader({
 }) {
   const c = character;
   const syncIssue = characterSyncIssue(c);
-  const content = (
-    <>
+  return (
+    <ClickableCardHeader onClick={onClick} dragHandleProps={dragHandleProps}>
       <div className="relative shrink-0">
         <CharacterAvatar character={c} size="md" />
         {/* Same "unmissable at a glance across a full roster" reasoning as
@@ -64,21 +65,6 @@ export function CharacterHeader({
             race/class line above via `CARD_META_CLS`. */}
         <p className={CARD_META_CLS}>Lvl {c.level}</p>
       </div>
-    </>
-  );
-
-  if (!onClick) {
-    return <div className="flex items-start gap-3">{content}</div>;
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      {...dragHandleProps}
-      className="group -m-2 flex items-start gap-3 rounded-lg p-2 text-left transition hover:bg-slate-800/50 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
-    >
-      {content}
-    </button>
+    </ClickableCardHeader>
   );
 }

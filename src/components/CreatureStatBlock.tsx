@@ -15,14 +15,12 @@ import {
   CREATURE_SPEED_HINT_PANEL,
   IMMUNE_HINT_PANEL,
   INITIATIVE_HINT_PANEL,
-  PASSIVE_INSIGHT_HINT_PANEL,
-  PASSIVE_INVESTIGATION_HINT_PANEL,
   RESIST_HINT_PANEL,
   VULNERABLE_HINT_PANEL,
 } from "./ui/combatStatHints";
 import { Pill } from "./ui/Pill";
 import { SectionDivider } from "./ui/SectionDivider";
-import { SenseEntries } from "./ui/SenseEntries";
+import { SensesSection } from "./ui/SensesSection";
 import { AbilityScoreBox } from "./ui/AbilityScoreBox";
 import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { MUTED_LABEL_CLS } from "./ui/typography";
@@ -152,25 +150,14 @@ export function CreatureStatBlock({
         </div>
       </div>
 
-      <SectionDivider compact={compact}>
-        <SubHeading>Senses</SubHeading>
-        <div className="grid grid-cols-3 gap-1.5">
-          <Pill panel={CREATURE_PASSIVE_PERCEPTION_HINT_PANEL}>
-            {SKILL_ABBR.perception} {passivePerception}
-          </Pill>
-          <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
-            {SKILL_ABBR.investigation} {passiveInvestigation}
-          </Pill>
-          <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
-            {SKILL_ABBR.insight} {passiveInsight}
-          </Pill>
-        </div>
-        {senses.entries.length > 0 && (
-          <div className="mt-4">
-            <SenseEntries senses={senses.entries} />
-          </div>
-        )}
-      </SectionDivider>
+      <SensesSection
+        compact={compact}
+        passivePerception={passivePerception}
+        passivePerceptionPanel={CREATURE_PASSIVE_PERCEPTION_HINT_PANEL}
+        passiveInvestigation={passiveInvestigation}
+        passiveInsight={passiveInsight}
+        senses={senses.entries}
+      />
 
       {/* Ability Scores — merged Stats + Saving Throws, same recipe as `CharacterCard`/`CharacterDetailsModal` (see `AbilityScoreBox`'s own doc comment). Highlight here means "this save differs from the raw ability modifier" rather than "has a saving-throw proficiency" — a stat block often lists non-proficient saves that still deviate (situational bonuses, legendary resistances), so anything other than the plain modifier is worth calling out. */}
       <SectionDivider compact={compact}>
