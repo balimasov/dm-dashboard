@@ -195,6 +195,21 @@ describe("characterAssistantContext", () => {
     expect(context).toContain("[s2] Magic Missile (level 1)");
   });
 
+  test("tags a spell as ritual from its own isRitual field, alongside concentration when both apply", () => {
+    const character = makeCharacter({
+      name: "Nyra",
+      knownSpells: [
+        { id: "s1", name: "Detect Magic", level: 1, source: "Class", isConcentration: true, isRitual: true, duration: "Concentration, 10 minutes" },
+        { id: "s2", name: "Magic Missile", level: 1, source: "Class", duration: "Instantaneous" },
+      ],
+    });
+
+    const context = characterAssistantContext(character);
+
+    expect(context).toContain("[s1] Detect Magic (level 1, concentration, ritual)");
+    expect(context).toContain("[s2] Magic Missile (level 1)");
+  });
+
   test("flags an active concentration so the assistant knows a new concentration spell would end it", () => {
     const concentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: true }));
     const notConcentrating = characterAssistantContext(makeCharacter({ name: "Nyra", concentrating: false }));

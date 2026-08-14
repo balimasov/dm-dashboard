@@ -295,7 +295,17 @@ export function InfoTooltip({
             // other floating layer, mount order alone decided which one
             // painted on top — and the hint, being the deeper-nested
             // portal, didn't reliably mount after its host popover.
-            className="pointer-events-none fixed z-[70] w-max max-w-[min(16rem,80vw)] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
+            // `17rem` (272px) — bumped from `16rem` so `ResourceMeter.tsx`'s
+            // `ResourceTrackerHint` (deliberately `w-[272px]`, matching
+            // `CharacterCard`'s own resource block width) has room to
+            // actually reach that width instead of being clipped by this
+            // wrapper's own cap: a panel narrower than its content doesn't
+            // grow to fit it, it just overflows — clipped rows on the right
+            // and an unwanted horizontal scrollbar, confirmed on a live
+            // screenshot. No other panel in the app currently exceeds 15rem
+            // (`AbilityScoreHintPanel`'s own `w-60`), so this only changes
+            // behavior for the one panel that actually wants it.
+            className="pointer-events-none fixed z-[70] w-max max-w-[min(17rem,80vw)] rounded-md border border-slate-700 bg-slate-950 p-2 text-left text-xs font-normal normal-case leading-snug text-slate-300 shadow-xl"
             // No-ops while the panel is `pointer-events: none` (a plain
             // hover preview, never blocking a click on whatever it happens
             // to overlap) — and only actually fire once `computePosition`

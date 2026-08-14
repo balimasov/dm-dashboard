@@ -388,30 +388,44 @@ export function CharacterDetailsModal({
             >
               {formatModifier(proficiencyBonus(c.level))}
             </IconStat>
+          </div>
+        </div>
+
+        {/* Proficiencies — Languages/Tools, split out of the AC/Speed/
+            Initiative/Prof grid above into their own section (previously
+            tacked on as two full-width rows at the bottom of that grid,
+            which read as stuck-on rather than its own group) and given
+            `wrap` instead of a single-line ellipsis — a long comma list
+            (six-plus languages isn't rare) now reads in full on its own
+            lines instead of needing a hover just to see what's past the
+            cut-off. Rendered only when there's at least one of the two, same
+            as the Senses section below skipping its own pills when empty
+            would if it had that option. */}
+        {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+          <SectionDivider compact className="space-y-1.5">
+            <SubHeading>Proficiencies</SubHeading>
             {c.languages.length > 0 && (
               <IconStat
-                className="col-span-2"
                 icon={<LanguageIcon className="h-4 w-4 shrink-0 text-slate-500" />}
                 panel={LANGUAGES_HINT_PANEL}
                 label="Languages"
-                valueTitle={c.languages.join(", ")}
+                wrap
               >
                 {c.languages.join(", ")}
               </IconStat>
             )}
             {c.toolProficiencies.length > 0 && (
               <IconStat
-                className="col-span-2"
                 icon={<ToolIcon className="h-4 w-4 shrink-0 text-slate-500" />}
                 panel={TOOLS_HINT_PANEL}
                 label="Tools"
-                valueTitle={c.toolProficiencies.join(", ")}
+                wrap
               >
                 {c.toolProficiencies.join(", ")}
               </IconStat>
             )}
-          </div>
-        </div>
+          </SectionDivider>
+        )}
 
         {/* Senses — same block as the main card. */}
         <SectionDivider compact>

@@ -204,10 +204,20 @@ export function characterAssistantContext(character: Character, customConditionL
       const levelLabel = s.level === 0 ? "cantrip" : `level ${s.level}`;
       const charge = s.max != null ? `, own charges ${s.current}/${s.max} (recovers: ${RECOVERY_LABELS[s.recovery!]})` : "";
       // The prompt's LEGALITY AND RESOURCES section requires the model to use
-      // this concentration metadata rather than infer it from the spell's
-      // name or its own training knowledge — `isConcentration` is a real
-      // sheet fact computed once in `ddbParser/spells.ts`, not a guess.
-      const tags = [s.isConcentration ? "concentration" : null, s.isReaction ? "reaction" : null, s.isAreaEffect ? "AOE" : null]
+      // this concentration/ritual metadata rather than infer it from the
+      // spell's name or its own training knowledge — `isConcentration`/
+      // `isRitual` are real sheet facts computed once in `ddbParser/spells.ts`
+      // (the latter a straight passthrough of D&D Beyond's own `ritual`
+      // flag), not a guess. `isRitual` matters here specifically because a
+      // ritual spell is castable with no spell slot at all outside combat —
+      // without this tag the model has no way to know that option exists for
+      // a given spell versus one that always costs a slot.
+      const tags = [
+        s.isConcentration ? "concentration" : null,
+        s.isRitual ? "ritual" : null,
+        s.isReaction ? "reaction" : null,
+        s.isAreaEffect ? "AOE" : null,
+      ]
         .filter(Boolean)
         .join(", ");
       const detail = [

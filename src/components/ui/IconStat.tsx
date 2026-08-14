@@ -20,24 +20,27 @@ export function IconStat({
   children,
   className = "",
   valueTitle,
+  wrap = false,
 }: {
   icon: React.ReactNode;
   panel: React.ReactNode;
   label: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
-  /** Shown as a native hover tooltip over the value itself (not the label) — for a value long enough to truncate (e.g. a creature's Languages line), so the full text is still reachable on hover instead of just cut off. */
+  /** Shown as a native hover tooltip over the value itself (not the label) — for a value long enough to truncate (e.g. a creature's Languages line), so the full text is still reachable on hover instead of just cut off. Ignored when `wrap` is on, since there's no truncation left to explain. */
   valueTitle?: string;
+  /** Wraps onto multiple lines instead of truncating to one with an ellipsis — for a row given its own full-width line (e.g. Languages/Tools in their own section) rather than sharing a 2-column grid cell with a short "AC: 14"-style value, where truncation was the only way a long comma list fit at all. */
+  wrap?: boolean;
 }) {
   return (
-    <span className={`flex items-center gap-1.5 ${className}`}>
+    <span className={`flex items-center gap-1.5 ${wrap ? "items-start" : ""} ${className}`}>
       {icon}
-      <span className="flex min-w-0 flex-1 items-baseline gap-1">
+      <span className={`flex min-w-0 flex-1 items-baseline gap-1 ${wrap ? "flex-wrap" : ""}`}>
         <InfoTooltip panel={panel}>
           {/* Same muted-label-plus-colon convention `SenseEntries`/`DamageInfoList` already use for Darkvision/Resist/Immune — this row used to be the one place with a bare, brighter (inherited `text-slate-300`) label and no colon. */}
           <span className="text-slate-500">{label}:</span>
         </InfoTooltip>
-        <span title={valueTitle} className="min-w-0 flex-1 truncate">
+        <span title={wrap ? undefined : valueTitle} className={wrap ? "min-w-0 flex-1" : "min-w-0 flex-1 truncate"}>
           {children}
         </span>
       </span>
