@@ -8,10 +8,11 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { HINT_FACT_ROW_CLS } from "./ui/containerStyles";
+import { HINT_FACT_ROW_CLS, TRAILING_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { HintFact } from "./ui/HintFact";
 import { MetaBadge } from "./ui/MetaBadge";
+import { TrailingDot, TrailingValue } from "./ui/RowTrailingValue";
 import { MICRO_ITEM_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
 import { SectionDivider } from "./ui/SectionDivider";
@@ -64,38 +65,30 @@ function EffectBadge({ effect }: { effect: CreatureEffect }) {
  * Bonus/damage (attack), DC (save), a recharge badge, and any non-damage
  * effects — the fast-glance numbers a DM needs mid-combat without reading
  * `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing`
- * on the character side: `text-sky-400` on the roll/DC (matching
- * `CreatureAbilityHintPanel`'s own `HintFact` "sky" tone), a small demoted
- * `text-[10px] text-slate-300` on the damage type/save ability — the same
- * corrected size+color those two components use, not the plain bold white +
- * dimmed 10px tag this row used to show.
+ * on the character side: built from the same shared `TrailingValue`/
+ * `TrailingDot` atoms (`ui/RowTrailingValue.tsx`) those two use, so a size/
+ * color change to any of the three reaches all of them at once.
  */
 function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   return (
-    <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-[13px]">
+    <span className={`${TRAILING_ROW_CLS} flex-wrap justify-end gap-2`}>
       {trait.attack && trait.attack.damage.length > 0 && (
         <span className="flex items-center gap-1">
           {trait.attack.attackBonus !== undefined && (
             <>
-              <span className="font-semibold text-sky-400">{formatModifier(trait.attack.attackBonus)}</span>
-              <span className="text-sm font-bold leading-none text-slate-500">·</span>
+              <TrailingValue value={formatModifier(trait.attack.attackBonus)} />
+              <TrailingDot />
             </>
           )}
           {trait.attack.damage.map((roll, i) => (
             <span key={i} className="flex items-baseline gap-1">
               {i > 0 && <span className="text-slate-500">+</span>}
-              <span className="font-semibold text-sky-400">{roll.dice}</span>
-              {roll.damageType && <span className="text-[10px] text-slate-300">{roll.damageType}</span>}
+              <TrailingValue value={roll.dice} label={roll.damageType} />
             </span>
           ))}
         </span>
       )}
-      {trait.save && (
-        <span className="flex items-baseline gap-1">
-          <span className="font-semibold text-sky-400">DC {trait.save.dc}</span>
-          <span className="text-[10px] text-slate-300">{trait.save.ability.toUpperCase()}</span>
-        </span>
-      )}
+      {trait.save && <TrailingValue value={`DC ${trait.save.dc}`} label={trait.save.ability.toUpperCase()} />}
       {trait.recharge && (
         <MetaBadge label={trait.recharge} uppercase={false} colorClassName="border-sky-700 bg-sky-950/30 text-sky-300" />
       )}

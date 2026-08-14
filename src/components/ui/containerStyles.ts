@@ -134,3 +134,15 @@ export const HINT_PANEL_DIVIDER_CLS = "border-t border-slate-800 pt-1.5";
  * consistent line-to-line spacing.
  */
 export const HINT_FACT_ROW_CLS = "flex flex-wrap items-center gap-x-3 gap-y-1.5";
+
+/**
+ * Base for a row's own trailing combat-numbers block (`SpellTrailing`,
+ * `AttackTrailing`, `AbilityTraitTrailing`) — the container these three
+ * `TrailingValue`/`TrailingDot` atoms (`RowTrailingValue.tsx`) sit inside.
+ * Deliberately excludes `gap-*`/wrap/justify: those already differ per
+ * caller (tighter `gap-1` in `SpellTrailing` vs `gap-2` elsewhere,
+ * `AbilityTraitTrailing`'s own `flex-wrap justify-end` for a row with more
+ * badges than fit on one line) and forcing one value here would just move
+ * the drift into this constant instead of removing it.
+ */
+export const TRAILING_ROW_CLS = "flex shrink-0 items-center text-[13px]";

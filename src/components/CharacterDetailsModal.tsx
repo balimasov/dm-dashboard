@@ -65,6 +65,7 @@ import { AbilityScoreHintPanel } from "./ui/AbilityScoreHintPanel";
 import { StatBox } from "./ui/StatBox";
 import { StatusRail } from "./ui/StatusRail";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
+import { SyncStatusChip } from "./ui/SyncStatusChip";
 import { SubHeading } from "./ui/SubHeading";
 import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
@@ -313,11 +314,12 @@ export function CharacterDetailsModal({
             `-mb-2` trims the leftover gap the same way — see that file's
             own comment. */}
         <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+          <AskAiPill onClick={() => setAiOpen(true)} />
+          <SyncStatusChip dndBeyondUrl={c.dndBeyondUrl} syncing={syncing} lastSyncedAt={c.lastSyncedAt} />
           <ReminderBadge
             group={characterReminders(c)}
             onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: flaggedAbilities.filter((n) => n !== name) }) : undefined}
           />
-          <AskAiPill onClick={() => setAiOpen(true)} />
           {syncIssue && (
             <SyncIssuePill
               label={syncIssue.label}

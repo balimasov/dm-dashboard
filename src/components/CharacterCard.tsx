@@ -36,6 +36,7 @@ import { IconStat } from "./ui/IconStat";
 import { SenseEntries } from "./ui/SenseEntries";
 import { DamageInfoList } from "./ui/DamageInfoList";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
+import { SyncStatusChip } from "./ui/SyncStatusChip";
 import { HpBar } from "./ui/HpBar";
 import { StatusRail } from "./ui/StatusRail";
 import { NotesSection } from "./ui/NotesSection";
@@ -136,11 +137,12 @@ export function CharacterCard({
           the toolbar got a visible border, that same 14px read as more
           leftover space than it did as a plain unbordered row. */}
       <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <AskAiPill onClick={() => setAiOpen(true)} />
+        <SyncStatusChip dndBeyondUrl={c.dndBeyondUrl} syncing={syncing} lastSyncedAt={c.lastSyncedAt} />
         <ReminderBadge
           group={characterReminders(c)}
           onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
         />
-        <AskAiPill onClick={() => setAiOpen(true)} />
         {syncIssue && (
           <SyncIssuePill
             label={syncIssue.label}

@@ -4,10 +4,11 @@ import { formatModifier } from "@/lib/format";
 import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
-import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
+import { TrailingDot, TrailingValue } from "./RowTrailingValue";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 /**
@@ -90,10 +91,16 @@ export function AttackHintPanel({ attack }: { attack: Attack }) {
  * damage — shown directly on the row everywhere an attack appears, not
  * hidden behind a hover, since those are exactly the numbers a DM needs
  * mid-combat without an extra click.
+ *
+ * Built from the shared `TrailingValue`/`TrailingDot` atoms
+ * (`RowTrailingValue.tsx`) — the same ones `SpellTrailing`/
+ * `AbilityTraitTrailing` use, so a size/color change to either reaches all
+ * three at once instead of drifting per file the way this row's own size
+ * and the middle-dot's size already have.
  */
 export function AttackTrailing({ attack }: { attack: Attack }) {
   return (
-    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[13px]">
+    <span className={`${TRAILING_ROW_CLS} gap-2 whitespace-nowrap`}>
       {attack.mastery && (
         <MetaBadge
           label={attack.mastery}
@@ -101,7 +108,7 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
           colorClassName="border-violet-700 bg-violet-950/30 text-violet-300"
           panel={
             <p>
-              <span className="font-semibold text-violet-300">{attack.mastery}</span>
+              <span className="font-semibold text-slate-200">{attack.mastery}</span>
               {getMasteryInfo(attack.mastery) ? `: ${getMasteryInfo(attack.mastery)}` : ""}
             </p>
           }
@@ -111,32 +118,9 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
           a seam *between* the bonus and damage specifically, not another
           item spaced the same as the mastery badge is from everything else. */}
       <span className="flex items-center gap-1">
-        {/* `text-sky-400` on both numbers — matches `AttackHintPanel`'s own
-            `HintFact` "sky" tone for To Hit/Damage, replacing the plain bold
-            white this row used to show, a drift from the hint that was never
-            a deliberate difference. The damage type stays its own small
-            secondary label (`text-[10px]`, demoted below the row's own
-            `text-[13px]` — the same size `SpellTrailing`/`AbilityTraitTrailing`
-            use, previously inherited unset here and drifting to the row's
-            ambient `text-sm`) rather than matching the hint's full-size
-            trailing text — a hint panel has room to spell it out plainly,
-            but at this row's denser size a full-size type reads as competing
-            with the roll instead of quietly labeling it; `text-slate-300`
-            (not the old `text-slate-500`) keeps it legible at that smaller
-            size. */}
-        <span className="font-semibold text-sky-400">{formatModifier(attack.attackBonus)}</span>
-        {/* Same middle-dot `HpBar`'s death-save pair and every "kind · source"
-            meta line elsewhere already use — the attack bonus and damage roll
-            are both bold/bright now, which reads as one continuous run of
-            digits without some seam between them. Bumped up from
-            `text-slate-600` at the row's own small text size — too faint to
-            register as a seam there; bigger and lighter reads as a
-            deliberate divider instead of a stray period. */}
-        <span className="text-base font-bold leading-none text-slate-500">·</span>
-        <span className="flex items-baseline gap-1">
-          <span className="font-semibold text-sky-400">{attack.damage}</span>
-          {attack.damageType && <span className="text-[10px] text-slate-300">{attack.damageType}</span>}
-        </span>
+        <TrailingValue value={formatModifier(attack.attackBonus)} />
+        <TrailingDot />
+        <TrailingValue value={attack.damage} label={attack.damageType} />
       </span>
     </span>
   );

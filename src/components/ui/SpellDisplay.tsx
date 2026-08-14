@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import { RichText } from "../RichText";
-import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS } from "./containerStyles";
+import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
+import { TrailingDot, TrailingValue } from "./RowTrailingValue";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
 const CONCENTRATION_PREFIX = "Concentration, ";
@@ -157,20 +158,21 @@ export function SpellHintPanel({
  *
  * Renders nothing for a spell with neither (most passive/utility spells with
  * no attack/save and no dice-based effect this data can summarize).
+ *
+ * Built from the shared `TrailingValue`/`TrailingDot` atoms
+ * (`RowTrailingValue.tsx`) — the same ones `AttackTrailing`/
+ * `AbilityTraitTrailing` use, so a size/color change to either reaches all
+ * three at once instead of drifting per file the way this row's own size
+ * and the middle-dot's size already have.
  */
 export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
   const hasEffect = Boolean(spell.effect && spell.effectType);
   if (!spell.hitOrDc && !hasEffect) return null;
   return (
-    <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px]">
-      {spell.hitOrDc && <span className="font-semibold text-sky-400">{spell.hitOrDc}</span>}
-      {spell.hitOrDc && hasEffect && <span className="text-sm font-bold leading-none text-slate-500">·</span>}
-      {hasEffect && (
-        <span className="flex items-baseline gap-1">
-          <span className="font-semibold text-sky-400">{spell.effect}</span>
-          <span className="text-[10px] text-slate-300">{spell.effectType}</span>
-        </span>
-      )}
+    <span className={`${TRAILING_ROW_CLS} gap-1 whitespace-nowrap`}>
+      {spell.hitOrDc && <TrailingValue value={spell.hitOrDc} />}
+      {spell.hitOrDc && hasEffect && <TrailingDot />}
+      {hasEffect && <TrailingValue value={spell.effect} label={spell.effectType} />}
     </span>
   );
 }

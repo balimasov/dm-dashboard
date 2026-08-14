@@ -104,11 +104,11 @@ export function CreatureCard({
           row) instead of a bare flex row. `-mb-2` trims the leftover gap
           before the stat block — see `CharacterCard`'s own comment. */}
       <div className={`-mx-2 -mb-2 flex items-center gap-1.5 px-2 py-1.5 ${TOOLBAR_SHELL_CLS}`}>
+        <AskAiPill onClick={() => setAiOpen(true)} />
         <ReminderBadge
           group={creatureReminders(creature)}
           onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
         />
-        <AskAiPill onClick={() => setAiOpen(true)} />
         <div className="ml-auto">
           <EntityActionsMenu
             onEdit={() => setEditOpen(true)}
