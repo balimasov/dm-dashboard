@@ -45,12 +45,12 @@ import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { DotMeter } from "./ResourceMeter";
+import { DotMeter, LimitedUseList, SpellSlotsList } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { SpellBadges, SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
-import { TabBar } from "./ui/TabBar";
+import { TabStrip } from "./ui/TabStrip";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -164,7 +164,7 @@ function ConsumableRow({ item, flagged, onToggleFlag }: { item: InventoryItem; f
   );
 }
 
-type DetailsTab = "weapons" | "features" | "spells" | "consumables";
+type DetailsTab = "weapons" | "features" | "spells" | "consumables" | "notes";
 
 export function CharacterDetailsModal({
   character,
@@ -216,11 +216,22 @@ export function CharacterDetailsModal({
   const consumableGroups = groupConsumablesByType(consumables);
   const hasConsumables = consumables.length > 0;
 
-  const tabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
+  // Content tabs only — Weapons/Features/Spells/Consumables, each gated on
+  // actually having something to show. Kept separate from `tabs` below so
+  // the "no spells or features on record yet" nudge can still key off "is
+  // there any actual game content", now that Notes always adds a tab of its
+  // own regardless (same as `NotesSection`/`QuickNotesSection` always
+  // rendering today, just relocated from a fixed block under the tabs into
+  // one of the tabs themselves).
+  const contentTabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
     ...(hasAttacks ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
     ...(hasFeatures ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features" }] : []),
     ...(hasSpells ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
     ...(hasConsumables ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
+  ];
+  const tabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
+    ...contentTabs,
+    { key: "notes", icon: "📝", text: "Notes" },
   ];
   const [activeTab, setActiveTab] = useState<DetailsTab | undefined>(tabs[0]?.key);
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
@@ -257,7 +268,7 @@ export function CharacterDetailsModal({
           </div>
         </>
       }
-      panelClassName={`relative my-4 w-full max-w-lg gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
+      panelClassName={`relative my-4 max-h-[85vh] w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
         c.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
@@ -309,72 +320,101 @@ export function CharacterDetailsModal({
           </div>
         </div>
 
-        {/* HP through Resources — shared with the main card via
-            `CharacterStatBlock` (see its own doc comment for why: a UI-kit
-            audit found this whole block byte-identical between the two,
-            after a fix landed in one and not the other for the third time
-            this session). The full Advantages list and Languages/Tools
-            "Proficiencies" (in that order) are this modal's own addition,
-            injected via `afterDamageInfo` rather than duplicated inline —
-            both stayed modal-only, the compact card has no room for
-            either. */}
-        <CharacterStatBlock
-          character={c}
-          compact
-          afterDamageInfo={
-            <>
-              {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
-              {c.advantages.length > 0 && (
-                <SectionDivider compact>
-                  <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
-                  <ul className="space-y-1.5 text-sm text-slate-300">
-                    {c.advantages.map((a) => {
-                      const { kind, subject, restriction } = parseAdvantageEntry(a);
-                      return (
-                        <li key={a} className="flex items-start gap-1.5">
-                          <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
-                            {kind === "advantage" ? "▲" : "▼"}
-                          </span>
-                          <span>
-                            {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
-                            <b className="font-semibold text-slate-200">{subject}</b>
-                            {restriction && `: ${restriction}`}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </SectionDivider>
-              )}
+        {/* Two independently-scrolling columns instead of one long stacked
+            flow: the old single column made the tab switcher (Weapons/
+            Features/Spells/Consumables) something you had to scroll the
+            *entire* stat block to reach, and scrolling far enough to compare
+            a tab's content against HP/AC meant losing the header off the top
+            of the viewport. Left keeps the exact same stat block as the
+            compact card (`CharacterStatBlock`, unchanged); right is always
+            the tabs, one scroll away from the header at any stat-block
+            length. `min-h-0` on the row is required for the two `overflow-
+            y-auto` children to actually scroll instead of stretching the
+            panel past `max-h-[85vh]` (a flex child's default `min-height:
+            auto` otherwise refuses to shrink below its content size). */}
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="scrollbar-themed flex w-[300px] shrink-0 flex-col gap-3.5 overflow-y-auto border-r border-slate-800 pr-3.5">
+            {/* HP through Resources — shared with the main card via
+                `CharacterStatBlock` (see its own doc comment for why: a
+                UI-kit audit found this whole block byte-identical between
+                the two, after a fix landed in one and not the other for the
+                third time this session). The full Advantages list and
+                Languages/Tools "Proficiencies" (in that order) are this
+                modal's own addition, injected via `afterDamageInfo` rather
+                than duplicated inline — both stayed modal-only, the compact
+                card has no room for either. */}
+            <CharacterStatBlock
+              character={c}
+              compact
+              afterDamageInfo={
+                <>
+                  {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
+                  {c.advantages.length > 0 && (
+                    <SectionDivider compact>
+                      <SubHeading>{advantagesHeading(c.advantages)}</SubHeading>
+                      <ul className="space-y-1.5 text-sm text-slate-300">
+                        {c.advantages.map((a) => {
+                          const { kind, subject, restriction } = parseAdvantageEntry(a);
+                          return (
+                            <li key={a} className="flex items-start gap-1.5">
+                              <span className={`mt-px shrink-0 font-bold ${kind === "advantage" ? "text-emerald-400" : "text-red-400"}`}>
+                                {kind === "advantage" ? "▲" : "▼"}
+                              </span>
+                              <span>
+                                {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
+                                <b className="font-semibold text-slate-200">{subject}</b>
+                                {restriction && `: ${restriction}`}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </SectionDivider>
+                  )}
 
-              {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
-                <SectionDivider compact>
-                  <SubHeading>Proficiencies</SubHeading>
-                  <IconInfoList
-                    entries={[
-                      { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
-                      { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
-                    ]}
-                  />
-                </SectionDivider>
-              )}
-            </>
-          }
-        />
+                  {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+                    <SectionDivider compact>
+                      <SubHeading>Proficiencies</SubHeading>
+                      <IconInfoList
+                        entries={[
+                          { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
+                          { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+                        ]}
+                      />
+                    </SectionDivider>
+                  )}
+                </>
+              }
+            />
+          </div>
 
-        {/* Weapons / Features / Spells / Consumables — tabbed instead of
-            side-by-side columns so each reads as a single, comfortably narrow
-            list. Only characters with more than one populated tab get a tab
-            switcher; a martial character with no spells or consumables just
-            sees Features directly, no empty tab to click into.
-            Consumables (the character's own `InventoryItem`s of category
-            "Consumable") is flaggable with the same reminder flame as every
-            other tab here, so a DM can mark "remind them to drink that potion"
-            just like a spell or feature — it then surfaces in `RemindersPanel`
-            the same way. */}
-        {tabs.length > 0 && (
-          <SectionDivider compact>
-            <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
+          {/* Weapons / Features / Spells / Consumables / Notes — tabbed
+              instead of stacked sections, reachable without scrolling past
+              the stat block on the left. `TabStrip` (not `TabBar`) — the
+              underline tab-strip style, not the icon-over-label pill
+              segments `TabBar` uses elsewhere; see that component's own doc
+              comment for why this is a second component rather than a
+              variant. Limited Use resources and Spell Slots — previously
+              only visible as an averaged percentage plus a hover tooltip on
+              the left column's compact Resources bar — are embedded inline
+              at the top of Features/Spells respectively instead of getting
+              a tab (or a permanently-visible panel) of their own: a charge
+              or a slot is only actionable in the context of the ability or
+              spell it's spent on, so it reads better sitting right above
+              that list than behind a separate click or eating space in
+              every other tab. Consumables (the character's own
+              `InventoryItem`s of category "Consumable") is flaggable with
+              the same reminder flame as every other tab here, so a DM can
+              mark "remind them to drink that potion" just like a spell or
+              feature — it then surfaces in `RemindersPanel` the same way. */}
+          <div className="scrollbar-themed min-w-0 flex-1 overflow-y-auto">
+            {contentTabs.length === 0 && (
+              <p className={`mb-3 ${MUTED_BODY_CLS}`}>
+                No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
+              </p>
+            )}
+
+            <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
             {currentTab === "weapons" && (
               <div className="space-y-1">
@@ -391,6 +431,8 @@ export function CharacterDetailsModal({
 
             {currentTab === "features" && (
               <div className="space-y-3">
+                <LimitedUseList resources={c.resources} />
+
                 {groupedFeatures.map(([group, features], index) =>
                   group === "other" ? (
                     // The "other" bucket sub-groups by origin instead of a flat
@@ -444,6 +486,9 @@ export function CharacterDetailsModal({
                     <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
                   </div>
                 )}
+
+                <SpellSlotsList spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
+
                 {spellLevels.map((level) => {
                   const slot = c.spellSlots.find((s) => s.level === level);
                   return (
@@ -520,24 +565,23 @@ export function CharacterDetailsModal({
                 ))}
               </div>
             )}
-          </SectionDivider>
-        )}
 
-        {tabs.length === 0 && (
-          <p className={`border-t border-slate-800 pt-3 ${MUTED_BODY_CLS}`}>
-            No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
-          </p>
-        )}
-
-        {/* Notes/Quick Notes — same fields as the compact card, but Notes is
-            editable here (save-on-blur) instead of read-only; the edit page
-            remains an option too, this is just the faster path mid-session. */}
-        <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
-        <QuickNotesSection
-          notes={c.quickNotes ?? []}
-          onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
-          compact
-        />
+            {currentTab === "notes" && (
+              <div className="space-y-3">
+                {/* Same fields as the compact card, but Notes is editable
+                    here (save-on-blur) instead of read-only; the edit page
+                    remains an option too, this is just the faster path
+                    mid-session. */}
+                <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
+                <QuickNotesSection
+                  notes={c.quickNotes ?? []}
+                  onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
+                  compact
+                />
+              </div>
+            )}
+          </div>
+        </div>
     </Modal>
 
     {editOpen && onUpdate && (

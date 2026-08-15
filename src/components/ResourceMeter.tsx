@@ -6,7 +6,7 @@ import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { RecoveryBadge, recoveryStatusLine } from "./ui/RecoveryBadge";
 
 /** Small fixed-size CSS circle for a colored bullet — same reasoning as `DotMeter`'s own doc comment: a "●" glyph renders at a different visual weight per font, a real circle doesn't. */
-function ColorDot({ className }: { className: string }) {
+export function ColorDot({ className }: { className: string }) {
   return <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${className}`} />;
 }
 
@@ -150,39 +150,67 @@ function ResourceTrackerHint({
       </div>
 
       {resources.length > 0 && (
-        <div className="mt-2 space-y-1.5 border-t border-slate-800 pt-2">
-          <h4 className="text-[11px] uppercase tracking-wide text-slate-600">Limited Use</h4>
-          {resources
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((r) => (
-              <ResourceMeter key={r.id} resource={r} />
-            ))}
+        <div className="mt-2 border-t border-slate-800 pt-2">
+          <LimitedUseList resources={resources} />
         </div>
       )}
 
       {spellSlots.length > 0 && (
         <div className="mt-2 border-t border-slate-800 pt-2">
-          <h4 className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-600">Spell Slots{pactSlots ? " (Pact)" : ""}</h4>
-          <div className="space-y-1">
-            {spellSlots
-              .slice()
-              .sort((a, b) => a.level - b.level)
-              .map((s) => (
-                <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
-                  {s.max > 0 && s.max <= 6 ? (
-                    <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
-                  ) : (
-                    <span className="font-medium text-slate-100">
-                      {s.current}/{s.max}
-                    </span>
-                  )}
-                </div>
-              ))}
-          </div>
+          <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} />
         </div>
       )}
+    </div>
+  );
+}
+
+/** The itemized Limited Use group (heading + one `ResourceMeter` row per resource, alphabetical) — shared by `ResourceTrackerHint`'s hover breakdown and `CharacterDetailsModal`'s Features tab, which embeds the same list inline instead of behind a hover (see that file's own comment on why). `null` when there's nothing to list, same as every other resource block here. */
+export function LimitedUseList({ resources }: { resources: Resource[] }) {
+  if (resources.length === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
+        <ColorDot className="bg-blue-400" />
+        Limited Use
+      </h4>
+      <div className="space-y-1.5">
+        {resources
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((r) => (
+            <ResourceMeter key={r.id} resource={r} />
+          ))}
+      </div>
+    </div>
+  );
+}
+
+/** Same idea as `LimitedUseList`, one level per row instead of one resource per row — shared by `ResourceTrackerHint`'s hover breakdown and `CharacterDetailsModal`'s Spells tab (which needs every tracked level, not just the ones with a known spell prepared — a slot with nothing assigned to it yet was previously invisible outside this hover). */
+export function SpellSlotsList({ spellSlots, pactSlots }: { spellSlots: SpellSlotLevel[]; pactSlots?: boolean }) {
+  if (spellSlots.length === 0) return null;
+  return (
+    <div>
+      <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
+        <ColorDot className="bg-violet-400" />
+        Spell Slots{pactSlots ? " (Pact)" : ""}
+      </h4>
+      <div className="space-y-1">
+        {spellSlots
+          .slice()
+          .sort((a, b) => a.level - b.level)
+          .map((s) => (
+            <div key={s.level} className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-slate-300">{ordinalLevel(s.level)} Level</span>
+              {s.max > 0 && s.max <= 6 ? (
+                <DotMeter current={s.current} max={s.max} colorClass="bg-violet-400" />
+              ) : (
+                <span className="font-medium text-slate-100">
+                  {s.current}/{s.max}
+                </span>
+              )}
+            </div>
+          ))}
+      </div>
     </div>
   );
 }
