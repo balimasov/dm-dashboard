@@ -43,7 +43,7 @@ export type ChipTone =
 
 export const CHIP_TONE_CLASSES: Record<ChipTone, string> = {
   /** Skill "Untrained" (`Pill`'s `slate`) and Recovery "Custom". */
-  neutral: "border-[#877c6e] bg-[#433e37]/46 text-[#ddd9d5]",
+  neutral: "border-[#6b6357] bg-[#322f29]/46 text-[#d1cdc7]",
   /** Recovery "Manual" only — deliberately a different lightness than `neutral` even though both start from the same gray hue, so Manual and Untrained/Custom don't read as identical. */
   steel: "border-[#a8a094] bg-[#655d53]/46 text-[#f1f0ee]",
   sr: "border-[#1daff1] bg-[#085c82]/46 text-[#c8e8f6]",
