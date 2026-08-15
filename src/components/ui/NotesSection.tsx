@@ -6,7 +6,6 @@ import { ensureNotesHtml } from "@/lib/journal";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import { PencilIcon } from "./icons";
-import { SectionDivider } from "./SectionDivider";
 import { SubHeading } from "./SubHeading";
 
 /**
@@ -30,24 +29,37 @@ export function NotesSection({
   notes,
   onChange,
   compact = false,
+  topDivider = true,
 }: {
   notes: string;
   onChange?: (notes: string) => void;
   /** Passed straight through to `SectionDivider` — see its own doc comment. */
   compact?: boolean;
+  /** `false` when this is the first thing inside its own container — the
+   * details modal's Notes tab, right under `TabStrip` — where a top border
+   * here would just duplicate the tab strip's own bottom rule a few pixels
+   * below it. Every other call site (stacked after a stat block, after
+   * `CreatureAbilitiesPanel`, ...) keeps the default divider. */
+  topDivider?: boolean;
 }) {
   const html = ensureNotesHtml(notes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(html);
   const isEmpty = html.replace(/<[^>]+>/g, "").trim().length === 0;
+  // Same border-t/padding-top `SectionDivider` renders, computed by hand —
+  // `SectionDivider` itself always takes a `compact` prop, which a plain
+  // `<div>` can't accept without leaking it onto the DOM node as an invalid
+  // attribute, so this can't be a `topDivider ? SectionDivider : "div"`
+  // component swap.
+  const dividerCls = topDivider ? `border-t border-slate-800 ${compact ? "pt-2.5" : "pt-3"}` : "";
 
   if (!onChange) {
     if (isEmpty) return null;
     return (
-      <SectionDivider compact={compact}>
+      <div className={dividerCls}>
         <SubHeading>Notes</SubHeading>
         <div className="notes-editor-content text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: html }} />
-      </SectionDivider>
+      </div>
     );
   }
 
@@ -63,7 +75,7 @@ export function NotesSection({
 
   if (editing) {
     return (
-      <SectionDivider compact={compact}>
+      <div className={dividerCls}>
         <SubHeading>Notes</SubHeading>
         <NotesEditor value={draft} onChange={setDraft} placeholder="Add notes..." autoFocus />
         <div className="mt-2 flex justify-end gap-2 text-sm">
@@ -74,12 +86,12 @@ export function NotesSection({
             Save
           </Button>
         </div>
-      </SectionDivider>
+      </div>
     );
   }
 
   return (
-    <SectionDivider compact={compact} className="group relative">
+    <div className={`${dividerCls} group relative`.trim()}>
       <SubHeading>Notes</SubHeading>
       <IconButton
         tone="muted"
@@ -103,6 +115,6 @@ export function NotesSection({
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
-    </SectionDivider>
+    </div>
   );
 }

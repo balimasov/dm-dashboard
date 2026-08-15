@@ -1,24 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { AbilityScores, Creature, CreatureAoeShape, CreatureEffect, CreatureEffectKind, CreatureTrait } from "@/lib/types";
-import { abilityModifier } from "@/lib/characterMath";
+import { AbilityScores, CreatureAoeShape, CreatureEffect, CreatureEffectKind, CreatureTrait } from "@/lib/types";
 import { formatModifier } from "@/lib/format";
-import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { HINT_FACT_ROW_CLS, TRAILING_ROW_CLS } from "./ui/containerStyles";
-import { FlaggableRow } from "./ui/FlaggableRow";
 import { HintFact } from "./ui/HintFact";
 import { MetaBadge } from "./ui/MetaBadge";
 import { TrailingDot, TrailingValue } from "./ui/RowTrailingValue";
-import { MICRO_ITEM_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./ui/typography";
-import { InfoTooltip } from "./InfoTooltip";
-import { StatBox } from "./ui/StatBox";
-import { TabStrip } from "./ui/TabStrip";
+import { MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 
-type AbilitiesTab = "traits" | "spellcasting";
+/**
+ * Trait/action rendering pieces shared by `CreatureDetailsModal` (the
+ * Features tab) and `creatureReminders`/`aiGlossary` (the same hint for a
+ * flagged trait elsewhere in the app) — no `CreatureAbilitiesPanel`
+ * component here anymore. It used to own its own `TabStrip`/tab state for
+ * Features/Spells, nested one level below `CreatureDetailsModal`; that made
+ * a creature's tabs (and, worse, where its Notes/Quick Notes ended up)
+ * structurally different from a character's, built by a genuinely
+ * different component instead of the same shape with different tab
+ * content. `CreatureDetailsModal` now builds its own `tabs`/`activeTab`
+ * exactly like `CharacterDetailsModal` does — Features/Spells/Notes all as
+ * peers in one switch — and imports `groupTraits`/`AbilityTraitTrailing`/
+ * `CreatureAbilityHintPanel` from here for the Features tab's content.
+ */
 
 /** "5" or "80/320" → "5 ft." / "80/320 ft." — the unit is never hand-typed (see `CreatureAttack.range`'s own doc comment), so every place `range` is shown adds it here instead. */
 function formatRange(range: string | undefined): string | undefined {
@@ -68,7 +74,7 @@ function EffectBadge({ effect }: { effect: CreatureEffect }) {
  * `TrailingDot` atoms (`ui/RowTrailingValue.tsx`) those two use, so a size/
  * color change to any of the three reaches all of them at once.
  */
-function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
+export function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   return (
     <span className={`${TRAILING_ROW_CLS} flex-wrap justify-end gap-2`}>
       {trait.attack && trait.attack.damage.length > 0 && (
@@ -224,130 +230,9 @@ export function CreatureAbilityHintPanel({ trait }: { trait: CreatureTrait }) {
 }
 
 /** Groups the full trait list by `GROUP_ORDER`, dropping empty groups. */
-function groupTraits(traits: CreatureTrait[]) {
+export function groupTraits(traits: CreatureTrait[]) {
   return GROUP_ORDER.map((group) => ({
     group,
     items: traits.filter((t) => (t.group ?? "trait") === group),
   })).filter((g) => g.items.length > 0);
-}
-
-/**
- * A creature's tabbed "how do its abilities actually work" view — everything
- * a DM needs at a glance mid-combat, without rereading prose
- * (`proficiencyBonus` already shows in `CreatureStatBlock`'s own icon-stat
- * row, not here). Sits directly in the right column of `CreatureDetailsModal`'s
- * `DetailsTwoColumn` (the same shell `CharacterDetailsModal` uses) — same
- * `TabStrip`, same "renders nothing with under 2 populated tabs" rule, and
- * the same tab names ("Features"/"Spells") so the two entity types read as
- * one consistent convention rather than two similar-but-differently-labeled
- * ones. No outer `SectionDivider`/top border here — unlike the single-column
- * layout this replaced, this panel is now the first thing in its own column,
- * not something flowing after a stat block it needs to visually separate
- * from. Only used by `CreatureDetailsModal`, not the compact `CreatureCard`
- * (which skips Traits/Actions entirely — see that file's own comment).
- *
- * "Features" is every trait/action/bonus action/reaction/legendary action,
- * one row per trait — name + hover-hint (the full description text lives in
- * the hint, not inline in the row, same "no wall of text" reasoning that
- * drove this whole feature). A single row shape for every trait rather than
- * a separate "Attacks" tab for the subset with structured data: one shape to
- * maintain, and a trait's `.attack`/`.save`/`.recharge`/`.effects` (if any)
- * just show as trailing content on its own already-existing row instead of
- * duplicating that row into a second tab. "Spells" stays a separate,
- * optional tab — a creature's spell list doesn't fit this same per-trait row
- * shape; its own group/spell-list layout mirrors the character Spells tab's
- * per-level grouping instead (uppercase label line, then one row per spell).
- */
-export function CreatureAbilitiesPanel({
-  creature,
-  onUpdate,
-}: {
-  creature: Creature;
-  onUpdate?: (id: string, updates: Partial<Creature>) => void;
-}) {
-  const flaggedTraits = creature.flaggedTraits ?? [];
-  function toggleFlag(name: string) {
-    if (!onUpdate) return;
-    const next = flaggedTraits.includes(name) ? flaggedTraits.filter((n) => n !== name) : [...flaggedTraits, name];
-    onUpdate(creature.id, { flaggedTraits: next });
-  }
-
-  const allGroups = groupTraits(creature.traits);
-  const hasTraits = allGroups.length > 0;
-  const hasSpellcasting = Boolean(creature.spellcasting);
-
-  const tabs: Array<{ key: AbilitiesTab; icon: string; text: string }> = [
-    ...(hasTraits ? [{ key: "traits" as const, icon: CONTENT_KIND_ICON.features, text: "Features" }] : []),
-    ...(hasSpellcasting ? [{ key: "spellcasting" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
-  ];
-  const [activeTab, setActiveTab] = useState<AbilitiesTab | undefined>(tabs[0]?.key);
-  const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : tabs[0]?.key;
-
-  if (tabs.length === 0) return null;
-
-  return (
-    <div>
-      <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
-
-      {currentTab === "traits" && (
-        <div className="space-y-3">
-          {allGroups.map(({ group, items }) => (
-            <div key={group} className="space-y-1">
-              <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
-              {items.map((trait, index) => {
-                const flagged = flaggedTraits.includes(trait.name);
-                return (
-                  <FlaggableRow
-                    key={`${group}-${index}`}
-                    flagged={flagged}
-                    onToggleFlag={() => toggleFlag(trait.name)}
-                    trailing={<AbilityTraitTrailing trait={trait} />}
-                  >
-                    <InfoTooltip panel={<CreatureAbilityHintPanel trait={trait} />}>{trait.name}</InfoTooltip>
-                  </FlaggableRow>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {currentTab === "spellcasting" && creature.spellcasting && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-1.5">
-            <StatBox
-              label={creature.spellcasting.ability.toUpperCase()}
-              value={formatModifier(abilityModifier(creature.stats[creature.spellcasting.ability]))}
-            />
-            <StatBox label="Attack" value={formatModifier(creature.spellcasting.attackBonus)} />
-            <StatBox label="Save DC" value={String(creature.spellcasting.saveDc)} />
-          </div>
-          {creature.spellcasting.spellGroups.map((group, i) => {
-            if (group.spells.length === 0) return null;
-            return (
-              <div key={i}>
-                {group.label && <p className={MICRO_ITEM_LABEL_CLS}>{group.label}</p>}
-                {/* Same plain-row shape as the character Spells tab's own per-level list, but flaggable —
-                    a creature's spells previously had no reminder flame at all, unlike its traits above, even
-                    though "the DM forgets this creature can cast X" is exactly the kind of thing worth
-                    flagging. There's no richer per-spell data to show here (just a name, unlike a trait's
-                    attack/save/effects), so the hint stays a minimal "Spell" tag rather than going hint-less
-                    — `ReminderEntry.panel` always needs *something* to show in the Reminders panel/FAB. */}
-                <div className="mt-1 space-y-1">
-                  {group.spells.map((spell, j) => {
-                    const flagged = flaggedTraits.includes(spell);
-                    return (
-                      <FlaggableRow key={j} flagged={flagged} onToggleFlag={() => toggleFlag(spell)}>
-                        <InfoTooltip panel={<AbilityHintPanel name={spell} metaLines={["Spell"]} />}>{spell}</InfoTooltip>
-                      </FlaggableRow>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }

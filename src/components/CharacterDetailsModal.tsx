@@ -45,7 +45,7 @@ import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { DotMeter, LimitedUseList, SpellSlotsList } from "./ResourceMeter";
+import { DotMeter } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
@@ -395,15 +395,12 @@ export function CharacterDetailsModal({
                   underline tab-strip style, not the icon-over-label pill
                   segments `TabBar` uses elsewhere; see that component's own doc
                   comment for why this is a second component rather than a
-                  variant. Limited Use resources and Spell Slots — previously
-                  only visible as an averaged percentage plus a hover tooltip on
-                  the left column's compact Resources bar — are embedded inline
-                  at the top of Features/Spells respectively instead of getting
-                  a tab (or a permanently-visible panel) of their own: a charge
-                  or a slot is only actionable in the context of the ability or
-                  spell it's spent on, so it reads better sitting right above
-                  that list than behind a separate click or eating space in
-                  every other tab. Consumables (the character's own
+                  variant. Limited Use resources and Spell Slots stay on the
+                  left column's compact Resources bar (hover for the
+                  itemized breakdown) — a round embedding them inline at the
+                  top of Features/Spells too was tried and reverted; still
+                  deciding on the right way to expose them in more detail.
+                  Consumables (the character's own
                   `InventoryItem`s of category "Consumable") is flaggable with
                   the same reminder flame as every other tab here, so a DM can
                   mark "remind them to drink that potion" just like a spell or
@@ -431,8 +428,6 @@ export function CharacterDetailsModal({
 
             {currentTab === "features" && (
               <div className="space-y-3">
-                <LimitedUseList resources={c.resources} />
-
                 {groupedFeatures.map(([group, features], index) =>
                   group === "other" ? (
                     // The "other" bucket sub-groups by origin instead of a flat
@@ -486,8 +481,6 @@ export function CharacterDetailsModal({
                     <StatBox label="Save DC" value={String(c.spellcasting.saveDc)} />
                   </div>
                 )}
-
-                <SpellSlotsList spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
 
                 {spellLevels.map((level) => {
                   const slot = c.spellSlots.find((s) => s.level === level);
@@ -572,7 +565,12 @@ export function CharacterDetailsModal({
                       here (save-on-blur) instead of read-only; the edit page
                       remains an option too, this is just the faster path
                       mid-session. */}
-                  <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
+                  <NotesSection
+                    notes={c.notes}
+                    onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined}
+                    compact
+                    topDivider={false}
+                  />
                   <QuickNotesSection
                     notes={c.quickNotes ?? []}
                     onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
