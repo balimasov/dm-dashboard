@@ -344,6 +344,7 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
         )}
       </span>
       <span className="flex items-center gap-2 whitespace-nowrap">
+        <RecoveryBadge recovery={resource.recovery} />
         {showDots ? (
           <DotMeter current={resource.current} max={resource.max} />
         ) : (
@@ -351,7 +352,6 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
             {resource.current}/{resource.max}
           </span>
         )}
-        <RecoveryBadge recovery={resource.recovery} />
       </span>
     </div>
   );

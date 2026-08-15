@@ -56,10 +56,11 @@ function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
 }
 
-/** Same dot-meter + recovery abbreviation used for Resources/Spell Slots on the main card, reused here for any Feature or Spell that turns out to have its own charge pool. */
+/** Same dot-meter + recovery abbreviation used for Resources/Spell Slots on the main card, reused here for any Feature or Spell that turns out to have its own charge pool. Recovery badge first, dots/count last — the recovery type reads as the trailing-most "other chips, then LR/SR/M, then charges" rule this row's own C/R badges already follow. */
 function ChargeBadge({ current, max, recovery }: { current: number; max: number; recovery: RecoveryType }) {
   return (
     <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+      <RecoveryBadge recovery={recovery} />
       {max > 0 && max <= 6 ? (
         <DotMeter current={current} max={max} />
       ) : (
@@ -67,7 +68,6 @@ function ChargeBadge({ current, max, recovery }: { current: number; max: number;
           {current}/{max}
         </span>
       )}
-      <RecoveryBadge recovery={recovery} />
     </span>
   );
 }
