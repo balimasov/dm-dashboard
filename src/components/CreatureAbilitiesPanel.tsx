@@ -15,9 +15,8 @@ import { MetaBadge } from "./ui/MetaBadge";
 import { TrailingDot, TrailingValue } from "./ui/RowTrailingValue";
 import { MICRO_ITEM_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
-import { SectionDivider } from "./ui/SectionDivider";
 import { StatBox } from "./ui/StatBox";
-import { TabBar } from "./ui/TabBar";
+import { TabStrip } from "./ui/TabStrip";
 
 type AbilitiesTab = "traits" | "spellcasting";
 
@@ -236,10 +235,16 @@ function groupTraits(traits: CreatureTrait[]) {
  * A creature's tabbed "how do its abilities actually work" view — everything
  * a DM needs at a glance mid-combat, without rereading prose
  * (`proficiencyBonus` already shows in `CreatureStatBlock`'s own icon-stat
- * row, not here). Mirrors `CharacterDetailsModal`'s own tab pattern — same
- * `TabBar`, same "renders nothing with under 2 populated tabs" rule, and the
- * same tab names ("Features"/"Spells") so the two entity types read as one
- * consistent convention rather than two similar-but-differently-labeled ones.
+ * row, not here). Sits directly in the right column of `CreatureDetailsModal`'s
+ * `DetailsTwoColumn` (the same shell `CharacterDetailsModal` uses) — same
+ * `TabStrip`, same "renders nothing with under 2 populated tabs" rule, and
+ * the same tab names ("Features"/"Spells") so the two entity types read as
+ * one consistent convention rather than two similar-but-differently-labeled
+ * ones. No outer `SectionDivider`/top border here — unlike the single-column
+ * layout this replaced, this panel is now the first thing in its own column,
+ * not something flowing after a stat block it needs to visually separate
+ * from. Only used by `CreatureDetailsModal`, not the compact `CreatureCard`
+ * (which skips Traits/Actions entirely — see that file's own comment).
  *
  * "Features" is every trait/action/bonus action/reaction/legendary action,
  * one row per trait — name + hover-hint (the full description text lives in
@@ -256,12 +261,9 @@ function groupTraits(traits: CreatureTrait[]) {
 export function CreatureAbilitiesPanel({
   creature,
   onUpdate,
-  compact = false,
 }: {
   creature: Creature;
   onUpdate?: (id: string, updates: Partial<Creature>) => void;
-  /** Passed straight through to `SectionDivider` — see its own doc comment. */
-  compact?: boolean;
 }) {
   const flaggedTraits = creature.flaggedTraits ?? [];
   function toggleFlag(name: string) {
@@ -284,8 +286,8 @@ export function CreatureAbilitiesPanel({
   if (tabs.length === 0) return null;
 
   return (
-    <SectionDivider compact={compact}>
-      <TabBar tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
+    <div>
+      <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
       {currentTab === "traits" && (
         <div className="space-y-3">
@@ -346,6 +348,6 @@ export function CreatureAbilitiesPanel({
           })}
         </div>
       )}
-    </SectionDivider>
+    </div>
   );
 }

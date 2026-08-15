@@ -12,6 +12,7 @@ import { CreatureStatusRail } from "./CreatureStatusRail";
 import { EditCreatureModal } from "./EditCreatureModal";
 import { AskAiPill } from "./ui/AskAiPill";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
+import { DetailsTwoColumn } from "./ui/DetailsTwoColumn";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { IconButton } from "./ui/IconButton";
 import { Modal } from "./ui/Modal";
@@ -24,15 +25,19 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 /**
  * Same shape as `CharacterDetailsModal` — opened by clicking a creature's
  * header, same shell (top-aligned scroll container, Escape-to-close,
- * backdrop-scroll lock). Unlike the character modal, the stat-block part
- * isn't a superset of the compact card's content: a creature's card already
- * shows its full stat block with nothing hidden, so `CreatureStatBlock` is
- * the exact same shared body in both places — this modal just gives it more
- * room. Notes/Quick Notes do appear in both places (same as
- * `CharacterDetailsModal`) — the compact card keeps its own copies (Notes
- * read-only, Quick Notes editable) for a quick glance/jot without opening
- * anything, while this modal makes Notes itself editable too, a faster path
- * than the full `/creatures/[id]/edit` page for a quick mid-session update.
+ * backdrop-scroll lock, wide two-column `DetailsTwoColumn` body). Unlike the
+ * character modal, the stat-block part isn't a superset of the compact
+ * card's content: a creature's card already shows its full stat block with
+ * nothing hidden, so `CreatureStatBlock` is the exact same shared body in
+ * both places — this modal just gives it more room, in the left column.
+ * The right column is `CreatureAbilitiesPanel`'s Features/Spells tabs (no
+ * Weapons/Consumables tabs — a creature has neither concept, its attacks
+ * live inside Features/Traits already) followed by Notes/Quick Notes as a
+ * fixed, always-visible block rather than a third tab — unlike the
+ * character modal, which moved Notes into its own tab. Unlike
+ * `CharacterCard`, `CreatureCard` shows neither (see that file's own
+ * comment) — this modal is the only place a creature's Notes/Quick Notes
+ * show at all, so there's no compact-card copy to stay in sync with.
  */
 export function CreatureDetailsModal({
   creature,
@@ -92,7 +97,7 @@ export function CreatureDetailsModal({
           </div>
         </>
       }
-      panelClassName={`relative my-4 w-full max-w-lg gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
+      panelClassName={`relative my-4 max-h-[85vh] w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
         creature.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
@@ -124,18 +129,32 @@ export function CreatureDetailsModal({
           </div>
         </div>
 
-        <CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />
-        <CreatureAbilitiesPanel creature={creature} onUpdate={onUpdate} compact />
+        <DetailsTwoColumn
+          left={<CreatureStatBlock creature={creature} onUpdate={onUpdate} compact />}
+          right={
+            // `space-y-3.5` — unlike `CharacterDetailsModal`'s right column
+            // (only one tab's content ever renders at a time), the Features/
+            // Spells panel and the fixed Notes/Quick Notes block below it are
+            // all visible at once here, so this column needs its own
+            // vertical rhythm between them (the old single-column layout got
+            // this for free from `Modal`'s panel-level `gap-3.5` treating
+            // each as a top-level flex child; nested one level deeper inside
+            // `right` now, they no longer are).
+            <div className="space-y-3.5">
+              <CreatureAbilitiesPanel creature={creature} onUpdate={onUpdate} />
 
-        <NotesSection
-          notes={creature.notes ?? ""}
-          onChange={onUpdate ? (notes) => onUpdate(creature.id, { notes }) : undefined}
-          compact
-        />
-        <QuickNotesSection
-          notes={creature.quickNotes ?? []}
-          onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
-          compact
+              <NotesSection
+                notes={creature.notes ?? ""}
+                onChange={onUpdate ? (notes) => onUpdate(creature.id, { notes }) : undefined}
+                compact
+              />
+              <QuickNotesSection
+                notes={creature.quickNotes ?? []}
+                onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
+                compact
+              />
+            </div>
+          }
         />
     </Modal>
 

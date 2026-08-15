@@ -51,6 +51,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
 import { SpellBadges, SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
 import { TabStrip } from "./ui/TabStrip";
+import { DetailsTwoColumn } from "./ui/DetailsTwoColumn";
 
 function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
@@ -328,30 +329,20 @@ export function CharacterDetailsModal({
             of the viewport. Left keeps the exact same stat block as the
             compact card (`CharacterStatBlock`, unchanged); right is always
             the tabs, one scroll away from the header at any stat-block
-            length. Even 50/50 split (`flex-1` on both, not a fixed left
-            width) rather than a narrow fixed sidebar. `min-h-0` on the row
-            is required for the two `overflow-y-auto` children to actually
-            scroll instead of stretching the panel past `max-h-[85vh]` (a
-            flex child's default `min-height: auto` otherwise refuses to
-            shrink below its content size). `overflow-x-hidden` alongside
-            `overflow-y-auto` on both columns — per the CSS overflow spec, an
-            axis left at its `visible` default gets silently promoted to
-            `auto` the moment the *other* axis is anything but `visible`, so
-            `overflow-y-auto` alone was enough to grow a horizontal
-            scrollbar the instant any row (a long attack/spell line, this
-            column at its narrowest) got even a pixel wider than the column
-            — not real content overflow, just that spec quirk. */}
-        <div className="flex min-h-0 flex-1 gap-4">
-          <div className="scrollbar-themed flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden border-r border-slate-800 pr-3.5">
-            {/* HP through Resources — shared with the main card via
-                `CharacterStatBlock` (see its own doc comment for why: a
-                UI-kit audit found this whole block byte-identical between
-                the two, after a fix landed in one and not the other for the
-                third time this session). The full Advantages list and
-                Languages/Tools "Proficiencies" (in that order) are this
-                modal's own addition, injected via `afterDamageInfo` rather
-                than duplicated inline — both stayed modal-only, the compact
-                card has no room for either. */}
+            length. Shared shell (`DetailsTwoColumn`) with `CreatureDetailsModal`
+            — see its own doc comment for the width/scroll/focus-ring
+            reasoning baked into it. */}
+        <DetailsTwoColumn
+          left={
+            /* HP through Resources — shared with the main card via
+               `CharacterStatBlock` (see its own doc comment for why: a
+               UI-kit audit found this whole block byte-identical between
+               the two, after a fix landed in one and not the other for the
+               third time this session). The full Advantages list and
+               Languages/Tools "Proficiencies" (in that order) are this
+               modal's own addition, injected via `afterDamageInfo` rather
+               than duplicated inline — both stayed modal-only, the compact
+               card has no room for either. */
             <CharacterStatBlock
               character={c}
               compact
@@ -395,43 +386,37 @@ export function CharacterDetailsModal({
                 </>
               }
             />
-          </div>
+          }
+          right={
+            <>
+              {/* Weapons / Features / Spells / Consumables / Notes — tabbed
+                  instead of stacked sections, reachable without scrolling past
+                  the stat block on the left. `TabStrip` (not `TabBar`) — the
+                  underline tab-strip style, not the icon-over-label pill
+                  segments `TabBar` uses elsewhere; see that component's own doc
+                  comment for why this is a second component rather than a
+                  variant. Limited Use resources and Spell Slots — previously
+                  only visible as an averaged percentage plus a hover tooltip on
+                  the left column's compact Resources bar — are embedded inline
+                  at the top of Features/Spells respectively instead of getting
+                  a tab (or a permanently-visible panel) of their own: a charge
+                  or a slot is only actionable in the context of the ability or
+                  spell it's spent on, so it reads better sitting right above
+                  that list than behind a separate click or eating space in
+                  every other tab. Consumables (the character's own
+                  `InventoryItem`s of category "Consumable") is flaggable with
+                  the same reminder flame as every other tab here, so a DM can
+                  mark "remind them to drink that potion" just like a spell or
+                  feature — it then surfaces in `RemindersPanel` the same way. */}
+              {contentTabs.length === 0 && (
+                <p className={`mb-3 ${MUTED_BODY_CLS}`}>
+                  No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
+                </p>
+              )}
 
-          {/* Weapons / Features / Spells / Consumables / Notes — tabbed
-              instead of stacked sections, reachable without scrolling past
-              the stat block on the left. `TabStrip` (not `TabBar`) — the
-              underline tab-strip style, not the icon-over-label pill
-              segments `TabBar` uses elsewhere; see that component's own doc
-              comment for why this is a second component rather than a
-              variant. Limited Use resources and Spell Slots — previously
-              only visible as an averaged percentage plus a hover tooltip on
-              the left column's compact Resources bar — are embedded inline
-              at the top of Features/Spells respectively instead of getting
-              a tab (or a permanently-visible panel) of their own: a charge
-              or a slot is only actionable in the context of the ability or
-              spell it's spent on, so it reads better sitting right above
-              that list than behind a separate click or eating space in
-              every other tab. Consumables (the character's own
-              `InventoryItem`s of category "Consumable") is flaggable with
-              the same reminder flame as every other tab here, so a DM can
-              mark "remind them to drink that potion" just like a spell or
-              feature — it then surfaces in `RemindersPanel` the same way. */}
-          {/* `px-1` — without it, `overflow-x-hidden` above clips the 2px
-              focus ring on the Notes editor/Quick Notes input the instant
-              either is focused: both sit flush against this column's own
-              box edge with zero horizontal slack, so the ring (a box-shadow,
-              not real layout width) has nowhere to bleed into before
-              getting cut off left and right. */}
-          <div className="scrollbar-themed min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1">
-            {contentTabs.length === 0 && (
-              <p className={`mb-3 ${MUTED_BODY_CLS}`}>
-                No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
-              </p>
-            )}
+              <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
-            <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
-
-            {currentTab === "weapons" && (
+              {currentTab === "weapons" && (
               <div className="space-y-1">
                 {sortedAttacks.map((attack) => (
                   <AttackRow
@@ -581,22 +566,23 @@ export function CharacterDetailsModal({
               </div>
             )}
 
-            {currentTab === "notes" && (
-              <div className="space-y-3">
-                {/* Same fields as the compact card, but Notes is editable
-                    here (save-on-blur) instead of read-only; the edit page
-                    remains an option too, this is just the faster path
-                    mid-session. */}
-                <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
-                <QuickNotesSection
-                  notes={c.quickNotes ?? []}
-                  onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
-                  compact
-                />
-              </div>
-            )}
-          </div>
-        </div>
+              {currentTab === "notes" && (
+                <div className="space-y-3">
+                  {/* Same fields as the compact card, but Notes is editable
+                      here (save-on-blur) instead of read-only; the edit page
+                      remains an option too, this is just the faster path
+                      mid-session. */}
+                  <NotesSection notes={c.notes} onChange={onUpdate ? (notes) => onUpdate(c.id, { notes }) : undefined} compact />
+                  <QuickNotesSection
+                    notes={c.quickNotes ?? []}
+                    onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
+                    compact
+                  />
+                </div>
+              )}
+            </>
+          }
+        />
     </Modal>
 
     {editOpen && onUpdate && (
