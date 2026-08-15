@@ -145,7 +145,7 @@ export function CreatureDetailsModal({
           </div>
         </>
       }
-      panelClassName={`relative my-4 max-h-[85vh] w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 ${
+      panelClassName={`relative my-4 w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 md:max-h-[85vh] ${
         creature.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
