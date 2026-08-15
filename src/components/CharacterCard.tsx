@@ -18,7 +18,6 @@ import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
-import { NotesSection } from "./ui/NotesSection";
 
 export function CharacterCard({
   character,
@@ -115,8 +114,6 @@ export function CharacterCard({
       </div>
 
       <CharacterStatBlock character={c} compact alwaysShowSenses showAllSkills={false} />
-
-      <NotesSection notes={c.notes} compact />
 
       {detailsOpen && (
         <CharacterDetailsModal

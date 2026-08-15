@@ -46,7 +46,7 @@ export function NotesSection({
     return (
       <SectionDivider compact={compact}>
         <SubHeading>Notes</SubHeading>
-        <div className="notes-editor-content text-sm text-slate-400" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="notes-editor-content text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: html }} />
       </SectionDivider>
     );
   }
@@ -99,7 +99,7 @@ export function NotesSection({
         <p className="pr-8 text-sm italic text-slate-600 sm:pr-0">No notes yet.</p>
       ) : (
         <div
-          className="notes-editor-content pr-8 text-sm text-slate-400 sm:pr-0"
+          className="notes-editor-content pr-8 text-sm text-slate-300 sm:pr-0"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}

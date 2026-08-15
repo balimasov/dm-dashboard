@@ -328,12 +328,21 @@ export function CharacterDetailsModal({
             of the viewport. Left keeps the exact same stat block as the
             compact card (`CharacterStatBlock`, unchanged); right is always
             the tabs, one scroll away from the header at any stat-block
-            length. `min-h-0` on the row is required for the two `overflow-
-            y-auto` children to actually scroll instead of stretching the
-            panel past `max-h-[85vh]` (a flex child's default `min-height:
-            auto` otherwise refuses to shrink below its content size). */}
+            length. Even 50/50 split (`flex-1` on both, not a fixed left
+            width) rather than a narrow fixed sidebar. `min-h-0` on the row
+            is required for the two `overflow-y-auto` children to actually
+            scroll instead of stretching the panel past `max-h-[85vh]` (a
+            flex child's default `min-height: auto` otherwise refuses to
+            shrink below its content size). `overflow-x-hidden` alongside
+            `overflow-y-auto` on both columns — per the CSS overflow spec, an
+            axis left at its `visible` default gets silently promoted to
+            `auto` the moment the *other* axis is anything but `visible`, so
+            `overflow-y-auto` alone was enough to grow a horizontal
+            scrollbar the instant any row (a long attack/spell line, this
+            column at its narrowest) got even a pixel wider than the column
+            — not real content overflow, just that spec quirk. */}
         <div className="flex min-h-0 flex-1 gap-4">
-          <div className="scrollbar-themed flex w-[300px] shrink-0 flex-col gap-3.5 overflow-y-auto border-r border-slate-800 pr-3.5">
+          <div className="scrollbar-themed flex min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden border-r border-slate-800 pr-3.5">
             {/* HP through Resources — shared with the main card via
                 `CharacterStatBlock` (see its own doc comment for why: a
                 UI-kit audit found this whole block byte-identical between
@@ -407,7 +416,13 @@ export function CharacterDetailsModal({
               the same reminder flame as every other tab here, so a DM can
               mark "remind them to drink that potion" just like a spell or
               feature — it then surfaces in `RemindersPanel` the same way. */}
-          <div className="scrollbar-themed min-w-0 flex-1 overflow-y-auto">
+          {/* `px-1` — without it, `overflow-x-hidden` above clips the 2px
+              focus ring on the Notes editor/Quick Notes input the instant
+              either is focused: both sit flush against this column's own
+              box edge with zero horizontal slack, so the ring (a box-shadow,
+              not real layout width) has nowhere to bleed into before
+              getting cut off left and right. */}
+          <div className="scrollbar-themed min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1">
             {contentTabs.length === 0 && (
               <p className={`mb-3 ${MUTED_BODY_CLS}`}>
                 No spells or features on record yet — sync with D&D Beyond or add them on the edit page.
