@@ -56,10 +56,24 @@ function spellLevelLabel(level: number): string {
   return level === 0 ? "Cantrips" : `${ordinalLevel(level)} Level`;
 }
 
-/** Same dot-meter + recovery abbreviation used for Resources/Spell Slots on the main card, reused here for any Feature or Spell that turns out to have its own charge pool. Recovery badge first, dots/count last — the recovery type reads as the trailing-most "other chips, then LR/SR/M, then charges" rule this row's own C/R badges already follow. */
+/**
+ * Same dot-meter + recovery abbreviation used for Resources/Spell Slots on
+ * the main card, reused here for any Feature or Spell that turns out to have
+ * its own charge pool. Recovery badge first, dots/count last — the recovery
+ * type reads as the trailing-most "other chips, then LR/SR/M, then charges"
+ * rule this row's own C/R badges already follow.
+ *
+ * `inline-flex` (not plain `flex`) on the wrapper, same "atomic inline-level
+ * box" trick `MetaBadge` uses `inline-block` for — `RecoveryBadge` already
+ * escapes `FlaggableRow`'s dotted name-underline this way (it's built on
+ * `MetaBadge`), but the dot meter and the bare "current/max" count sat in a
+ * plain block-level `flex` span, which does NOT get the same exclusion, so
+ * the underline kept bleeding through onto them even after the chip itself
+ * was fixed.
+ */
 function ChargeBadge({ current, max, recovery }: { current: number; max: number; recovery: RecoveryType }) {
   return (
-    <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+    <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap no-underline">
       <RecoveryBadge recovery={recovery} />
       {max > 0 && max <= 6 ? (
         <DotMeter current={current} max={max} />
