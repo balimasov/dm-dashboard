@@ -76,12 +76,28 @@ function EffectBadge({ effect }: { effect: CreatureEffect }) {
 }
 
 /**
- * Bonus/damage (attack), DC (save), a recharge badge, and any non-damage
- * effects — the fast-glance numbers a DM needs mid-combat without reading
- * `trait.description`, same visual weight as `AttackTrailing`/`SpellTrailing`
- * on the character side: built from the same shared `TrailingValue`/
- * `TrailingDot` atoms (`ui/RowTrailingValue.tsx`) those two use, so a size/
- * color change to any of the three reaches all of them at once.
+ * The recharge badge ("Recharge 5-6") rendered right next to the trait's
+ * name, same placement `ChargeBadge` (`CharacterDetailsModal.tsx`) gets for
+ * a Feature/Spell with its own charge pool — both mark "this has a
+ * refresh/availability state" as part of the name itself, not buried among
+ * the row's damage numbers on the far right. Split out of
+ * `AbilityTraitTrailing` (which used to lump it in with the trailing
+ * damage/effects) so `CreatureDetailsModal`'s Features tab can place it the
+ * same way `FeatureRow` places `ChargeBadge`.
+ */
+export function AbilityTraitChip({ trait }: { trait: CreatureTrait }) {
+  if (!trait.recharge) return null;
+  return <MetaBadge label={trait.recharge} uppercase={false} colorClassName={CHIP_TONE_CLASSES.gold} />;
+}
+
+/**
+ * Bonus/damage (attack), DC (save), and any non-damage effects (heal/temp
+ * HP/AC bonus/other) or spell cast — the fast-glance numbers a DM needs
+ * mid-combat without reading `trait.description`, same visual weight as
+ * `AttackTrailing`/`SpellTrailing` on the character side: built from the
+ * same shared `TrailingValue`/`TrailingDot` atoms (`ui/RowTrailingValue.tsx`)
+ * those two use, so a size/color change to any of the three reaches all of
+ * them at once. The recharge badge is NOT here — see `AbilityTraitChip`.
  */
 export function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
   return (
@@ -103,7 +119,6 @@ export function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
         </span>
       )}
       {trait.save && <TrailingValue value={`DC ${trait.save.dc}`} label={trait.save.ability.toUpperCase()} />}
-      {trait.recharge && <MetaBadge label={trait.recharge} uppercase={false} colorClassName={CHIP_TONE_CLASSES.gold} />}
       {(trait.effects ?? []).map((effect, i) => (
         <EffectBadge key={i} effect={effect} />
       ))}
