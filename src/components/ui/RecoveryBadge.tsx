@@ -1,4 +1,5 @@
-import { RECOVERY_LABELS, RECOVERY_SHORT_LABELS, RecoveryType } from "@/lib/types";
+import { Feature, RECOVERY_LABELS, RECOVERY_SHORT_LABELS, RecoveryType, Resource } from "@/lib/types";
+import { AbilityHintPanel } from "./AbilityHintPanel";
 import { CHIP_TONE_CLASSES, ChipTone } from "./chipTones";
 import { HintFact } from "./HintFact";
 import { MetaBadge } from "./MetaBadge";
@@ -63,6 +64,44 @@ export function recoveryStatusLine(recovery: RecoveryType, current?: number, max
       label="Recovery"
       value={RECOVERY_LABELS[recovery]}
       trailing={current !== undefined && max !== undefined ? ` · ${current}/${max}` : undefined}
+    />
+  );
+}
+
+/**
+ * `AbilityHintPanel` assembled for a `Feature`, `recoveryStatusLine` included
+ * whenever the feature has its own charge pool — the one place every caller
+ * showing a feature's hover hint builds it, instead of each hand-rolling the
+ * same `name`/`metaLines`/`status`/`description` props and risking exactly
+ * the drift that happened here once already: the Features tab passed
+ * `status`, `characterReminders`' copy of this same panel didn't, so a
+ * flagged feature with limited charges silently lost its "can I use this
+ * right now" line the moment it showed up in the Reminders panel instead of
+ * its own tab. `emptyDescription` stays a param (not hardcoded) since the
+ * tab and the Reminders panel deliberately differ there — a bare feature row
+ * shows nothing when it has no description, but a reminder wants an explicit
+ * "No description." rather than a suspiciously empty hint.
+ */
+export function FeatureHintPanel({ feature, emptyDescription }: { feature: Feature; emptyDescription?: string }) {
+  return (
+    <AbilityHintPanel
+      name={feature.name}
+      metaLines={[feature.source]}
+      status={feature.max !== undefined && recoveryStatusLine(feature.recovery!, feature.current, feature.max)}
+      description={feature.description}
+      emptyDescription={emptyDescription}
+    />
+  );
+}
+
+/** Same idea as `FeatureHintPanel`, for a `Resource` — its charge pool is never optional the way a `Feature`'s is, so `status` needs no `!== undefined` guard. */
+export function ResourceHintPanel({ resource }: { resource: Resource }) {
+  return (
+    <AbilityHintPanel
+      name={resource.name}
+      metaLines={[resource.source]}
+      status={recoveryStatusLine(resource.recovery, resource.current, resource.max)}
+      description={resource.description}
     />
   );
 }

@@ -5,7 +5,8 @@ import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
 import { AttackHintPanel } from "@/components/ui/AttackDisplay";
 import { CreatureAbilityHintPanel } from "@/components/CreatureAbilitiesPanel";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
-import { SpellHintPanel } from "@/components/ui/SpellDisplay";
+import { FeatureHintPanel } from "@/components/ui/RecoveryBadge";
+import { KnownSpellHintPanel } from "@/components/ui/SpellDisplay";
 
 export interface ReminderEntry {
   /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `label`). */
@@ -65,7 +66,7 @@ export function characterReminders(character: Character): ReminderGroup | null {
       .map((f) => ({
         name: f.name,
         label: f.name,
-        panel: <AbilityHintPanel name={f.name} metaLines={[f.source]} description={f.description} emptyDescription="No description." />,
+        panel: <FeatureHintPanel feature={f} emptyDescription="No description." />,
         kind: "features" as const,
       })),
     ...character.knownSpells
@@ -73,7 +74,7 @@ export function characterReminders(character: Character): ReminderGroup | null {
       .map((s) => ({
         name: s.name,
         label: s.name,
-        panel: <SpellHintPanel spell={s} />,
+        panel: <KnownSpellHintPanel spell={s} />,
         kind: "spells" as const,
       })),
     ...dedupeInventoryItems(character.inventory.filter((item) => item.category === "Consumable"))

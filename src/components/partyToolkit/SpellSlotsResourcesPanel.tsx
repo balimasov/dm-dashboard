@@ -25,7 +25,7 @@ import { CharacterChip, CharacterChipRow } from "../ui/CharacterChip";
 import { ConsumableQuantity } from "../ui/ConsumableQuantity";
 import { ItemHintPanel } from "../ui/ItemHintPanel";
 import { RecoveryBadge, recoveryStatusLine } from "../ui/RecoveryBadge";
-import { SpellHintPanel, SpellTrailing } from "../ui/SpellDisplay";
+import { SpellBadges, SpellHintPanel, SpellTrailing } from "../ui/SpellDisplay";
 import { TabBar } from "../ui/TabBar";
 import { SectionLabel, ToolkitCard } from "../ui/ToolkitCard";
 import { EMPTY_STATE_CLS } from "../ui/typography";
@@ -81,10 +81,11 @@ function spellLevelLabel(level: number): string {
 function PartySpellRow({ spell }: { spell: PartySpellEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-sm">
-      <div className="min-w-0 flex-1">
-        <InfoTooltip panel={<SpellHintPanel spell={spell} />}>
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <InfoTooltip className="min-w-0" panel={<SpellHintPanel spell={spell} />}>
           <span className="text-slate-300">{spell.name}</span>
         </InfoTooltip>
+        <SpellBadges spell={spell} />
       </div>
       <SpellTrailing spell={spell} />
       <CharacterChipRow holders={spell.holders} />

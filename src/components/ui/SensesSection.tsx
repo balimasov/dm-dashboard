@@ -41,14 +41,17 @@ export function SensesSection({
   return (
     <SectionDivider compact={compact}>
       <SubHeading>Senses</SubHeading>
+      {/* `color="box"` — these three read as ability-score-box siblings, not
+          a "chip" with a meaningful hue (see `Pill`'s `COLOR_STYLES` doc
+          comment for why that tone is pinned separately from `slate`). */}
       <div className="grid grid-cols-3 gap-1.5">
-        <Pill panel={passivePerceptionPanel}>
+        <Pill panel={passivePerceptionPanel} color="box">
           {SKILL_ABBR.perception} {passivePerception}
         </Pill>
-        <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL}>
+        <Pill panel={PASSIVE_INVESTIGATION_HINT_PANEL} color="box">
           {SKILL_ABBR.investigation} {passiveInvestigation}
         </Pill>
-        <Pill panel={PASSIVE_INSIGHT_HINT_PANEL}>
+        <Pill panel={PASSIVE_INSIGHT_HINT_PANEL} color="box">
           {SKILL_ABBR.insight} {passiveInsight}
         </Pill>
       </div>

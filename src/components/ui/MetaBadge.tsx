@@ -26,7 +26,7 @@ export function MetaBadge({
 }) {
   const badge = (
     <span
-      className={`shrink-0 whitespace-nowrap rounded border px-1.5 py-0.5 text-[10px] font-semibold ${uppercase ? "uppercase" : ""} ${colorClassName}`}
+      className={`shrink-0 whitespace-nowrap rounded border px-1.5 py-0.5 text-[10px] font-semibold no-underline ${uppercase ? "uppercase" : ""} ${colorClassName}`}
     >
       {label}
     </span>

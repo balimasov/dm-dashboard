@@ -376,6 +376,9 @@ export interface PartySpellEntry {
   duration?: string;
   effect?: string;
   effectType?: string;
+  /** Fixed rule facts of the spell itself (same for every holder), like `school`/`components` above — taken from whichever holder's copy has one first. */
+  isConcentration?: boolean;
+  isRitual?: boolean;
   holders: CoverageHolder[];
 }
 
@@ -422,6 +425,8 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
         existing.duration ??= spell.duration;
         existing.effect ??= spell.effect;
         existing.effectType ??= spell.effectType;
+        existing.isConcentration ??= spell.isConcentration;
+        existing.isRitual ??= spell.isRitual;
       } else {
         levelMap.set(key, {
           name: spell.name,
@@ -436,6 +441,8 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
           duration: spell.duration,
           effect: spell.effect,
           effectType: spell.effectType,
+          isConcentration: spell.isConcentration,
+          isRitual: spell.isRitual,
           holders: [holder],
         });
       }

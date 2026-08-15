@@ -1,10 +1,10 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { CHIP_TONE_CLASSES } from "./chipTones";
 
-export type PillColor = "slate" | "sky" | "amber" | "orange" | "rose" | "violet" | "teal" | "zinc";
+export type PillColor = "slate" | "sky" | "amber" | "orange" | "rose" | "violet" | "teal" | "zinc" | "box";
 
 /**
- * `dim` (skill/passive/senses pills) now draws every color straight from
+ * `dim` (skill/passive pills) draws every *chip*-family color straight from
  * `CHIP_TONE_CLASSES` — the same border-700/bg-950-alpha/text-300 recipe
  * every other chip in the details modal uses, so a skill pill's fill reads
  * exactly as intense as a recovery/mastery/recharge badge next to it. `bold`
@@ -18,6 +18,16 @@ export type PillColor = "slate" | "sky" | "amber" | "orange" | "rose" | "violet"
  * than derived from `CHIP_TONE_CLASSES` since it's a different visual
  * weight for a different context (currency), not part of the chip-fill
  * unification.
+ *
+ * `box` is deliberately its own thing, NOT derived from `CHIP_TONE_CLASSES`:
+ * it's `AbilityScoreBox`'s own neutral recipe (`border-slate-800
+ * bg-slate-800/40`), used by `SensesSection`'s passive-score pills — those
+ * are conceptually siblings of the ability-score boxes, not a "chip" with a
+ * meaningful hue, and they broke once already when they silently rode
+ * `slate`'s default and `slate` was repointed at the chip-fill formula for
+ * skill pills' own Untrained state. Keep `box` pinned to `AbilityScoreBox`'s
+ * literal classes, not a cross-reference, so a future edit to either one is
+ * a deliberate choice instead of an accidental shared side effect.
  */
 const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
   slate: { dim: CHIP_TONE_CLASSES.neutral },
@@ -28,6 +38,7 @@ const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
   violet: { bold: "border-violet-400 bg-violet-500/15 text-violet-300" },
   teal: { bold: "border-teal-400 bg-teal-500/15 text-teal-300" },
   zinc: { bold: "border-zinc-300 bg-zinc-400/15 text-zinc-300" },
+  box: { dim: "border-slate-800 bg-slate-800/40 text-slate-200" },
 };
 
 /**
@@ -45,12 +56,13 @@ const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
  */
 export function Pill({
   panel,
-  color = "slate",
+  color,
   bold = false,
   children,
 }: {
   panel?: React.ReactNode;
-  color?: PillColor;
+  /** No default on purpose — an implicit `"slate"` default is exactly how `SensesSection` silently rode the chip-family recipe and broke the moment `slate` was repointed for skill pills' own Untrained state (see `COLOR_STYLES`'s `box` doc comment). Every caller picks a tone on purpose. */
+  color: PillColor;
   /** Heavier border + lighter fill instead of the default dim recipe — see `COLOR_STYLES`'s doc comment. Colors with no dim form of their own (violet/teal/zinc) render bold either way. */
   bold?: boolean;
   children: React.ReactNode;

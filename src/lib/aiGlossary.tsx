@@ -4,8 +4,8 @@ import { AttackHintPanel } from "@/components/ui/AttackDisplay";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
 import { CustomConditionHintPanel } from "@/components/ui/conditionHints";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
-import { recoveryStatusLine } from "@/components/ui/RecoveryBadge";
-import { SpellHintPanel } from "@/components/ui/SpellDisplay";
+import { FeatureHintPanel, ResourceHintPanel } from "@/components/ui/RecoveryBadge";
+import { KnownSpellHintPanel } from "@/components/ui/SpellDisplay";
 import { creatureSpellSourceId, creatureTraitSourceId, isPositionalCreatureSourceId } from "./aiSourceIds";
 import { Character, Creature, CustomConditionTemplate, resolveCustomConditions } from "./types";
 
@@ -16,39 +16,13 @@ type GlossaryEntry = { id: string; name: string; hint: ReactNode };
 function characterGlossaryEntries(c: Character, customConditionLibrary: CustomConditionTemplate[]): GlossaryEntry[] {
   const entries: GlossaryEntry[] = [];
   for (const r of c.resources) {
-    entries.push({
-      id: r.id,
-      name: r.name,
-      hint: (
-        <AbilityHintPanel
-          name={r.name}
-          metaLines={[r.source]}
-          status={recoveryStatusLine(r.recovery, r.current, r.max)}
-          description={r.description}
-        />
-      ),
-    });
+    entries.push({ id: r.id, name: r.name, hint: <ResourceHintPanel resource={r} /> });
   }
   for (const f of c.features) {
-    entries.push({
-      id: f.id,
-      name: f.name,
-      hint: (
-        <AbilityHintPanel
-          name={f.name}
-          metaLines={[f.source]}
-          status={f.max != null && recoveryStatusLine(f.recovery!, f.current, f.max)}
-          description={f.description}
-        />
-      ),
-    });
+    entries.push({ id: f.id, name: f.name, hint: <FeatureHintPanel feature={f} /> });
   }
   for (const s of c.knownSpells) {
-    entries.push({
-      id: s.id,
-      name: s.name,
-      hint: <SpellHintPanel spell={s} status={s.max != null && recoveryStatusLine(s.recovery!, s.current, s.max)} />,
-    });
+    entries.push({ id: s.id, name: s.name, hint: <KnownSpellHintPanel spell={s} /> });
   }
   for (const a of c.attacks) {
     entries.push({ id: a.id, name: a.name, hint: <AttackHintPanel attack={a} /> });

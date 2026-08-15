@@ -1,10 +1,12 @@
 import { ReactNode } from "react";
+import { KnownSpell } from "@/lib/types";
 import { RichText } from "../RichText";
 import { CHIP_TONE_CLASSES } from "./chipTones";
 import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
+import { recoveryStatusLine } from "./RecoveryBadge";
 import { TrailingDot, TrailingValue } from "./RowTrailingValue";
 import { MICRO_LABEL_STRONG_CLS } from "./typography";
 
@@ -127,6 +129,21 @@ export function SpellHintPanel({
       }
     />
   );
+}
+
+/**
+ * `SpellHintPanel` assembled for a `KnownSpell`, `recoveryStatusLine`
+ * included whenever the spell has its own limited-use charge pool — the one
+ * place every caller showing a character's own spell hover-hint builds it,
+ * instead of each re-deriving `status` from `spell.recovery`/`current`/`max`
+ * by hand and risking the same drift `FeatureHintPanel` exists to prevent
+ * (`characterReminders` once passed no `status` at all for a flagged spell).
+ * Party Toolkit's cross-character `PartySpellEntry` has no single per-holder
+ * charge count to show here, so it keeps calling `SpellHintPanel` directly
+ * with no `status` — that omission there is deliberate, not drift.
+ */
+export function KnownSpellHintPanel({ spell }: { spell: KnownSpell }) {
+  return <SpellHintPanel spell={spell} status={spell.max !== undefined && recoveryStatusLine(spell.recovery!, spell.current, spell.max)} />;
 }
 
 /**

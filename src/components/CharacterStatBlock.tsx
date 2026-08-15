@@ -47,7 +47,7 @@ export function CharacterStatBlock({
   compact = false,
   alwaysShowSenses = false,
   showAllSkills = true,
-  afterDamageInfo,
+  afterSkills,
 }: {
   character: Character;
   /** Passed straight through to each `SectionDivider` — see its own doc comment. Both `CharacterCard` and `CharacterDetailsModal` pass it, for the same tight rhythm in the card and the modal it opens into. */
@@ -69,8 +69,8 @@ export function CharacterStatBlock({
    * still shows on the card, bonus included in its number.
    */
   showAllSkills?: boolean;
-  /** Rendered right after Resist/Immune/Vulnerable, before Skills — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
-  afterDamageInfo?: ReactNode;
+  /** Rendered right after Skills, before Resources — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
+  afterSkills?: ReactNode;
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
@@ -176,8 +176,6 @@ export function CharacterStatBlock({
         ]}
       />
 
-      {afterDamageInfo}
-
       {visibleSkills.length > 0 && (
         <SectionDivider compact={compact}>
           <SubHeading>Skills</SubHeading>
@@ -195,6 +193,8 @@ export function CharacterStatBlock({
           </div>
         </SectionDivider>
       )}
+
+      {afterSkills}
 
       {/* Resources — Limited Use and Spell Slots merged under one umbrella
           with a single tracker bar summarizing both (see ResourceTrackerBar's

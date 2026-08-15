@@ -2,8 +2,7 @@ import { Resource, SpellSlotLevel } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
 import { tierBadgeClass, tierBgClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
-import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { RecoveryBadge, recoveryStatusLine } from "./ui/RecoveryBadge";
+import { RecoveryBadge, ResourceHintPanel } from "./ui/RecoveryBadge";
 
 /** Small fixed-size CSS circle for a colored bullet — same reasoning as `DotMeter`'s own doc comment: a "●" glyph renders at a different visual weight per font, a real circle doesn't. */
 export function ColorDot({ className }: { className: string }) {
@@ -339,18 +338,7 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="min-w-0 flex-1 text-slate-300">
         {hasHint ? (
-          <InfoTooltip
-            panel={
-              <AbilityHintPanel
-                name={resource.name}
-                metaLines={[resource.source]}
-                status={recoveryStatusLine(resource.recovery, resource.current, resource.max)}
-                description={resource.description}
-              />
-            }
-          >
-            {resource.name}
-          </InfoTooltip>
+          <InfoTooltip panel={<ResourceHintPanel resource={resource} />}>{resource.name}</InfoTooltip>
         ) : (
           resource.name
         )}

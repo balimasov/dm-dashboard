@@ -33,7 +33,7 @@ import { LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
-import { RecoveryBadge, recoveryStatusLine } from "./ui/RecoveryBadge";
+import { FeatureHintPanel, RecoveryBadge } from "./ui/RecoveryBadge";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { SectionDivider } from "./ui/SectionDivider";
 import { Modal } from "./ui/Modal";
@@ -48,8 +48,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { DotMeter } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
-import { AbilityHintPanel } from "./ui/AbilityHintPanel";
-import { SpellBadges, SpellHintPanel, SpellTrailing } from "./ui/SpellDisplay";
+import { KnownSpellHintPanel, SpellBadges, SpellTrailing } from "./ui/SpellDisplay";
 import { TabStrip } from "./ui/TabStrip";
 import { DetailsTwoColumn } from "./ui/DetailsTwoColumn";
 
@@ -127,18 +126,7 @@ function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flag
       onToggleFlag={onToggleFlag}
       trailing={feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
     >
-      <InfoTooltip
-        panel={
-          <AbilityHintPanel
-            name={feature.name}
-            metaLines={[feature.source]}
-            status={feature.max !== undefined && recoveryStatusLine(feature.recovery!, feature.current, feature.max)}
-            description={feature.description}
-          />
-        }
-      >
-        {feature.name}
-      </InfoTooltip>
+      <InfoTooltip panel={<FeatureHintPanel feature={feature} />}>{feature.name}</InfoTooltip>
     </FlaggableRow>
   );
 }
@@ -339,14 +327,14 @@ export function CharacterDetailsModal({
                UI-kit audit found this whole block byte-identical between
                the two, after a fix landed in one and not the other for the
                third time this session). The full Advantages list and
-               Languages/Tools "Proficiencies" (in that order) are this
-               modal's own addition, injected via `afterDamageInfo` rather
-               than duplicated inline — both stayed modal-only, the compact
-               card has no room for either. */
+               Languages/Tools "Proficiencies" (in that order, after Skills)
+               are this modal's own addition, injected via `afterSkills`
+               rather than duplicated inline — both stayed modal-only, the
+               compact card has no room for either. */
             <CharacterStatBlock
               character={c}
               compact
-              afterDamageInfo={
+              afterSkills={
                 <>
                   {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
                   {c.advantages.length > 0 && (
@@ -531,15 +519,7 @@ export function CharacterDetailsModal({
                                 }
                               >
                                 <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                                  <InfoTooltip
-                                    className="min-w-0"
-                                    panel={
-                                      <SpellHintPanel
-                                        spell={spell}
-                                        status={spell.max !== undefined && recoveryStatusLine(spell.recovery!, spell.current, spell.max)}
-                                      />
-                                    }
-                                  >
+                                  <InfoTooltip className="min-w-0" panel={<KnownSpellHintPanel spell={spell} />}>
                                     {spell.name}
                                   </InfoTooltip>
                                   <SpellBadges spell={spell} />
