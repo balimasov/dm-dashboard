@@ -5,19 +5,21 @@ import { HintFact } from "./HintFact";
 import { MetaBadge } from "./MetaBadge";
 
 /**
- * LR gets green (full overnight recovery — the same "full = green" logic as
- * the HP bar), SR a muted red (brief/partial, deliberately darker/less
- * saturated than the HP-critical/exhaustion red-600 so it doesn't read as a
- * danger state) — green and red were the only two hues left unclaimed by
- * another chip/pill in this same modal once blue/violet (reserved) and
- * rose/amber/orange (skill pills, on screen at the same time) were ruled
- * out. Manual and Custom stay neutral slate — no color, no meaning, matches
- * `Custom`'s existing dashed-border "not official content" convention.
+ * SR/LR/Manual colors were picked by hand in the interactive chip-color
+ * prototype (click a hue, nudge a per-chip lightness slider) rather than
+ * derived from a single named Tailwind hue — see `sr`/`lr`/`steel` in
+ * `CHIP_TONE_CLASSES` for the exact values. `lr` deliberately reuses a
+ * blue-family hex (that tone's own doc comment explains why blue is
+ * otherwise reserved for the Limited Use identity dot). Manual gets its
+ * own `steel` tone, distinct from `neutral` even though both start from
+ * the same gray, so it doesn't read identical to Custom. Custom stays on
+ * plain `neutral` — no color, no meaning, matches its existing
+ * dashed-border "not official content" convention.
  */
 const RECOVERY_TONE: Record<RecoveryType, ChipTone> = {
-  "short-rest": "red",
-  "long-rest": "green",
-  manual: "neutral",
+  "short-rest": "sr",
+  "long-rest": "lr",
+  manual: "steel",
   dawn: "lime",
   daily: "pink",
   encounter: "fuchsia",
