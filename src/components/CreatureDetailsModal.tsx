@@ -7,7 +7,7 @@ import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier } from "@/lib/format";
 import { creatureReminders } from "@/lib/reminders";
 import { AiAssistantModal } from "./AiAssistantModal";
-import { AbilityTraitChip, AbilityTraitTrailing, CreatureAbilityHintPanel, groupTraits } from "./CreatureAbilitiesPanel";
+import { AbilityTraitChips, AbilityTraitTrailing, CreatureAbilityHintPanel, groupTraits } from "./CreatureAbilitiesPanel";
 import { GROUP_LABELS } from "./CreatureStatBlock";
 import { CreatureHeader } from "./CreatureHeader";
 import { CreatureHpHistoryModal } from "./CreatureHpHistoryModal";
@@ -203,7 +203,7 @@ export function CreatureDetailsModal({
                           >
                             <span className="flex flex-wrap items-center gap-1.5">
                               <InfoTooltip panel={<CreatureAbilityHintPanel trait={trait} />}>{trait.name}</InfoTooltip>
-                              <AbilityTraitChip trait={trait} />
+                              <AbilityTraitChips trait={trait} />
                             </span>
                           </FlaggableRow>
                         );
