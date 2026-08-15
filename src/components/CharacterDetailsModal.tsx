@@ -413,16 +413,29 @@ export function CharacterDetailsModal({
 
               <TabStrip tabs={tabs} current={currentTab} onChange={setActiveTab} className="mb-3" />
 
+              {/* Grouped Melee/Ranged, same `MICRO_ITEM_LABEL_CLS` group heading
+                  the Features tab uses for Action/Bonus Action/... and the
+                  Spells tab uses for each spell level — one heading recipe
+                  for "a labeled sub-group of rows" across every tab here. */}
               {currentTab === "weapons" && (
-              <div className="space-y-1">
-                {sortedAttacks.map((attack) => (
-                  <AttackRow
-                    key={attack.id}
-                    attack={attack}
-                    flagged={flaggedAbilities.includes(attack.name)}
-                    onToggleFlag={() => toggleFlag(attack.name)}
-                  />
-                ))}
+              <div className="space-y-3">
+                {(["melee", "ranged"] as const).map((attackType) => {
+                  const attacks = sortedAttacks.filter((attack) => attack.attackType === attackType);
+                  if (attacks.length === 0) return null;
+                  return (
+                    <div key={attackType} className="space-y-1">
+                      <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Melee" : "Ranged"}</p>
+                      {attacks.map((attack) => (
+                        <AttackRow
+                          key={attack.id}
+                          attack={attack}
+                          flagged={flaggedAbilities.includes(attack.name)}
+                          onToggleFlag={() => toggleFlag(attack.name)}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
