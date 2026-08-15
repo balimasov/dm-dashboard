@@ -13,6 +13,7 @@ export const CONTENT_KIND_ICON = {
   features: "💠",
   spells: "✨",
   consumables: "🧪",
+  notes: "📝",
 } as const;
 
 export type ContentKind = keyof typeof CONTENT_KIND_ICON;

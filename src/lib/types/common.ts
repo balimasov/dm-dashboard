@@ -116,11 +116,12 @@ export const SKILL_DESCRIPTIONS: Record<SkillName, string> = {
   survival: "Track, forage, navigate, or endure the wilderness.",
 };
 
-/** A short, freeform reminder a DM jots down mid-session (e.g. "Owes 20gp to the blacksmith") — added, edited, and removed straight from the dashboard card. */
+/** A short, freeform reminder a DM jots down mid-session (e.g. "Owes 20gp to the blacksmith") — added, edited, and removed straight from the dashboard card. `flagged` lights the same reminder flame `FlaggableRow` uses for abilities/spells/features, so a DM can mark which quick notes matter most right now. */
 export interface QuickNote {
   id: string;
   text: string;
   createdAt: string;
+  flagged?: boolean;
 }
 
 /**

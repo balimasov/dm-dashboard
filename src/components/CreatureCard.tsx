@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Character, Creature, CustomConditionTemplate } from "@/lib/types";
-import { creatureReminders } from "@/lib/reminders";
+import { creatureReminders, quickNoteIdFromReminderName, unflagQuickNote } from "@/lib/reminders";
 import { useCardSortable } from "@/hooks/useCardSortable";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CreatureDetailsModal } from "./CreatureDetailsModal";
@@ -101,7 +101,19 @@ export function CreatureCard({
         <AskAiPill onClick={() => setAiOpen(true)} />
         <ReminderBadge
           group={creatureReminders(creature)}
-          onRemove={onUpdate ? (name) => onUpdate(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }) : undefined}
+          onRemove={
+            onUpdate
+              ? (name) => {
+                  const noteId = quickNoteIdFromReminderName(name);
+                  onUpdate(
+                    creature.id,
+                    noteId
+                      ? { quickNotes: unflagQuickNote(creature.quickNotes, noteId) }
+                      : { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }
+                  );
+                }
+              : undefined
+          }
         />
         <div className="ml-auto">
           <EntityActionsMenu

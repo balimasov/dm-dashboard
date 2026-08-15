@@ -3,19 +3,29 @@
 import { useState } from "react";
 import { QuickNote } from "@/lib/types";
 import { inputCls } from "./Field";
+import { FlameToggle } from "./FlaggableRow";
 import { IconButton } from "./IconButton";
-import { SectionDivider } from "./SectionDivider";
 import { PlusIcon, TrashOutlineIcon } from "./icons";
 
-/** A single quick note row — click the text to edit it inline, "×" removes it. Delete stays visible (not hover-only) since this card is used on touch devices too. */
+/**
+ * A single quick note row — click the text to edit it inline, "×" removes
+ * it. Delete stays visible (not hover-only) since this card is used on
+ * touch devices too. The flame reuses `FlaggableRow`'s own toggle so marking
+ * a quick note as a reminder looks and behaves identically to flagging a
+ * spell/feature/weapon — flipping `note.flagged` is what makes it (and its
+ * full text, via a hint) show up in `RemindersPanel`/`RemindersFab`/
+ * `ReminderBadge` (see `quickNoteReminderEntries` in `lib/reminders.tsx`).
+ */
 function QuickNoteRow({
   note,
   onSave,
   onDelete,
+  onToggleFlag,
 }: {
   note: QuickNote;
   onSave: (text: string) => void;
   onDelete: () => void;
+  onToggleFlag: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.text);
@@ -46,8 +56,8 @@ function QuickNoteRow({
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-sm text-slate-300">
-      <span className="h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+    <div className="flex items-center gap-1 text-sm text-slate-300">
+      <FlameToggle active={Boolean(note.flagged)} onToggle={onToggleFlag} />
       <button
         type="button"
         onClick={() => {
@@ -80,15 +90,19 @@ export function QuickNotesSection({
   notes,
   onChange,
   compact = false,
+  topDivider = true,
 }: {
   notes: QuickNote[];
   onChange?: (notes: QuickNote[]) => void;
-  /** Passed straight through to `SectionDivider` — see its own doc comment. */
+  /** Same border-t/padding-top recipe `SectionDivider` renders — see its own doc comment. */
   compact?: boolean;
+  /** `false` right under `NotesSection` in the details modal's Notes tab, where a border here would just repeat the gap already separating the two blocks. Every other call site keeps the default divider. */
+  topDivider?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const sorted = notes.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const dividerCls = topDivider ? `border-t border-slate-800 ${compact ? "pt-2.5" : "pt-3"}` : "";
 
   function commitAdd() {
     const text = draft.trim();
@@ -110,13 +124,23 @@ export function QuickNotesSection({
     onChange?.(notes.filter((n) => n.id !== id));
   }
 
+  function toggleFlag(id: string) {
+    onChange?.(notes.map((n) => (n.id === id ? { ...n, flagged: !n.flagged } : n)));
+  }
+
   return (
-    <SectionDivider compact={compact}>
+    <div className={dividerCls}>
       <div className="mb-1.5 flex items-center justify-between">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
         {onChange && (
           <IconButton
             tone="accent"
+            // Without this, clicking the button while the input is focused
+            // fires the input's own `onBlur` first (closing it), then this
+            // `onClick` re-opens it right back — `preventDefault` on
+            // mousedown keeps focus in the input so blur never fires, and
+            // the toggle below runs exactly once.
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setAdding((v) => !v)}
             aria-label="Add a quick note"
             title="Add a quick note"
@@ -139,6 +163,13 @@ export function QuickNotesSection({
               setAdding(false);
             }
           }}
+          // Clicking anywhere else abandons the draft, same as changing
+          // your mind mid-edit on an existing note (`QuickNoteRow`'s own
+          // input does the same) — the simplest possible way to back out.
+          onBlur={() => {
+            setDraft("");
+            setAdding(false);
+          }}
           placeholder="Type a note, press Enter..."
           className={`${inputCls} mb-1.5 w-full`}
         />
@@ -151,10 +182,11 @@ export function QuickNotesSection({
               note={note}
               onSave={(text) => saveNote(note.id, text)}
               onDelete={() => deleteNote(note.id)}
+              onToggleFlag={() => toggleFlag(note.id)}
             />
           ))}
         </div>
       )}
-    </SectionDivider>
+    </div>
   );
 }

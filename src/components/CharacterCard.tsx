@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Character, CustomConditionTemplate } from "@/lib/types";
-import { characterReminders } from "@/lib/reminders";
+import { characterReminders, quickNoteIdFromReminderName, unflagQuickNote } from "@/lib/reminders";
 import { characterSyncIssue } from "@/lib/sync";
 import { useCardSortable } from "@/hooks/useCardSortable";
 import { useDdbSync } from "@/hooks/useDdbSync";
@@ -88,7 +88,19 @@ export function CharacterCard({
         />
         <ReminderBadge
           group={characterReminders(c)}
-          onRemove={onUpdate ? (name) => onUpdate(c.id, { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }) : undefined}
+          onRemove={
+            onUpdate
+              ? (name) => {
+                  const noteId = quickNoteIdFromReminderName(name);
+                  onUpdate(
+                    c.id,
+                    noteId
+                      ? { quickNotes: unflagQuickNote(c.quickNotes, noteId) }
+                      : { flaggedAbilities: (c.flaggedAbilities ?? []).filter((n) => n !== name) }
+                  );
+                }
+              : undefined
+          }
         />
         {syncIssue && (
           <SyncIssuePill

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NotesEditor } from "@/components/NotesEditor";
 import { ensureNotesHtml } from "@/lib/journal";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
-import { PencilIcon } from "./icons";
+import { NoteIcon, PencilIcon } from "./icons";
 import { SubHeading } from "./SubHeading";
 
 /**
@@ -45,7 +45,18 @@ export function NotesSection({
   const html = ensureNotesHtml(notes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(html);
+  const [expanded, setExpanded] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const isEmpty = html.replace(/<[^>]+>/g, "").trim().length === 0;
+
+  // Measures whether the 4-line clamp below is actually hiding any text —
+  // `line-clamp-4` cuts silently, so without this a short note (under 4
+  // lines) would carry a dead "Show more" link that expands nothing.
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    setIsTruncated(bodyRef.current.scrollHeight > bodyRef.current.clientHeight + 1);
+  }, [html]);
   // Same border-t/padding-top `SectionDivider` renders, computed by hand —
   // `SectionDivider` itself always takes a `compact` prop, which a plain
   // `<div>` can't accept without leaking it onto the DOM node as an invalid
@@ -91,29 +102,42 @@ export function NotesSection({
   }
 
   return (
-    <div className={`${dividerCls} group relative`.trim()}>
-      <SubHeading>Notes</SubHeading>
-      <IconButton
-        tone="muted"
-        onClick={startEditing}
-        aria-label="Edit notes"
-        title="Edit notes"
-        className={`absolute right-0 ${compact ? "top-2" : "top-3"} opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100`}
-      >
-        <PencilIcon className="h-3.5 w-3.5" />
-      </IconButton>
-      {/* `pr-8` on mobile reserves the pencil's own footprint out of the
-          text's line box — the button is always visible there (no hover to
-          time it around, see the class list above), so without this a line
-          wrapping to the block's right edge runs straight under it. Not
-          needed at `sm`+, where the button is invisible except mid-hover. */}
+    <div className={`${dividerCls} group`.trim()}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <h3 className="text-xs uppercase tracking-wide text-slate-500">Notes</h3>
+        <IconButton
+          tone="muted"
+          onClick={startEditing}
+          aria-label="Edit notes"
+          title="Edit notes"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+        >
+          <PencilIcon className="h-3.5 w-3.5" />
+        </IconButton>
+      </div>
       {isEmpty ? (
-        <p className="pr-8 text-sm italic text-slate-600 sm:pr-0">No notes yet.</p>
+        <button
+          type="button"
+          onClick={startEditing}
+          className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/30 py-5 text-center transition hover:border-slate-700 hover:bg-slate-900/50"
+        >
+          <NoteIcon className="h-5 w-5 text-slate-600" />
+          <span className="text-sm text-slate-400">No notes yet</span>
+          <span className="text-xs text-slate-600">Click to add</span>
+        </button>
       ) : (
-        <div
-          className="notes-editor-content pr-8 text-sm text-slate-300 sm:pr-0"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <>
+          <div
+            ref={bodyRef}
+            className={`notes-editor-content text-sm text-slate-300 ${expanded ? "" : "line-clamp-4"}`}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          {!expanded && isTruncated && (
+            <button type="button" onClick={() => setExpanded(true)} className="mt-1 text-xs font-medium text-sky-400 hover:underline">
+              Show more
+            </button>
+          )}
+        </>
       )}
     </div>
   );

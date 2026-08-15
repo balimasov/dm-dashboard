@@ -4,9 +4,11 @@ import { FlameIcon } from "./icons";
  * Toggling this marks an ability as a reminder the DM wants to flag for the
  * player (players forget they have a spell/skill) — a lit flame icon plus
  * amber row color, persisted on the character (see `flaggedAbilities`) so it
- * survives a page reload, not just component state.
+ * survives a page reload, not just component state. Exported so
+ * `QuickNotesSection` can reuse the exact same flame for marking a quick
+ * note as a reminder too, rather than a second hand-rolled copy.
  */
-function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+export function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"

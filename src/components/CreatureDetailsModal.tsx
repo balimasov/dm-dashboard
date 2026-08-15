@@ -263,6 +263,7 @@ export function CreatureDetailsModal({
                     notes={creature.quickNotes ?? []}
                     onChange={onUpdate ? (quickNotes) => onUpdate(creature.id, { quickNotes }) : undefined}
                     compact
+                    topDivider={false}
                   />
                 </div>
               )}

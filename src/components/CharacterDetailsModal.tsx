@@ -563,6 +563,7 @@ export function CharacterDetailsModal({
                     notes={c.quickNotes ?? []}
                     onChange={onUpdate ? (quickNotes) => onUpdate(c.id, { quickNotes }) : undefined}
                     compact
+                    topDivider={false}
                   />
                 </div>
               )}

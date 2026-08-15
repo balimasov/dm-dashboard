@@ -1,4 +1,4 @@
-import { Character, Creature, RARITY_COLOR } from "@/lib/types";
+import { Character, Creature, QuickNote, RARITY_COLOR } from "@/lib/types";
 import { ContentKind } from "@/lib/contentKindIcons";
 import { dedupeInventoryItems } from "@/lib/partyToolkit";
 import { AbilityHintPanel } from "@/components/ui/AbilityHintPanel";
@@ -7,6 +7,58 @@ import { CreatureAbilityHintPanel } from "@/components/CreatureAbilitiesPanel";
 import { ItemHintPanel } from "@/components/ui/ItemHintPanel";
 import { FeatureHintPanel } from "@/components/ui/RecoveryBadge";
 import { KnownSpellHintPanel } from "@/components/ui/SpellDisplay";
+
+/**
+ * A flagged `QuickNote` has no stable "name" the way an ability does — just
+ * an `id` and freeform text — so it can't join `flaggedAbilities`/
+ * `flaggedTraits`' plain name-list the way every other reminder source does.
+ * Prefixing the note's own id keeps `ReminderEntry.name` a single opaque
+ * identity key either way (still "never rendered directly," same as its own
+ * doc comment already promises) without widening the entry shape itself —
+ * every place that un-flags a reminder by name (`CharacterCard`,
+ * `CreatureCard`, `RemindersPanel`, `RemindersFab`) checks
+ * `quickNoteIdFromReminderName` first and, if it matches, clears that one
+ * note's `flagged` instead of touching `flaggedAbilities`/`flaggedTraits`.
+ */
+const QUICK_NOTE_REMINDER_PREFIX = "quick-note:";
+
+export function quickNoteReminderName(noteId: string): string {
+  return `${QUICK_NOTE_REMINDER_PREFIX}${noteId}`;
+}
+
+export function quickNoteIdFromReminderName(name: string): string | null {
+  return name.startsWith(QUICK_NOTE_REMINDER_PREFIX) ? name.slice(QUICK_NOTE_REMINDER_PREFIX.length) : null;
+}
+
+/** Un-flagging a reminder that came from a quick note clears just that note's `flagged` bit, not the whole array — used by every place a `ReminderRow`'s "✕" can fire against a quick-note-sourced entry (`CharacterCard`, `CreatureCard`, `RemindersPanel`, `RemindersFab`). */
+export function unflagQuickNote(quickNotes: QuickNote[] | undefined, noteId: string): QuickNote[] {
+  return (quickNotes ?? []).map((note) => (note.id === noteId ? { ...note, flagged: false } : note));
+}
+
+function quickNoteReminderEntries(quickNotes: QuickNote[] | undefined): ReminderEntry[] {
+  return (quickNotes ?? [])
+    .filter((note) => note.flagged)
+    .map((note) => ({
+      name: quickNoteReminderName(note.id),
+      label: note.text,
+      panel: <AbilityHintPanel name="Quick Note" description={note.text} />,
+      kind: "notes" as const,
+    }));
+}
+
+/**
+ * `entry.name` is an opaque identity key (see its own doc comment) — for
+ * every *other* reminder source it happens to equal the visible label too,
+ * so sorting by it reads as alphabetical-by-label for free. A quick note's
+ * `name` is `quick-note:<id>` instead, which would sort the whole group by
+ * id rather than by what the DM actually reads — fall back to the plain-
+ * string `label` (always a bare string for a quick note, unlike e.g. a
+ * rarity-colored weapon name) for those entries specifically.
+ */
+function reminderSortKey(entry: ReminderEntry): string {
+  if (quickNoteIdFromReminderName(entry.name) && typeof entry.label === "string") return entry.label;
+  return entry.name;
+}
 
 export interface ReminderEntry {
   /** Identity key — used for `flaggedAbilities`/`flaggedTraits` matching and the toggle-off click, never rendered directly (see `label`). */
@@ -51,7 +103,6 @@ function dedupeReminderEntries(entries: ReminderEntry[]): ReminderEntry[] {
 
 export function characterReminders(character: Character): ReminderGroup | null {
   const flagged = character.flaggedAbilities ?? [];
-  if (flagged.length === 0) return null;
   const entries: ReminderEntry[] = dedupeReminderEntries([
     ...character.attacks
       .filter((a) => flagged.includes(a.name))
@@ -85,15 +136,15 @@ export function characterReminders(character: Character): ReminderGroup | null {
         panel: <ItemHintPanel name={item.name} rarity={item.rarity} weight={item.weight} cost={item.cost} description={item.description} />,
         kind: "consumables" as const,
       })),
+    ...quickNoteReminderEntries(character.quickNotes),
   ]);
   if (entries.length === 0) return null;
-  entries.sort((a, b) => a.name.localeCompare(b.name));
+  entries.sort((a, b) => reminderSortKey(a).localeCompare(reminderSortKey(b)));
   return { ownerId: character.id, ownerName: character.name, avatarUrl: character.avatarUrl, entries };
 }
 
 export function creatureReminders(creature: Creature): ReminderGroup | null {
   const flagged = creature.flaggedTraits ?? [];
-  if (flagged.length === 0) return null;
   const spellNames = (creature.spellcasting?.spellGroups ?? []).flatMap((g) => g.spells);
   const entries: ReminderEntry[] = dedupeReminderEntries([
     ...creature.traits
@@ -117,8 +168,9 @@ export function creatureReminders(creature: Creature): ReminderGroup | null {
         panel: <AbilityHintPanel name={name} metaLines={["Spell"]} />,
         kind: "spells" as const,
       })),
+    ...quickNoteReminderEntries(creature.quickNotes),
   ]);
   if (entries.length === 0) return null;
-  entries.sort((a, b) => a.name.localeCompare(b.name));
+  entries.sort((a, b) => reminderSortKey(a).localeCompare(reminderSortKey(b)));
   return { ownerId: creature.id, ownerName: creature.name, avatarUrl: creature.avatarUrl, entries };
 }

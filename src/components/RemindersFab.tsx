@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Character, Creature } from "@/lib/types";
-import { ReminderGroup, characterReminders, creatureReminders } from "@/lib/reminders";
+import { ReminderGroup, characterReminders, creatureReminders, quickNoteIdFromReminderName, unflagQuickNote } from "@/lib/reminders";
 import { useDismissiblePopover } from "@/hooks/useDismissiblePopover";
 import { Avatar } from "./Avatar";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
@@ -74,14 +74,25 @@ export function RemindersFab({
   if (totalCount === 0) return null;
 
   function toggleOff(group: ReminderGroup, name: string) {
+    const noteId = quickNoteIdFromReminderName(name);
     const character = characters.find((c) => c.id === group.ownerId);
     if (character) {
-      onUpdateCharacter(character.id, { flaggedAbilities: (character.flaggedAbilities ?? []).filter((n) => n !== name) });
+      onUpdateCharacter(
+        character.id,
+        noteId
+          ? { quickNotes: unflagQuickNote(character.quickNotes, noteId) }
+          : { flaggedAbilities: (character.flaggedAbilities ?? []).filter((n) => n !== name) }
+      );
       return;
     }
     const creature = creatures.find((c) => c.id === group.ownerId);
     if (creature) {
-      onUpdateCreature(creature.id, { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) });
+      onUpdateCreature(
+        creature.id,
+        noteId
+          ? { quickNotes: unflagQuickNote(creature.quickNotes, noteId) }
+          : { flaggedTraits: (creature.flaggedTraits ?? []).filter((n) => n !== name) }
+      );
     }
   }
 

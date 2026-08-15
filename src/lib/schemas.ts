@@ -178,6 +178,7 @@ const quickNoteSchema = z.object({
   id: z.string(),
   text: z.string(),
   createdAt: z.string(),
+  flagged: z.boolean().optional(),
 });
 
 const itemCategorySchema = z.enum(["Weapon", "Armor", "Consumable", "Magic Item", "Gear"]);
