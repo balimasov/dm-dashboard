@@ -56,7 +56,7 @@ function QuickNoteRow({
   }
 
   return (
-    <div className="flex items-center gap-1 text-sm text-slate-300">
+    <div className={`-mx-1.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-sm ${note.flagged ? "bg-amber-500/10" : ""}`}>
       <FlameToggle active={Boolean(note.flagged)} onToggle={onToggleFlag} />
       <button
         type="button"
@@ -64,7 +64,7 @@ function QuickNoteRow({
           setDraft(note.text);
           setEditing(true);
         }}
-        className="min-w-0 flex-1 break-words text-left hover:text-slate-100"
+        className={`min-w-0 flex-1 break-words text-left hover:text-slate-100 ${note.flagged ? "text-amber-300" : "text-slate-300"}`}
       >
         {note.text}
       </button>

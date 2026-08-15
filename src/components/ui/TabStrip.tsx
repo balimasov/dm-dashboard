@@ -37,7 +37,7 @@ export function TabStrip<T extends string>({
           key={tab.key}
           type="button"
           onClick={() => onChange(tab.key)}
-          className={`flex flex-col items-center gap-0.5 border-b-2 px-3 py-1.5 text-center text-sm font-semibold transition-colors ${
+          className={`flex flex-1 flex-col items-center gap-0.5 border-b-2 px-3 py-1.5 text-center text-sm font-semibold transition-colors ${
             current === tab.key ? "border-sky-400 text-sky-400" : "border-transparent text-slate-500 hover:text-slate-200"
           }`}
         >
