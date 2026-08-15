@@ -63,25 +63,32 @@ function spellLevelLabel(level: number): string {
  * type reads as the trailing-most "other chips, then LR/SR/M, then charges"
  * rule this row's own C/R badges already follow.
  *
- * `inline-flex` (not plain `flex`) on the wrapper, same "atomic inline-level
- * box" trick `MetaBadge` uses `inline-block` for — `RecoveryBadge` already
- * escapes `FlaggableRow`'s dotted name-underline this way (it's built on
- * `MetaBadge`), but the dot meter and the bare "current/max" count sat in a
- * plain block-level `flex` span, which does NOT get the same exclusion, so
- * the underline kept bleeding through onto them even after the chip itself
- * was fixed.
+ * Two nested spans, not one — the outer is `inline-block`, the exact same
+ * "atomic inline-level box" trick `MetaBadge` uses to escape `FlaggableRow`'s
+ * dotted name-underline (`RecoveryBadge` already gets it for free, being
+ * built on `MetaBadge`). An `inline-flex` outer span (the first attempt at
+ * this fix) *looked* like the same trick and tested clean in isolation, but
+ * once this badge sits inside `FlaggableRow`'s own flex row it becomes a
+ * flex item itself — which "blockifies" `inline-flex` down toward plain
+ * `flex` for layout purposes, and some browsers then also stop treating it
+ * as the atomic box the exclusion depends on, so the underline crept back in
+ * for exactly the dot meter/count this was meant to fix. `inline-block`
+ * doesn't need flex layout for the badge's own two children, so the actual
+ * `items-center gap-2` row lives on an *inner* span instead.
  */
 function ChargeBadge({ current, max, recovery }: { current: number; max: number; recovery: RecoveryType }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap no-underline">
-      <RecoveryBadge recovery={recovery} />
-      {max > 0 && max <= 6 ? (
-        <DotMeter current={current} max={max} />
-      ) : (
-        <span className="text-sm font-medium text-slate-100">
-          {current}/{max}
-        </span>
-      )}
+    <span className="inline-block shrink-0 whitespace-nowrap no-underline">
+      <span className="flex items-center gap-2">
+        <RecoveryBadge recovery={recovery} />
+        {max > 0 && max <= 6 ? (
+          <DotMeter current={current} max={max} />
+        ) : (
+          <span className="text-sm font-medium text-slate-100">
+            {current}/{max}
+          </span>
+        )}
+      </span>
     </span>
   );
 }
