@@ -5,6 +5,7 @@ import { formatModifier } from "@/lib/format";
 import { GROUP_LABELS, GROUP_ORDER } from "./CreatureStatBlock";
 import { MECHANIC_STYLE } from "./creatureForm/TraitMechanicsEditor";
 import { AbilityHintPanel } from "./ui/AbilityHintPanel";
+import { CHIP_TONE_CLASSES } from "./ui/chipTones";
 import { HINT_FACT_ROW_CLS, TRAILING_ROW_CLS } from "./ui/containerStyles";
 import { HintFact } from "./ui/HintFact";
 import { MetaBadge } from "./ui/MetaBadge";
@@ -38,11 +39,19 @@ const EFFECT_KIND_LABELS: Record<CreatureEffectKind, string> = {
   other: "",
 };
 
-/** `heal`/`other` borrow their color straight from `MECHANIC_STYLE` (the creature-edit form's mechanic palette) instead of duplicating the class strings by hand — `tempHp`/`acBonus` have no `Mechanic` equivalent (the edit form's "Effect" mechanic covers both under one color), so this read view keeps its own colors for those two. */
+/**
+ * `heal`/`tempHp` share one cyan tone (shown as a single "Heal / Temp HP"
+ * chip family) and `acBonus` gets emerald (freed up now that weapon mastery
+ * no longer needs violet) — all three draw from the same `CHIP_TONE_CLASSES`
+ * map every other chip in the details modal uses. `other` keeps borrowing
+ * its color straight from `MECHANIC_STYLE` (the creature-edit form's
+ * mechanic palette) instead of duplicating the class string by hand — it
+ * has no equivalent among the named tones above.
+ */
 const EFFECT_KIND_COLOR: Record<CreatureEffectKind, string> = {
-  heal: MECHANIC_STYLE.heal.badge,
-  tempHp: "border-cyan-700 bg-cyan-950/30 text-cyan-300",
-  acBonus: "border-violet-700 bg-violet-950/30 text-violet-300",
+  heal: CHIP_TONE_CLASSES.cyan,
+  tempHp: CHIP_TONE_CLASSES.cyan,
+  acBonus: CHIP_TONE_CLASSES.emerald,
   other: MECHANIC_STYLE.custom.badge,
 };
 
@@ -94,9 +103,7 @@ export function AbilityTraitTrailing({ trait }: { trait: CreatureTrait }) {
         </span>
       )}
       {trait.save && <TrailingValue value={`DC ${trait.save.dc}`} label={trait.save.ability.toUpperCase()} />}
-      {trait.recharge && (
-        <MetaBadge label={trait.recharge} uppercase={false} colorClassName="border-sky-700 bg-sky-950/30 text-sky-300" />
-      )}
+      {trait.recharge && <MetaBadge label={trait.recharge} uppercase={false} colorClassName={CHIP_TONE_CLASSES.gold} />}
       {(trait.effects ?? []).map((effect, i) => (
         <EffectBadge key={i} effect={effect} />
       ))}

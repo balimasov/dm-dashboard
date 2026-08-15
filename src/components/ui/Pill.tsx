@@ -1,32 +1,30 @@
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { CHIP_TONE_CLASSES } from "./chipTones";
 
 export type PillColor = "slate" | "sky" | "amber" | "orange" | "rose" | "violet" | "teal" | "zinc";
 
 /**
- * Each color's recipe is picked independently rather than derived from one
- * shared formula — `rose`'s weight already differed slightly from
- * `amber`/`orange` before `bold` existed. `bold` is a second, deliberate
- * variant some colors carry: a heavier border and a lighter, more opaque
- * fill than the default "dim" recipe. It exists because a faint same-family
- * tint reads as barely-there against the app's warm dark background for
- * small, information-dense content — originally `CoinChip`'s own standalone
- * recipe (5 currency colors), folded in here once `Pill` grew the colors to
- * support them. `violet`/`teal`/`zinc` have no "dim" form since nothing used
- * them before coins did; `amber`/`orange` keep their original dim form for
- * skill/passive pills, with `bold` as an explicit opt-in for the coin case.
+ * `dim` (skill/passive/senses pills) now draws every color straight from
+ * `CHIP_TONE_CLASSES` — the same border-700/bg-950-alpha/text-300 recipe
+ * every other chip in the details modal uses, so a skill pill's fill reads
+ * exactly as intense as a recovery/mastery/recharge badge next to it. `bold`
+ * is a separate, deliberate variant some colors carry: a heavier border and
+ * a lighter, more opaque fill than `dim` — it exists because a faint
+ * same-family tint reads as barely-there against the app's warm dark
+ * background for small, information-dense content — originally `CoinChip`'s
+ * own standalone recipe (5 currency colors), folded in here once `Pill`
+ * grew the colors to support them. `violet`/`teal`/`zinc` have no `dim` form
+ * since nothing used them before coins did; `bold` stays hand-picked rather
+ * than derived from `CHIP_TONE_CLASSES` since it's a different visual
+ * weight for a different context (currency), not part of the chip-fill
+ * unification.
  */
 const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
-  slate: { dim: "border-slate-800 bg-slate-800/40 text-slate-200" },
-  sky: { dim: "border-sky-700 bg-sky-950/40 text-sky-300" },
-  amber: {
-    dim: "border-amber-700 bg-amber-950/30 text-amber-300",
-    bold: "border-amber-400 bg-amber-500/15 text-amber-300",
-  },
-  orange: {
-    dim: "border-orange-700 bg-orange-950/30 text-orange-300",
-    bold: "border-orange-400 bg-orange-500/15 text-orange-300",
-  },
-  rose: { dim: "border-rose-600 bg-rose-950/40 text-rose-300" },
+  slate: { dim: CHIP_TONE_CLASSES.neutral },
+  sky: { dim: CHIP_TONE_CLASSES.gold },
+  amber: { dim: CHIP_TONE_CLASSES.amber, bold: "border-amber-400 bg-amber-500/15 text-amber-300" },
+  orange: { dim: CHIP_TONE_CLASSES.orange, bold: "border-orange-400 bg-orange-500/15 text-orange-300" },
+  rose: { dim: CHIP_TONE_CLASSES.rose },
   violet: { bold: "border-violet-400 bg-violet-500/15 text-violet-300" },
   teal: { bold: "border-teal-400 bg-teal-500/15 text-teal-300" },
   zinc: { bold: "border-zinc-300 bg-zinc-400/15 text-zinc-300" },

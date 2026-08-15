@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { RichText } from "../RichText";
+import { CHIP_TONE_CLASSES } from "./chipTones";
 import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
@@ -182,15 +183,15 @@ export function SpellTrailing({ spell }: { spell: SpellDisplayData }) {
  * name (not in `SpellTrailing`'s numbers group), the same `MetaBadge`
  * primitive `RecoveryBadge`/mastery already use in this same row, just with
  * their own `colorClassName`. Concentration reuses `LevelBadge`'s own
- * violet (`border-violet-800 text-violet-400`) — the one color already
- * meaning "concentration" on this card (`StatusRail`'s toggle uses the same
- * family) — for the badge itself, but its hover hint stays plain text (no
- * `text-violet-300` highlight on the word "Concentration" the way
- * `StatusRail`'s own `CONCENTRATION_HINT_TEXT` does): that highlight reads
- * right on a big toggle row that's otherwise all-neutral, but redundant
- * inches from a badge that's already colored violet itself. Ritual has no
- * established color of its own, so it borrows `RecoveryBadge`'s neutral
- * slate, and its hint was already plain text.
+ * violet — the one color already meaning "concentration" on this card
+ * (`StatusRail`'s toggle uses the same family) — for the badge itself, but
+ * its hover hint stays plain text (no `text-violet-300` highlight on the
+ * word "Concentration" the way `StatusRail`'s own `CONCENTRATION_HINT_TEXT`
+ * does): that highlight reads right on a big toggle row that's otherwise
+ * all-neutral, but redundant inches from a badge that's already colored
+ * violet itself. Ritual has no established color of its own, so it borrows
+ * `RecoveryBadge`'s recharge/`gold` tone, and its hint was already plain
+ * text.
  */
 export function SpellBadges({ spell }: { spell: Pick<SpellDisplayData, "isConcentration" | "isRitual"> }) {
   if (!spell.isConcentration && !spell.isRitual) return null;
@@ -205,7 +206,7 @@ export function SpellBadges({ spell }: { spell: Pick<SpellDisplayData, "isConcen
               active; taking damage forces a Constitution save or the spell ends.
             </p>
           }
-          colorClassName="border-violet-800 text-violet-400"
+          colorClassName={CHIP_TONE_CLASSES.violet}
         />
       )}
       {spell.isRitual && (
@@ -217,7 +218,7 @@ export function SpellBadges({ spell }: { spell: Pick<SpellDisplayData, "isConcen
               slot, but takes 10 minutes longer.
             </p>
           }
-          colorClassName="border-slate-700 text-slate-500"
+          colorClassName={CHIP_TONE_CLASSES.gold}
         />
       )}
     </>

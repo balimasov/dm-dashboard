@@ -1,6 +1,27 @@
 import { RECOVERY_LABELS, RECOVERY_SHORT_LABELS, RecoveryType } from "@/lib/types";
+import { CHIP_TONE_CLASSES, ChipTone } from "./chipTones";
 import { HintFact } from "./HintFact";
 import { MetaBadge } from "./MetaBadge";
+
+/**
+ * LR gets green (full overnight recovery — the same "full = green" logic as
+ * the HP bar), SR a muted red (brief/partial, deliberately darker/less
+ * saturated than the HP-critical/exhaustion red-600 so it doesn't read as a
+ * danger state) — green and red were the only two hues left unclaimed by
+ * another chip/pill in this same modal once blue/violet (reserved) and
+ * rose/amber/orange (skill pills, on screen at the same time) were ruled
+ * out. Manual and Custom stay neutral slate — no color, no meaning, matches
+ * `Custom`'s existing dashed-border "not official content" convention.
+ */
+const RECOVERY_TONE: Record<RecoveryType, ChipTone> = {
+  "short-rest": "red",
+  "long-rest": "green",
+  manual: "neutral",
+  dawn: "lime",
+  daily: "pink",
+  encounter: "fuchsia",
+  custom: "neutral",
+};
 
 /**
  * Boxed recovery-type abbreviation (LR/SR/...), full name on hover/tap —
@@ -15,7 +36,7 @@ export function RecoveryBadge({ recovery }: { recovery: RecoveryType }) {
     <MetaBadge
       label={RECOVERY_SHORT_LABELS[recovery]}
       panel={<p>{RECOVERY_LABELS[recovery]} recovery.</p>}
-      colorClassName="border-slate-700 text-slate-500"
+      colorClassName={`${CHIP_TONE_CLASSES[RECOVERY_TONE[recovery]]}${recovery === "custom" ? " border-dashed" : ""}`}
     />
   );
 }

@@ -4,6 +4,7 @@ import { formatModifier } from "@/lib/format";
 import { getMasteryInfo } from "@/lib/masteryInfo";
 import { InfoTooltip } from "../InfoTooltip";
 import { RichText } from "../RichText";
+import { CHIP_TONE_CLASSES } from "./chipTones";
 import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
 import { HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
@@ -105,7 +106,7 @@ export function AttackTrailing({ attack }: { attack: Attack }) {
         <MetaBadge
           label={attack.mastery}
           uppercase={false}
-          colorClassName="border-violet-700 bg-violet-950/30 text-violet-300"
+          colorClassName={CHIP_TONE_CLASSES.yellow}
           panel={
             <p>
               <span className="font-semibold text-slate-200">{attack.mastery}</span>

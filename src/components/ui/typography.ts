@@ -43,8 +43,8 @@ export const INLINE_ERROR_CLS = "text-sm text-red-400";
 export const INLINE_ERROR_XS_CLS = "text-xs text-red-400";
 /** Recoverable-but-notable warning text (search/sync issues) — 2 call sites. */
 export const WARNING_TEXT_CLS = "text-sm text-amber-400";
-/** Tiny uppercase group/category label inside ability/spell lists — a distinct color (`slate-600`) from `MICRO_LABEL_CLS`'s `slate-500`, not a near-miss — 6 call sites across 2 files. */
-export const MICRO_ITEM_LABEL_CLS = "text-[10px] uppercase tracking-wide text-slate-600";
+/** Group/category heading inside a details-modal tab's row list (Melee/Ranged, Action/Bonus Action/..., spell level, origin sub-groups) — 6 call sites across 2 files (`CharacterDetailsModal.tsx`, `CreatureDetailsModal.tsx`). Same recipe as `SubHeading` (`text-xs uppercase tracking-wide text-slate-500`) rather than its own smaller/dimmer `text-[10px] text-slate-600`, so a tab's in-list group headings read as the same heading tier as "Senses"/"Ability Scores" in the left column instead of a visually thinner second tier. */
+export const MICRO_ITEM_LABEL_CLS = "text-xs uppercase tracking-wide text-slate-500";
 /** Bolder 11px sibling of `MICRO_LABEL_CLS` used for attack/spell-card mini-headers (`font-semibold`, one size step up) — 6 call sites across 4 files. */
 export const MICRO_LABEL_STRONG_CLS = "text-[11px] font-semibold uppercase tracking-wide text-slate-500";
 /** Modal dialog `<h2>` title — already used inline by `ui/Modal.tsx`; exported here so the 6 modals that don't (yet) use the shared `Modal` shell can match it exactly — 7 call sites. */

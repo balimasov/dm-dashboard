@@ -46,6 +46,12 @@ function FlameToggle({ active, onToggle }: { active: boolean; onToggle: () => vo
  * component already sets its own `shrink-0 whitespace-nowrap`, so the
  * container's `flex-wrap` alone is enough: it only drops `trailing` to a new
  * line when the row genuinely runs out of room, one-line otherwise.
+ *
+ * The name itself carries a dotted underline (`decoration-slate-600`
+ * explicitly, rather than inheriting the row's own text color) — the same
+ * subtle "this is hoverable for more detail" signal on every flaggable row
+ * across both details modals and the Reminders panel, regardless of a
+ * row's rarity color or flagged state.
  */
 export function FlaggableRow({
   flagged,
@@ -63,7 +69,11 @@ export function FlaggableRow({
       className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
     >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
-      <span className={`min-w-0 flex-1 ${flagged ? "text-amber-300" : "text-slate-300"}`}>{children}</span>
+      <span
+        className={`min-w-0 flex-1 underline decoration-dotted decoration-slate-600 underline-offset-2 ${flagged ? "text-amber-300" : "text-slate-300"}`}
+      >
+        {children}
+      </span>
       {trailing}
     </div>
   );
