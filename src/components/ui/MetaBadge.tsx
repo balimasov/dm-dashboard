@@ -26,7 +26,13 @@ export function MetaBadge({
 }) {
   const badge = (
     <span
-      className={`shrink-0 whitespace-nowrap rounded border px-1.5 py-0.5 text-[10px] font-semibold no-underline ${uppercase ? "uppercase" : ""} ${colorClassName}`}
+      // `inline-block`, not just `no-underline`: a plain inline `<span>`'s own
+      // `text-decoration: none` does NOT stop an ancestor's underline (e.g.
+      // `FlaggableRow`'s dotted name underline) from painting straight through
+      // it — CSS only excludes *atomic* inline-level boxes (inline-block and
+      // similar) from an ancestor's decoration line. This was the actual fix
+      // needed; `no-underline` alone (the first attempt) does nothing here.
+      className={`inline-block shrink-0 whitespace-nowrap rounded border px-1.5 py-0.5 text-[10px] font-semibold no-underline ${uppercase ? "uppercase" : ""} ${colorClassName}`}
     >
       {label}
     </span>
