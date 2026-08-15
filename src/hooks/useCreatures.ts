@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AbilityScores, Creature, CreatureCategory, CreatureSpellcasting, CreatureTrait } from "@/lib/types";
 import { clearCreatureHpHistory, patchCreature } from "@/lib/creatureApi";
 import { apiFetch, parseJsonOrThrow } from "@/lib/apiClient";
@@ -44,6 +44,11 @@ export interface AddCreatureInput {
 
 export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
   const [creatures, setCreatures] = useState<Creature[]>(initialCreatures);
+  // Same per-id request queue as `useCharacters`' own `updateCharacter` —
+  // see its doc comment for why two close-together updates to the same
+  // creature need their PATCH requests strictly ordered rather than left to
+  // race on whichever round-trip happens to finish last.
+  const pendingByIdRef = useRef<Map<string, Promise<void>>>(new Map());
 
   const addCreature = useCallback(
     async (input: AddCreatureInput): Promise<Creature> => {
@@ -138,8 +143,15 @@ export function useCreatures(campaignId: string, initialCreatures: Creature[]) {
     // that, so a stray `null` reads as "still set" and crashes on first use.
     const normalizedUpdates = nullsToUndefined(updates) as Partial<Creature>;
     setCreatures((prev) => prev.map((c) => (c.id === id ? { ...c, ...normalizedUpdates } : c)));
-    const updated = await patchCreature(id, updates);
-    setCreatures((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    const previous = pendingByIdRef.current.get(id) ?? Promise.resolve();
+    const next = previous
+      .catch(() => {}) // an earlier failed request must not block this one from ever sending
+      .then(() => patchCreature(id, updates))
+      .then((updated) => {
+        setCreatures((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      });
+    pendingByIdRef.current.set(id, next);
+    await next;
   }, []);
 
   const clearHpHistory = useCallback(async (id: string) => {
