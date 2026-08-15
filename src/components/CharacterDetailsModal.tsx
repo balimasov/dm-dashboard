@@ -121,12 +121,11 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
 
 function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
   return (
-    <FlaggableRow
-      flagged={flagged}
-      onToggleFlag={onToggleFlag}
-      trailing={feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
-    >
-      <InfoTooltip panel={<FeatureHintPanel feature={feature} />}>{feature.name}</InfoTooltip>
+    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag}>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <InfoTooltip panel={<FeatureHintPanel feature={feature} />}>{feature.name}</InfoTooltip>
+        {feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
+      </span>
     </FlaggableRow>
   );
 }
@@ -509,20 +508,16 @@ export function CharacterDetailsModal({
                                 key={spell.id}
                                 flagged={flagged}
                                 onToggleFlag={() => toggleFlag(spell.name)}
-                                trailing={
-                                  <>
-                                    <SpellTrailing spell={spell} />
-                                    {spell.max !== undefined && (
-                                      <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
-                                    )}
-                                  </>
-                                }
+                                trailing={<SpellTrailing spell={spell} />}
                               >
-                                <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                                   <InfoTooltip className="min-w-0" panel={<KnownSpellHintPanel spell={spell} />}>
                                     {spell.name}
                                   </InfoTooltip>
                                   <SpellBadges spell={spell} />
+                                  {spell.max !== undefined && (
+                                    <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                                  )}
                                 </span>
                               </FlaggableRow>
                             );
