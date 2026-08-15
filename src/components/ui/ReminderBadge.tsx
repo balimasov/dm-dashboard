@@ -30,7 +30,7 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
     <MoreMenu
       label={label}
       portal
-      renderTrigger={({ toggle }) => (
+      renderTrigger={({ open, toggle }) => (
         <button
           type="button"
           onClick={(e) => {
@@ -39,21 +39,38 @@ export function ReminderBadge({ group, onRemove }: { group: ReminderGroup | null
           }}
           className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
         >
-          {/* `disableTap` — this button already has its own `onClick`
-              (toggling the reminders popover); without it, a tap on a touch
-              screen would fight between opening this hint and opening the
-              popover instead, same reasoning as every other `InfoTooltip`
-              nested inside its own clickable parent. */}
-          <InfoTooltip
-            hoverOnly
-            disableTap
-            panel={<p>{label} — abilities and traits you flagged to remember mid-combat.</p>}
-          >
+          {/* Hover-only preview of what "🔥 N" means — only rendered while
+              the popover itself is closed. Once open, the mouse sitting on
+              this trigger (it hasn't moved away yet) kept this hint's own
+              portal mounted on top of the popover's own content, visually
+              overlapping its small "Remove reminder" ✕ buttons and making
+              them unreliable to hit with a real mouse (confirmed on a live
+              screenshot — the hint box sat directly over a reminder row).
+              With the popover already open and showing exactly this same
+              "what am I looking at" context via its own heading, the hover
+              preview is redundant then anyway. */}
+          {open ? (
             <span className="flex items-center gap-1">
               <span aria-hidden="true">🔥</span>
               {group.entries.length}
             </span>
-          </InfoTooltip>
+          ) : (
+            // `disableTap` — this button already has its own `onClick`
+            // (toggling the reminders popover); without it, a tap on a touch
+            // screen would fight between opening this hint and opening the
+            // popover instead, same reasoning as every other `InfoTooltip`
+            // nested inside its own clickable parent.
+            <InfoTooltip
+              hoverOnly
+              disableTap
+              panel={<p>{label} — abilities and traits you flagged to remember mid-combat.</p>}
+            >
+              <span className="flex items-center gap-1">
+                <span aria-hidden="true">🔥</span>
+                {group.entries.length}
+              </span>
+            </InfoTooltip>
+          )}
         </button>
       )}
     >

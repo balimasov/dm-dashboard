@@ -103,7 +103,15 @@ export function NotesSection({
 
   return (
     <div className={`${dividerCls} group`.trim()}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      {/* `items-start` (not `-center`) — the pencil `IconButton` is taller
+          than the `text-xs` label next to it (its own `p-1` padding), so
+          centering the row pushed the label's own text a few px lower than
+          every other tab's first heading ("Melee", "Action", ...), which
+          all sit flush at the panel's top with no button beside them
+          (confirmed on a live measurement: 230px vs 233px). Top-aligning
+          both keeps the label flush with those, at the cost of the button's
+          own icon sitting a few px lower inside its box than dead-center. */}
+      <div className="mb-1.5 flex items-start justify-between gap-2">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Notes</h3>
         <IconButton
           tone="muted"

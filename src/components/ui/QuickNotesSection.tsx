@@ -130,7 +130,11 @@ export function QuickNotesSection({
 
   return (
     <div className={dividerCls}>
-      <div className="mb-1.5 flex items-center justify-between">
+      {/* `items-start`, matching `NotesSection`'s own header — same reason:
+          the "+" `IconButton` is taller than this `text-xs` label, and
+          centering the row pushed the label a few px lower than a heading
+          with no button beside it. */}
+      <div className="mb-1.5 flex items-start justify-between">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Quick Notes</h3>
         {onChange && (
           <IconButton

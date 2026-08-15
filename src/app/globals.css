@@ -113,6 +113,15 @@ html,
 .scrollbar-themed {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  /* Same reasoning as `html`'s own `scrollbar-gutter: stable` above, one
+     level down: `DetailsTwoColumn`'s right column is `.scrollbar-themed
+     overflow-y-auto`, and its `TabStrip` child stretches its tabs to fill
+     that column's exact width (`flex-1`) — switching from a short tab to a
+     tall one toggles the column's own scrollbar on, which (without this)
+     shrinks the available width by the scrollbar's own ~8px and visibly
+     reflows every tab narrower. Reserving the gutter unconditionally keeps
+     that width constant regardless of which tab currently needs to scroll. */
+  scrollbar-gutter: stable;
 }
 html::-webkit-scrollbar,
 .scrollbar-themed::-webkit-scrollbar {
