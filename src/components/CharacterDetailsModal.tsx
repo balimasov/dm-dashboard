@@ -150,35 +150,34 @@ interface PillGroupEntry {
 
 /**
  * Same "icon + label, hover-hint on the label" convention `IconInfoList`
- * uses for Resist/Immune/Vulnerable, but for Proficiencies (Languages/
- * Tools) — a flat list of named things, not prose, so each entry gets its
- * own `Pill` (the same chip Skills already uses below) instead of joining
- * into one comma-separated sentence. Scanning "do I have X" through a
- * dozen-item sentence was slower than picking it out of a row of chips.
- * `IconInfoList` itself stays as-is for Resist/Immune/Vulnerable, which
- * really are short comma lists, not proficiency chips. Entries with no
- * items are skipped, same convention as `IconInfoList`.
+ * uses for Resist/Immune/Vulnerable — same normal-case "Label:" text, same
+ * single flowing line — but for Proficiencies (Languages/Tools) the value
+ * side is a row of `Pill` chips (the same chip Skills already uses below)
+ * instead of one comma-separated sentence. Label and chips share one
+ * `flex-wrap` line on purpose: the label leads the line the same way it
+ * does in `IconInfoList`, and chips wrap onto their own line only once the
+ * row genuinely runs out of width, rather than always starting on a
+ * separate line of their own. `IconInfoList` itself stays as-is for Resist/
+ * Immune/Vulnerable, which really are short comma lists, not proficiency
+ * chips. Entries with no items are skipped, same convention as
+ * `IconInfoList`.
  */
 function PillGroupList({ entries }: { entries: PillGroupEntry[] }) {
   const visible = entries.filter((e) => e.items.length > 0);
   if (visible.length === 0) return null;
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {visible.map((e) => (
-        <div key={e.label}>
-          <div className={`mb-1.5 flex items-center gap-1.5 ${MICRO_ITEM_LABEL_CLS}`}>
-            <e.icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <InfoTooltip inline panel={e.panel}>
-              {e.label}
-            </InfoTooltip>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {e.items.map((item) => (
-              <Pill key={item} color="slate">
-                {item}
-              </Pill>
-            ))}
-          </div>
+        <div key={e.label} className="flex flex-wrap items-center gap-1.5">
+          <e.icon className="h-4 w-4 shrink-0 text-slate-500" />
+          <InfoTooltip inline panel={e.panel}>
+            <span className="whitespace-nowrap text-slate-500">{e.label}:</span>
+          </InfoTooltip>
+          {e.items.map((item) => (
+            <Pill key={item} color="slate">
+              {item}
+            </Pill>
+          ))}
         </div>
       ))}
     </div>
@@ -392,10 +391,10 @@ export function CharacterDetailsModal({
                UI-kit audit found this whole block byte-identical between
                the two, after a fix landed in one and not the other for the
                third time this session). The full Advantages list and
-               Languages/Tools "Proficiencies" (in that order, after Skills)
-               are this modal's own addition, injected via `afterSkills`
-               rather than duplicated inline — both stayed modal-only, the
-               compact card has no room for either. */
+               Languages/Tools "Proficiencies" (in that order, after
+               Resources) are this modal's own addition, injected via
+               `afterSkills` rather than duplicated inline — both stayed
+               modal-only, the compact card has no room for either. */
             <CharacterStatBlock
               character={c}
               compact

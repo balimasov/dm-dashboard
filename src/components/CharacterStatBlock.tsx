@@ -70,7 +70,7 @@ export function CharacterStatBlock({
    * still shows on the card, bonus included in its number.
    */
   showAllSkills?: boolean;
-  /** Rendered right after Skills, before Resources — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
+  /** Rendered after Skills and Resources, at the very end — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
   afterSkills?: ReactNode;
   /** `CharacterDetailsModal` passes `true` — the itemized Limited Use/Spell Slots breakdown (normally tucked behind the Resources bar's hover hint, to keep the compact card short) renders directly underneath instead, always visible, since the modal has the room the card doesn't. See `ResourceTrackerBar`'s own `expanded` prop for what actually changes. */
   expandedResources?: boolean;
@@ -197,19 +197,22 @@ export function CharacterStatBlock({
         </SectionDivider>
       )}
 
-      {afterSkills}
-
       {/* Resources — Limited Use and Spell Slots merged under one umbrella
           with a single tracker bar summarizing both (see ResourceTrackerBar's
           own doc comment for why one shared block instead of two separate
           bars, and why it renders its own "Resources" label rather than a
           SubHeading here — the label sits inside the same hover/click hint
-          trigger as the bar and counts below it). Gated on
-          `averageOverallPercent` directly (not e.g. `resources.length > 0 ||
-          spellcasting`) — the same check `ResourceTrackerBar` already makes
-          internally to decide whether to render at all, so the surrounding
-          `SectionDivider` never wraps an empty bar for the edge case of a
-          spellcasting class with no slots tracked yet. */}
+          trigger as the bar and counts below it). Right after Skills, ahead
+          of `afterSkills` (Advantages/Proficiencies, modal-only) — Resources
+          is core stat-block content both surfaces share, while Advantages/
+          Proficiencies are the modal's own addition, so Resources keeps the
+          same position relative to Skills on both the compact card and the
+          details modal. Gated on `averageOverallPercent` directly (not e.g.
+          `resources.length > 0 || spellcasting`) — the same check
+          `ResourceTrackerBar` already makes internally to decide whether to
+          render at all, so the surrounding `SectionDivider` never wraps an
+          empty bar for the edge case of a spellcasting class with no slots
+          tracked yet. */}
       {averageOverallPercent(c.resources, c.spellSlots) !== null && (
         <SectionDivider compact={compact}>
           <ResourceTrackerBar
@@ -220,6 +223,8 @@ export function CharacterStatBlock({
           />
         </SectionDivider>
       )}
+
+      {afterSkills}
     </>
   );
 }

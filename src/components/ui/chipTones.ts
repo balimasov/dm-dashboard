@@ -42,8 +42,8 @@ export type ChipTone =
   | "orange";
 
 export const CHIP_TONE_CLASSES: Record<ChipTone, string> = {
-  /** Skill "Untrained" (`Pill`'s `slate`) and Recovery "Custom". */
-  neutral: "border-[#6b6357] bg-[#322f29]/46 text-[#d1cdc7]",
+  /** Skill "Untrained" (`Pill`'s `slate`, also Languages/Tools proficiency pills) and Recovery "Custom" — nudged a few points warmer (more red/less blue in each channel) than a flatly cool gray would be, to sit comfortably in the app's warm-reskinned palette, while staying desaturated enough to still read as "no particular color" rather than becoming its own accent hue. */
+  neutral: "border-[#736550] bg-[#362f24]/46 text-[#d6cebe]",
   /** Recovery "Manual" only — deliberately a different lightness than `neutral` even though both start from the same gray hue, so Manual and Untrained/Custom don't read as identical. */
   steel: "border-[#a8a094] bg-[#655d53]/46 text-[#f1f0ee]",
   sr: "border-[#1daff1] bg-[#085c82]/46 text-[#c8e8f6]",

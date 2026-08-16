@@ -1,6 +1,6 @@
 import { Resource, SpellSlotLevel } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
-import { tierBadgeClass, tierBgClass, tierTextClass } from "@/lib/tierColor";
+import { tierBadgeClass, tierBgClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
 import { RecoveryBadge, ResourceHintPanel } from "./ui/RecoveryBadge";
 
@@ -169,7 +169,7 @@ export function LimitedUseList({
   showRemainingPercent = false,
 }: {
   resources: Resource[];
-  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is left" figure next to the heading, same "% remaining" framing (and the same danger-tier color) the overall bar's own badge already uses, just scoped to this one category instead of the blended total. The hover breakdown leaves it off — that panel already opens from a badge showing the blended overall percent, a second percent right next to it read as more confusing than useful at that smaller size. */
+  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is left" figure next to the heading, same "% remaining" framing the overall bar's own badge already uses, just scoped to this one category instead of the blended total. Plain neutral text, not the bar badge's danger-tier color — that color already carries the "how worried should I be" signal once, on the one blended overall number; repeating it per category read as too many competing colors in one small block. The hover breakdown leaves the figure off entirely — that panel already opens from a badge showing the blended overall percent, a second percent right next to it read as more confusing than useful at that smaller size. */
   showRemainingPercent?: boolean;
 }) {
   if (resources.length === 0) return null;
@@ -180,9 +180,7 @@ export function LimitedUseList({
         <ColorDot className="bg-blue-400" />
         Limited Use
         {remainingPercent !== null && (
-          <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
-            {remainingPercent}%
-          </span>
+          <span className="ml-auto normal-case tracking-normal tabular-nums font-bold text-slate-100">{remainingPercent}%</span>
         )}
       </h4>
       <div className="space-y-1.5">
@@ -205,7 +203,7 @@ export function SpellSlotsList({
 }: {
   spellSlots: SpellSlotLevel[];
   pactSlots?: boolean;
-  /** See `LimitedUseList`'s own doc comment — same "% remaining" figure, `averageSpellSlotPercent`, same tier color. */
+  /** See `LimitedUseList`'s own doc comment — same "% remaining" figure, `averageSpellSlotPercent`, same plain neutral text color. */
   showRemainingPercent?: boolean;
 }) {
   if (spellSlots.length === 0) return null;
@@ -216,9 +214,7 @@ export function SpellSlotsList({
         <ColorDot className="bg-violet-400" />
         Spell Slots{pactSlots ? " (Pact)" : ""}
         {remainingPercent !== null && (
-          <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
-            {remainingPercent}%
-          </span>
+          <span className="ml-auto normal-case tracking-normal tabular-nums font-bold text-slate-100">{remainingPercent}%</span>
         )}
       </h4>
       <div className="space-y-1">
