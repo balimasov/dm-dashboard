@@ -59,15 +59,11 @@ export function ToolIcon({ className }: { className?: string }) {
   );
 }
 
-/** Two crossed blades, points down, a short crossguard tick near each hilt at the top — Weapon proficiencies, same monoline style/size as `ShieldIcon`/`ToolIcon` next to it. */
+/** One sword on the diagonal — blade tip top-right to pommel bottom-left, a short crossguard tick where blade meets grip — Weapon proficiencies, same monoline style/size as `ShieldIcon`/`ToolIcon` next to it (a single diagonal glyph, same construction as `ToolIcon`'s wrench). */
 export function SwordsIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path
-        d="M6 6l13 13M18 6L5 19M4.6 7.4L7.4 4.6M16.6 4.6l2.8 2.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M19 5L6 18M8 12l4 4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
