@@ -44,10 +44,20 @@ export type ChipTone =
 export const CHIP_TONE_CLASSES: Record<ChipTone, string> = {
   /** Skill "Untrained" (`Pill`'s `slate`, also Languages/Tools proficiency pills) and Recovery "Custom" — nudged a few points warmer (more red/less blue in each channel) than a flatly cool gray would be, to sit comfortably in the app's warm-reskinned palette, while staying desaturated enough to still read as "no particular color" rather than becoming its own accent hue. */
   neutral: "border-[#736550] bg-[#362f24]/46 text-[#d6cebe]",
-  /** Recovery "Manual" only — deliberately a different lightness than `neutral` even though both start from the same gray hue, so Manual and Untrained/Custom don't read as identical. */
-  steel: "border-[#a8a094] bg-[#655d53]/46 text-[#f1f0ee]",
-  sr: "border-[#1daff1] bg-[#085c82]/46 text-[#c8e8f6]",
-  lr: "border-[#0950c3] bg-[#04265e]/46 text-[#acc6f1]",
+  /**
+   * Recovery "Manual"/"Short Rest"/"Long Rest" now read as one blue family,
+   * palest to darkest — `steel` (M), `sr`, `lr` — instead of M sitting in
+   * the unrelated warm-neutral family while only SR/LR were blue. Picked in
+   * a dedicated color-prototype round (three graduated options compared
+   * against the app's real rendered background, not an approximation) —
+   * `steel`/`sr` are that round's "Balanced" option, `lr` is deliberately
+   * its "Restrained" option instead of Balanced's own (darker, less
+   * saturated navy reads calmer as the *longest*-recovery tier than
+   * Balanced's own LR did).
+   */
+  steel: "border-[#93aabb] bg-[#283440]/46 text-[#d6e3ec]",
+  sr: "border-[#2a8ce0] bg-[#0a4278]/46 text-[#b9ddf9]",
+  lr: "border-[#1f4080] bg-[#0a1f47]/46 text-[#a3bce6]",
   lime: "border-lime-700 bg-lime-950/40 text-lime-300",
   pink: "border-pink-700 bg-pink-950/40 text-pink-300",
   fuchsia: "border-fuchsia-700 bg-fuchsia-950/40 text-fuchsia-300",

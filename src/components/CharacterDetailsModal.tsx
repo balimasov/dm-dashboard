@@ -150,8 +150,9 @@ interface PillGroupEntry {
 
 /**
  * Same "icon + label, hover-hint on the label" convention `IconInfoList`
- * uses for Resist/Immune/Vulnerable — same normal-case "Label:" text, same
- * single flowing line — but for Proficiencies (Languages/Tools) the value
+ * uses for Resist/Immune/Vulnerable — same normal-case "Label:" text at the
+ * same `text-sm` size, same single flowing line — but for Proficiencies
+ * (Languages/Tools) the value
  * side is a row of `Pill` chips (the same chip Skills already uses below)
  * instead of one comma-separated sentence. Label and chips share one
  * `flex-wrap` line on purpose: the label leads the line the same way it
@@ -166,7 +167,7 @@ function PillGroupList({ entries }: { entries: PillGroupEntry[] }) {
   const visible = entries.filter((e) => e.items.length > 0);
   if (visible.length === 0) return null;
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 text-sm">
       {visible.map((e) => (
         <div key={e.label} className="flex flex-wrap items-center gap-1.5">
           <e.icon className="h-4 w-4 shrink-0 text-slate-500" />
