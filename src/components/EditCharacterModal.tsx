@@ -80,6 +80,9 @@ export function EditCharacterModal({
   const [vulnerabilitiesText, setVulnerabilitiesText] = useState(character.vulnerabilities.join(", "));
   const [advantagesText, setAdvantagesText] = useState(character.advantages.join("\n"));
   const [languagesText, setLanguagesText] = useState(character.languages.join(", "));
+  const [toolsText, setToolsText] = useState(character.toolProficiencies.join(", "));
+  const [armorText, setArmorText] = useState(character.armorProficiencies.join(", "));
+  const [weaponsText, setWeaponsText] = useState(character.weaponProficiencies.join(", "));
 
   useEscapeToClose(onClose);
   useScrollLock();
@@ -175,10 +178,13 @@ export function EditCharacterModal({
     }));
   }
 
-  function setLanguages(value: string) {
+  function setProficiencyList(
+    field: "languages" | "toolProficiencies" | "armorProficiencies" | "weaponProficiencies",
+    value: string
+  ) {
     setDraft((d) => ({
       ...d,
-      languages: value
+      [field]: value
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
@@ -535,10 +541,10 @@ export function EditCharacterModal({
               </Field>
             </section>
 
-            {/* Senses and Languages */}
+            {/* Senses and Proficiencies */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className={FORM_SECTION_HEADING_CLS}>Senses and Languages</h2>
+                <h2 className={FORM_SECTION_HEADING_CLS}>Senses and Proficiencies</h2>
                 <button type="button" onClick={addSense} className={addBtnCls}>
                   + Sense
                 </button>
@@ -564,17 +570,49 @@ export function EditCharacterModal({
                   </div>
                 ))}
               </div>
-              {/* Only field in this section not synced from D&D Beyond's own combat/proficiency data (or not synced reliably) — worth a manual field here rather than being stuck read-only until the next sync. */}
-              <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
-                <input
-                  className={`${inputCls} w-full`}
-                  value={languagesText}
-                  onChange={(e) => {
-                    setLanguagesText(e.target.value);
-                    setLanguages(e.target.value);
-                  }}
-                />
-              </Field>
+              {/* None of the 4 fields below are synced from D&D Beyond reliably enough to stay read-only until the next sync — worth manual fields here, same reasoning that first added Languages. */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Languages (comma-separated)" hint="Feeds the Party Toolkit's Languages coverage panel.">
+                  <input
+                    className={`${inputCls} w-full`}
+                    value={languagesText}
+                    onChange={(e) => {
+                      setLanguagesText(e.target.value);
+                      setProficiencyList("languages", e.target.value);
+                    }}
+                  />
+                </Field>
+                <Field label="Tools (comma-separated)">
+                  <input
+                    className={`${inputCls} w-full`}
+                    value={toolsText}
+                    onChange={(e) => {
+                      setToolsText(e.target.value);
+                      setProficiencyList("toolProficiencies", e.target.value);
+                    }}
+                  />
+                </Field>
+                <Field label="Armor (comma-separated)">
+                  <input
+                    className={`${inputCls} w-full`}
+                    value={armorText}
+                    onChange={(e) => {
+                      setArmorText(e.target.value);
+                      setProficiencyList("armorProficiencies", e.target.value);
+                    }}
+                  />
+                </Field>
+                <Field label="Weapons (comma-separated)">
+                  <input
+                    className={`${inputCls} w-full`}
+                    value={weaponsText}
+                    onChange={(e) => {
+                      setWeaponsText(e.target.value);
+                      setProficiencyList("weaponProficiencies", e.target.value);
+                    }}
+                  />
+                </Field>
+              </div>
             </section>
 
             {/* Resources */}

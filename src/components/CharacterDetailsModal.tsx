@@ -28,7 +28,7 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
-import { LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
+import { LanguageIcon, ShieldIcon, SwordsIcon, ToolIcon } from "./ui/icons";
 import { ARMOR_HINT_PANEL, LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL, WEAPONS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
@@ -139,15 +139,6 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
     origin,
     byOrigin.get(origin)!.sort((a, b) => a.name.localeCompare(b.name)),
   ]);
-}
-
-/** Adapts `CONTENT_KIND_ICON.weapons` (a real emoji glyph, not an SVG — the app's one deliberate exception to "always use the hand-drawn icon set") to the same `{ className }` signature every other `PillGroupEntry.icon` uses, so `PillGroupList` doesn't need a special case for it. */
-function WeaponIcon({ className }: { className?: string }) {
-  return (
-    <span className={`inline-flex items-center justify-center ${className ?? ""}`} aria-hidden>
-      {CONTENT_KIND_ICON.weapons}
-    </span>
-  );
 }
 
 interface PillGroupEntry {
@@ -444,7 +435,7 @@ export function CharacterDetailsModal({
                       <PillGroupList
                         entries={[
                           { label: "Armor", icon: ShieldIcon, items: c.armorProficiencies, panel: ARMOR_HINT_PANEL },
-                          { label: "Weapons", icon: WeaponIcon, items: c.weaponProficiencies, panel: WEAPONS_HINT_PANEL },
+                          { label: "Weapons", icon: SwordsIcon, items: c.weaponProficiencies, panel: WEAPONS_HINT_PANEL },
                           { label: "Tools", icon: ToolIcon, items: c.toolProficiencies, panel: TOOLS_HINT_PANEL },
                           { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
                         ]}

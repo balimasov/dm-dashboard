@@ -217,13 +217,13 @@ export interface Character {
   vulnerabilities: string[];
   advantages: string[];
   senses: Sense[];
-  /** Known languages, e.g. ["Common", "Infernal"] — display names straight from D&D Beyond, no manual editing UI yet. */
+  /** Known languages, e.g. ["Common", "Infernal"] — from D&D Beyond on sync, editable by hand in `EditCharacterModal` for characters without one. */
   languages: string[];
-  /** Tool proficiencies — artisan's tools, kits, navigator's/vehicles, musical instruments, and gaming sets, matching D&D Beyond's own "Tools" grouping exactly. */
+  /** Tool proficiencies — artisan's tools, kits, navigator's/vehicles, musical instruments, and gaming sets, matching D&D Beyond's own "Tools" grouping exactly. From D&D Beyond on sync, editable by hand in `EditCharacterModal`. */
   toolProficiencies: string[];
-  /** Armor proficiencies — Light/Medium/Heavy Armor, Shields. From D&D Beyond only, no manual editing UI, same as `toolProficiencies`. */
+  /** Armor proficiencies — Light/Medium/Heavy Armor, Shields. From D&D Beyond on sync, editable by hand in `EditCharacterModal`. */
   armorProficiencies: string[];
-  /** Weapon proficiencies — broad categories (Simple/Martial Weapons) and/or individual named weapons, whichever the character actually has. From D&D Beyond only, no manual editing UI, same as `toolProficiencies`. */
+  /** Weapon proficiencies — broad categories (Simple/Martial Weapons) and/or individual named weapons, whichever the character actually has. From D&D Beyond on sync, editable by hand in `EditCharacterModal`. */
   weaponProficiencies: string[];
   inventory: InventoryItem[];
   currency: Currency;
