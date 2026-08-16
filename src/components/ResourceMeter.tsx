@@ -1,6 +1,6 @@
 import { Resource, SpellSlotLevel } from "@/lib/types";
 import { ordinalLevel } from "@/lib/format";
-import { tierBadgeClass, tierBgClass } from "@/lib/tierColor";
+import { tierBadgeClass, tierBgClass, tierTextClass } from "@/lib/tierColor";
 import { InfoTooltip } from "./InfoTooltip";
 import { RecoveryBadge, ResourceHintPanel } from "./ui/RecoveryBadge";
 
@@ -163,14 +163,27 @@ function ResourceTrackerHint({
   );
 }
 
-/** The itemized Limited Use group (heading + one `ResourceMeter` row per resource, alphabetical) — shared by `ResourceTrackerHint`'s hover breakdown and `CharacterDetailsModal`'s Features tab, which embeds the same list inline instead of behind a hover (see that file's own comment on why). `null` when there's nothing to list, same as every other resource block here. */
-export function LimitedUseList({ resources }: { resources: Resource[] }) {
+/** The itemized Limited Use group (heading + one `ResourceMeter` row per resource, alphabetical) — shared by `ResourceTrackerHint`'s hover breakdown (compact card) and `ResourceTrackerBar`'s own `expanded` mode (details modal, always visible instead of behind a hover). `null` when there's nothing to list, same as every other resource block here. */
+export function LimitedUseList({
+  resources,
+  showSpentPercent = false,
+}: {
+  resources: Resource[];
+  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is gone" figure next to the heading, using the same danger-tier color the overall bar's own badge reacts to (`averageResourcePercent` is "% remaining"; the badge shows its complement, "% spent", since that's the framing that answers "is this running out"). The hover breakdown leaves it off — that panel already opens from a badge showing the blended overall percent, a second, differently-framed percent right next to it read as more confusing than useful at that smaller size. */
+  showSpentPercent?: boolean;
+}) {
   if (resources.length === 0) return null;
+  const remainingPercent = showSpentPercent ? averageResourcePercent(resources) : null;
   return (
     <div className="space-y-1.5">
       <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
         <ColorDot className="bg-blue-400" />
         Limited Use
+        {remainingPercent !== null && (
+          <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
+            {100 - remainingPercent}%
+          </span>
+        )}
       </h4>
       <div className="space-y-1.5">
         {resources
@@ -184,14 +197,29 @@ export function LimitedUseList({ resources }: { resources: Resource[] }) {
   );
 }
 
-/** Same idea as `LimitedUseList`, one level per row instead of one resource per row — shared by `ResourceTrackerHint`'s hover breakdown and `CharacterDetailsModal`'s Spells tab (which needs every tracked level, not just the ones with a known spell prepared — a slot with nothing assigned to it yet was previously invisible outside this hover). */
-export function SpellSlotsList({ spellSlots, pactSlots }: { spellSlots: SpellSlotLevel[]; pactSlots?: boolean }) {
+/** Same idea as `LimitedUseList`, one level per row instead of one resource per row — shared by `ResourceTrackerHint`'s hover breakdown and `ResourceTrackerBar`'s `expanded` mode (needs every tracked level, not just the ones with a known spell prepared — a slot with nothing assigned to it yet is otherwise invisible). */
+export function SpellSlotsList({
+  spellSlots,
+  pactSlots,
+  showSpentPercent = false,
+}: {
+  spellSlots: SpellSlotLevel[];
+  pactSlots?: boolean;
+  /** See `LimitedUseList`'s own doc comment — same "% spent" figure, `averageSpellSlotPercent`'s complement, same tier color. */
+  showSpentPercent?: boolean;
+}) {
   if (spellSlots.length === 0) return null;
+  const remainingPercent = showSpentPercent ? averageSpellSlotPercent(spellSlots) : null;
   return (
     <div>
       <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
         <ColorDot className="bg-violet-400" />
         Spell Slots{pactSlots ? " (Pact)" : ""}
+        {remainingPercent !== null && (
+          <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
+            {100 - remainingPercent}%
+          </span>
+        )}
       </h4>
       <div className="space-y-1">
         {spellSlots
@@ -243,6 +271,9 @@ export function SpellSlotsList({ spellSlots, pactSlots }: { spellSlots: SpellSlo
  * background gives an instant on-touch cue that the whole area is
  * interactive, same idea as `res-bar-row:hover` in the prototype this was
  * built from.
+ *
+ * All of the above describes the default (non-`expanded`) mode. See the
+ * `expanded` prop's own doc comment for what changes in the details modal.
  */
 /**
  * The "Limited Use X/Y" quick-glance total below the bar — unlike
@@ -272,11 +303,25 @@ export function ResourceTrackerBar({
   resources,
   spellSlots,
   pactSlots,
+  expanded = false,
 }: {
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
   /** Warlocks track spell slots as a single fast-recovering "Pact Magic" pool rather than the standard per-long-rest table — surfaced only in the hint's own Spell Slots heading, not on the bar itself. */
   pactSlots?: boolean;
+  /**
+   * `CharacterDetailsModal` passes `true` (via `CharacterStatBlock`'s own
+   * `expandedResources`) — the itemized `LimitedUseList`/`SpellSlotsList`
+   * breakdown, normally reachable only by hovering/tapping this whole block
+   * (`ResourceTrackerHint`), instead renders directly underneath it,
+   * permanently visible. The bar/label/badge stay identical either way; only
+   * the quick-glance "Limited Use X/Y, Spell Slots X/Y" totals row
+   * disappears in this mode — it would just repeat what the itemized lists
+   * (each now carrying its own "% spent" heading) already show right below
+   * — and the whole thing stops being an `InfoTooltip` trigger, since there's
+   * no more hidden detail left to reveal on hover.
+   */
+  expanded?: boolean;
 }) {
   const overallPercent = averageOverallPercent(resources, spellSlots);
   if (overallPercent === null) return null;
@@ -286,6 +331,52 @@ export function ResourceTrackerBar({
   const { current: resourcesCurrent, max: resourcesMax } = limitedUseTally(resources);
   const spellSlotsCurrent = spellSlots.reduce((sum, s) => sum + s.current, 0);
   const spellSlotsMax = spellSlots.reduce((sum, s) => sum + s.max, 0);
+
+  const barBlock = (
+    <span className="flex flex-col gap-1.5 leading-none">
+      <span className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-slate-500">Resources</span>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${tierBadgeClass(overallPercent)}`}>{overallPercent}%</span>
+      </span>
+      <span className="relative block h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+        <span className={`block h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
+      </span>
+      {!expanded && (resourcesMax > 0 || spellSlotsMax > 0) && (
+        <span className="flex items-center justify-between text-xs text-slate-500">
+          {resourcesMax > 0 && (
+            <span className="flex items-center gap-1.5">
+              <ColorDot className="bg-blue-400" />
+              Limited Use <span className="font-semibold text-slate-200 tabular-nums">{resourcesCurrent}/{resourcesMax}</span>
+            </span>
+          )}
+          {spellSlotsMax > 0 && (
+            <span className="flex items-center gap-1.5">
+              <ColorDot className="bg-violet-400" />
+              Spell Slots <span className="font-semibold text-slate-200 tabular-nums">{spellSlotsCurrent}/{spellSlotsMax}</span>
+            </span>
+          )}
+        </span>
+      )}
+    </span>
+  );
+
+  if (expanded) {
+    return (
+      <div>
+        {barBlock}
+        {resources.length > 0 && (
+          <div className="mt-3">
+            <LimitedUseList resources={resources} showSpentPercent />
+          </div>
+        )}
+        {spellSlots.length > 0 && (
+          <div className="mt-3">
+            <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} showSpentPercent />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <InfoTooltip
@@ -302,31 +393,7 @@ export function ResourceTrackerBar({
         />
       }
     >
-      <span className="-mx-1 -my-0.5 flex flex-col gap-1.5 rounded-md px-1 py-0.5 leading-none transition-colors hover:bg-white/5">
-        <span className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-500">Resources</span>
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${tierBadgeClass(overallPercent)}`}>{overallPercent}%</span>
-        </span>
-        <span className="relative block h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-          <span className={`block h-full rounded-full ${tierBgClass(overallPercent)}`} style={{ width: `${overallPercent}%` }} />
-        </span>
-        {(resourcesMax > 0 || spellSlotsMax > 0) && (
-          <span className="flex items-center justify-between text-xs text-slate-500">
-            {resourcesMax > 0 && (
-              <span className="flex items-center gap-1.5">
-                <ColorDot className="bg-blue-400" />
-                Limited Use <span className="font-semibold text-slate-200 tabular-nums">{resourcesCurrent}/{resourcesMax}</span>
-              </span>
-            )}
-            {spellSlotsMax > 0 && (
-              <span className="flex items-center gap-1.5">
-                <ColorDot className="bg-violet-400" />
-                Spell Slots <span className="font-semibold text-slate-200 tabular-nums">{spellSlotsCurrent}/{spellSlotsMax}</span>
-              </span>
-            )}
-          </span>
-        )}
-      </span>
+      <span className="-mx-1 -my-0.5 block rounded-md px-1 py-0.5 transition-colors hover:bg-white/5">{barBlock}</span>
     </InfoTooltip>
   );
 }

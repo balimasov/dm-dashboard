@@ -48,6 +48,7 @@ export function CharacterStatBlock({
   alwaysShowSenses = false,
   showAllSkills = true,
   afterSkills,
+  expandedResources = false,
 }: {
   character: Character;
   /** Passed straight through to each `SectionDivider` — see its own doc comment. Both `CharacterCard` and `CharacterDetailsModal` pass it, for the same tight rhythm in the card and the modal it opens into. */
@@ -71,6 +72,8 @@ export function CharacterStatBlock({
   showAllSkills?: boolean;
   /** Rendered right after Skills, before Resources — the one slot `CharacterDetailsModal` needs that `CharacterCard` doesn't: its own Advantages list ("shown here only... this modal is the one place with room for the full restriction text") followed by Languages/Tools "Proficiencies". `undefined` renders nothing. */
   afterSkills?: ReactNode;
+  /** `CharacterDetailsModal` passes `true` — the itemized Limited Use/Spell Slots breakdown (normally tucked behind the Resources bar's hover hint, to keep the compact card short) renders directly underneath instead, always visible, since the modal has the room the card doesn't. See `ResourceTrackerBar`'s own `expanded` prop for what actually changes. */
+  expandedResources?: boolean;
 }) {
   const c = character;
   const isDown = c.combat.hp <= 0;
@@ -209,7 +212,12 @@ export function CharacterStatBlock({
           spellcasting class with no slots tracked yet. */}
       {averageOverallPercent(c.resources, c.spellSlots) !== null && (
         <SectionDivider compact={compact}>
-          <ResourceTrackerBar resources={c.resources} spellSlots={c.spellSlots} pactSlots={c.className.includes("Warlock")} />
+          <ResourceTrackerBar
+            resources={c.resources}
+            spellSlots={c.spellSlots}
+            pactSlots={c.className.includes("Warlock")}
+            expanded={expandedResources}
+          />
         </SectionDivider>
       )}
     </>

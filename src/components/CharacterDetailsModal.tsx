@@ -28,10 +28,11 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
-import { IconInfoList } from "./ui/IconInfoList";
+import { LanguageIcon, ToolIcon } from "./ui/icons";
 import { LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
+import { Pill } from "./ui/Pill";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { FeatureHintPanel, RecoveryBadge } from "./ui/RecoveryBadge";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -138,6 +139,50 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
     origin,
     byOrigin.get(origin)!.sort((a, b) => a.name.localeCompare(b.name)),
   ]);
+}
+
+interface PillGroupEntry {
+  label: string;
+  icon: (props: { className?: string }) => React.ReactElement;
+  items: string[];
+  panel: React.ReactNode;
+}
+
+/**
+ * Same "icon + label, hover-hint on the label" convention `IconInfoList`
+ * uses for Resist/Immune/Vulnerable, but for Proficiencies (Languages/
+ * Tools) — a flat list of named things, not prose, so each entry gets its
+ * own `Pill` (the same chip Skills already uses below) instead of joining
+ * into one comma-separated sentence. Scanning "do I have X" through a
+ * dozen-item sentence was slower than picking it out of a row of chips.
+ * `IconInfoList` itself stays as-is for Resist/Immune/Vulnerable, which
+ * really are short comma lists, not proficiency chips. Entries with no
+ * items are skipped, same convention as `IconInfoList`.
+ */
+function PillGroupList({ entries }: { entries: PillGroupEntry[] }) {
+  const visible = entries.filter((e) => e.items.length > 0);
+  if (visible.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      {visible.map((e) => (
+        <div key={e.label}>
+          <div className={`mb-1.5 flex items-center gap-1.5 ${MICRO_ITEM_LABEL_CLS}`}>
+            <e.icon className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            <InfoTooltip inline panel={e.panel}>
+              {e.label}
+            </InfoTooltip>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {e.items.map((item) => (
+              <Pill key={item} color="slate">
+                {item}
+              </Pill>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function FeatureRow({ feature, flagged, onToggleFlag }: { feature: Feature; flagged: boolean; onToggleFlag: () => void }) {
@@ -354,6 +399,7 @@ export function CharacterDetailsModal({
             <CharacterStatBlock
               character={c}
               compact
+              expandedResources
               afterSkills={
                 <>
                   {/* Advantages — general advantage/disadvantage grants not tied to one skill/save (e.g. Concentration checks), shown here only — this modal is the one place with room for the full restriction text, unlike the compact card. Heading and per-line glyph both react to the actual mix of entries (`advantagesHeading`/`parseAdvantageEntry`) rather than assuming every entry is an advantage — a disadvantage (e.g. Stealth in heavy armor) can land in this same list, same as an advantage can. */}
@@ -382,11 +428,10 @@ export function CharacterDetailsModal({
 
                   {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
                     <SectionDivider compact>
-                      <SubHeading>Proficiencies</SubHeading>
-                      <IconInfoList
+                      <PillGroupList
                         entries={[
-                          { label: "Languages", value: c.languages.join(", "), panel: LANGUAGES_HINT_PANEL },
-                          { label: "Tools", value: c.toolProficiencies.join(", "), panel: TOOLS_HINT_PANEL },
+                          { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
+                          { label: "Tools", icon: ToolIcon, items: c.toolProficiencies, panel: TOOLS_HINT_PANEL },
                         ]}
                       />
                     </SectionDivider>
@@ -404,10 +449,11 @@ export function CharacterDetailsModal({
                   segments `TabBar` uses elsewhere; see that component's own doc
                   comment for why this is a second component rather than a
                   variant. Limited Use resources and Spell Slots stay on the
-                  left column's compact Resources bar (hover for the
-                  itemized breakdown) — a round embedding them inline at the
-                  top of Features/Spells too was tried and reverted; still
-                  deciding on the right way to expose them in more detail.
+                  left column's Resources block (`expandedResources` on
+                  `CharacterStatBlock` — the itemized breakdown always
+                  visible there now, not tucked behind a hover, since this
+                  modal has the room the compact card doesn't) rather than
+                  duplicated inline at the top of Features/Spells too.
                   Consumables (the character's own
                   `InventoryItem`s of category "Consumable") is flaggable with
                   the same reminder flame as every other tab here, so a DM can
