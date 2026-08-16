@@ -106,6 +106,8 @@ export const demoCharacters: Character[] = [
     ],
     "languages": ["Common", "Orc"],
     "toolProficiencies": ["Dice Set", "Vehicles (Land)"],
+    "armorProficiencies": ["Light Armor", "Medium Armor", "Shields"],
+    "weaponProficiencies": ["Martial Weapons", "Simple Weapons"],
     "inventory": [
       {
         "id": "item-0",
@@ -624,6 +626,8 @@ export const demoCharacters: Character[] = [
     ],
     "languages": ["Common", "Elvish"],
     "toolProficiencies": ["Herbalism Kit"],
+    "armorProficiencies": ["Light Armor", "Medium Armor", "Heavy Armor", "Shields"],
+    "weaponProficiencies": ["Martial Weapons", "Simple Weapons"],
     "inventory": [
       {
         "id": "item-0",
@@ -1516,6 +1520,8 @@ export const demoCharacters: Character[] = [
     ],
     "languages": ["Common", "Elvish", "Draconic"],
     "toolProficiencies": [],
+    "armorProficiencies": [],
+    "weaponProficiencies": ["Dagger", "Dart", "Light Crossbow", "Quarterstaff", "Sling"],
     "inventory": [
       {
         "id": "item-0",
@@ -2374,6 +2380,8 @@ export const demoCharacters: Character[] = [
     ],
     "languages": ["Common", "Infernal"],
     "toolProficiencies": [],
+    "armorProficiencies": ["Light Armor"],
+    "weaponProficiencies": ["Simple Weapons", "Hand Crossbow", "Longsword", "Rapier", "Shortsword"],
     "inventory": [
       {
         "id": "item-0",

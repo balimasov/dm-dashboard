@@ -221,6 +221,10 @@ export interface Character {
   languages: string[];
   /** Tool proficiencies — artisan's tools, kits, navigator's/vehicles, musical instruments, and gaming sets, matching D&D Beyond's own "Tools" grouping exactly. */
   toolProficiencies: string[];
+  /** Armor proficiencies — Light/Medium/Heavy Armor, Shields. From D&D Beyond only, no manual editing UI, same as `toolProficiencies`. */
+  armorProficiencies: string[];
+  /** Weapon proficiencies — broad categories (Simple/Martial Weapons) and/or individual named weapons, whichever the character actually has. From D&D Beyond only, no manual editing UI, same as `toolProficiencies`. */
+  weaponProficiencies: string[];
   inventory: InventoryItem[];
   currency: Currency;
   notes: string;

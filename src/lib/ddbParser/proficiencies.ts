@@ -1,15 +1,15 @@
 import { titleCase } from "./shared";
 import { RawDdbModifier } from "./rawTypes";
+import { SKILL_ABILITY } from "../types";
 
 /**
  * Standard 5e tool proficiencies — artisan's tools, kits, navigation/
  * vehicle proficiencies, musical instruments, and gaming sets, matching
  * exactly what D&D Beyond's own character sheet groups under its "Tools"
  * heading (confirmed against a real sheet: Drum/Horn/Lute and Dice Set
- * both list there, not separately). Weapon and armor proficiencies share
- * the same `type: "proficiency"` modifier stream but are excluded — those
- * already show elsewhere (attacks, AC) rather than needing their own list
- * here.
+ * both list there, not separately). Armor and weapon proficiencies share the
+ * same `type: "proficiency"` modifier stream — see `computeArmorProficiencies`/
+ * `computeWeaponProficiencies` below.
  */
 const TOOL_SUBTYPES = new Set([
   "alchemists-supplies",
@@ -80,6 +80,44 @@ export function computeLanguages(mods: RawDdbModifier[]): string[] {
 export function computeToolProficiencies(mods: RawDdbModifier[]): string[] {
   const names = mods
     .filter((m) => m.type === "proficiency" && TOOL_SUBTYPES.has(m.subType ?? ""))
+    .map((m) => m.friendlySubtypeName || titleCase(m.subType ?? ""));
+  return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+}
+
+/** The 4 armor-category proficiencies 5e defines — a small, fixed, official set, unlike weapons below. */
+const ARMOR_SUBTYPES = new Set(["light-armor", "medium-armor", "heavy-armor", "shields"]);
+
+export function computeArmorProficiencies(mods: RawDdbModifier[]): string[] {
+  const names = mods
+    .filter((m) => m.type === "proficiency" && ARMOR_SUBTYPES.has(m.subType ?? ""))
+    .map((m) => m.friendlySubtypeName || titleCase(m.subType ?? ""));
+  return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Unlike tools/armor above, individual weapon proficiencies (Rapier, Hand
+ * Crossbow, a setting-specific weapon like Glaur or Tocken that isn't in any
+ * fixed PHB list) aren't a closed set worth enumerating one by one — so
+ * weapon proficiency is determined by exclusion instead: any `type:
+ * "proficiency"` modifier whose `subType` isn't a skill, a saving throw, a
+ * tool, an armor category, or an unresolved "choose a..." placeholder is
+ * either a broad category (Simple/Martial/Improvised Weapons) or a named
+ * weapon, and both render the same way (a plain pill), so there's no need to
+ * tell them apart here.
+ */
+function isNonWeaponProficiencySubtype(subType: string): boolean {
+  return (
+    subType in SKILL_ABILITY ||
+    subType.endsWith("-saving-throws") ||
+    TOOL_SUBTYPES.has(subType) ||
+    ARMOR_SUBTYPES.has(subType) ||
+    subType.startsWith("choose-")
+  );
+}
+
+export function computeWeaponProficiencies(mods: RawDdbModifier[]): string[] {
+  const names = mods
+    .filter((m) => m.type === "proficiency" && m.subType && !isNonWeaponProficiencySubtype(m.subType))
     .map((m) => m.friendlySubtypeName || titleCase(m.subType ?? ""));
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }

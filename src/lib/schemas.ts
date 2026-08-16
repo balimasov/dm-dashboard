@@ -308,6 +308,8 @@ export const characterUpdateSchema = z
     senses: z.array(senseSchema),
     languages: z.array(z.string()),
     toolProficiencies: z.array(z.string()),
+    armorProficiencies: z.array(z.string()),
+    weaponProficiencies: z.array(z.string()),
     inventory: z.array(inventoryItemSchema),
     currency: currencySchema,
     notes: z.string(),

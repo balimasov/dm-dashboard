@@ -21,7 +21,7 @@ import {
 import { computeAttacks } from "./ddbParser/attacks";
 import { computeAdvantages, computeDamageModifiers } from "./ddbParser/damage";
 import { computeCurrency, computeInventory } from "./ddbParser/inventory";
-import { computeLanguages, computeToolProficiencies } from "./ddbParser/proficiencies";
+import { computeArmorProficiencies, computeLanguages, computeToolProficiencies, computeWeaponProficiencies } from "./ddbParser/proficiencies";
 import { computeResources } from "./ddbParser/resources";
 import { computeFeatures } from "./ddbParser/features";
 import { computeSpellcastingStats, computeSpells, computeSpellSlots } from "./ddbParser/spells";
@@ -125,6 +125,8 @@ export function parseDdbCharacter(rawResponse: RawDdbResponse, existing: Charact
     senses,
     languages: computeLanguages(mods),
     toolProficiencies: computeToolProficiencies(mods),
+    armorProficiencies: computeArmorProficiencies(mods),
+    weaponProficiencies: computeWeaponProficiencies(mods),
     inventory: computeInventory(data),
     currency: computeCurrency(data),
     synced: true,

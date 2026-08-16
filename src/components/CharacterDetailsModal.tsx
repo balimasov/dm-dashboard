@@ -28,8 +28,8 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
-import { LanguageIcon, ToolIcon } from "./ui/icons";
-import { LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL } from "./ui/combatStatHints";
+import { LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
+import { ARMOR_HINT_PANEL, LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL, WEAPONS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
 import { Pill } from "./ui/Pill";
@@ -141,6 +141,15 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
   ]);
 }
 
+/** Adapts `CONTENT_KIND_ICON.weapons` (a real emoji glyph, not an SVG — the app's one deliberate exception to "always use the hand-drawn icon set") to the same `{ className }` signature every other `PillGroupEntry.icon` uses, so `PillGroupList` doesn't need a special case for it. */
+function WeaponIcon({ className }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center justify-center ${className ?? ""}`} aria-hidden>
+      {CONTENT_KIND_ICON.weapons}
+    </span>
+  );
+}
+
 interface PillGroupEntry {
   label: string;
   icon: (props: { className?: string }) => React.ReactElement;
@@ -152,7 +161,7 @@ interface PillGroupEntry {
  * Same "icon + label, hover-hint on the label" convention `IconInfoList`
  * uses for Resist/Immune/Vulnerable — same normal-case "Label:" text at the
  * same `text-sm` size, same single flowing line — but for Proficiencies
- * (Languages/Tools) the value
+ * (Armor/Weapons/Tools/Languages) the value
  * side is a row of `Pill` chips (the same chip Skills already uses below)
  * instead of one comma-separated sentence. Label and chips share one
  * `flex-wrap` line on purpose: the label leads the line the same way it
@@ -426,13 +435,18 @@ export function CharacterDetailsModal({
                     </SectionDivider>
                   )}
 
-                  {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
+                  {(c.armorProficiencies.length > 0 ||
+                    c.weaponProficiencies.length > 0 ||
+                    c.languages.length > 0 ||
+                    c.toolProficiencies.length > 0) && (
                     <SectionDivider compact>
                       <SubHeading>Proficiencies</SubHeading>
                       <PillGroupList
                         entries={[
-                          { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
+                          { label: "Armor", icon: ShieldIcon, items: c.armorProficiencies, panel: ARMOR_HINT_PANEL },
+                          { label: "Weapons", icon: WeaponIcon, items: c.weaponProficiencies, panel: WEAPONS_HINT_PANEL },
                           { label: "Tools", icon: ToolIcon, items: c.toolProficiencies, panel: TOOLS_HINT_PANEL },
+                          { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
                         ]}
                       />
                     </SectionDivider>

@@ -23,6 +23,8 @@ export const PROFICIENCY_HINT_PANEL = (
 );
 export const LANGUAGES_HINT_PANEL = <p>Languages — the languages you can speak, read, or understand.</p>;
 export const TOOLS_HINT_PANEL = <p>Tools — the tool, kit, or vehicle proficiencies you have.</p>;
+export const ARMOR_HINT_PANEL = <p>Armor — the armor categories you can wear without disadvantage on attack rolls.</p>;
+export const WEAPONS_HINT_PANEL = <p>Weapons — the weapon categories or specific weapons you&apos;re proficient with.</p>;
 
 export const CREATURE_AC_HINT_PANEL = <p>Armor Class — the number an attack roll must meet or beat to hit it.</p>;
 export const CREATURE_SPEED_HINT_PANEL = <p>Speed — how many feet it can move on its turn.</p>;

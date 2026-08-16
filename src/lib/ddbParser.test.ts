@@ -552,6 +552,22 @@ describe("languages and tool proficiencies — no isGranted filter, same reasoni
   });
 });
 
+describe("armor and weapon proficiencies", () => {
+  test("Fighter (Eldritch Knight 20) — the 4 armor categories and 2 weapon categories a Fighter gets, nothing else", () => {
+    const c = load("fighter-eldritch-knight-20");
+    expect(c.armorProficiencies).toEqual(["Heavy Armor", "Light Armor", "Medium Armor", "Shields"]);
+    expect(c.weaponProficiencies).toEqual(["Martial Weapons", "Simple Weapons"]);
+  });
+
+  test("Tarah (Rogue) — individual named weapons (Drow Weapon Training) alongside the standard Simple Weapons category, determined by exclusion rather than a hardcoded weapon list", () => {
+    const c = load("tarah-rogue");
+    expect(c.weaponProficiencies).toEqual(
+      expect.arrayContaining(["Simple Weapons", "Rapier", "Scimitar", "Shortsword", "Whip", "Crossbow, Hand"])
+    );
+    expect(c.armorProficiencies).toEqual(["Light Armor"]);
+  });
+});
+
 describe("inventory item type/weight/cost", () => {
   test("Durgin (Cleric) — Potion of Healing carries D&D Beyond's own subtype and weight, no invented cost when D&D Beyond has none on file", () => {
     const c = load("durgin-cleric");
@@ -600,5 +616,7 @@ describe("regression baseline — every fixture parses without throwing and has 
     expect(Array.isArray(c.vulnerabilities)).toBe(true);
     expect(Array.isArray(c.languages)).toBe(true);
     expect(Array.isArray(c.toolProficiencies)).toBe(true);
+    expect(Array.isArray(c.armorProficiencies)).toBe(true);
+    expect(Array.isArray(c.weaponProficiencies)).toBe(true);
   });
 });
