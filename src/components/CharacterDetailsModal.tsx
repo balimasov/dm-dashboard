@@ -28,7 +28,7 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
-import { AxeIcon, LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
+import { DaggerIcon, LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
 import { ARMOR_HINT_PANEL, LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL, WEAPONS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
@@ -435,7 +435,7 @@ export function CharacterDetailsModal({
                       <PillGroupList
                         entries={[
                           { label: "Armor", icon: ShieldIcon, items: c.armorProficiencies, panel: ARMOR_HINT_PANEL },
-                          { label: "Weapons", icon: AxeIcon, items: c.weaponProficiencies, panel: WEAPONS_HINT_PANEL },
+                          { label: "Weapons", icon: DaggerIcon, items: c.weaponProficiencies, panel: WEAPONS_HINT_PANEL },
                           { label: "Tools", icon: ToolIcon, items: c.toolProficiencies, panel: TOOLS_HINT_PANEL },
                           { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
                         ]}
