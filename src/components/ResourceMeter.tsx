@@ -166,14 +166,14 @@ function ResourceTrackerHint({
 /** The itemized Limited Use group (heading + one `ResourceMeter` row per resource, alphabetical) — shared by `ResourceTrackerHint`'s hover breakdown (compact card) and `ResourceTrackerBar`'s own `expanded` mode (details modal, always visible instead of behind a hover). `null` when there's nothing to list, same as every other resource block here. */
 export function LimitedUseList({
   resources,
-  showSpentPercent = false,
+  showRemainingPercent = false,
 }: {
   resources: Resource[];
-  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is gone" figure next to the heading, using the same danger-tier color the overall bar's own badge reacts to (`averageResourcePercent` is "% remaining"; the badge shows its complement, "% spent", since that's the framing that answers "is this running out"). The hover breakdown leaves it off — that panel already opens from a badge showing the blended overall percent, a second, differently-framed percent right next to it read as more confusing than useful at that smaller size. */
-  showSpentPercent?: boolean;
+  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is left" figure next to the heading, same "% remaining" framing (and the same danger-tier color) the overall bar's own badge already uses, just scoped to this one category instead of the blended total. The hover breakdown leaves it off — that panel already opens from a badge showing the blended overall percent, a second percent right next to it read as more confusing than useful at that smaller size. */
+  showRemainingPercent?: boolean;
 }) {
   if (resources.length === 0) return null;
-  const remainingPercent = showSpentPercent ? averageResourcePercent(resources) : null;
+  const remainingPercent = showRemainingPercent ? averageResourcePercent(resources) : null;
   return (
     <div className="space-y-1.5">
       <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
@@ -181,7 +181,7 @@ export function LimitedUseList({
         Limited Use
         {remainingPercent !== null && (
           <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
-            {100 - remainingPercent}%
+            {remainingPercent}%
           </span>
         )}
       </h4>
@@ -201,15 +201,15 @@ export function LimitedUseList({
 export function SpellSlotsList({
   spellSlots,
   pactSlots,
-  showSpentPercent = false,
+  showRemainingPercent = false,
 }: {
   spellSlots: SpellSlotLevel[];
   pactSlots?: boolean;
-  /** See `LimitedUseList`'s own doc comment — same "% spent" figure, `averageSpellSlotPercent`'s complement, same tier color. */
-  showSpentPercent?: boolean;
+  /** See `LimitedUseList`'s own doc comment — same "% remaining" figure, `averageSpellSlotPercent`, same tier color. */
+  showRemainingPercent?: boolean;
 }) {
   if (spellSlots.length === 0) return null;
-  const remainingPercent = showSpentPercent ? averageSpellSlotPercent(spellSlots) : null;
+  const remainingPercent = showRemainingPercent ? averageSpellSlotPercent(spellSlots) : null;
   return (
     <div>
       <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
@@ -217,7 +217,7 @@ export function SpellSlotsList({
         Spell Slots{pactSlots ? " (Pact)" : ""}
         {remainingPercent !== null && (
           <span className={`ml-auto normal-case tracking-normal tabular-nums font-bold ${tierTextClass(remainingPercent)}`}>
-            {100 - remainingPercent}%
+            {remainingPercent}%
           </span>
         )}
       </h4>
@@ -317,9 +317,9 @@ export function ResourceTrackerBar({
    * permanently visible. The bar/label/badge stay identical either way; only
    * the quick-glance "Limited Use X/Y, Spell Slots X/Y" totals row
    * disappears in this mode — it would just repeat what the itemized lists
-   * (each now carrying its own "% spent" heading) already show right below
-   * — and the whole thing stops being an `InfoTooltip` trigger, since there's
-   * no more hidden detail left to reveal on hover.
+   * (each now carrying its own "% remaining" heading) already show right
+   * below — and the whole thing stops being an `InfoTooltip` trigger, since
+   * there's no more hidden detail left to reveal on hover.
    */
   expanded?: boolean;
 }) {
@@ -366,12 +366,12 @@ export function ResourceTrackerBar({
         {barBlock}
         {resources.length > 0 && (
           <div className="mt-3">
-            <LimitedUseList resources={resources} showSpentPercent />
+            <LimitedUseList resources={resources} showRemainingPercent />
           </div>
         )}
         {spellSlots.length > 0 && (
           <div className="mt-3">
-            <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} showSpentPercent />
+            <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} showRemainingPercent />
           </div>
         )}
       </div>
@@ -410,8 +410,12 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
           resource.name
         )}
       </span>
+      {/* Dots/count before the SR/LR/M badge — reversed from `ChargeBadge`'s
+          own recipe (recovery badge first there) on purpose, only here and
+          in this row's own hover hint: this list is scanned top-to-bottom
+          for "how much is left," so the count leads; the recovery type is
+          the secondary, "oh and it's a short rest" detail after it. */}
       <span className="flex items-center gap-2 whitespace-nowrap">
-        <RecoveryBadge recovery={resource.recovery} />
         {showDots ? (
           <DotMeter current={resource.current} max={resource.max} />
         ) : (
@@ -419,6 +423,7 @@ export function ResourceMeter({ resource }: { resource: Resource }) {
             {resource.current}/{resource.max}
           </span>
         )}
+        <RecoveryBadge recovery={resource.recovery} />
       </span>
     </div>
   );

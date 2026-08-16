@@ -28,9 +28,20 @@ export type PillColor = "slate" | "sky" | "amber" | "orange" | "rose" | "violet"
  * skill pills' own Untrained state. Keep `box` pinned to `AbilityScoreBox`'s
  * literal classes, not a cross-reference, so a future edit to either one is
  * a deliberate choice instead of an accidental shared side effect.
+ *
+ * `slate` is its own literal recipe too, NOT `CHIP_TONE_CLASSES.neutral`
+ * (despite both being "the plain gray one") — that shared token is also
+ * `RecoveryBadge`'s "Custom" recovery tone, and a warmer tweak requested
+ * specifically for Untrained skills and Languages/Tools pills would have
+ * silently carried over to Custom-recovery badges too if it stayed a
+ * cross-reference. Same border/bg/text shape and alpha as `neutral`, just
+ * nudged a few points warmer (more red/less blue in each channel) so it
+ * doesn't read as flatly gray next to the app's warm-reskinned palette,
+ * while staying desaturated enough to still read as "no particular color"
+ * rather than becoming its own accent hue.
  */
 const COLOR_STYLES: Record<PillColor, { dim?: string; bold?: string }> = {
-  slate: { dim: CHIP_TONE_CLASSES.neutral },
+  slate: { dim: "border-[#736550] bg-[#362f24]/46 text-[#d6cebe]" },
   sky: { dim: CHIP_TONE_CLASSES.gold },
   amber: { dim: CHIP_TONE_CLASSES.amber, bold: "border-amber-400 bg-amber-500/15 text-amber-300" },
   orange: { dim: CHIP_TONE_CLASSES.orange, bold: "border-orange-400 bg-orange-500/15 text-orange-300" },

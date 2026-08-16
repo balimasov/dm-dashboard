@@ -428,6 +428,7 @@ export function CharacterDetailsModal({
 
                   {(c.languages.length > 0 || c.toolProficiencies.length > 0) && (
                     <SectionDivider compact>
+                      <SubHeading>Proficiencies</SubHeading>
                       <PillGroupList
                         entries={[
                           { label: "Languages", icon: LanguageIcon, items: c.languages, panel: LANGUAGES_HINT_PANEL },
