@@ -415,8 +415,8 @@ export function CharacterDetailsModal({
                                 {kind === "advantage" ? "▲" : "▼"}
                               </span>
                               <span>
-                                {/* `text-slate-200`, not the brighter `text-slate-100` every other emphasized value in this modal uses — full white read as too loud for a plain list entry with no number/stat attached to justify the extra pop. */}
-                                <b className="font-semibold text-slate-200">{subject}</b>
+                                {/* Same `text-slate-300` as the rest of the line, not a brighter shade — `font-semibold` alone already separates subject from restriction; a second, different-colored emphasis on top of that read as redundant. */}
+                                <b className="font-semibold">{subject}</b>
                                 {restriction && `: ${restriction}`}
                               </span>
                             </li>

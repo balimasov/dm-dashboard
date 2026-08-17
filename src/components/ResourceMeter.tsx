@@ -166,21 +166,22 @@ function ResourceTrackerHint({
 /** The itemized Limited Use group (heading + one `ResourceMeter` row per resource, alphabetical) — shared by `ResourceTrackerHint`'s hover breakdown (compact card) and `ResourceTrackerBar`'s own `expanded` mode (details modal, always visible instead of behind a hover). `null` when there's nothing to list, same as every other resource block here. */
 export function LimitedUseList({
   resources,
-  showRemainingPercent = false,
+  total,
 }: {
   resources: Resource[];
-  /** `ResourceTrackerBar`'s `expanded` mode passes `true` — a "how much of *this* category is left" figure next to the heading, same "% remaining" framing the overall bar's own badge already uses, just scoped to this one category instead of the blended total. Plain neutral text, not the bar badge's danger-tier color — that color already carries the "how worried should I be" signal once, on the one blended overall number; repeating it per category read as too many competing colors in one small block. The hover breakdown leaves the figure off entirely — that panel already opens from a badge showing the blended overall percent, a second percent right next to it read as more confusing than useful at that smaller size. */
-  showRemainingPercent?: boolean;
+  /** `ResourceTrackerBar`'s `expanded` mode passes the same `limitedUseTally` total its own quick-glance "Limited Use X/Y" row already computes — a concrete count of what's left, scoped to this one category, instead of the blended-total bar's own "% remaining" framing repeated at a smaller scale. Rendered as a small pill rather than plain text so it reads as a value, not a second heading — the hover breakdown leaves it off entirely, same as before, since that panel already opens from a badge showing the blended overall percent. */
+  total?: { current: number; max: number };
 }) {
   if (resources.length === 0) return null;
-  const remainingPercent = showRemainingPercent ? averageResourcePercent(resources) : null;
   return (
     <div className="space-y-1.5">
       <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
         <ColorDot className="bg-blue-400" />
         Limited Use
-        {remainingPercent !== null && (
-          <span className="ml-auto normal-case tracking-normal tabular-nums font-bold text-slate-100">{remainingPercent}%</span>
+        {total && (
+          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case tracking-normal tabular-nums font-bold text-slate-100">
+            {total.current}/{total.max}
+          </span>
         )}
       </h4>
       <div className="space-y-1.5">
@@ -199,22 +200,23 @@ export function LimitedUseList({
 export function SpellSlotsList({
   spellSlots,
   pactSlots,
-  showRemainingPercent = false,
+  total,
 }: {
   spellSlots: SpellSlotLevel[];
   pactSlots?: boolean;
-  /** See `LimitedUseList`'s own doc comment — same "% remaining" figure, `averageSpellSlotPercent`, same plain neutral text color. */
-  showRemainingPercent?: boolean;
+  /** See `LimitedUseList`'s own doc comment — same X/Y pill, summed across every tracked slot level. */
+  total?: { current: number; max: number };
 }) {
   if (spellSlots.length === 0) return null;
-  const remainingPercent = showRemainingPercent ? averageSpellSlotPercent(spellSlots) : null;
   return (
     <div>
       <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
         <ColorDot className="bg-violet-400" />
         Spell Slots{pactSlots ? " (Pact)" : ""}
-        {remainingPercent !== null && (
-          <span className="ml-auto normal-case tracking-normal tabular-nums font-bold text-slate-100">{remainingPercent}%</span>
+        {total && (
+          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case tracking-normal tabular-nums font-bold text-slate-100">
+            {total.current}/{total.max}
+          </span>
         )}
       </h4>
       <div className="space-y-1">
@@ -362,12 +364,16 @@ export function ResourceTrackerBar({
         {barBlock}
         {resources.length > 0 && (
           <div className="mt-3">
-            <LimitedUseList resources={resources} showRemainingPercent />
+            <LimitedUseList resources={resources} total={resourcesMax > 0 ? { current: resourcesCurrent, max: resourcesMax } : undefined} />
           </div>
         )}
         {spellSlots.length > 0 && (
           <div className="mt-3">
-            <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} showRemainingPercent />
+            <SpellSlotsList
+              spellSlots={spellSlots}
+              pactSlots={pactSlots}
+              total={spellSlotsMax > 0 ? { current: spellSlotsCurrent, max: spellSlotsMax } : undefined}
+            />
           </div>
         )}
       </div>
