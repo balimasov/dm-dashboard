@@ -103,6 +103,8 @@ function ResourceTrackerHint({
   resources,
   spellSlots,
   pactSlots,
+  resourcesTotal,
+  spellSlotsTotal,
 }: {
   overallPercent: number;
   resourcesPercent: number | null;
@@ -110,6 +112,9 @@ function ResourceTrackerHint({
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
   pactSlots?: boolean;
+  /** Same X/Y tally `ResourceTrackerBar`'s `expanded` mode passes its own itemized lists — kept identical here so the same pill reads the same in both places, not a second, differently-styled figure. */
+  resourcesTotal?: { current: number; max: number };
+  spellSlotsTotal?: { current: number; max: number };
 }) {
   return (
     // `w-64` (256px) — was `w-[272px]` (matching `CharacterCard`'s own
@@ -150,13 +155,13 @@ function ResourceTrackerHint({
 
       {resources.length > 0 && (
         <div className="mt-2 border-t border-slate-800 pt-2">
-          <LimitedUseList resources={resources} />
+          <LimitedUseList resources={resources} total={resourcesTotal} />
         </div>
       )}
 
       {spellSlots.length > 0 && (
         <div className="mt-2 border-t border-slate-800 pt-2">
-          <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} />
+          <SpellSlotsList spellSlots={spellSlots} pactSlots={pactSlots} total={spellSlotsTotal} />
         </div>
       )}
     </div>
@@ -179,7 +184,7 @@ export function LimitedUseList({
         <ColorDot className="bg-blue-400" />
         Limited Use
         {total && (
-          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case tracking-normal tabular-nums font-bold text-slate-100">
+          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case leading-none tracking-normal tabular-nums font-bold text-slate-100">
             {total.current}/{total.max}
           </span>
         )}
@@ -214,7 +219,7 @@ export function SpellSlotsList({
         <ColorDot className="bg-violet-400" />
         Spell Slots{pactSlots ? " (Pact)" : ""}
         {total && (
-          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case tracking-normal tabular-nums font-bold text-slate-100">
+          <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-[11px] normal-case leading-none tracking-normal tabular-nums font-bold text-slate-100">
             {total.current}/{total.max}
           </span>
         )}
@@ -392,6 +397,8 @@ export function ResourceTrackerBar({
           resources={resources}
           spellSlots={spellSlots}
           pactSlots={pactSlots}
+          resourcesTotal={resourcesMax > 0 ? { current: resourcesCurrent, max: resourcesMax } : undefined}
+          spellSlotsTotal={spellSlotsMax > 0 ? { current: spellSlotsCurrent, max: spellSlotsMax } : undefined}
         />
       }
     >
