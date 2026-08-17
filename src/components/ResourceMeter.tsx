@@ -175,7 +175,7 @@ export function LimitedUseList({
   if (resources.length === 0) return null;
   return (
     <div className="space-y-1.5">
-      <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
+      <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-500">
         <ColorDot className="bg-blue-400" />
         Limited Use
         {total && (
@@ -210,7 +210,7 @@ export function SpellSlotsList({
   if (spellSlots.length === 0) return null;
   return (
     <div>
-      <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-600">
+      <h4 className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-500">
         <ColorDot className="bg-violet-400" />
         Spell Slots{pactSlots ? " (Pact)" : ""}
         {total && (
