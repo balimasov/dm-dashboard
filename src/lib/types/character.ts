@@ -149,6 +149,19 @@ export interface Feature {
    * miss as "no parent to link to" rather than guessing a substitute.
    */
   parentFeatureName?: string;
+  /**
+   * TEMPORARY diagnostic flag, added 2026-08-18 — true only on a feature
+   * pushed despite an exact name collision with an already-added action
+   * (`ddbParser/features.ts`'s `add()`, `allowDuplicateName`), e.g. the
+   * classFeature "Action Surge" that would normally be silently dropped
+   * because the action "Action Surge" already claimed that name. Lets the
+   * "Other" bucket and the Action-type groups be compared side by side for
+   * this pattern before deciding whether to keep collapsing it into one
+   * entry (today's behavior) or start treating it like "Maneuver Options"/
+   * its maneuvers, which survive as two entries because their names
+   * differ. Remove this field once that decision is made.
+   */
+  isTestDuplicate?: boolean;
 }
 
 export interface SpellcastingStats {

@@ -79,6 +79,16 @@ export function computeFeatures(
   // wins over the generic "other" one describing the same thing).
   const seenDescriptions = new Set<string>();
 
+  // TEMPORARY diagnostic, added 2026-08-18 — names claimed specifically by
+  // an `actions.*` entry (the first loop below), so the later racialTraits/
+  // classFeatures/feats loops can tell "this name is taken by an action"
+  // (the "Action Surge" classFeature vs. the "Action Surge" action pattern
+  // the test duplicate below targets) apart from "this name is taken by
+  // some other classFeature/racialTrait/feat" (an unrelated collision that
+  // should keep silently deduping exactly as it always has). Remove
+  // alongside `isTestDuplicate` once a decision is made.
+  const actionDedupeKeys = new Set<string>();
+
   // Lets an `options.*`/`actions.*` entry (see below) report the *specific*
   // feature that granted the choice — e.g. "Maneuvers" or "Metamagic
   // Options" — instead of just the broad group it came from, and inherit
@@ -186,6 +196,8 @@ export function computeFeatures(
       scaleValue?: number | string;
       /** Same `parentInfo?.name` `source` above was built from — kept identical on purpose, see `Feature.parentFeatureName`'s own doc comment. Omitted by the racialTraits/classFeatures/feats/background loops below, which *are* the parents, not a child of one. */
       parentFeatureName?: string;
+      /** Set only by the `actions.*` loop below, so `actionDedupeKeys` can record which names came from an action specifically (see that set's own doc comment). */
+      isAction?: boolean;
     }
   ) {
     const trimmedName = (name || "").trim();
@@ -196,8 +208,20 @@ export function computeFeatures(
     // for the resource cross-reference below, where that's the point (e.g.
     // matching the classFeature "Rage" against the action "Rage (Enter)").
     const dedupeKey = trimmedName.toLowerCase();
-    if (!dedupeKey || seen.has(dedupeKey)) return;
-    seen.add(dedupeKey);
+    if (!dedupeKey) return;
+    const isNameCollision = seen.has(dedupeKey);
+    // TEMPORARY diagnostic, added 2026-08-18 — only a collision against a
+    // name specifically claimed by an action (not against some other
+    // classFeature/racialTrait/feat, which keeps silently deduping as
+    // before) is let through, marked `isTestDuplicate: true`, instead of
+    // being dropped — see `actionDedupeKeys`'s own doc comment. Remove
+    // alongside that set once a decision is made.
+    const isTestDuplicate = isNameCollision && !extra?.isAction && actionDedupeKeys.has(dedupeKey);
+    if (isNameCollision && !isTestDuplicate) return;
+    if (!isNameCollision) {
+      seen.add(dedupeKey);
+      if (extra?.isAction) actionDedupeKeys.add(dedupeKey);
+    }
 
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === normalizeFeatureName(trimmedName));
     const charges = explicitCharges ?? matchedResource;
@@ -207,7 +231,12 @@ export function computeFeatures(
         ).trim()
       : undefined;
 
-    if (description) {
+    // Skipped for the forced test duplicate — its whole point is to
+    // surface even when the text is a near-identical paraphrase of the
+    // action's own description (true for "Action Surge"/"Tactical Mind",
+    // confirmed on real exports; "Second Wind" happens to differ enough in
+    // wording that this check would have let it through anyway).
+    if (description && !isTestDuplicate) {
       if (seenDescriptions.has(description)) return;
       seenDescriptions.add(description);
     }
@@ -230,6 +259,7 @@ export function computeFeatures(
       ...(description ? { description } : {}),
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
       ...(parentFeatureName ? { parentFeatureName } : {}),
+      ...(isTestDuplicate ? { isTestDuplicate: true } : {}),
     });
   }
 
@@ -274,7 +304,7 @@ export function computeFeatures(
         activationGroup(action.activation?.activationType),
         originType,
         charges,
-        { dice: action.dice, scaleValue: levelScaleById.get(action.componentId), parentFeatureName: parentInfo?.name }
+        { dice: action.dice, scaleValue: levelScaleById.get(action.componentId), parentFeatureName: parentInfo?.name, isAction: true }
       );
     }
   }
