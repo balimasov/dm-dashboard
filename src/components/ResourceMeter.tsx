@@ -47,20 +47,6 @@ export function DotMeter({
   );
 }
 
-/** Mean of each resource's own `current/max` — same "every pool is one equal vote" averaging as the party-wide gauge, just scoped to one character's own resources. `null` when none of them carry a `max` to divide by (nothing to show a bar for). */
-export function averageResourcePercent(resources: Resource[]): number | null {
-  const percentages = resources.filter((r) => r.max > 0).map((r) => (r.current / r.max) * 100);
-  if (percentages.length === 0) return null;
-  return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
-}
-
-/** Same averaging as `averageResourcePercent`, one vote per spell slot level — mirrors how the party-wide gauge treats spell slots. */
-export function averageSpellSlotPercent(spellSlots: SpellSlotLevel[]): number | null {
-  const percentages = spellSlots.filter((s) => s.max > 0).map((s) => (s.current / s.max) * 100);
-  if (percentages.length === 0) return null;
-  return Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
-}
-
 /** Mean of every individual pool's own `current/max` across *both* abilities and spell slots at once — one flat list of equally-weighted votes (a Rage charge and a 3rd-level slot don't compare on their own terms, but each still counts as "one pool, topped-up or not" the same as the party-wide gauge treats them). `null` when there's nothing with a `max` to divide by on either side. */
 export function averageOverallPercent(resources: Resource[], spellSlots: SpellSlotLevel[]): number | null {
   const percentages = [
@@ -73,33 +59,32 @@ export function averageOverallPercent(resources: Resource[], spellSlots: SpellSl
 
 /**
  * The hover/tap hint for `ResourceTrackerBar` — the bar itself shows only the
- * one blended number, so this is the one place to see it split back out by
- * Limited Use vs. Spell Slots, followed by the full itemized list of both
- * (previously rendered permanently below the bar on `CharacterCard`, which is
- * exactly what made that card too tall to fit a screen without scrolling —
- * moving it in here keeps every bit of detail one hover/tap away instead of
- * always paying its full height up front). Plain `InfoTooltip` content, not a
- * hand-rolled popover — `InfoTooltip` already does hover-to-preview,
- * click-to-pin-open, and outside-click/Escape-to-close on its own, the same
- * as every other hint in this app; building a second, parallel "click to
- * open a floating panel" mechanism next to it would just be the same feature
- * twice.
+ * one blended number, so this is the one place to see the full itemized list
+ * of both Limited Use and Spell Slots (previously rendered permanently below
+ * the bar on `CharacterCard`, which is exactly what made that card too tall
+ * to fit a screen without scrolling — moving it in here keeps every bit of
+ * detail one hover/tap away instead of always paying its full height up
+ * front). Plain `InfoTooltip` content, not a hand-rolled popover —
+ * `InfoTooltip` already does hover-to-preview, click-to-pin-open, and
+ * outside-click/Escape-to-close on its own, the same as every other hint in
+ * this app; building a second, parallel "click to open a floating panel"
+ * mechanism next to it would just be the same feature twice.
  *
- * Two different color systems meet here, deliberately: Overall uses the same
- * danger-tier color as the bar (green/amber/red — "how worried should I be"),
- * while Limited Use/Spell Slots use each pool type's fixed identity color
- * (blue/violet, matching the dots on `DotMeter` everywhere else in the app —
- * not `sky`, which this app's theme reskins to a warm brass tone that would
- * blend right into the amber tier color it needs to stay distinct from)
- * regardless of how full they are — tinting Limited Use amber at low-tier
- * would collide with the identity color a low-percent dot already reads as
- * elsewhere, so the item-type color stays constant and only the *bar* carries
- * the tier signal.
+ * The "Resources" heading up top uses the exact same `h4` recipe as the
+ * "Limited Use"/"Spell Slots" headings below it (`LimitedUseList`/
+ * `SpellSlotsList`'s own `text-[11px] uppercase tracking-wide text-slate-500`)
+ * — all three now read as one consistent row of section headings instead of
+ * a differently-styled percent breakdown sitting on top of them. Only the
+ * trailing badge differs by design: "Resources" carries the blended
+ * danger-tier color (`tierBadgeClass`/`tierBgClass` — green/amber/red, "how
+ * worried should I be", matching the bar and the badge on the card itself),
+ * while "Limited Use"/"Spell Slots" keep their fixed blue/violet identity
+ * color regardless of how full they are and show an X/Y count instead of a
+ * percent — the same split the card's own quick-glance row and this hint
+ * already agreed on for those two.
  */
 function ResourceTrackerHint({
   overallPercent,
-  resourcesPercent,
-  spellSlotsPercent,
   resources,
   spellSlots,
   pactSlots,
@@ -107,8 +92,6 @@ function ResourceTrackerHint({
   spellSlotsTotal,
 }: {
   overallPercent: number;
-  resourcesPercent: number | null;
-  spellSlotsPercent: number | null;
   resources: Resource[];
   spellSlots: SpellSlotLevel[];
   pactSlots?: boolean;
@@ -130,28 +113,16 @@ function ResourceTrackerHint({
     // narrower than the block this hint explains — 256px keeps almost all
     // of that width back.
     <div className="w-64">
-      <div className="space-y-1.5">
-        <p className="text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
-        <div className="flex items-center gap-1.5">
-          <ColorDot className={tierBgClass(overallPercent)} />
-          <span>Overall</span>
-          <span className="ml-auto font-semibold text-white tabular-nums">{overallPercent}%</span>
-        </div>
-        {resourcesPercent !== null && (
-          <div className="flex items-center gap-1.5">
-            <ColorDot className="bg-blue-400" />
-            <span>Limited Use</span>
-            <span className="ml-auto font-semibold text-white tabular-nums">{resourcesPercent}%</span>
-          </div>
-        )}
-        {spellSlotsPercent !== null && (
-          <div className="flex items-center gap-1.5">
-            <ColorDot className="bg-violet-400" />
-            <span>Spell Slots</span>
-            <span className="ml-auto font-semibold text-white tabular-nums">{spellSlotsPercent}%</span>
-          </div>
-        )}
-      </div>
+      <p className="mb-1.5 text-slate-400">Average % remaining — abilities and spell slots weighted equally.</p>
+      <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-500">
+        <ColorDot className={tierBgClass(overallPercent)} />
+        Resources
+        <span
+          className={`ml-auto rounded-full px-2 py-0.5 text-[11px] normal-case leading-none tracking-normal tabular-nums font-bold ${tierBadgeClass(overallPercent)}`}
+        >
+          {overallPercent}%
+        </span>
+      </h4>
 
       {resources.length > 0 && (
         <div className="mt-2 border-t border-slate-800 pt-2">
@@ -280,7 +251,7 @@ export function SpellSlotsList({
  */
 /**
  * The "Limited Use X/Y" quick-glance total below the bar — unlike
- * `averageResourcePercent`'s ratio-based voting (already fair regardless of
+ * `averageOverallPercent`'s ratio-based voting (already fair regardless of
  * pool size), a raw sum of `current`/`max` across resources lets one big
  * variable-cost pool's absolute size swamp everything else: Lay on Hands'
  * ~5-per-level HP pool next to a 2-charge Rage would show as e.g. "16/27",
@@ -328,8 +299,6 @@ export function ResourceTrackerBar({
 }) {
   const overallPercent = averageOverallPercent(resources, spellSlots);
   if (overallPercent === null) return null;
-  const resourcesPercent = averageResourcePercent(resources);
-  const spellSlotsPercent = averageSpellSlotPercent(spellSlots);
 
   const { current: resourcesCurrent, max: resourcesMax } = limitedUseTally(resources);
   const spellSlotsCurrent = spellSlots.reduce((sum, s) => sum + s.current, 0);
@@ -392,8 +361,6 @@ export function ResourceTrackerBar({
       panel={
         <ResourceTrackerHint
           overallPercent={overallPercent}
-          resourcesPercent={resourcesPercent}
-          spellSlotsPercent={spellSlotsPercent}
           resources={resources}
           spellSlots={spellSlots}
           pactSlots={pactSlots}
