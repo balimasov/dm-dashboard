@@ -234,6 +234,7 @@ function FeatureRow({
   parentFeature,
   onJumpToFeature,
   hideCharge,
+  dupMarker,
 }: {
   feature: Feature;
   flagged: boolean;
@@ -257,6 +258,8 @@ function FeatureRow({
    * borrowed.
    */
   hideCharge?: boolean;
+  /** TEMPORARY, for [1.125.2]'s reverted suppression under review — flags a row that also renders nested under its parent elsewhere in this same "Other" bucket, so it's visible on real data rather than silently hidden. Remove alongside that revert once a decision is made. */
+  dupMarker?: boolean;
 }) {
   return (
     <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} id={anchorId} highlighted={highlighted}>
@@ -296,6 +299,11 @@ function FeatureRow({
           {feature.name}
         </InfoTooltip>
         {feature.max !== undefined && !hideCharge && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
+        {dupMarker && (
+          <span className="rounded-full border border-dashed border-amber-500/60 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-amber-400">
+            dup
+          </span>
+        )}
       </span>
     </FlaggableRow>
   );
@@ -631,24 +639,14 @@ export function CharacterDetailsModal({
                       key={group}
                       className={`space-y-3 ${index > 0 ? "border-t border-slate-800 pt-3" : ""}`}
                     >
-                      {/* A child rendered here also lives somewhere else in
-                          this very "other" bucket, nested under its own
-                          parent — see the `parentByChildId` filter below —
-                          since a resolvable `parentFeatureName` only ever
-                          points at a classFeature/racialTrait/feat, and
-                          those are always `group: "other"` themselves.
-                          Excluded from its own standalone row here so it
-                          doesn't show twice within this one bucket (e.g.
-                          "Drow Lineage" under "Elven Lineage" in Species
-                          Traits, or "Increase two scores" under "Savage
-                          Attacker" in Feat Features even though its own
-                          origin is Background). This is deliberately
-                          narrower than the top-level Action/Bonus Action/
-                          Reaction/Special groups above, which keep every
-                          child in full — those exist specifically as
-                          complete action-economy lookups, so nothing is
-                          filtered out of them. */}
-                      {groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).map(([origin, originFeatures]) => (
+                      {/* TEMPORARY, for review — [1.125.2]'s suppression of a
+                          child's own standalone row here (it also renders
+                          nested under its parent, a few lines below) is
+                          reverted for now: every feature in this bucket
+                          shows, and a child instead gets a small "dup" tag
+                          so it's visible on real data before deciding
+                          whether to bring the suppression back. */}
+                      {groupFeaturesByOrigin(features).map(([origin, originFeatures]) => (
                         <div key={origin} className="space-y-1">
                           <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
                           {originFeatures.map((feature) => {
@@ -662,6 +660,7 @@ export function CharacterDetailsModal({
                                   anchorId={`feature-row-${feature.id}`}
                                   highlighted={highlightedFeatureId === feature.id}
                                   hideCharge={Boolean(children)}
+                                  dupMarker={parentByChildId.has(feature.id)}
                                 />
                                 {children && (
                                   // Same concretizations already listed in full

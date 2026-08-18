@@ -472,10 +472,15 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
     expect(c.features.find((f) => f.name === "Sorcerous Restoration")?.source).toBe("Class");
   });
 
-  test("a chosen option under a racial lineage reads 'Species (Elven Lineage)'/'Species (Elven Lineage Spells)'", () => {
+  test("a chosen option under a racial lineage reads 'Species (Elven Lineage)'; one whose real parent D&D Beyond itself hides doesn't survive at all", () => {
     const c = load("yorun-all-immunities");
     expect(c.features.find((f) => f.name === "High Elf Lineage")?.source).toBe("Species (Elven Lineage)");
-    expect(c.features.find((f) => f.name === "High Elf - Intelligence")?.source).toBe("Species (Elven Lineage Spells)");
+    // "High Elf - Intelligence"'s real componentId parent is "Elven Lineage
+    // Spells" — a racialTrait D&D Beyond itself flags `hideOnDetailsPage`
+    // (never meant to be seen), so this option is filtered right alongside
+    // it rather than surviving as an orphan with a parent link nothing can
+    // resolve (see `hiddenParentIds` in ddbParser/features.ts).
+    expect(c.features.find((f) => f.name === "High Elf - Intelligence")).toBeUndefined();
   });
 
   test("a feat-granted option reads 'Feat (Skilled)'", () => {

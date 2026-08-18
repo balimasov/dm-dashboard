@@ -93,6 +93,26 @@ export function computeFeatures(
   // its own bonus-spell sources, instead of a second parallel implementation.
   const parentInfoById = buildComponentSourceIndex(data);
 
+  // Racial traits D&D Beyond itself flags `hideOnDetailsPage`/`hideInSheet`
+  // (e.g. "Elven Lineage Spells" — boilerplate the real sheet never shows,
+  // confirmed on a real Elf export) never get their own `add()` call below,
+  // so `parentInfoById` still resolves their id to a name, but nothing in
+  // `features` ever has that name. Without this, an action/option whose
+  // `componentId` points at one of these (e.g. "Drow Lineage -
+  // Intelligence") survives as an orphan with a `parentFeatureName` no row
+  // will ever match — same broken-link shape as a de-duped-away parent
+  // (see `Feature.parentFeatureName`'s own doc comment), except this one is
+  // fully avoidable: D&D Beyond already told us up front this trait was
+  // never meant to be seen, so anything that only exists to detail it
+  // shouldn't be either. Collected before the actions loop below (which
+  // runs first) rather than inline in the racialTraits loop further down,
+  // since something needs this before that loop has run.
+  const hiddenParentIds = new Set<number>();
+  for (const trait of data.race?.racialTraits ?? []) {
+    const df = trait.definition ?? {};
+    if ((df.hideOnDetailsPage || df.hideInSheet) && df.id != null) hiddenParentIds.add(df.id);
+  }
+
   // "race"/"class"/"feat" here is D&D Beyond's own data grouping, not the
   // renamed 2024 terminology — the fallback `originType` for an action/option
   // whose `componentId` doesn't resolve via `parentInfoById` above.
@@ -226,6 +246,7 @@ export function computeFeatures(
   for (const group of ["race", "class", "feat"] as const) {
     for (const action of data.actions?.[group] ?? []) {
       if (!action.name) continue;
+      if (action.componentId != null && hiddenParentIds.has(action.componentId)) continue;
       const parentInfo = parentInfoById.get(action.componentId);
       // D&D Beyond injects "Initiate a Circle Spell" and its six "Circle
       // Spell: Augment/Distribute/Expand/Prolong/Safeguard/Supplant"
@@ -320,6 +341,7 @@ export function computeFeatures(
   ];
   for (const [group, fallbackSource] of optionGroups) {
     for (const opt of data.options?.[group] ?? []) {
+      if (opt.componentId != null && hiddenParentIds.has(opt.componentId)) continue;
       const df = opt.definition ?? {};
       const parentInfo = parentInfoById.get(opt.componentId);
       const source = formatSource(fallbackSource, parentInfo?.name, df.name);
