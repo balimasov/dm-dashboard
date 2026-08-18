@@ -617,7 +617,24 @@ export function CharacterDetailsModal({
                       key={group}
                       className={`space-y-3 ${index > 0 ? "border-t border-slate-800 pt-3" : ""}`}
                     >
-                      {groupFeaturesByOrigin(features).map(([origin, originFeatures]) => (
+                      {/* A child rendered here also lives somewhere else in
+                          this very "other" bucket, nested under its own
+                          parent — see the `parentByChildId` filter below —
+                          since a resolvable `parentFeatureName` only ever
+                          points at a classFeature/racialTrait/feat, and
+                          those are always `group: "other"` themselves.
+                          Excluded from its own standalone row here so it
+                          doesn't show twice within this one bucket (e.g.
+                          "Drow Lineage" under "Elven Lineage" in Species
+                          Traits, or "Increase two scores" under "Savage
+                          Attacker" in Feat Features even though its own
+                          origin is Background). This is deliberately
+                          narrower than the top-level Action/Bonus Action/
+                          Reaction/Special groups above, which keep every
+                          child in full — those exist specifically as
+                          complete action-economy lookups, so nothing is
+                          filtered out of them. */}
+                      {groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).map(([origin, originFeatures]) => (
                         <div key={origin} className="space-y-1">
                           <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
                           {originFeatures.map((feature) => {
@@ -630,14 +647,6 @@ export function CharacterDetailsModal({
                                   onToggleFlag={() => toggleFlag(feature.name)}
                                   anchorId={`feature-row-${feature.id}`}
                                   highlighted={highlightedFeatureId === feature.id}
-                                  // A feature landing in this "Other" bucket can
-                                  // itself be a child (e.g. an `options.*` pick
-                                  // whose own description didn't exactly match
-                                  // its `actions.*` counterpart, so it survived
-                                  // de-dupe here instead) — same link as every
-                                  // child gets in the groups below.
-                                  parentFeature={parentByChildId.get(feature.id)}
-                                  onJumpToFeature={jumpToFeature}
                                 />
                                 {children && (
                                   // Same concretizations already listed in full
