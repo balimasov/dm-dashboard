@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Feature, RECOVERY_LABELS, RECOVERY_SHORT_LABELS, RecoveryType, Resource } from "@/lib/types";
 import { AbilityHintPanel } from "./AbilityHintPanel";
 import { CHIP_TONE_CLASSES, ChipTone } from "./chipTones";
@@ -84,7 +85,16 @@ export function recoveryStatusLine(recovery: RecoveryType, current?: number, max
  * shows nothing when it has no description, but a reminder wants an explicit
  * "No description." rather than a suspiciously empty hint.
  */
-export function FeatureHintPanel({ feature, emptyDescription }: { feature: Feature; emptyDescription?: string }) {
+export function FeatureHintPanel({
+  feature,
+  emptyDescription,
+  footer,
+}: {
+  feature: Feature;
+  emptyDescription?: string;
+  /** A "Full feature: X" back-reference for a feature that's a named concretization of a broader parent shown elsewhere in the same list (e.g. "Font of Magic: Sorcery Points" -> "Font of Magic") — see `CharacterDetailsModal.tsx`'s `buildFeatureLinks`, the only current caller that passes this. */
+  footer?: ReactNode;
+}) {
   return (
     <AbilityHintPanel
       name={feature.name}
@@ -92,6 +102,7 @@ export function FeatureHintPanel({ feature, emptyDescription }: { feature: Featu
       status={feature.max !== undefined && recoveryStatusLine(feature.recovery!, feature.current, feature.max)}
       description={feature.description}
       emptyDescription={emptyDescription}
+      footer={footer}
     />
   );
 }

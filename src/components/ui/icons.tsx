@@ -98,6 +98,15 @@ export function DownloadIcon({ className }: { className?: string }) {
   );
 }
 
+/** A plain arrow, no tray — "jump to" in-page navigation (e.g. a linked feature's hover-hint scrolling to its parent's row), distinct from `DownloadIcon`'s arrow-into-tray shape which implies saving a file. */
+export function ArrowDownIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="M12 4v14m0 0l-5-5m5 5l5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Same arrow-plus-tray shape as `DownloadIcon` above, flipped upward — kept as its own icon rather than a `rotate-180` on `DownloadIcon`, since a straight rotation would also flip the tray, which needs to stay the same side up in both directions. */
 export function UploadIcon({ className }: { className?: string }) {
   return (

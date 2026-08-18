@@ -60,15 +60,24 @@ export function FlaggableRow({
   onToggleFlag,
   children,
   trailing,
+  id,
+  highlighted,
 }: {
   flagged: boolean;
   onToggleFlag: () => void;
   children: React.ReactNode;
   trailing?: React.ReactNode;
+  /** DOM anchor for a same-page "jump to this row" link elsewhere — e.g. a linked feature's hover-hint scrolling back to its parent's row (see `CharacterDetailsModal.tsx`'s `buildFeatureLinks`/`jumpToFeature`). Omitted everywhere else. */
+  id?: string;
+  /** Brief flash right after such a jump lands here — a one-shot transition, not the same signal as `flagged`'s persistent amber tint (unrelated: a row can be flagged and briefly highlighted at once). */
+  highlighted?: boolean;
 }) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded px-1.5 py-0.5 -mx-1.5 text-sm ${flagged ? "bg-amber-500/10" : ""}`}
+      id={id}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded px-1.5 py-0.5 -mx-1.5 text-sm transition-colors duration-1000 ${
+        flagged ? "bg-amber-500/10" : highlighted ? "bg-slate-700/50" : ""
+      }`}
     >
       <FlameToggle active={flagged} onToggle={onToggleFlag} />
       <span
