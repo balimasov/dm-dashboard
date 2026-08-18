@@ -234,7 +234,6 @@ function FeatureRow({
   parentFeature,
   onJumpToFeature,
   hideCharge,
-  dupMarker,
 }: {
   feature: Feature;
   flagged: boolean;
@@ -258,17 +257,6 @@ function FeatureRow({
    * borrowed.
    */
   hideCharge?: boolean;
-  /**
-   * TEMPORARY diagnostic, driven by `feature.isTestDuplicate` — flags a
-   * classFeature/racialTrait/feat pushed despite sharing its exact name
-   * with an already-shown action (e.g. "Action Surge" the classFeature,
-   * normally dropped as a duplicate of "Action Surge" the action), so the
-   * "Other" bucket and the Action-type groups can be compared side by side
-   * for this pattern before deciding whether to keep collapsing it into
-   * one entry or start treating it like "Maneuver Options". Remove once
-   * that's decided.
-   */
-  dupMarker?: boolean;
 }) {
   return (
     <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} id={anchorId} highlighted={highlighted}>
@@ -308,11 +296,6 @@ function FeatureRow({
           {feature.name}
         </InfoTooltip>
         {feature.max !== undefined && !hideCharge && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
-        {dupMarker && (
-          <span className="rounded-full border border-dashed border-amber-500/60 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-amber-400">
-            dup
-          </span>
-        )}
       </span>
     </FlaggableRow>
   );
@@ -646,7 +629,7 @@ export function CharacterDetailsModal({
                     // Reaction/Special entries has nothing above to separate from.
                     <div
                       key={group}
-                      className={`space-y-3 ${index > 0 ? "border-t border-slate-800 pt-3" : ""}`}
+                      className={`space-y-3 ${index > 0 ? "border-t-2 border-slate-600 pt-4" : ""}`}
                     >
                       {/* A child rendered here also lives somewhere else in
                           this very "other" bucket, nested under its own
@@ -679,7 +662,6 @@ export function CharacterDetailsModal({
                                   anchorId={`feature-row-${feature.id}`}
                                   highlighted={highlightedFeatureId === feature.id}
                                   hideCharge={Boolean(children)}
-                                  dupMarker={feature.isTestDuplicate}
                                 />
                                 {children && (
                                   // Same concretizations already listed in full
