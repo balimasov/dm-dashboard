@@ -233,6 +233,7 @@ function FeatureRow({
   highlighted,
   parentFeature,
   onJumpToFeature,
+  hideCharge,
 }: {
   feature: Feature;
   flagged: boolean;
@@ -243,6 +244,19 @@ function FeatureRow({
   /** Set when this feature is a concretization of a broader parent shown elsewhere (see `buildFeatureLinks`) — adds a "Full feature: X" link to this row's own hover hint. Never set on the nested copy rendered right under that same parent — it's already right there. */
   parentFeature?: Feature;
   onJumpToFeature?: (id: string) => void;
+  /**
+   * Set on a parent's own row when it has nested children — `ddbParser`
+   * only ever gives a classFeature/racialTrait/feat a `ChargeBadge` by
+   * borrowing it from whichever child action shares its `componentId`
+   * (`actionChargesById` in `ddbParser/features.ts`; the same graph
+   * `parentFeatureName` walks), so a parent that has children is
+   * guaranteed to be showing the exact same charge count one of them
+   * already carries, one row below. Suppressed only here, not on the
+   * child's own copies (Action/Bonus Action/Special, or the nested one) —
+   * those still need it, it's the one place the count is real rather than
+   * borrowed.
+   */
+  hideCharge?: boolean;
 }) {
   return (
     <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} id={anchorId} highlighted={highlighted}>
@@ -281,7 +295,7 @@ function FeatureRow({
         >
           {feature.name}
         </InfoTooltip>
-        {feature.max !== undefined && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
+        {feature.max !== undefined && !hideCharge && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
       </span>
     </FlaggableRow>
   );
@@ -647,6 +661,7 @@ export function CharacterDetailsModal({
                                   onToggleFlag={() => toggleFlag(feature.name)}
                                   anchorId={`feature-row-${feature.id}`}
                                   highlighted={highlightedFeatureId === feature.id}
+                                  hideCharge={Boolean(children)}
                                 />
                                 {children && (
                                   // Same concretizations already listed in full
