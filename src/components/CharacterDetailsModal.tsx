@@ -142,38 +142,42 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
 }
 
 /**
- * A feature named literally `"{parent.name}: ..."` is D&D Beyond's own way of
- * spelling out one concrete facet of a broader feature — "Font of Magic:
- * Sorcery Points" is the actionable point-spending action, "Font of Magic"
- * itself (in Class Features) is the umbrella mechanic. `ddbParser`'s own
- * de-dupe only collapses genuine duplicates (the same ability described
- * twice), not parent/child pairs like this — both stay as separate `Feature`
- * entries, which otherwise reads as the same ability shown twice with no
- * obvious reason why (confirmed on real characters: Font of Magic, Metamagic,
- * Spellfire Burst all follow this exact naming pattern).
+ * `Feature.parentFeatureName` is the real D&D Beyond `componentId` chain
+ * (`ddbParser/features.ts`'s `parentInfoById`) — the exact same resolution
+ * `source`'s own parenthetical already shows in every hover hint (e.g.
+ * "Class (Maneuver Options)"), not a name-string guess. This just groups
+ * that already-computed relationship by id, once per render: the parent's
+ * concretizations get nested right underneath it wherever it's rendered
+ * (Class/Feat/Species/Background Features), *in addition to* their own full
+ * listing in Action/Bonus Action/Reaction/Special — a deliberate
+ * duplication, not an oversight, so the action-economy groups stay complete
+ * lookup tables on their own. Each concretization's own hover hint gets a
+ * "Full feature: ..." link back to the parent's row instead.
  *
- * Pure string check, no `componentId`/semantic guessing — run once per
- * render over the character's own `features`. The parent's concretizations
- * get nested right underneath it wherever it's rendered (Class/Feat/
- * Species/Background Features), *in addition to* their own full listing in
- * Action/Bonus Action/Reaction/Special — a deliberate duplication, not an
- * oversight, so the action-economy groups stay complete lookup tables on
- * their own. Each concretization's own hover hint gets a "Full feature: ..."
- * link back to the parent's row instead.
+ * A `parentFeatureName` can point at a name nothing in `features` actually
+ * has — D&D Beyond's own component graph can resolve to a real classFeature/
+ * racialTrait/feat that this same parser's de-dupe folded away (identical
+ * rules text surfacing under a different name, e.g. a Fighter's "Second
+ * Wind: Tactical Shift" action resolves to a "Tactical Shift" classFeature
+ * that never gets its own row once the byte-identical action already
+ * claimed that description). Those misses are just skipped — no link to
+ * show — rather than falling back to a name-prefix guess.
  */
 function buildFeatureLinks(features: Feature[]): {
   childrenByParentId: Map<string, Feature[]>;
   parentByChildId: Map<string, Feature>;
 } {
+  const byName = new Map(features.map((f) => [f.name, f]));
   const childrenByParentId = new Map<string, Feature[]>();
   const parentByChildId = new Map<string, Feature>();
-  for (const parent of features) {
-    const prefix = `${parent.name}: `;
-    const children = features.filter((f) => f.name.startsWith(prefix));
-    if (children.length === 0) continue;
-    childrenByParentId.set(parent.id, children);
-    for (const child of children) parentByChildId.set(child.id, parent);
+  for (const child of features) {
+    if (!child.parentFeatureName) continue;
+    const parent = byName.get(child.parentFeatureName);
+    if (!parent) continue;
+    parentByChildId.set(child.id, parent);
+    childrenByParentId.set(parent.id, [...(childrenByParentId.get(parent.id) ?? []), child]);
   }
+  for (const children of childrenByParentId.values()) children.sort((a, b) => a.name.localeCompare(b.name));
   return { childrenByParentId, parentByChildId };
 }
 
@@ -626,6 +630,14 @@ export function CharacterDetailsModal({
                                   onToggleFlag={() => toggleFlag(feature.name)}
                                   anchorId={`feature-row-${feature.id}`}
                                   highlighted={highlightedFeatureId === feature.id}
+                                  // A feature landing in this "Other" bucket can
+                                  // itself be a child (e.g. an `options.*` pick
+                                  // whose own description didn't exactly match
+                                  // its `actions.*` counterpart, so it survived
+                                  // de-dupe here instead) — same link as every
+                                  // child gets in the groups below.
+                                  parentFeature={parentByChildId.get(feature.id)}
+                                  onJumpToFeature={jumpToFeature}
                                 />
                                 {children && (
                                   // Same concretizations already listed in full

@@ -161,8 +161,12 @@ export function computeFeatures(
     group: Feature["group"],
     originType: Feature["originType"],
     explicitCharges?: { current: number; max: number; recovery: RecoveryType },
-    dice?: RawDdbAny,
-    scaleValue?: number | string
+    extra?: {
+      dice?: RawDdbAny;
+      scaleValue?: number | string;
+      /** Same `parentInfo?.name` `source` above was built from — kept identical on purpose, see `Feature.parentFeatureName`'s own doc comment. Omitted by the racialTraits/classFeatures/feats/background loops below, which *are* the parents, not a child of one. */
+      parentFeatureName?: string;
+    }
   ) {
     const trimmedName = (name || "").trim();
     // The exact (non-normalized) name is the de-dupe key — normalizing away a
@@ -178,8 +182,8 @@ export function computeFeatures(
     const matchedResource = resources.find((r) => normalizeFeatureName(r.name) === normalizeFeatureName(trimmedName));
     const charges = explicitCharges ?? matchedResource;
     const description = rawDescription
-      ? (resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed, scaleValue) +
-          diceTypeNote(trimmedName, dice)
+      ? (resolveSnippetTemplate(rawDescription, level, abilities, profBonus, charges?.max, speed, extra?.scaleValue) +
+          diceTypeNote(trimmedName, extra?.dice)
         ).trim()
       : undefined;
 
@@ -187,6 +191,15 @@ export function computeFeatures(
       if (seenDescriptions.has(description)) return;
       seenDescriptions.add(description);
     }
+
+    // A feature can't be its own parent — `formatSource` already treats a
+    // resolved parent name equal to the feature's own name as "no specific
+    // parent" (falls back to the bare category), so `parentFeatureName`
+    // mirrors that same guard rather than pointing a feature at itself.
+    const parentFeatureName =
+      extra?.parentFeatureName && extra.parentFeatureName.trim().toLowerCase() !== trimmedName.toLowerCase()
+        ? extra.parentFeatureName
+        : undefined;
 
     features.push({
       id: `feature-${features.length}`,
@@ -196,6 +209,7 @@ export function computeFeatures(
       originType,
       ...(description ? { description } : {}),
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
+      ...(parentFeatureName ? { parentFeatureName } : {}),
     });
   }
 
@@ -239,8 +253,7 @@ export function computeFeatures(
         activationGroup(action.activation?.activationType),
         originType,
         charges,
-        action.dice,
-        levelScaleById.get(action.componentId)
+        { dice: action.dice, scaleValue: levelScaleById.get(action.componentId), parentFeatureName: parentInfo?.name }
       );
     }
   }
@@ -255,8 +268,7 @@ export function computeFeatures(
       "other",
       "species",
       actionChargesById.get(df.id),
-      undefined,
-      levelScaleById.get(df.id)
+      { scaleValue: levelScaleById.get(df.id) }
     );
   }
 
@@ -276,8 +288,7 @@ export function computeFeatures(
         "other",
         "class",
         actionChargesById.get(df.id),
-        undefined,
-        levelScaleById.get(df.id)
+        { scaleValue: levelScaleById.get(df.id) }
       );
     }
   }
@@ -291,8 +302,7 @@ export function computeFeatures(
       "other",
       "feat",
       actionChargesById.get(df.id),
-      undefined,
-      levelScaleById.get(df.id)
+      { scaleValue: levelScaleById.get(df.id) }
     );
   }
 
@@ -314,7 +324,9 @@ export function computeFeatures(
       const parentInfo = parentInfoById.get(opt.componentId);
       const source = formatSource(fallbackSource, parentInfo?.name, df.name);
       const originType = parentInfo?.originType ?? originTypeByDdbGroup[group];
-      add(df.name, shortDescription(df.snippet, df.description), source, "other", originType, actionChargesById.get(df.id));
+      add(df.name, shortDescription(df.snippet, df.description), source, "other", originType, actionChargesById.get(df.id), {
+        parentFeatureName: parentInfo?.name,
+      });
     }
   }
 

@@ -86,6 +86,7 @@ const featureSchema = z.object({
   current: z.number().optional(),
   max: z.number().optional(),
   recovery: recoveryTypeSchema.optional(),
+  parentFeatureName: z.string().optional(),
 });
 
 const itemRaritySchema = z.enum([

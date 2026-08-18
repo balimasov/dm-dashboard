@@ -134,6 +134,21 @@ export interface Feature {
   current?: number;
   max?: number;
   recovery?: RecoveryType;
+  /**
+   * The exact `name` of another `Feature` in this same character's list that
+   * granted this one — set from the same D&D Beyond `componentId` chain
+   * `source`'s own parenthetical already resolves from (`ddbParser/
+   * features.ts`'s `parentInfoById`), so the two never disagree about who a
+   * feature's parent is. Only meaningful when that parent's own entry
+   * actually survived into the final `features` list — a `componentId` can
+   * resolve to a real classFeature/racialTrait/feat that D&D Beyond's own
+   * data still carries but that got folded away by this same parser's
+   * de-dupe (identical rules text under a different name), in which case
+   * this points at a name nothing in `features` actually has; callers doing
+   * the lookup (`CharacterDetailsModal.tsx`'s `buildFeatureLinks`) treat a
+   * miss as "no parent to link to" rather than guessing a substitute.
+   */
+  parentFeatureName?: string;
 }
 
 export interface SpellcastingStats {

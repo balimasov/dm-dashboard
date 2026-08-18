@@ -1884,7 +1884,8 @@ export const demoCharacters: Character[] = [
         "description": "You can tap into the wellspring of magic within yourself, which is represented by Sorcery Points (SP). Sorcery Points fuel various magical effects. You have 5 SP and regain all expended points when you finish a Long Rest.",
         "current": 4,
         "max": 5,
-        "recovery": "long-rest"
+        "recovery": "long-rest",
+        "parentFeatureName": "Font of Magic"
       },
       {
         "id": "feature-2",
@@ -1892,7 +1893,8 @@ export const demoCharacters: Character[] = [
         "source": "Font of Magic",
         "group": "action",
         "originType": "class",
-        "description": "You can expend a spell slot to gain a number of Sorcery Points equal to the slot’s level (no action required)."
+        "description": "You can expend a spell slot to gain a number of Sorcery Points equal to the slot’s level (no action required).",
+        "parentFeatureName": "Font of Magic"
       },
       {
         "id": "feature-3",
@@ -1900,7 +1902,8 @@ export const demoCharacters: Character[] = [
         "source": "Font of Magic",
         "group": "bonusAction",
         "originType": "class",
-        "description": "You can transform 2 unexpended Sorcery Points into a level 1 spell slot, which vanishes when you finish a Long Rest."
+        "description": "You can transform 2 unexpended Sorcery Points into a level 1 spell slot, which vanishes when you finish a Long Rest.",
+        "parentFeatureName": "Font of Magic"
       },
       {
         "id": "feature-4",
@@ -1908,7 +1911,8 @@ export const demoCharacters: Character[] = [
         "source": "Font of Magic",
         "group": "bonusAction",
         "originType": "class",
-        "description": "You can transform 3 unexpended Sorcery Points into a level 2 spell slot, which vanishes when you finish a Long Rest."
+        "description": "You can transform 3 unexpended Sorcery Points into a level 2 spell slot, which vanishes when you finish a Long Rest.",
+        "parentFeatureName": "Font of Magic"
       },
       {
         "id": "feature-5",
@@ -1916,7 +1920,8 @@ export const demoCharacters: Character[] = [
         "source": "Font of Magic",
         "group": "bonusAction",
         "originType": "class",
-        "description": "You can transform 5 unexpended Sorcery Points into a level 3 spell slot, which vanishes when you finish a Long Rest."
+        "description": "You can transform 5 unexpended Sorcery Points into a level 3 spell slot, which vanishes when you finish a Long Rest.",
+        "parentFeatureName": "Font of Magic"
       },
       {
         "id": "feature-6",
@@ -1935,7 +1940,8 @@ export const demoCharacters: Character[] = [
         "source": "Class",
         "group": "special",
         "originType": "class",
-        "description": "When you cast a spell that forces other creatures to make a saving throw, you can spend 1 Sorcery Point and choose up to 3 creatures to automatically succeed on its saving throw, and it takes no damage if it would normally take half damage on a success."
+        "description": "When you cast a spell that forces other creatures to make a saving throw, you can spend 1 Sorcery Point and choose up to 3 creatures to automatically succeed on its saving throw, and it takes no damage if it would normally take half damage on a success.",
+        "parentFeatureName": "Metamagic"
       },
       {
         "id": "feature-15",
@@ -1943,7 +1949,8 @@ export const demoCharacters: Character[] = [
         "source": "Class",
         "group": "special",
         "originType": "class",
-        "description": "If you make an attack roll for a spell and miss, you can spend 1 Sorcery Point to reroll the d20, and you must use the new roll. You can use Seeking Spell, even if you’ve already used a different Metamagic option."
+        "description": "If you make an attack roll for a spell and miss, you can spend 1 Sorcery Point to reroll the d20, and you must use the new roll. You can use Seeking Spell, even if you’ve already used a different Metamagic option.",
+        "parentFeatureName": "Metamagic"
       },
       {
         "id": "feature-16",
@@ -1951,7 +1958,8 @@ export const demoCharacters: Character[] = [
         "source": "Spellfire Burst",
         "group": "special",
         "originType": "class",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP."
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, you or one creature you can see within 30 ft. of yourself gains **1d4** Temp HP.",
+        "parentFeatureName": "Spellfire Burst"
       },
       {
         "id": "feature-17",
@@ -1959,7 +1967,8 @@ export const demoCharacters: Character[] = [
         "source": "Spellfire Burst",
         "group": "special",
         "originType": "class",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Fire damage."
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Fire damage.",
+        "parentFeatureName": "Spellfire Burst"
       },
       {
         "id": "feature-18",
@@ -1967,7 +1976,8 @@ export const demoCharacters: Character[] = [
         "source": "Spellfire Burst",
         "group": "special",
         "originType": "class",
-        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Radiant damage."
+        "description": "Once per turn, when you spend at least 1 Sorcery Point as part of a Magic action or a Bonus Action on your turn, one creature you can see within 30 ft. of yourself takes **1d4** Radiant damage.",
+        "parentFeatureName": "Spellfire Burst"
       },
       {
         "id": "feature-19",
