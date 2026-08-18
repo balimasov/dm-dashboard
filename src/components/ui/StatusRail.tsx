@@ -597,12 +597,18 @@ function StatusPopover({
       >
         {/* `disableTap` — this button already has its own onClick (toggling
             the popover); without it, a tap on a touch screen would fight
-            between opening this hint and opening the popover instead. Hover/
-            focus still show it on desktop, same as `ConcentrationToggleRow`'s
-            own label hint. */}
+            between opening this hint and opening the popover instead.
+            `desktopOnly` — on top of that, a tap on iOS/mobile Safari also
+            satisfies a synthetic `:focus`/`mouseenter` on the button itself
+            (the same "first tap hovers" behavior `desktopOnly`'s own doc
+            comment calls out), which `disableTap` alone doesn't block since
+            it only removes the click handler — so both the hint AND the
+            popover opened at once on mobile without this. Hover/focus still
+            show it on desktop. */}
         <InfoTooltip
           hoverOnly
           disableTap
+          desktopOnly
           panel={<p>Concentration, exhaustion, and conditions — standard and custom.</p>}
           className={BADGE_HINT_TRIGGER_CLS}
         >
