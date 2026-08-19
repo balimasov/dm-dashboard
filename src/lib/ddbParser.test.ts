@@ -489,6 +489,29 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
   });
 });
 
+describe("Feature.featKind/featPrerequisite — a feat's own D&D Beyond category, parsed off the leading italic paragraph its raw description opens with", () => {
+  test("an Origin feat with no prerequisite (Skilled) gets a bare featKind and no featPrerequisite", () => {
+    const c = load("yorun-all-immunities");
+    const skilled = c.features.find((f) => f.name === "Skilled");
+    expect(skilled?.featKind).toBe("Origin Feat");
+    expect(skilled?.featPrerequisite).toBeUndefined();
+  });
+
+  test("a General feat with a prerequisite (War Caster) splits kind and prerequisite apart", () => {
+    const c = load("yorun-all-immunities");
+    const warCaster = c.features.find((f) => f.name === "War Caster");
+    expect(warCaster?.featKind).toBe("General Feat");
+    expect(warCaster?.featPrerequisite).toBe("Level 4+ Spellcasting or Pact Magic Feature");
+  });
+
+  test("an internal ASI-grant placeholder (Noble Ability Score Improvements) has no leading category paragraph, so featKind stays unset", () => {
+    const c = load("yorun-all-immunities");
+    const noble = c.features.find((f) => f.name === "Noble Ability Score Improvements");
+    expect(noble?.featKind).toBeUndefined();
+    expect(noble?.featPrerequisite).toBeUndefined();
+  });
+});
+
 describe("cleanRulesText preserves paragraph breaks in a plain-text snippet (no <p>/<br> markup)", () => {
   test("War Caster's four bold sub-effects stay on separate paragraphs, not one run-on wall of text", () => {
     const c = load("yorun-all-immunities");

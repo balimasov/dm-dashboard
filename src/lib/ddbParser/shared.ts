@@ -171,6 +171,33 @@ export function shortDescription(snippet?: string | null, description?: string |
   return cleaned || undefined;
 }
 
+/**
+ * Every real feat's raw `description` opens with its own category as one
+ * italic paragraph — `<p><em>Origin Feat</em></p>`, `<p><em>General Feat
+ * (Prerequisite: Level 4+)</em></p>`, `<p><em>Fighting Style Feat
+ * (Prerequisite: Fighting Style Feature)</em></p>` — confirmed identical to
+ * what D&D Beyond's own feat page shows right under the name. A feat with no
+ * real category (a homebrew one-off, or an internal ASI-grant placeholder
+ * like "Charlatan Ability Score Improvements") simply has no such paragraph,
+ * which doubles as the signal to leave it alone rather than a separate
+ * category check. Only matched at the very start of the string, and only
+ * kept when it actually ends in "Feat" — guards against stripping an
+ * unrelated leading italic sentence some other rules text might open with.
+ * Returns the description with that paragraph removed so `shortDescription`
+ * still sees the *rest* of the text normally, whether or not `snippet` ends
+ * up winning over it.
+ */
+export function extractFeatKind(description?: string | null): { kind?: string; prerequisite?: string; rest?: string } {
+  if (!description) return {};
+  const match = description.match(/^\s*<p>\s*<em>([^<]+)<\/em>\s*<\/p>\s*/i);
+  if (!match) return { rest: description };
+  const prereqMatch = match[1].match(/^(.*?)\s*\(Prerequisite:\s*(.*?)\)\s*$/i);
+  const kind = (prereqMatch ? prereqMatch[1] : match[1]).trim();
+  if (!/\bFeat$/i.test(kind)) return { rest: description };
+  const rest = description.slice(match[0].length);
+  return prereqMatch ? { kind, prerequisite: prereqMatch[2].trim(), rest } : { kind, rest };
+}
+
 const RARITY_MAP: Record<string, ItemRarity> = {
   common: "Common",
   uncommon: "Uncommon",

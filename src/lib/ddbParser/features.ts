@@ -1,5 +1,5 @@
 import { AbilityScores, Feature, RecoveryType, Resource } from "../types";
-import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, extractFeatKind, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
@@ -198,6 +198,9 @@ export function computeFeatures(
       parentFeatureName?: string;
       /** Set only by the `actions.*` loop below, so `actionDedupeKeys` can record which names came from an action specifically (see that set's own doc comment). */
       isAction?: boolean;
+      /** Set only by the feats loop below, from `extractFeatKind` — see `Feature.featKind`'s own doc comment. */
+      featKind?: string;
+      featPrerequisite?: string;
     }
   ) {
     const trimmedName = (name || "").trim();
@@ -260,6 +263,8 @@ export function computeFeatures(
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
       ...(parentFeatureName ? { parentFeatureName } : {}),
       ...(isTestDuplicate ? { isTestDuplicate: true } : {}),
+      ...(extra?.featKind ? { featKind: extra.featKind } : {}),
+      ...(extra?.featPrerequisite ? { featPrerequisite: extra.featPrerequisite } : {}),
     });
   }
 
@@ -346,14 +351,15 @@ export function computeFeatures(
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
+    const { kind, prerequisite, rest } = extractFeatKind(df.description);
     add(
       df.name,
-      shortDescription(df.snippet, df.description),
+      shortDescription(df.snippet, rest),
       "Feat",
       "other",
       "feat",
       actionChargesById.get(df.id),
-      { scaleValue: levelScaleById.get(df.id) }
+      { scaleValue: levelScaleById.get(df.id), featKind: kind, featPrerequisite: prerequisite }
     );
   }
 

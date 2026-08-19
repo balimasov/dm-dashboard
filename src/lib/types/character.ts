@@ -162,6 +162,19 @@ export interface Feature {
    * differ. Remove this field once that decision is made.
    */
   isTestDuplicate?: boolean;
+  /**
+   * A feat's own category, verbatim from D&D Beyond's raw data — "Origin
+   * Feat", "General Feat", "Fighting Style Feat", "Epic Boon Feat"
+   * (`ddbParser/shared.ts`'s `extractFeatKind`, parsed from the italic
+   * paragraph D&D Beyond's own feat page opens with, right under the name).
+   * Only ever set on `originType: "feat"` entries, and only when that
+   * paragraph was actually present — a homebrew feat or an internal
+   * ASI-grant placeholder (e.g. "Charlatan Ability Score Improvements") has
+   * none, so this stays unset rather than guessing a category for it.
+   */
+  featKind?: string;
+  /** The feat's own "(Prerequisite: ...)" qualifier, split out of the same paragraph `featKind` comes from — set only alongside `featKind`, and only when that paragraph actually named one. */
+  featPrerequisite?: string;
 }
 
 export interface SpellcastingStats {
