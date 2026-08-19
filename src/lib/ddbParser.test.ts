@@ -527,11 +527,42 @@ describe("non-feat entries D&D Beyond stuffs into its feats array anyway (__DISG
     expect(c.features.find((f) => f.name === "Runestones")).toBeUndefined();
   });
 
-  test("Alor's disguised duplicate of his own real class feature ('4: Weapon Mastery' stored feat-shaped) doesn't shadow the real one", () => {
+  test("Alor's disguised duplicate of his own real class feature (stored feat-shaped as '4: Weapon Mastery') doesn't shadow the real one", () => {
     const c = load("alor-fighter");
-    const weaponMastery = c.features.filter((f) => f.name === "4: Weapon Mastery");
+    const weaponMastery = c.features.filter((f) => f.name === "Weapon Mastery (4)");
     expect(weaponMastery).toHaveLength(1);
     expect(weaponMastery[0].source).toBe("Class (Fighter)");
+  });
+});
+
+describe("a class feature repeating at higher levels moves D&D Beyond's leading 'N: ' out of the name and into a trailing '(N)'", () => {
+  test("Fighter's Ability Score Improvement repeats at level 20 all read 'Ability Score Improvement (N)', grouping every occurrence next to each other instead of scattering by leading digit", () => {
+    const c = load("fighter-eldritch-knight-20");
+    for (const level of [6, 8, 12, 14, 16]) {
+      expect(c.features.find((f) => f.name === `${level}: Ability Score Improvement`)).toBeUndefined();
+      expect(c.features.find((f) => f.name === `Ability Score Improvement (${level})`)).toBeDefined();
+    }
+  });
+
+  test("Weapon Mastery's level-4 repeat reads 'Weapon Mastery (4)' — its level-10/16 repeats never reach this rename at all, dropped earlier by the unrelated identical-description de-dupe every 'another Simple or Martial weapon' repeat shares byte-for-byte", () => {
+    const c = load("fighter-eldritch-knight-20");
+    expect(c.features.find((f) => f.name === "4: Weapon Mastery")).toBeUndefined();
+    expect(c.features.find((f) => f.name === "Weapon Mastery (4)")).toBeDefined();
+    expect(c.features.find((f) => f.name === "Weapon Mastery (10)")).toBeUndefined();
+    expect(c.features.find((f) => f.name === "Weapon Mastery (16)")).toBeUndefined();
+  });
+
+  test("a feature's first occurrence, which D&D Beyond never prefixes with its own level, is left exactly as named", () => {
+    const c = load("fighter-eldritch-knight-20");
+    expect(c.features.find((f) => f.name === "Ability Score Improvement")).toBeDefined();
+    expect(c.features.find((f) => f.name === "Weapon Mastery")).toBeDefined();
+  });
+
+  test("a nested child's parentFeatureName still names the exact same renamed string, so the child stays linked to its parent", () => {
+    const c = load("alor-fighter");
+    const child = c.features.find((f) => f.name === "Slow (Whip)");
+    expect(child?.parentFeatureName).toBe("Weapon Mastery (4)");
+    expect(c.features.find((f) => f.name === "Weapon Mastery (4)")).toBeDefined();
   });
 });
 

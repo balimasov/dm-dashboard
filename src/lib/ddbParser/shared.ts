@@ -534,6 +534,38 @@ export function diceTypeNote(name: string, dice: RawDdbAny): string {
 }
 
 /**
+ * A class feature repeating at higher levels (Ability Score Improvement,
+ * Weapon Mastery, Expertise, ...) has D&D Beyond bake its level right into
+ * the *name* itself — "8: Ability Score Improvement", "12: Ability Score
+ * Improvement" — which sorts these alphabetically by leading digit instead
+ * of grouping every occurrence of the same feature next to each other.
+ * Moves it to a trailing "(N)" instead — "Ability Score Improvement (8)" —
+ * confirmed against real fixtures: "Ability Score Improvement", "Weapon
+ * Mastery", and "Expertise" all show this exact pattern at level 20.
+ *
+ * Only strips the prefix when it *exactly* matches the feature's own
+ * `requiredLevel` (D&D Beyond's own real field, already used in the
+ * classFeatures loop to drop not-yet-reached levels) rather than a blind
+ * "starts with digits" regex — so a name that happens to start with an
+ * unrelated number can never be mistaken for one of these. The feature's
+ * first occurrence (e.g. "Ability Score Improvement" at 4, "Weapon
+ * Mastery" at 1) has no such prefix to begin with and passes through
+ * unchanged.
+ *
+ * Called with the same `(name, requiredLevel)` pair from both
+ * `buildComponentSourceIndex` below and the classFeatures loop in
+ * `features.ts` that builds the actual `Feature` — has to produce an
+ * identical result in both, or a child's resolved `parentFeatureName`
+ * stops matching this same feature's own `Feature.name` and the nesting
+ * silently breaks.
+ */
+export function classFeatureDisplayName(name: string | undefined, requiredLevel: number | null | undefined): string | undefined {
+  if (!name || requiredLevel == null) return name;
+  const prefix = `${requiredLevel}: `;
+  return name.startsWith(prefix) ? `${name.slice(prefix.length)} (${requiredLevel})` : name;
+}
+
+/**
  * Resolves a D&D Beyond `componentId` — found on `actions.*`/`options.*`
  * entries (`features.ts`) and bonus-granted `spells.*` entries
  * (`spells.ts`) alike — back to the specific racial trait/class feature/feat
@@ -580,7 +612,7 @@ export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name:
   }
   for (const cls of data.classes ?? []) {
     for (const cf of cls.classFeatures ?? []) {
-      registerGrantedFeatLinks(cf.definition, cf.definition?.name, "class");
+      registerGrantedFeatLinks(cf.definition, classFeatureDisplayName(cf.definition?.name, cf.definition?.requiredLevel), "class");
     }
   }
   for (const feat of data.feats ?? []) {
@@ -597,7 +629,7 @@ export function buildComponentSourceIndex(data: RawDdbData): Map<number, { name:
   }
   for (const cls of data.classes ?? []) {
     for (const cf of cls.classFeatures ?? []) {
-      registerDirect(cf.definition?.id, cf.definition?.name, "class");
+      registerDirect(cf.definition?.id, classFeatureDisplayName(cf.definition?.name, cf.definition?.requiredLevel), "class");
     }
   }
   for (const feat of data.feats ?? []) {

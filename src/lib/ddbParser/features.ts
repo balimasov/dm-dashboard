@@ -1,5 +1,5 @@
 import { AbilityScores, Feature, RecoveryType, Resource } from "../types";
-import { buildComponentSourceIndex, computeLimitedUseCharges, diceTypeNote, extractFeatKind, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
+import { buildComponentSourceIndex, classFeatureDisplayName, computeLimitedUseCharges, diceTypeNote, extractFeatKind, formatSource, resolveSnippetTemplate, shortDescription } from "./shared";
 import { RawDdbAny, RawDdbData } from "./rawTypes";
 
 /**
@@ -335,10 +335,11 @@ export function computeFeatures(
       if (df.hideInSheet) continue;
       if (df.requiredLevel != null && df.requiredLevel > (cls.level ?? 0)) continue;
       const isSubclassFeature = subclassId != null && df.classId === subclassId;
+      const name = classFeatureDisplayName(df.name, df.requiredLevel);
       add(
-        df.name,
+        name,
         shortDescription(df.snippet, df.description),
-        formatSource("Class", isSubclassFeature ? subclassName : className, df.name),
+        formatSource("Class", isSubclassFeature ? subclassName : className, name),
         "other",
         "class",
         actionChargesById.get(df.id),

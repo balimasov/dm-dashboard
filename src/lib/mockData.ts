@@ -275,7 +275,7 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-7",
         "name": "Push (Pike)",
-        "source": "4: Weapon Mastery",
+        "source": "Weapon Mastery (4)",
         "group": "action",
         "originType": "class",
         "description": "**Push.** If you hit a creature with Pike, you can push the creature up to 10 ft. straight away from you if it’s Large or smaller."
@@ -421,7 +421,7 @@ export const demoCharacters: Character[] = [
       },
       {
         "id": "feature-25",
-        "name": "4: Weapon Mastery",
+        "name": "Weapon Mastery (4)",
         "source": "Barbarian",
         "group": "other",
         "originType": "class",
