@@ -132,6 +132,31 @@ export function computeFeatures(
     feat: "feat",
   };
 
+  // `parentInfoById`'s own third pass (see `buildComponentSourceIndex`'s doc
+  // comment) deliberately collapses a chosen `options.*` entry's own id past
+  // itself, straight to whatever *its own* componentId resolves to — right
+  // for a bonus spell/resource's `source` label (confirmed: D&D Beyond shows
+  // "Species (Elven Lineage Spells)", not "Species (High Elf -
+  // Intelligence)"), wrong for nesting an *action*: a Battle Master's
+  // "Maneuver: Trip Attack (Str.)"/"(Dex.)" both carry `componentId` equal to
+  // the chosen "Trip Attack" option's own `definition.id` — confirmed on a
+  // real Fighter export, same shape for every maneuver ("Maneuver: Evasive
+  // Footwork" -> its own "Evasive Footwork" option, not the umbrella
+  // "Maneuver Options" classFeature) — and D&D Beyond's own Features &
+  // Traits tab nests each one under that specific maneuver, not the generic
+  // "Maneuver Options" row. This second, un-collapsed index lets the actions
+  // loop below prefer the option's own name when one exists, without
+  // touching the shared, already-confirmed-correct `parentInfoById`
+  // spells.ts/resources.ts still rely on.
+  const optionSelfById = new Map<number, { name: string; originType: Feature["originType"] }>();
+  for (const group of ["race", "class", "feat"] as const) {
+    for (const opt of data.options?.[group] ?? []) {
+      const id = opt.definition?.id;
+      const name = opt.definition?.name;
+      if (id != null && name) optionSelfById.set(id, { name, originType: originTypeByDdbGroup[group] });
+    }
+  }
+
   // A charge pool's D&D Beyond `action` entry is very often named
   // differently from the Feature that grants it (a Fighter's "Superiority
   // Dice" action vs. its "Combat Superiority" classFeature; a Sorcerer's
@@ -280,7 +305,7 @@ export function computeFeatures(
     for (const action of data.actions?.[group] ?? []) {
       if (!action.name) continue;
       if (action.componentId != null && hiddenParentIds.has(action.componentId)) continue;
-      const parentInfo = parentInfoById.get(action.componentId);
+      const parentInfo = optionSelfById.get(action.componentId) ?? parentInfoById.get(action.componentId);
       // D&D Beyond injects "Initiate a Circle Spell" and its six "Circle
       // Spell: Augment/Distribute/Expand/Prolong/Safeguard/Supplant"
       // siblings — the group-spellcasting "Circle Casting" optional rule —

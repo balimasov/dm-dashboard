@@ -566,6 +566,27 @@ describe("a class feature repeating at higher levels moves D&D Beyond's leading 
   });
 });
 
+describe("a Battle Master maneuver action nests two levels deep — under the specific maneuver a player picked, not the umbrella 'Maneuver Options' classFeature it's grouped under too", () => {
+  test("both of Trip Attack's two Action-tab concretizations (Str./Dex. save) resolve to 'Trip Attack' itself, confirmed against a real Fighter export's componentId chain matching D&D Beyond's own Features & Traits tab", () => {
+    const c = load("alor-fighter");
+    expect(c.features.find((f) => f.name === "Maneuver: Trip Attack (Str.)")?.parentFeatureName).toBe("Trip Attack");
+    expect(c.features.find((f) => f.name === "Maneuver: Trip Attack (Dex.)")?.parentFeatureName).toBe("Trip Attack");
+    expect(c.features.find((f) => f.name === "Trip Attack")?.parentFeatureName).toBe("Maneuver Options");
+  });
+
+  test("a single-variant maneuver (Evasive Footwork/Precision Attack) resolves the exact same way — its own action nests under its own maneuver choice, not the classFeature", () => {
+    const c = load("alor-fighter");
+    expect(c.features.find((f) => f.name === "Maneuver: Evasive Footwork")?.parentFeatureName).toBe("Evasive Footwork");
+    expect(c.features.find((f) => f.name === "Maneuver: Precision Attack")?.parentFeatureName).toBe("Precision Attack");
+  });
+
+  test("a racial bonus spell's source still skips straight to the racial trait, unaffected by this — the two resolutions are independent", () => {
+    const c = load("yorun-all-immunities");
+    const mistyStep = c.knownSpells.filter((s) => s.name === "Misty Step");
+    expect(mistyStep.some((s) => s.source === "Species (Elven Lineage Spells)")).toBe(true);
+  });
+});
+
 describe("cleanRulesText preserves paragraph breaks in a plain-text snippet (no <p>/<br> markup)", () => {
   test("War Caster's four bold sub-effects stay on separate paragraphs, not one run-on wall of text", () => {
     const c = load("yorun-all-immunities");

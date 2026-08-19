@@ -301,6 +301,57 @@ function FeatureRow({
   );
 }
 
+/**
+ * Recursive because a `parentFeatureName` chain can nest more than one
+ * level deep — confirmed on a Battle Master Fighter: "Maneuver Options"
+ * (classFeature) -> "Trip Attack" (the specific maneuver a player picked,
+ * an `options.*` entry) -> "Maneuver: Trip Attack (Str.)"/"(Dex.)" (that
+ * maneuver's own two Action-tab concretizations, since both share
+ * `componentId` with the *maneuver choice* itself, not the umbrella
+ * classFeature). Renders one more level of indent for however many levels
+ * are actually present in a given character's data, instead of assuming a
+ * fixed depth of exactly one.
+ */
+function NestedFeatureRows({
+  features,
+  childrenByParentId,
+  flaggedAbilities,
+  toggleFlag,
+}: {
+  features: Feature[];
+  childrenByParentId: Map<string, Feature[]>;
+  flaggedAbilities: string[];
+  toggleFlag: (name: string) => void;
+}) {
+  return (
+    <>
+      {features.map((feature) => {
+        const grandchildren = childrenByParentId.get(feature.id);
+        return (
+          <div key={feature.id}>
+            <FeatureRow
+              feature={feature}
+              flagged={flaggedAbilities.includes(feature.name)}
+              onToggleFlag={() => toggleFlag(feature.name)}
+              hideCharge={Boolean(grandchildren)}
+            />
+            {grandchildren && (
+              <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
+                <NestedFeatureRows
+                  features={grandchildren}
+                  childrenByParentId={childrenByParentId}
+                  flaggedAbilities={flaggedAbilities}
+                  toggleFlag={toggleFlag}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 /** One weapon attack, flaggable like any Feature/Spell — the actual row visuals (name/hint, bonus/damage/mastery) are shared with Party Toolkit's grouped Weapons list and Reminders via `AttackName`/`AttackTrailing`. */
 function AttackRow({ attack, flagged, onToggleFlag }: { attack: Attack; flagged: boolean; onToggleFlag: () => void }) {
   return (
@@ -668,15 +719,19 @@ export function CharacterDetailsModal({
                                   // above (Action/Bonus Action/Special) —
                                   // intentionally duplicated here, not moved,
                                   // so those groups stay complete on their own.
+                                  // Recursive: a child can have its own
+                                  // children (e.g. a Battle Master maneuver
+                                  // choice like "Trip Attack" nests its own
+                                  // "Maneuver: Trip Attack (Str.)"/"(Dex.)"
+                                  // concretizations one level deeper) — see
+                                  // `NestedFeatureRows`'s own doc comment.
                                   <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
-                                    {children.map((child) => (
-                                      <FeatureRow
-                                        key={child.id}
-                                        feature={child}
-                                        flagged={flaggedAbilities.includes(child.name)}
-                                        onToggleFlag={() => toggleFlag(child.name)}
-                                      />
-                                    ))}
+                                    <NestedFeatureRows
+                                      features={children}
+                                      childrenByParentId={childrenByParentId}
+                                      flaggedAbilities={flaggedAbilities}
+                                      toggleFlag={toggleFlag}
+                                    />
                                   </div>
                                 )}
                               </div>
