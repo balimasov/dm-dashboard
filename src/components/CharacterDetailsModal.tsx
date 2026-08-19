@@ -114,7 +114,7 @@ function groupFeaturesByGroup(features: Feature[]): Array<[Feature["group"], Fea
   }
   return GROUP_ORDER.filter((group) => byGroup.has(group)).map((group) => [
     group,
-    byGroup.get(group)!.sort((a, b) => a.name.localeCompare(b.name)),
+    byGroup.get(group)!.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
   ]);
 }
 
@@ -137,7 +137,7 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
   }
   return ORIGIN_ORDER.filter((origin) => byOrigin.has(origin)).map((origin) => [
     origin,
-    byOrigin.get(origin)!.sort((a, b) => a.name.localeCompare(b.name)),
+    byOrigin.get(origin)!.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
   ]);
 }
 
@@ -177,7 +177,7 @@ function buildFeatureLinks(features: Feature[]): {
     parentByChildId.set(child.id, parent);
     childrenByParentId.set(parent.id, [...(childrenByParentId.get(parent.id) ?? []), child]);
   }
-  for (const children of childrenByParentId.values()) children.sort((a, b) => a.name.localeCompare(b.name));
+  for (const children of childrenByParentId.values()) children.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   return { childrenByParentId, parentByChildId };
 }
 
