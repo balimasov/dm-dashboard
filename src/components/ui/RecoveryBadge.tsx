@@ -98,7 +98,7 @@ export function FeatureHintPanel({
   return (
     <AbilityHintPanel
       name={feature.name}
-      metaLines={[feature.featKind ?? feature.source]}
+      metaLines={[feature.source]}
       note={feature.featPrerequisite && `Prerequisite: ${feature.featPrerequisite}`}
       status={feature.max !== undefined && recoveryStatusLine(feature.recovery!, feature.current, feature.max)}
       description={feature.description}

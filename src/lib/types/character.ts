@@ -163,17 +163,18 @@ export interface Feature {
    */
   isTestDuplicate?: boolean;
   /**
-   * A feat's own category, verbatim from D&D Beyond's raw data — "Origin
-   * Feat", "General Feat", "Fighting Style Feat", "Epic Boon Feat"
-   * (`ddbParser/shared.ts`'s `extractFeatKind`, parsed from the italic
-   * paragraph D&D Beyond's own feat page opens with, right under the name).
-   * Only ever set on `originType: "feat"` entries, and only when that
-   * paragraph was actually present — a homebrew feat or an internal
-   * ASI-grant placeholder (e.g. "Charlatan Ability Score Improvements") has
-   * none, so this stays unset rather than guessing a category for it.
+   * A feat's own "(Prerequisite: ...)" qualifier, parsed off the same
+   * italic paragraph D&D Beyond's own feat page opens with, right under the
+   * name (`ddbParser/shared.ts`'s `extractFeatKind`) — the paragraph's
+   * category half feeds straight into this same feature's `source` instead
+   * of its own field (`formatSource("Feat", kind)`, so a feat's `source`
+   * reads `"Feat (Origin)"`/`"Feat (General)"` the same "Category
+   * (Specific)" grammar every other origin type already uses, e.g. `"Class
+   * (Sorcerer)"`). Only ever set on `originType: "feat"` entries, and only
+   * when that paragraph actually named one — a homebrew feat or an internal
+   * ASI-grant placeholder has no such paragraph at all, so both this and
+   * the category stay at the bare `source: "Feat"`.
    */
-  featKind?: string;
-  /** The feat's own "(Prerequisite: ...)" qualifier, split out of the same paragraph `featKind` comes from — set only alongside `featKind`, and only when that paragraph actually named one. */
   featPrerequisite?: string;
 }
 

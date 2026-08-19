@@ -183,6 +183,15 @@ export function shortDescription(snippet?: string | null, description?: string |
  * category check. Only matched at the very start of the string, and only
  * kept when it actually ends in "Feat" — guards against stripping an
  * unrelated leading italic sentence some other rules text might open with.
+ *
+ * `kind` is returned with the trailing "Feat" word stripped ("Origin Feat"
+ * -> "Origin") — the caller (the `feats` loop in `features.ts`) feeds it
+ * straight into `formatSource("Feat", kind)`, the same "Category (Specific)"
+ * grammar every other origin type's `source` already uses (`"Class
+ * (Sorcerer)"`, `"Species (Elven Lineage)"`), so a feat reads `"Feat
+ * (Origin)"` rather than carrying its own separate, differently-shaped
+ * label.
+ *
  * Returns the description with that paragraph removed so `shortDescription`
  * still sees the *rest* of the text normally, whether or not `snippet` ends
  * up winning over it.
@@ -192,8 +201,9 @@ export function extractFeatKind(description?: string | null): { kind?: string; p
   const match = description.match(/^\s*<p>\s*<em>([^<]+)<\/em>\s*<\/p>\s*/i);
   if (!match) return { rest: description };
   const prereqMatch = match[1].match(/^(.*?)\s*\(Prerequisite:\s*(.*?)\)\s*$/i);
-  const kind = (prereqMatch ? prereqMatch[1] : match[1]).trim();
-  if (!/\bFeat$/i.test(kind)) return { rest: description };
+  const rawKind = (prereqMatch ? prereqMatch[1] : match[1]).trim();
+  if (!/\bFeat$/i.test(rawKind)) return { rest: description };
+  const kind = rawKind.replace(/\s*Feat$/i, "").trim();
   const rest = description.slice(match[0].length);
   return prereqMatch ? { kind, prerequisite: prereqMatch[2].trim(), rest } : { kind, rest };
 }

@@ -198,8 +198,7 @@ export function computeFeatures(
       parentFeatureName?: string;
       /** Set only by the `actions.*` loop below, so `actionDedupeKeys` can record which names came from an action specifically (see that set's own doc comment). */
       isAction?: boolean;
-      /** Set only by the feats loop below, from `extractFeatKind` — see `Feature.featKind`'s own doc comment. */
-      featKind?: string;
+      /** Set only by the feats loop below, from `extractFeatKind` — see `Feature.featPrerequisite`'s own doc comment. */
       featPrerequisite?: string;
     }
   ) {
@@ -263,7 +262,6 @@ export function computeFeatures(
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
       ...(parentFeatureName ? { parentFeatureName } : {}),
       ...(isTestDuplicate ? { isTestDuplicate: true } : {}),
-      ...(extra?.featKind ? { featKind: extra.featKind } : {}),
       ...(extra?.featPrerequisite ? { featPrerequisite: extra.featPrerequisite } : {}),
     });
   }
@@ -351,27 +349,37 @@ export function computeFeatures(
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
-    // D&D Beyond tags the background's own baked-in ASI choice (e.g.
-    // "Soldier Ability Score Improvements") as `__INITIAL_ASI` inside this
-    // same `feats` array, even though its own Feats tab never lists it —
-    // confirmed against a real character's D&D Beyond page. It's a generic
-    // restatement of the background's rules text ("choose between Strength,
-    // Dexterity, Constitution...") describing the *option*, not what was
-    // picked; the actual choice already surfaces as its granting origin
-    // feat's own nested child (e.g. "Increase two scores (+2 / +1)" under
-    // "Savage Attacker", linked via `parentFeatureName`), so this entry adds
-    // nothing beyond noise. A real D&D Beyond flag, not a heuristic — same
-    // treatment as `hideOnDetailsPage`/`hideInSheet` above.
-    if (df.categories?.some((cat: RawDdbAny) => cat.tagName === "__INITIAL_ASI")) continue;
+    // D&D Beyond stuffs a couple of things that aren't real, player-visible
+    // feats into this same `feats` array, each flagged with its own internal
+    // category tag — confirmed absent from D&D Beyond's own Feats tab across
+    // every real character export this parser has been checked against, so
+    // excluded here the same way hideOnDetailsPage/hideInSheet are above
+    // (real D&D Beyond flags, not a heuristic):
+    //  - `__INITIAL_ASI`: the background's baked-in ability score bump,
+    //    restated generically (e.g. "Soldier Ability Score Improvements").
+    //    The actual choice already surfaces as its origin feat's own nested
+    //    child (e.g. "Increase two scores (+2 / +1)" under "Savage
+    //    Attacker", linked via `parentFeatureName`), so this adds nothing
+    //    but noise.
+    //  - `__DISGUISE_FEAT`: either a duplicate of a real class feature
+    //    stored feat-shaped for D&D Beyond's own bookkeeping (e.g. "4:
+    //    Weapon Mastery" — harmless to exclude explicitly here even though
+    //    it was already losing the name-collision de-dupe race to its real
+    //    classFeature copy) or a companion UI widget D&D Beyond bolts onto
+    //    every one of its own pre-built example characters ("Dark Bargain",
+    //    "Character Threads", "Runestones") that was never a feat to begin
+    //    with.
+    const hiddenFeatTags = new Set(["__INITIAL_ASI", "__DISGUISE_FEAT"]);
+    if (df.categories?.some((cat: RawDdbAny) => hiddenFeatTags.has(cat.tagName))) continue;
     const { kind, prerequisite, rest } = extractFeatKind(df.description);
     add(
       df.name,
       shortDescription(df.snippet, rest),
-      "Feat",
+      formatSource("Feat", kind),
       "other",
       "feat",
       actionChargesById.get(df.id),
-      { scaleValue: levelScaleById.get(df.id), featKind: kind, featPrerequisite: prerequisite }
+      { scaleValue: levelScaleById.get(df.id), featPrerequisite: prerequisite }
     );
   }
 

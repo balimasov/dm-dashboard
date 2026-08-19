@@ -451,9 +451,9 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
     expect(c.features.find((f) => f.name === "Darkvision")?.source).toBe("Species");
   });
 
-  test("a top-level feat is the bare category", () => {
+  test("a top-level feat reads 'Feat (Origin)', its own category folded into the same 'Category (Specific)' grammar", () => {
     const c = load("yorun-all-immunities");
-    expect(c.features.find((f) => f.name === "Skilled")?.source).toBe("Feat");
+    expect(c.features.find((f) => f.name === "Skilled")?.source).toBe("Feat (Origin)");
   });
 
   test("a base-class feature reads 'Class (Sorcerer)', not the bare class name replacing the category", () => {
@@ -489,21 +489,20 @@ describe("Feature.source is always 'Category' or 'Category (Specific)' — forma
   });
 });
 
-describe("Feature.featKind/featPrerequisite — a feat's own D&D Beyond category, parsed off the leading italic paragraph its raw description opens with", () => {
-  test("an Origin feat with no prerequisite (Skilled) gets a bare featKind and no featPrerequisite", () => {
+describe("a feat's own category folds into Feature.source as 'Feat (Kind)'; featPrerequisite carries the qualifier, if any", () => {
+  test("an Origin feat with no prerequisite (Skilled) reads 'Feat (Origin)' and has no featPrerequisite", () => {
     const c = load("yorun-all-immunities");
     const skilled = c.features.find((f) => f.name === "Skilled");
-    expect(skilled?.featKind).toBe("Origin Feat");
+    expect(skilled?.source).toBe("Feat (Origin)");
     expect(skilled?.featPrerequisite).toBeUndefined();
   });
 
-  test("a General feat with a prerequisite (War Caster) splits kind and prerequisite apart", () => {
+  test("a General feat with a prerequisite (War Caster) reads 'Feat (General)', prerequisite split into its own field", () => {
     const c = load("yorun-all-immunities");
     const warCaster = c.features.find((f) => f.name === "War Caster");
-    expect(warCaster?.featKind).toBe("General Feat");
+    expect(warCaster?.source).toBe("Feat (General)");
     expect(warCaster?.featPrerequisite).toBe("Level 4+ Spellcasting or Pact Magic Feature");
   });
-
 });
 
 describe("a background's baked-in ASI placeholder (__INITIAL_ASI, e.g. 'Soldier Ability Score Improvements') is dropped entirely", () => {
@@ -517,6 +516,22 @@ describe("a background's baked-in ASI placeholder (__INITIAL_ASI, e.g. 'Soldier 
     const c = load("alor-fighter");
     const increase = c.features.find((f) => f.name === "Increase two scores (+2 / +1)");
     expect(increase?.parentFeatureName).toBe("Savage Attacker");
+  });
+});
+
+describe("non-feat entries D&D Beyond stuffs into its feats array anyway (__DISGUISE_FEAT) are dropped, same as D&D Beyond's own Feats tab", () => {
+  test("a level-20 pre-built character's companion widgets (Dark Bargain/Character Threads/Runestones) never surface as feats — confirmed absent from that character's real D&D Beyond Feats tab", () => {
+    const c = load("artificer-battle-smith-20");
+    expect(c.features.find((f) => f.name === "Dark Bargain")).toBeUndefined();
+    expect(c.features.find((f) => f.name === "Character Threads")).toBeUndefined();
+    expect(c.features.find((f) => f.name === "Runestones")).toBeUndefined();
+  });
+
+  test("Alor's disguised duplicate of his own real class feature ('4: Weapon Mastery' stored feat-shaped) doesn't shadow the real one", () => {
+    const c = load("alor-fighter");
+    const weaponMastery = c.features.filter((f) => f.name === "4: Weapon Mastery");
+    expect(weaponMastery).toHaveLength(1);
+    expect(weaponMastery[0].source).toBe("Class (Fighter)");
   });
 });
 

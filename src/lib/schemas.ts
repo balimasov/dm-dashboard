@@ -88,7 +88,6 @@ const featureSchema = z.object({
   recovery: recoveryTypeSchema.optional(),
   parentFeatureName: z.string().optional(),
   isTestDuplicate: z.boolean().optional(),
-  featKind: z.string().optional(),
   featPrerequisite: z.string().optional(),
 });
 

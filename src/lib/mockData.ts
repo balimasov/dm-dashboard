@@ -2091,20 +2091,18 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-35",
         "name": "Skilled",
-        "source": "Feat",
+        "source": "Feat (Origin)",
         "group": "other",
         "originType": "feat",
-        "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\n**Repeatable.** You can take this feat more than once.",
-        "featKind": "Origin Feat"
+        "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\n**Repeatable.** You can take this feat more than once."
       },
       {
         "id": "feature-36",
         "name": "War Caster",
-        "source": "Feat",
+        "source": "Feat (General)",
         "group": "other",
         "originType": "feat",
         "description": "**Ability Score Increase.** Increase your Int., Wis., or Cha. by 1.\n\n**Concentration.** You have Advantage on Con. saving throws to maintain Concentration.\n\n**Reactive Spell.** When a creature provokes an Opportunity Attack from you by leaving your reach, you can take a Reaction to cast a spell at the creature rather than making an Opportunity Attack. This spell must have a casting time of one action and must target only that creature.\n\n**Somatic Components.** You can perform the Somatic components of spells even when you have weapons or a Shield in one or both hands.",
-        "featKind": "General Feat",
         "featPrerequisite": "Level 4+ Spellcasting or Pact Magic Feature"
       },
       {
