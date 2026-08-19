@@ -12,6 +12,26 @@
 - **MINOR** (`0.x.0`) — нова функціональність, зворотно сумісна.
 - **MAJOR** (`x.0.0`) — після виходу з `0.x.x`, чи ламаючі зміни.
 
+## [1.126.1] - 2026-08-19
+### Fixed
+- **Прибрав орфанні записи на кшталт "Soldier Ability Score Improvements" /
+  "Noble Ability Score Improvements" / "Wayfarer Ability Score
+  Improvements" з блоку Feat Features.** Це внутрішній плейсхолдер D&D
+  Beyond — бекграундова прив'язка ASI, позначена спеціальним тегом
+  `__INITIAL_ASI` у сирих даних. Перевірив на самому D&D Beyond: у
+  вкладці Feats Алора цього запису взагалі немає, є лише реальні фіти
+  (Two-Weapon Fighting, Blind Fighting, Savage Attacker). Сам вибір
+  збільшення характеристик і так коректно показується — вкладеним під
+  фіт походження (наприклад "Increase two scores (+2 / +1)" під "Savage
+  Attacker"), просто раніше поруч висів ще й цей зайвий дублюючий запис
+  без жодного зв'язку.
+- **Заразом підтягнув 3 демо-персонажі (Ragnar/Lilith/Yorun) у
+  `mockData.ts` до того самого вкладення** — їхні "Increase two scores"
+  записи не мали `parentFeatureName`, тому показувались окремим рядком
+  у "Background Feature" замість вкладення під фіт походження
+  (Savage Attacker/Lucky/Skilled відповідно), хоча реальний парсер це
+  вже коректно робить.
+
 ## [1.126.0] - 2026-08-19
 ### Added
 - **Категорія фіта (Origin/General/Fighting Style/Epic Boon Feat) тепер

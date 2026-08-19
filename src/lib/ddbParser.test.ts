@@ -504,11 +504,19 @@ describe("Feature.featKind/featPrerequisite — a feat's own D&D Beyond category
     expect(warCaster?.featPrerequisite).toBe("Level 4+ Spellcasting or Pact Magic Feature");
   });
 
-  test("an internal ASI-grant placeholder (Noble Ability Score Improvements) has no leading category paragraph, so featKind stays unset", () => {
-    const c = load("yorun-all-immunities");
-    const noble = c.features.find((f) => f.name === "Noble Ability Score Improvements");
-    expect(noble?.featKind).toBeUndefined();
-    expect(noble?.featPrerequisite).toBeUndefined();
+});
+
+describe("a background's baked-in ASI placeholder (__INITIAL_ASI, e.g. 'Soldier Ability Score Improvements') is dropped entirely", () => {
+  test("Alor's Feat Features has no 'Soldier Ability Score Improvements' entry — confirmed absent from D&D Beyond's own Feats tab too, unlike the real feats it grants (Blind Fighting/Two-Weapon Fighting/Savage Attacker)", () => {
+    const c = load("alor-fighter");
+    expect(c.features.find((f) => f.name === "Soldier Ability Score Improvements")).toBeUndefined();
+    expect(c.features.find((f) => f.name === "Savage Attacker")).toBeDefined();
+  });
+
+  test("the actual ASI choice still surfaces, nested under the origin feat it's attached to, unaffected by the __INITIAL_ASI filter", () => {
+    const c = load("alor-fighter");
+    const increase = c.features.find((f) => f.name === "Increase two scores (+2 / +1)");
+    expect(increase?.parentFeatureName).toBe("Savage Attacker");
   });
 });
 

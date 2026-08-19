@@ -444,20 +444,13 @@ export const demoCharacters: Character[] = [
         "description": "Once per turn when you hit a target with a weapon, you can roll the weapon’s damage dice twice and use either roll against the target."
       },
       {
-        "id": "feature-28",
-        "name": "Soldier Ability Score Improvements",
-        "source": "Feat",
-        "group": "other",
-        "originType": "feat",
-        "description": "The Soldier Background allows you to choose between Strength, Dexterity, and Constitution. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
-      },
-      {
         "id": "feature-29",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Savage Attacker",
+        "source": "Feat (Savage Attacker)",
         "group": "other",
         "originType": "background",
-        "description": "Increase one of these scores by 2 and a different score by 1."
+        "description": "Increase one of these scores by 2 and a different score by 1.",
+        "parentFeatureName": "Savage Attacker"
       }
     ],
     "attacks": [
@@ -1279,14 +1272,6 @@ export const demoCharacters: Character[] = [
         "description": "When you make an extra attack as a result of using a weapon that has the Light property, you can add your ability modifier to the damage of that attack if you aren’t already adding it to the damage."
       },
       {
-        "id": "feature-42",
-        "name": "Wayfarer Ability Score Improvements",
-        "source": "Feat",
-        "group": "other",
-        "originType": "feat",
-        "description": "The Wayfarer Background allows you to choose between Dexterity, Wisdom, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
-      },
-      {
         "id": "feature-43",
         "name": "Drow Lineage",
         "source": "Elven Lineage",
@@ -1321,10 +1306,11 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-47",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Lucky",
+        "source": "Feat (Lucky)",
         "group": "other",
         "originType": "background",
-        "description": "Increase one of these scores by 2 and a different score by 1."
+        "description": "Increase one of these scores by 2 and a different score by 1.",
+        "parentFeatureName": "Lucky"
       }
     ],
     "attacks": [
@@ -2103,14 +2089,6 @@ export const demoCharacters: Character[] = [
         "description": "The following options are available to your Metamagic feature. The options are presented in alphabetical order."
       },
       {
-        "id": "feature-34",
-        "name": "Noble Ability Score Improvements",
-        "source": "Feat",
-        "group": "other",
-        "originType": "feat",
-        "description": "The Noble Background allows you to choose between Strength, Intelligence, and Charisma. Increase one of these scores by 2 and another one by 1, or increase all three by 1. None of these increases can raise a score above 20."
-      },
-      {
         "id": "feature-35",
         "name": "Skilled",
         "source": "Feat",
@@ -2148,10 +2126,11 @@ export const demoCharacters: Character[] = [
       {
         "id": "feature-39",
         "name": "Increase two scores (+2 / +1)",
-        "source": "Skilled",
+        "source": "Feat (Skilled)",
         "group": "other",
         "originType": "background",
-        "description": "Increase one of these scores by 2 and a different score by 1."
+        "description": "Increase one of these scores by 2 and a different score by 1.",
+        "parentFeatureName": "Skilled"
       }
     ],
     "attacks": [

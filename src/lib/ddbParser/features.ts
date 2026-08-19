@@ -351,6 +351,18 @@ export function computeFeatures(
 
   for (const feat of data.feats ?? []) {
     const df = feat.definition ?? {};
+    // D&D Beyond tags the background's own baked-in ASI choice (e.g.
+    // "Soldier Ability Score Improvements") as `__INITIAL_ASI` inside this
+    // same `feats` array, even though its own Feats tab never lists it —
+    // confirmed against a real character's D&D Beyond page. It's a generic
+    // restatement of the background's rules text ("choose between Strength,
+    // Dexterity, Constitution...") describing the *option*, not what was
+    // picked; the actual choice already surfaces as its granting origin
+    // feat's own nested child (e.g. "Increase two scores (+2 / +1)" under
+    // "Savage Attacker", linked via `parentFeatureName`), so this entry adds
+    // nothing beyond noise. A real D&D Beyond flag, not a heuristic — same
+    // treatment as `hideOnDetailsPage`/`hideInSheet` above.
+    if (df.categories?.some((cat: RawDdbAny) => cat.tagName === "__INITIAL_ASI")) continue;
     const { kind, prerequisite, rest } = extractFeatKind(df.description);
     add(
       df.name,
