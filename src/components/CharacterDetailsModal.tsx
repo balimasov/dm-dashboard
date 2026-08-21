@@ -42,7 +42,8 @@ import { StatBox } from "./ui/StatBox";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
 import { SubHeading } from "./ui/SubHeading";
-import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
+import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
+import { FilterChipRow } from "./ui/FilterChipRow";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -123,6 +124,14 @@ const ORIGIN_LABELS: Record<Feature["originType"], string> = {
   class: "Class Features",
   feat: "Feat Features",
   background: "Background Feature",
+};
+
+/** Short single-word form of `ORIGIN_LABELS`, for the Features tab's filter chips — a chip reads better without repeating "Traits"/"Features"/"Feature" the section heading below it already says in full. */
+const ORIGIN_FILTER_LABELS: Record<Feature["originType"], string> = {
+  species: "Species",
+  class: "Class",
+  feat: "Feat",
+  background: "Background",
 };
 
 const ORIGIN_ORDER: Feature["originType"][] = ["feat", "class", "background", "species"];
@@ -354,6 +363,15 @@ export function CharacterDetailsModal({
   const [editOpen, setEditOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 
+  // Filter-chip state for the Actions/Features/Spells tabs — display-only,
+  // never touches `c.features`/`c.knownSpells` themselves. Actions/Features
+  // are mutually exclusive (one active category at a time, "all" resets);
+  // Spells is multi-select (any subset of a character's own real tags can
+  // be active at once, since one spell legitimately carries several).
+  const [actionFilter, setActionFilter] = useState<"all" | Feature["group"]>("all");
+  const [featureFilter, setFeatureFilter] = useState<"all" | Feature["originType"]>("all");
+  const [activeSpellTags, setActiveSpellTags] = useState<string[]>([]);
+
   const flaggedAbilities = c.flaggedAbilities ?? [];
   function toggleFlag(name: string) {
     const next = flaggedAbilities.includes(name)
@@ -380,6 +398,36 @@ export function CharacterDetailsModal({
   const { childrenByParentId, parentByChildId } = buildFeatureLinks(c.features);
   const sortedAttacks = c.attacks.slice().sort((a, b) => a.name.localeCompare(b.name));
   const hasAttacks = sortedAttacks.length > 0;
+
+  // Actions tab filter — a weapon attack counts as "Action" here (attacking
+  // always costs your action), so `showAttackSections` gates on the same
+  // "all or action" check the Action-type groups themselves use.
+  const showAttackSections = (actionFilter === "all" || actionFilter === "action") && hasAttacks;
+  const visibleActionGroups = actionTypeGroups
+    .filter(([group]) => actionFilter === "all" || actionFilter === group)
+    .map(([group, features]) => [group, features.filter((f) => !f.parentFeatureName?.startsWith("Weapon Mastery"))] as const)
+    .filter(([, features]) => features.length > 0);
+  const actionsTabEmpty = !showAttackSections && visibleActionGroups.length === 0;
+
+  // Features tab filter — `otherBucket` only ever has one real entry (the
+  // "other" action-economy group, i.e. everything passive), so its own
+  // features are what actually gets sub-grouped by origin and filtered.
+  const visibleOriginGroups = otherBucket.flatMap(([, features]) =>
+    groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).filter(
+      ([origin]) => featureFilter === "all" || origin === featureFilter
+    )
+  );
+  const featuresTabEmpty = visibleOriginGroups.length === 0;
+
+  // Spells tab filter — chips are built from this character's own actual
+  // `spell.tags` values (D&D Beyond's raw classification), not a fixed
+  // universal list, so a character with no Control spells never shows an
+  // empty "Control" chip. OR logic: a spell stays visible as long as at
+  // least one of its own tags is active.
+  const spellTagOptions = Array.from(new Set(c.knownSpells.flatMap((s) => s.tags ?? []))).sort();
+  const spellMatchesActiveTags = (spell: KnownSpell) =>
+    activeSpellTags.length === 0 || Boolean(spell.tags?.some((t) => activeSpellTags.includes(t)));
+  const spellsTabEmpty = activeSpellTags.length > 0 && !c.knownSpells.some(spellMatchesActiveTags);
   const hasSpells = spellLevels.length > 0;
   const hasActionsTabContent = hasAttacks || actionTypeGroups.length > 0;
   const hasFeaturesTabContent = otherBucket.length > 0;
@@ -606,108 +654,125 @@ export function CharacterDetailsModal({
                   reachable nested under "Weapon Mastery" on the Features tab. */}
               {currentTab === "actions" && (
               <div className="space-y-3">
-                {(["melee", "ranged"] as const).map((attackType) => {
-                  const attacks = sortedAttacks.filter((attack) => attack.attackType === attackType);
-                  if (attacks.length === 0) return null;
-                  return (
-                    <div key={attackType} className="space-y-1">
-                      <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Melee Attacks" : "Ranged Attacks"}</p>
-                      {attacks.map((attack) => (
-                        <AttackRow
-                          key={attack.id}
-                          attack={attack}
-                          flagged={flaggedAbilities.includes(attack.name)}
-                          onToggleFlag={() => toggleFlag(attack.name)}
-                        />
-                      ))}
-                    </div>
-                  );
-                })}
-                {actionTypeGroups.map(([group, features]) => (
+                {/* Weapon attacks count as "Action" for this filter — attacking
+                    always costs your action, same as a maneuver or Action
+                    Surge — so the same chip that narrows to Action also keeps
+                    Melee/Ranged Attacks visible. */}
+                <FilterChipRow
+                  options={[
+                    { value: "all", label: "All" },
+                    ...(["action", "bonusAction", "reaction", "special"] as const).map((g) => ({ value: g, label: GROUP_LABELS[g] })),
+                  ]}
+                  isActive={(v) => actionFilter === v}
+                  onClick={(v) => setActionFilter(v as typeof actionFilter)}
+                />
+                {showAttackSections &&
+                  (["melee", "ranged"] as const).map((attackType) => {
+                    const attacks = sortedAttacks.filter((attack) => attack.attackType === attackType);
+                    if (attacks.length === 0) return null;
+                    return (
+                      <div key={attackType} className="space-y-1">
+                        <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Melee Attacks" : "Ranged Attacks"}</p>
+                        {attacks.map((attack) => (
+                          <AttackRow
+                            key={attack.id}
+                            attack={attack}
+                            flagged={flaggedAbilities.includes(attack.name)}
+                            onToggleFlag={() => toggleFlag(attack.name)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                {visibleActionGroups.map(([group, features]) => (
                   <div key={group} className="space-y-1">
                     <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
-                    {features
-                      .filter((feature) => !feature.parentFeatureName?.startsWith("Weapon Mastery"))
-                      .map((feature) => (
-                        <FeatureRow
-                          key={feature.id}
-                          feature={feature}
-                          flagged={flaggedAbilities.includes(feature.name)}
-                          onToggleFlag={() => toggleFlag(feature.name)}
-                        />
-                      ))}
+                    {features.map((feature) => (
+                      <FeatureRow
+                        key={feature.id}
+                        feature={feature}
+                        flagged={flaggedAbilities.includes(feature.name)}
+                        onToggleFlag={() => toggleFlag(feature.name)}
+                      />
+                    ))}
                   </div>
                 ))}
+                {actionsTabEmpty && <p className={`py-2 text-center ${EMPTY_STATE_CLS}`}>Nothing in this category yet.</p>}
               </div>
             )}
 
             {currentTab === "features" && (
               <div className="space-y-3">
-                {otherBucket.map(([group, features]) => (
-                  // Sub-grouped by origin instead of a flat list — mirrors
-                  // D&D Beyond's separate Features & Traits tab (Species
-                  // Traits/Class Features/Feat Features/Background Feature).
-                  // No divider above this — the Action/Bonus Action/Reaction/
-                  // Special groups it used to sit under live on their own
-                  // Actions tab now, so there's nothing left here to separate
-                  // from.
-                  <div key={group} className="space-y-3">
-                    {/* A child rendered here also lives somewhere else in
-                        this very "other" bucket, nested under its own
-                        parent — see the `parentByChildId` filter below —
-                        since a resolvable `parentFeatureName` only ever
-                        points at a classFeature/racialTrait/feat, and
-                        those are always `group: "other"` themselves.
-                        Excluded from its own standalone row here so it
-                        doesn't show twice within this one bucket (e.g.
-                        "Drow Lineage" under "Elven Lineage" in Species
-                        Traits, or "Increase two scores" under "Savage
-                        Attacker" in Feat Features even though its own
-                        origin is Background). This is deliberately
-                        narrower than the Actions tab's own groups, which
-                        keep every child in full — those exist specifically
-                        as complete action-economy lookups, so nothing is
-                        filtered out of them. */}
-                    {groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).map(([origin, originFeatures]) => (
-                      <div key={origin} className="space-y-1">
-                        <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
-                        {originFeatures.map((feature) => {
-                          const children = childrenByParentId.get(feature.id);
-                          return (
-                            <div key={feature.id}>
-                              <FeatureRow
-                                feature={feature}
-                                flagged={flaggedAbilities.includes(feature.name)}
-                                onToggleFlag={() => toggleFlag(feature.name)}
-                                hideCharge={Boolean(children)}
+                {/* Sub-grouped by origin instead of a flat list — mirrors
+                    D&D Beyond's separate Features & Traits tab (Species
+                    Traits/Class Features/Feat Features/Background Feature).
+                    No divider above this — the Action/Bonus Action/Reaction/
+                    Special groups it used to sit under live on their own
+                    Actions tab now, so there's nothing left here to separate
+                    from. */}
+                <FilterChipRow
+                  options={[
+                    { value: "all", label: "All" },
+                    ...(["species", "class", "feat", "background"] as const).map((origin) => ({
+                      value: origin,
+                      label: ORIGIN_FILTER_LABELS[origin],
+                    })),
+                  ]}
+                  isActive={(v) => featureFilter === v}
+                  onClick={(v) => setFeatureFilter(v as typeof featureFilter)}
+                />
+                {visibleOriginGroups.map(([origin, originFeatures]) => (
+                  <div key={origin} className="space-y-1">
+                    <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
+                    {originFeatures.map((feature) => {
+                      // A child rendered here also lives somewhere else in
+                      // this same bucket, nested under its own parent —
+                      // filtered out of `visibleOriginGroups` itself, since a
+                      // resolvable `parentFeatureName` only ever points at a
+                      // classFeature/racialTrait/feat, and those are always
+                      // `group: "other"` themselves. Excluded so it doesn't
+                      // show twice (e.g. "Drow Lineage" under "Elven Lineage"
+                      // in Species Traits, or "Increase two scores" under
+                      // "Savage Attacker" in Feat Features even though its
+                      // own origin is Background). Deliberately narrower than
+                      // the Actions tab's own groups, which keep every child
+                      // in full — those exist specifically as complete
+                      // action-economy lookups, so nothing is filtered out
+                      // of them.
+                      const children = childrenByParentId.get(feature.id);
+                      return (
+                        <div key={feature.id}>
+                          <FeatureRow
+                            feature={feature}
+                            flagged={flaggedAbilities.includes(feature.name)}
+                            onToggleFlag={() => toggleFlag(feature.name)}
+                            hideCharge={Boolean(children)}
+                          />
+                          {children && (
+                            // Same concretizations already listed in full on
+                            // the Actions tab — intentionally duplicated
+                            // here, not moved, so that tab stays a complete
+                            // lookup on its own. Recursive: a child can have
+                            // its own children (e.g. a Battle Master maneuver
+                            // choice like "Trip Attack" nests its own
+                            // "Maneuver: Trip Attack (Str.)"/"(Dex.)"
+                            // concretizations one level deeper) — see
+                            // `NestedFeatureRows`'s own doc comment.
+                            <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
+                              <NestedFeatureRows
+                                features={children}
+                                childrenByParentId={childrenByParentId}
+                                flaggedAbilities={flaggedAbilities}
+                                toggleFlag={toggleFlag}
                               />
-                              {children && (
-                                // Same concretizations already listed in full
-                                // on the Actions tab — intentionally
-                                // duplicated here, not moved, so that tab
-                                // stays a complete lookup on its own.
-                                // Recursive: a child can have its own
-                                // children (e.g. a Battle Master maneuver
-                                // choice like "Trip Attack" nests its own
-                                // "Maneuver: Trip Attack (Str.)"/"(Dex.)"
-                                // concretizations one level deeper) — see
-                                // `NestedFeatureRows`'s own doc comment.
-                                <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
-                                  <NestedFeatureRows
-                                    features={children}
-                                    childrenByParentId={childrenByParentId}
-                                    flaggedAbilities={flaggedAbilities}
-                                    toggleFlag={toggleFlag}
-                                  />
-                                </div>
-                              )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
+                {featuresTabEmpty && <p className={`py-2 text-center ${EMPTY_STATE_CLS}`}>Nothing in this category yet.</p>}
               </div>
             )}
 
@@ -721,8 +786,29 @@ export function CharacterDetailsModal({
                   </div>
                 )}
 
+                {/* Chips are this character's own actual raw D&D Beyond
+                    `spell.tags` values, not a fixed master list — a spell
+                    without a synced `tags` field yet just never disappears,
+                    it's simply unreachable by any tag chip. Multi-select: a
+                    spell stays visible as long as at least one of its own
+                    tags is active, so picking two chips broadens the list
+                    rather than narrowing it further. */}
+                {spellTagOptions.length > 0 && (
+                  <FilterChipRow
+                    options={[{ value: "all", label: "All" }, ...spellTagOptions.map((tag) => ({ value: tag, label: tag }))]}
+                    isActive={(v) => (v === "all" ? activeSpellTags.length === 0 : activeSpellTags.includes(v))}
+                    onClick={(v) =>
+                      setActiveSpellTags((prev) => (v === "all" ? [] : prev.includes(v) ? prev.filter((t) => t !== v) : [...prev, v]))
+                    }
+                  />
+                )}
+
                 {spellLevels.map((level) => {
                   const slot = c.spellSlots.find((s) => s.level === level);
+                  const levelSpells = (spellsByLevel.get(level) ?? [])
+                    .filter(spellMatchesActiveTags)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  if (levelSpells.length === 0) return null;
                   return (
                     <div key={level}>
                       <div className="flex items-center justify-between gap-3">
@@ -737,34 +823,32 @@ export function CharacterDetailsModal({
                           ))}
                       </div>
                       <div className="mt-1 space-y-1">
-                        {(spellsByLevel.get(level) ?? [])
-                          .slice()
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((spell) => {
-                            const flagged = flaggedAbilities.includes(spell.name);
-                            return (
-                              <FlaggableRow
-                                key={spell.id}
-                                flagged={flagged}
-                                onToggleFlag={() => toggleFlag(spell.name)}
-                                trailing={<SpellTrailing spell={spell} />}
-                              >
-                                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                                  <InfoTooltip className="min-w-0" panel={<KnownSpellHintPanel spell={spell} />}>
-                                    {spell.name}
-                                  </InfoTooltip>
-                                  <SpellBadges spell={spell} />
-                                  {spell.max !== undefined && (
-                                    <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
-                                  )}
-                                </span>
-                              </FlaggableRow>
-                            );
-                          })}
+                        {levelSpells.map((spell) => {
+                          const flagged = flaggedAbilities.includes(spell.name);
+                          return (
+                            <FlaggableRow
+                              key={spell.id}
+                              flagged={flagged}
+                              onToggleFlag={() => toggleFlag(spell.name)}
+                              trailing={<SpellTrailing spell={spell} />}
+                            >
+                              <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                                <InfoTooltip className="min-w-0" panel={<KnownSpellHintPanel spell={spell} />}>
+                                  {spell.name}
+                                </InfoTooltip>
+                                <SpellBadges spell={spell} />
+                                {spell.max !== undefined && (
+                                  <ChargeBadge current={spell.current!} max={spell.max} recovery={spell.recovery!} />
+                                )}
+                              </span>
+                            </FlaggableRow>
+                          );
+                        })}
                       </div>
                     </div>
                   );
                 })}
+                {spellsTabEmpty && <p className={`py-2 text-center ${EMPTY_STATE_CLS}`}>No spells match the selected tags.</p>}
               </div>
             )}
 
