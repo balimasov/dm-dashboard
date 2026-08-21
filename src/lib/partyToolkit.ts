@@ -376,6 +376,7 @@ export interface PartySpellEntry {
   duration?: string;
   effect?: string;
   effectType?: string;
+  effectExtra?: string;
   /** Fixed rule facts of the spell itself (same for every holder), like `school`/`components` above — taken from whichever holder's copy has one first. */
   isConcentration?: boolean;
   isRitual?: boolean;
@@ -425,6 +426,7 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
         existing.duration ??= spell.duration;
         existing.effect ??= spell.effect;
         existing.effectType ??= spell.effectType;
+        existing.effectExtra ??= spell.effectExtra;
         existing.isConcentration ??= spell.isConcentration;
         existing.isRitual ??= spell.isRitual;
       } else {
@@ -441,6 +443,7 @@ export function computePartySpellsByLevel(characters: Character[]): PartySpellLe
           duration: spell.duration,
           effect: spell.effect,
           effectType: spell.effectType,
+          effectExtra: spell.effectExtra,
           isConcentration: spell.isConcentration,
           isRitual: spell.isRitual,
           holders: [holder],

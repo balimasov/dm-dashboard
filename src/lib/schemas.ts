@@ -73,6 +73,7 @@ const knownSpellSchema = z.object({
   hitOrDc: z.string().optional(),
   effect: z.string().optional(),
   effectType: z.string().optional(),
+  effectExtra: z.string().optional(),
   duration: z.string().optional(),
 });
 

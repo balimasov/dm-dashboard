@@ -29,6 +29,7 @@ export interface SpellDisplayData {
   hitOrDc?: string;
   effect?: string;
   effectType?: string;
+  effectExtra?: string;
   duration?: string;
   components?: string;
   materialComponent?: string;
@@ -73,6 +74,14 @@ export function SpellHintPanel({
 }) {
   const isConcentration = spell.duration?.startsWith(CONCENTRATION_PREFIX);
   const hitOrDc = spell.hitOrDc ? splitHitOrDc(spell.hitOrDc) : undefined;
+  // A spell with more than one D&D Beyond classification tag (e.g. Sunbeam:
+  // Damage + Debuff) shows every one of them here, not just the first —
+  // `effect`/`effectType` (the dice/type half, when there is one) always
+  // leads, `effectExtra` (every other tag) trails after. `SpellTrailing`'s
+  // at-a-glance row deliberately never reads `effectExtra` — see its own
+  // doc comment for why a bare classification tag stays hint-only.
+  const effectTrailingText = [spell.effectType, spell.effectExtra].filter(Boolean).join(", ");
+  const effectTrailing = effectTrailingText ? (spell.effectType ? ` ${effectTrailingText}` : `, ${effectTrailingText}`) : undefined;
   const hasSpecifics = Boolean(
     spell.castingTime || spell.range || hitOrDc || spell.effect || spell.duration || status || spell.components || spell.materialComponent
   );
@@ -98,9 +107,7 @@ export function SpellHintPanel({
               {(hitOrDc || spell.effect) && (
                 <span className={HINT_FACT_ROW_CLS}>
                   {hitOrDc && <HintFact label={hitOrDc.label} value={hitOrDc.value} />}
-                  {spell.effect && (
-                    <HintFact label="Effect" value={spell.effect} trailing={spell.effectType && ` ${spell.effectType}`} />
-                  )}
+                  {spell.effect && <HintFact label="Effect" value={spell.effect} trailing={effectTrailing} />}
                 </span>
               )}
               {status}

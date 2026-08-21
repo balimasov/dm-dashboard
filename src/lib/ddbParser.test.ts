@@ -412,6 +412,33 @@ describe("spell hint fields (castingTime/range/hitOrDc/effect/duration) — matc
   });
 });
 
+describe("effectExtra carries every D&D Beyond tag beyond the one already shown as effect/effectType", () => {
+  test("Harm: a damage spell also tagged Debuff shows its damage dice/type as effect/effectType, 'Debuff' lands in effectExtra rather than being dropped", () => {
+    const c = load("cleric-life-domain-20");
+    const harm = c.knownSpells.find((s) => s.name === "Harm");
+    expect(harm?.tags).toEqual(["Damage", "Debuff"]);
+    expect(harm?.effect).toBe("14d6");
+    expect(harm?.effectType).toBe("Necrotic");
+    expect(harm?.effectExtra).toBe("Debuff");
+  });
+
+  test("Mage Armor: no dice-based effect at all — its first tag ('Buff') is still the fallback effect, its second ('Warding') lands in effectExtra instead of being silently dropped", () => {
+    const c = load("wizard-diviner-20");
+    const mageArmor = c.knownSpells.find((s) => s.name === "Mage Armor");
+    expect(mageArmor?.tags).toEqual(["Buff", "Warding"]);
+    expect(mageArmor?.effect).toBe("Buff");
+    expect(mageArmor?.effectType).toBeUndefined();
+    expect(mageArmor?.effectExtra).toBe("Warding");
+  });
+
+  test("Fireball: a single-tag damage spell has nothing left over, effectExtra stays absent", () => {
+    const c = load("yorun-all-immunities");
+    const fireball = c.knownSpells.find((s) => s.name === "Fireball");
+    expect(fireball?.tags).toEqual(["Damage"]);
+    expect(fireball?.effectExtra).toBeUndefined();
+  });
+});
+
 describe("spell/resource source resolves to the specific granting feature (buildComponentSourceIndex)", () => {
   test("a normal class-list spell (componentId 0) keeps the plain 'Class' source", () => {
     const c = load("yorun-all-immunities");

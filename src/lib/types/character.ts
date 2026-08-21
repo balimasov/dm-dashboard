@@ -92,6 +92,8 @@ export interface KnownSpell {
   effect?: string;
   /** The type/label half of `effect` (e.g. "Fire" for damage, "Healing" for healing) — present only alongside a dice-based `effect`; a fallback classification word (e.g. "Buff") has no separate type to show. */
   effectType?: string;
+  /** Every other D&D Beyond classification tag beyond the one already represented by `effect`/`effectType` (e.g. a Damage spell that's also tagged "Debuff" shows its dice/type as `effect`/`effectType` and "Debuff" here; a spell with no dice-based effect at all, like Mage Armor's "Buff"+"Warding", uses its first tag as `effect` and the rest here) — comma-joined, shown as a hint-only addendum right after `effect`/`effectType` so a multi-effect spell's full classification is visible without cluttering the compact row (`SpellTrailing` never reads this field). Absent for a single-tag spell. */
+  effectExtra?: string;
   /** e.g. "Instantaneous", "1 round", "Concentration, 1 minute", "Until Dispelled" — D&D Beyond's "Notes" column (duration half of it; components/material already surface via `components`/`materialComponent`). */
   duration?: string;
 }

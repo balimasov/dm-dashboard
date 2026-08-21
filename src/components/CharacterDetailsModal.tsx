@@ -664,7 +664,7 @@ export function CharacterDetailsModal({
                     ...(["action", "bonusAction", "reaction", "special"] as const).map((g) => ({ value: g, label: GROUP_LABELS[g] })),
                   ]}
                   isActive={(v) => actionFilter === v}
-                  onClick={(v) => setActionFilter(v as typeof actionFilter)}
+                  onClick={(v) => setActionFilter((current) => (v === current ? "all" : (v as typeof actionFilter)))}
                 />
                 {showAttackSections &&
                   (["melee", "ranged"] as const).map((attackType) => {
@@ -719,7 +719,7 @@ export function CharacterDetailsModal({
                     })),
                   ]}
                   isActive={(v) => featureFilter === v}
-                  onClick={(v) => setFeatureFilter(v as typeof featureFilter)}
+                  onClick={(v) => setFeatureFilter((current) => (v === current ? "all" : (v as typeof featureFilter)))}
                 />
                 {visibleOriginGroups.map(([origin, originFeatures]) => (
                   <div key={origin} className="space-y-1">

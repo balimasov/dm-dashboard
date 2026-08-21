@@ -74,7 +74,7 @@ function formatHitOrDc(df: RawDdbAny, spellcasting: SpellcastingStats | undefine
  * character regardless of level, so it's never consulted outside the
  * cantrip case.
  */
-function formatEffect(df: RawDdbAny, level: number): { value: string; type?: string } | undefined {
+function formatEffect(df: RawDdbAny, level: number): { value: string; type?: string; extra?: string } | undefined {
   const mods: RawDdbAny[] = df.modifiers ?? [];
   function scaledDice(mod: RawDdbAny): string {
     if (df.scaleType !== "characterlevel") return mod.die.diceString;
@@ -83,15 +83,21 @@ function formatEffect(df: RawDdbAny, level: number): { value: string; type?: str
     const best = applicable.sort((a, b) => b.level - a.level)[0];
     return best?.dice.diceString ?? mod.die.diceString;
   }
+  const tags: string[] = df.tags ?? [];
   const damageMod = mods.find((m) => m.type === "damage" && m.die?.diceString);
   if (damageMod) {
     const type = damageMod.friendlySubtypeName || titleCase(damageMod.subType ?? "");
-    return { value: scaledDice(damageMod), ...(type ? { type } : {}) };
+    const extra = tags.filter((t) => t.toLowerCase() !== "damage").join(", ");
+    return { value: scaledDice(damageMod), ...(type ? { type } : {}), ...(extra ? { extra } : {}) };
   }
   const healMod = mods.find((m) => m.type === "bonus" && m.subType === "hit-points" && m.die?.diceString);
-  if (healMod) return { value: scaledDice(healMod), type: "Healing" };
-  const tag = (df.tags ?? [])[0];
-  return tag ? { value: tag } : undefined;
+  if (healMod) {
+    const extra = tags.filter((t) => t.toLowerCase() !== "healing").join(", ");
+    return { value: scaledDice(healMod), type: "Healing", ...(extra ? { extra } : {}) };
+  }
+  if (tags.length === 0) return undefined;
+  const [primary, ...rest] = tags;
+  return { value: primary, ...(rest.length > 0 ? { extra: rest.join(", ") } : {}) };
 }
 
 /** D&D Beyond's "Notes" column, duration half (components/material already surface separately via `components`/`materialComponent`) — `durationType` "Instantaneous" and the open-ended "Until Dispelled(...)" cases stand alone, everything else pairs `durationInterval`+`durationUnit` into a real duration string, prefixed "Concentration, up to " when `durationType` is "Concentration" — matching how every rulebook actually phrases a concentration duration (D&D Beyond's own raw data has no "up to" of its own to read; `durationInterval`/`durationUnit` alone don't distinguish it from a fixed duration, so it's added here rather than sourced from the API). */
@@ -246,7 +252,9 @@ export function computeSpells(
       ...(formatCastingTime(df.activation) ? { castingTime: formatCastingTime(df.activation) } : {}),
       ...(formatRange(df.range) ? { range: formatRange(df.range) } : {}),
       ...(formatHitOrDc(df, spellcasting) ? { hitOrDc: formatHitOrDc(df, spellcasting) } : {}),
-      ...(effect ? { effect: effect.value, ...(effect.type ? { effectType: effect.type } : {}) } : {}),
+      ...(effect
+        ? { effect: effect.value, ...(effect.type ? { effectType: effect.type } : {}), ...(effect.extra ? { effectExtra: effect.extra } : {}) }
+        : {}),
       ...(formatDuration(df.duration) ? { duration: formatDuration(df.duration) } : {}),
     };
     spells.push(spell);
