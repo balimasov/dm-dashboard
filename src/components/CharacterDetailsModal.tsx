@@ -28,7 +28,7 @@ import { ConsumableQuantity } from "./ui/ConsumableQuantity";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
-import { ArrowDownIcon, DaggerIcon, LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
+import { DaggerIcon, LanguageIcon, ShieldIcon, ToolIcon } from "./ui/icons";
 import { ARMOR_HINT_PANEL, LANGUAGES_HINT_PANEL, TOOLS_HINT_PANEL, WEAPONS_HINT_PANEL } from "./ui/combatStatHints";
 import { ItemHintPanel } from "./ui/ItemHintPanel";
 import { NotesSection } from "./ui/NotesSection";
@@ -151,8 +151,9 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
  * (Class/Feat/Species/Background Features), *in addition to* their own full
  * listing in Action/Bonus Action/Reaction/Special — a deliberate
  * duplication, not an oversight, so the action-economy groups stay complete
- * lookup tables on their own. Each concretization's own hover hint gets a
- * "Full feature: ..." link back to the parent's row instead.
+ * lookup tables on their own. `parentByChildId` is what keeps a nested child
+ * from also showing as its own standalone top-level row in the same
+ * Class/Feat/Species/Background bucket.
  *
  * A `parentFeatureName` can point at a name nothing in `features` actually
  * has — D&D Beyond's own component graph can resolve to a real classFeature/
@@ -160,8 +161,7 @@ function groupFeaturesByOrigin(features: Feature[]): Array<[Feature["originType"
  * rules text surfacing under a different name, e.g. a Fighter's "Second
  * Wind: Tactical Shift" action resolves to a "Tactical Shift" classFeature
  * that never gets its own row once the byte-identical action already
- * claimed that description). Those misses are just skipped — no link to
- * show — rather than falling back to a name-prefix guess.
+ * claimed that description). Those misses are just skipped.
  */
 function buildFeatureLinks(features: Feature[]): {
   childrenByParentId: Map<string, Feature[]>;
@@ -229,21 +229,11 @@ function FeatureRow({
   feature,
   flagged,
   onToggleFlag,
-  anchorId,
-  highlighted,
-  parentFeature,
-  onJumpToFeature,
   hideCharge,
 }: {
   feature: Feature;
   flagged: boolean;
   onToggleFlag: () => void;
-  /** Set only on a parent's own top-level row (Class/Feat/Species/Background Features) — the scroll target `onJumpToFeature` below lands on. */
-  anchorId?: string;
-  highlighted?: boolean;
-  /** Set when this feature is a concretization of a broader parent shown elsewhere (see `buildFeatureLinks`) — adds a "Full feature: X" link to this row's own hover hint. Never set on the nested copy rendered right under that same parent — it's already right there. */
-  parentFeature?: Feature;
-  onJumpToFeature?: (id: string) => void;
   /**
    * Set on a parent's own row when it has nested children — `ddbParser`
    * only ever gives a classFeature/racialTrait/feat a `ChargeBadge` by
@@ -259,42 +249,9 @@ function FeatureRow({
   hideCharge?: boolean;
 }) {
   return (
-    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag} id={anchorId} highlighted={highlighted}>
+    <FlaggableRow flagged={flagged} onToggleFlag={onToggleFlag}>
       <span className="flex flex-wrap items-center gap-1.5">
-        <InfoTooltip
-          panel={
-            <FeatureHintPanel
-              feature={feature}
-              footer={
-                parentFeature &&
-                onJumpToFeature && (
-                  // Same trailing-line shape as `AdvantageLine` (border-t/pt-2/
-                  // text-xs) copied by hand rather than reused directly — this
-                  // is a link, not an advantage/disadvantage fact, so it isn't
-                  // that component's actual concern. Note: while this hint is
-                  // only showing as a hover preview (not pinned open by a
-                  // click), `InfoTooltip` sets `pointer-events: none` on the
-                  // whole panel, so the button below isn't clickable until
-                  // the feature name itself has been clicked once first —
-                  // same two-click behavior the app's other nested-hint case
-                  // (`ResourceTrackerHint`'s own rows) already has.
-                  <p className="mt-2 flex items-start gap-1.5 border-t border-slate-800 pt-2 text-xs leading-snug text-slate-300">
-                    <ArrowDownIcon className="mt-px h-3 w-3 shrink-0 text-slate-500" />
-                    <button
-                      type="button"
-                      onClick={() => onJumpToFeature(parentFeature.id)}
-                      className="text-left underline decoration-dotted decoration-slate-600 underline-offset-2 hover:text-slate-100"
-                    >
-                      Full feature: {parentFeature.name}
-                    </button>
-                  </p>
-                )
-              }
-            />
-          }
-        >
-          {feature.name}
-        </InfoTooltip>
+        <InfoTooltip panel={<FeatureHintPanel feature={feature} />}>{feature.name}</InfoTooltip>
         {feature.max !== undefined && !hideCharge && <ChargeBadge current={feature.current!} max={feature.max} recovery={feature.recovery!} />}
       </span>
     </FlaggableRow>
@@ -403,17 +360,6 @@ export function CharacterDetailsModal({
       ? flaggedAbilities.filter((n) => n !== name)
       : [...flaggedAbilities, name];
     onUpdate?.(c.id, { flaggedAbilities: next });
-  }
-
-  // Scroll-to + brief flash for a linked feature's "Full feature: X" hint
-  // link (see `buildFeatureLinks`) — same `getElementById` + `scrollIntoView`
-  // idiom `SectionNavRail`/`TabStrip` already use elsewhere in the app for
-  // "jump to this element" navigation.
-  const [highlightedFeatureId, setHighlightedFeatureId] = useState<string | null>(null);
-  function jumpToFeature(id: string) {
-    document.getElementById(`feature-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setHighlightedFeatureId(id);
-    window.setTimeout(() => setHighlightedFeatureId((current) => (current === id ? null : current)), 1600);
   }
 
   useEscapeToClose(onClose);
@@ -688,8 +634,6 @@ export function CharacterDetailsModal({
                           feature={feature}
                           flagged={flaggedAbilities.includes(feature.name)}
                           onToggleFlag={() => toggleFlag(feature.name)}
-                          parentFeature={parentByChildId.get(feature.id)}
-                          onJumpToFeature={jumpToFeature}
                         />
                       ))}
                   </div>
@@ -735,8 +679,6 @@ export function CharacterDetailsModal({
                                 feature={feature}
                                 flagged={flaggedAbilities.includes(feature.name)}
                                 onToggleFlag={() => toggleFlag(feature.name)}
-                                anchorId={`feature-row-${feature.id}`}
-                                highlighted={highlightedFeatureId === feature.id}
                                 hideCharge={Boolean(children)}
                               />
                               {children && (

@@ -40,7 +40,6 @@ export function AbilityHintPanel({
   description,
   emptyDescription,
   holders,
-  footer,
 }: {
   name: ReactNode;
   /** Shown in parens right after the name — a spell's school, most often. */
@@ -57,8 +56,6 @@ export function AbilityHintPanel({
   emptyDescription?: string;
   /** "Who has it" rows — same shape every party-wide hint in the app already uses. */
   holders?: CoverageHolder[];
-  /** Passed straight through to `HintPanel`'s own `footer` slot — see `AdvantageLine`'s doc comment for the established shape (a bordered-off trailing line), and `FeatureHintPanel`'s `footer` for the concrete "Full feature: X" back-reference this was added for. */
-  footer?: ReactNode;
 }) {
   const meta = (metaLines ?? []).filter((line): line is string => Boolean(line));
   const hasMeta = meta.length > 0;
@@ -103,7 +100,6 @@ export function AbilityHintPanel({
       rows={holders}
       rowKey={(h: CoverageHolder) => h.characterId}
       renderRow={(h: CoverageHolder) => h.characterName}
-      footer={footer}
     />
   );
 }
