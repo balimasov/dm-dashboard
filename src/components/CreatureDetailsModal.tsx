@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Character, Creature, CustomConditionTemplate } from "@/lib/types";
+import { Character, Creature, CreatureTrait, CustomConditionTemplate } from "@/lib/types";
 import { abilityModifier } from "@/lib/characterMath";
 import { CONTENT_KIND_ICON } from "@/lib/contentKindIcons";
 import { formatModifier } from "@/lib/format";
@@ -19,6 +19,7 @@ import { AskAiPill } from "./ui/AskAiPill";
 import { TOOLBAR_ROW_CLS } from "./ui/containerStyles";
 import { DetailsTwoColumn } from "./ui/DetailsTwoColumn";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
+import { FilterChipRow } from "./ui/FilterChipRow";
 import { FlaggableRow } from "./ui/FlaggableRow";
 import { IconButton } from "./ui/IconButton";
 import { Modal } from "./ui/Modal";
@@ -101,6 +102,14 @@ export function CreatureDetailsModal({
   const allGroups = groupTraits(creature.traits);
   const hasTraits = allGroups.length > 0;
   const hasSpellcasting = Boolean(creature.spellcasting);
+
+  // Same single-select toggle-chip filter as `CharacterDetailsModal`'s
+  // Actions/Features tabs (same `FilterChipRow` component, same "click the
+  // active chip again to reset to All" behavior) — options are built from
+  // `allGroups` itself, so a group with nothing in it (already dropped by
+  // `groupTraits`) never gets a chip of its own.
+  const [featureFilter, setFeatureFilter] = useState<"all" | NonNullable<CreatureTrait["group"]>>("all");
+  const visibleGroups = allGroups.filter(({ group }) => featureFilter === "all" || featureFilter === group);
 
   // Content tabs only — Features/Spells, each gated on actually having
   // something to show — kept separate from `tabs` below so the "no traits
@@ -189,7 +198,17 @@ export function CreatureDetailsModal({
 
               {currentTab === "features" && (
                 <div className="space-y-3">
-                  {allGroups.map(({ group, items }) => (
+                  <FilterChipRow
+                    options={[
+                      { value: "all", label: "All" },
+                      ...allGroups
+                        .map(({ group }) => ({ value: group, label: GROUP_LABELS[group] }))
+                        .sort((a, b) => a.label.localeCompare(b.label)),
+                    ]}
+                    isActive={(v) => featureFilter === v}
+                    onClick={(v) => setFeatureFilter((current) => (v === current ? "all" : (v as typeof featureFilter)))}
+                  />
+                  {visibleGroups.map(({ group, items }) => (
                     <div key={group} className="space-y-1">
                       <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
                       {items.map((trait, index) => {
