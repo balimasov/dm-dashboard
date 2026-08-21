@@ -3,7 +3,7 @@ import { KnownSpell } from "@/lib/types";
 import { RichText } from "../RichText";
 import { CHIP_TONE_CLASSES } from "./chipTones";
 import { HINT_FACT_ROW_CLS, HINT_PANEL_DIVIDER_CLS, TRAILING_ROW_CLS } from "./containerStyles";
-import { HintFact } from "./HintFact";
+import { HINT_FACT_TONE_CLS, HintFact } from "./HintFact";
 import { HintPanel } from "./HintPanel";
 import { MetaBadge } from "./MetaBadge";
 import { recoveryStatusLine } from "./RecoveryBadge";
@@ -77,11 +77,26 @@ export function SpellHintPanel({
   // A spell with more than one D&D Beyond classification tag (e.g. Sunbeam:
   // Damage + Debuff) shows every one of them here, not just the first —
   // `effect`/`effectType` (the dice/type half, when there is one) always
-  // leads, `effectExtra` (every other tag) trails after. `SpellTrailing`'s
-  // at-a-glance row deliberately never reads `effectExtra` — see its own
-  // doc comment for why a bare classification tag stays hint-only.
-  const effectTrailingText = [spell.effectType, spell.effectExtra].filter(Boolean).join(", ");
-  const effectTrailing = effectTrailingText ? (spell.effectType ? ` ${effectTrailingText}` : `, ${effectTrailingText}`) : undefined;
+  // leads, `effectExtra` (every other tag) trails after, styled the same
+  // bold `HINT_FACT_TONE_CLS.sky` as `effect` itself — a real classification
+  // tag ("Debuff", "Warding") is exactly as significant as the primary one
+  // and reads oddly dimmed next to it. Only `effectType` (the damage/heal
+  // *type* word, e.g. "Fire"/"Necrotic") stays plain/secondary, unchanged
+  // from before — that distinction is `effect`/`effectType`'s own, not new
+  // here. `SpellTrailing`'s at-a-glance row deliberately never reads
+  // `effectExtra` — see its own doc comment for why a bare classification
+  // tag stays hint-only.
+  const effectTrailing = (
+    <>
+      {spell.effectType && ` ${spell.effectType}`}
+      {spell.effectExtra && (
+        <>
+          {", "}
+          <span className={HINT_FACT_TONE_CLS.sky}>{spell.effectExtra}</span>
+        </>
+      )}
+    </>
+  );
   const hasSpecifics = Boolean(
     spell.castingTime || spell.range || hitOrDc || spell.effect || spell.duration || status || spell.components || spell.materialComponent
   );

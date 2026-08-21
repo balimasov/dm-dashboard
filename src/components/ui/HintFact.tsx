@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 
 type HintFactTone = "sky" | "bold" | "text" | "raw";
 
-const TONE_CLS: Record<Exclude<HintFactTone, "raw">, string> = {
+/** Exported so a caller building its own "raw"-tone value (mixing this styling with plain secondary text inline, e.g. `SpellHintPanel`'s Effect line) can reuse the exact "sky" class instead of a second, driftable copy of the literal. */
+export const HINT_FACT_TONE_CLS: Record<Exclude<HintFactTone, "raw">, string> = {
   sky: "font-semibold text-sky-400",
   bold: "font-semibold text-slate-100",
   text: "",
@@ -51,7 +52,7 @@ export function HintFact({
   return (
     <span className="block">
       <span className="text-slate-500">{label}</span>{" "}
-      {tone === "raw" ? value : <span className={TONE_CLS[tone]}>{value}</span>}
+      {tone === "raw" ? value : <span className={HINT_FACT_TONE_CLS[tone]}>{value}</span>}
       {trailing}
     </span>
   );
