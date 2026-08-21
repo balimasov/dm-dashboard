@@ -672,7 +672,7 @@ export function CharacterDetailsModal({
                     if (attacks.length === 0) return null;
                     return (
                       <div key={attackType} className="space-y-1">
-                        <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Attacks Melee" : "Attacks Ranged"}</p>
+                        <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Attack Melee" : "Attack Ranged"}</p>
                         {attacks.map((attack) => (
                           <AttackRow
                             key={attack.id}
