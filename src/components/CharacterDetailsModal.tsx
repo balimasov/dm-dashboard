@@ -713,7 +713,7 @@ export function CharacterDetailsModal({
                 <FilterChipRow
                   options={[
                     { value: "all", label: "All" },
-                    ...(["species", "class", "feat", "background"] as const).map((origin) => ({
+                    ...(["background", "class", "feat", "species"] as const).map((origin) => ({
                       value: origin,
                       label: ORIGIN_FILTER_LABELS[origin],
                     })),
