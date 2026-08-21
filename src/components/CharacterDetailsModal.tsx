@@ -374,7 +374,7 @@ function ConsumableRow({ item, flagged, onToggleFlag }: { item: InventoryItem; f
   );
 }
 
-type DetailsTab = "weapons" | "features" | "spells" | "consumables" | "notes";
+type DetailsTab = "actions" | "features" | "spells" | "consumables" | "notes";
 
 export function CharacterDetailsModal({
   character,
@@ -429,16 +429,19 @@ export function CharacterDetailsModal({
   const spellLevels = Array.from(spellsByLevel.keys()).sort((a, b) => a - b);
 
   const groupedFeatures = groupFeaturesByGroup(c.features);
+  const actionTypeGroups = groupedFeatures.filter(([group]) => group !== "other");
+  const otherBucket = groupedFeatures.filter(([group]) => group === "other");
   const { childrenByParentId, parentByChildId } = buildFeatureLinks(c.features);
   const sortedAttacks = c.attacks.slice().sort((a, b) => a.name.localeCompare(b.name));
   const hasAttacks = sortedAttacks.length > 0;
   const hasSpells = spellLevels.length > 0;
-  const hasFeatures = c.features.length > 0;
+  const hasActionsTabContent = hasAttacks || actionTypeGroups.length > 0;
+  const hasFeaturesTabContent = otherBucket.length > 0;
   const consumables = dedupeInventoryItems(c.inventory.filter((item) => item.category === "Consumable"));
   const consumableGroups = groupConsumablesByType(consumables);
   const hasConsumables = consumables.length > 0;
 
-  // Content tabs only — Weapons/Features/Spells/Consumables, each gated on
+  // Content tabs only — Actions/Features/Spells/Consumables, each gated on
   // actually having something to show. Kept separate from `tabs` below so
   // the "no spells or features on record yet" nudge can still key off "is
   // there any actual game content", now that Notes always adds a tab of its
@@ -446,8 +449,8 @@ export function CharacterDetailsModal({
   // rendering today, just relocated from a fixed block under the tabs into
   // one of the tabs themselves).
   const contentTabs: Array<{ key: DetailsTab; icon: string; text: string }> = [
-    ...(hasAttacks ? [{ key: "weapons" as const, icon: CONTENT_KIND_ICON.weapons, text: "Weapons" }] : []),
-    ...(hasFeatures ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features" }] : []),
+    ...(hasActionsTabContent ? [{ key: "actions" as const, icon: CONTENT_KIND_ICON.weapons, text: "Actions" }] : []),
+    ...(hasFeaturesTabContent ? [{ key: "features" as const, icon: CONTENT_KIND_ICON.features, text: "Features" }] : []),
     ...(hasSpells ? [{ key: "spells" as const, icon: CONTENT_KIND_ICON.spells, text: "Spells" }] : []),
     ...(hasConsumables ? [{ key: "consumables" as const, icon: CONTENT_KIND_ICON.consumables, text: "Consumables" }] : []),
   ];
@@ -616,7 +619,7 @@ export function CharacterDetailsModal({
           }
           right={
             <>
-              {/* Weapons / Features / Spells / Consumables / Notes — tabbed
+              {/* Actions / Features / Spells / Consumables / Notes — tabbed
                   instead of stacked sections, reachable without scrolling past
                   the stat block on the left. `TabStrip` (not `TabBar`) — the
                   underline tab-strip style, not the icon-over-label pill
@@ -644,15 +647,25 @@ export function CharacterDetailsModal({
               {/* Grouped Melee/Ranged, same `MICRO_ITEM_LABEL_CLS` group heading
                   the Features tab uses for Action/Bonus Action/... and the
                   Spells tab uses for each spell level — one heading recipe
-                  for "a labeled sub-group of rows" across every tab here. */}
-              {currentTab === "weapons" && (
+                  for "a labeled sub-group of rows" across every tab here.
+                  Weapon attacks live here too now, ahead of the Action/Bonus
+                  Action/Reaction/Special groups — this tab answers "what can
+                  I do right now," and a weapon attack is exactly that, the
+                  same as a maneuver or Action Surge. Each weapon's own row
+                  already carries its mastery-property badge (`AttackTrailing`
+                  — "Nick"/"Vex"/"Slow"), so the matching classFeature-granted
+                  action entry (e.g. "Nick (Scimitar)", `parentFeatureName`
+                  "Weapon Mastery") is filtered out of the groups below to
+                  avoid saying the same thing twice one line down — it's still
+                  reachable nested under "Weapon Mastery" on the Features tab. */}
+              {currentTab === "actions" && (
               <div className="space-y-3">
                 {(["melee", "ranged"] as const).map((attackType) => {
                   const attacks = sortedAttacks.filter((attack) => attack.attackType === attackType);
                   if (attacks.length === 0) return null;
                   return (
                     <div key={attackType} className="space-y-1">
-                      <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Melee" : "Ranged"}</p>
+                      <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Melee Attacks" : "Ranged Attacks"}</p>
                       {attacks.map((attack) => (
                         <AttackRow
                           key={attack.id}
@@ -664,86 +677,12 @@ export function CharacterDetailsModal({
                     </div>
                   );
                 })}
-              </div>
-            )}
-
-            {currentTab === "features" && (
-              <div className="space-y-3">
-                {groupedFeatures.map(([group, features], index) =>
-                  group === "other" ? (
-                    // The "other" bucket sub-groups by origin instead of a flat
-                    // list — mirrors D&D Beyond's separate Features & Traits tab
-                    // (Species Traits/Class Features/Feat Features/Background
-                    // Feature) rather than the Actions-tab-style groups above.
-                    // Only divided from those when there actually are any
-                    // (index > 0) — a character with no Action/Bonus Action/
-                    // Reaction/Special entries has nothing above to separate from.
-                    <div
-                      key={group}
-                      className={`space-y-3 ${index > 0 ? "border-t-2 border-slate-600 pt-4" : ""}`}
-                    >
-                      {/* A child rendered here also lives somewhere else in
-                          this very "other" bucket, nested under its own
-                          parent — see the `parentByChildId` filter below —
-                          since a resolvable `parentFeatureName` only ever
-                          points at a classFeature/racialTrait/feat, and
-                          those are always `group: "other"` themselves.
-                          Excluded from its own standalone row here so it
-                          doesn't show twice within this one bucket (e.g.
-                          "Drow Lineage" under "Elven Lineage" in Species
-                          Traits, or "Increase two scores" under "Savage
-                          Attacker" in Feat Features even though its own
-                          origin is Background). This is deliberately
-                          narrower than the top-level Action/Bonus Action/
-                          Reaction/Special groups above, which keep every
-                          child in full — those exist specifically as
-                          complete action-economy lookups, so nothing is
-                          filtered out of them. */}
-                      {groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).map(([origin, originFeatures]) => (
-                        <div key={origin} className="space-y-1">
-                          <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
-                          {originFeatures.map((feature) => {
-                            const children = childrenByParentId.get(feature.id);
-                            return (
-                              <div key={feature.id}>
-                                <FeatureRow
-                                  feature={feature}
-                                  flagged={flaggedAbilities.includes(feature.name)}
-                                  onToggleFlag={() => toggleFlag(feature.name)}
-                                  anchorId={`feature-row-${feature.id}`}
-                                  highlighted={highlightedFeatureId === feature.id}
-                                  hideCharge={Boolean(children)}
-                                />
-                                {children && (
-                                  // Same concretizations already listed in full
-                                  // above (Action/Bonus Action/Special) —
-                                  // intentionally duplicated here, not moved,
-                                  // so those groups stay complete on their own.
-                                  // Recursive: a child can have its own
-                                  // children (e.g. a Battle Master maneuver
-                                  // choice like "Trip Attack" nests its own
-                                  // "Maneuver: Trip Attack (Str.)"/"(Dex.)"
-                                  // concretizations one level deeper) — see
-                                  // `NestedFeatureRows`'s own doc comment.
-                                  <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
-                                    <NestedFeatureRows
-                                      features={children}
-                                      childrenByParentId={childrenByParentId}
-                                      flaggedAbilities={flaggedAbilities}
-                                      toggleFlag={toggleFlag}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div key={group} className="space-y-1">
-                      <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
-                      {features.map((feature) => (
+                {actionTypeGroups.map(([group, features]) => (
+                  <div key={group} className="space-y-1">
+                    <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
+                    {features
+                      .filter((feature) => !feature.parentFeatureName?.startsWith("Weapon Mastery"))
+                      .map((feature) => (
                         <FeatureRow
                           key={feature.id}
                           feature={feature}
@@ -753,9 +692,80 @@ export function CharacterDetailsModal({
                           onJumpToFeature={jumpToFeature}
                         />
                       ))}
-                    </div>
-                  )
-                )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {currentTab === "features" && (
+              <div className="space-y-3">
+                {otherBucket.map(([group, features]) => (
+                  // Sub-grouped by origin instead of a flat list — mirrors
+                  // D&D Beyond's separate Features & Traits tab (Species
+                  // Traits/Class Features/Feat Features/Background Feature).
+                  // No divider above this — the Action/Bonus Action/Reaction/
+                  // Special groups it used to sit under live on their own
+                  // Actions tab now, so there's nothing left here to separate
+                  // from.
+                  <div key={group} className="space-y-3">
+                    {/* A child rendered here also lives somewhere else in
+                        this very "other" bucket, nested under its own
+                        parent — see the `parentByChildId` filter below —
+                        since a resolvable `parentFeatureName` only ever
+                        points at a classFeature/racialTrait/feat, and
+                        those are always `group: "other"` themselves.
+                        Excluded from its own standalone row here so it
+                        doesn't show twice within this one bucket (e.g.
+                        "Drow Lineage" under "Elven Lineage" in Species
+                        Traits, or "Increase two scores" under "Savage
+                        Attacker" in Feat Features even though its own
+                        origin is Background). This is deliberately
+                        narrower than the Actions tab's own groups, which
+                        keep every child in full — those exist specifically
+                        as complete action-economy lookups, so nothing is
+                        filtered out of them. */}
+                    {groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).map(([origin, originFeatures]) => (
+                      <div key={origin} className="space-y-1">
+                        <p className={MICRO_ITEM_LABEL_CLS}>{ORIGIN_LABELS[origin]}</p>
+                        {originFeatures.map((feature) => {
+                          const children = childrenByParentId.get(feature.id);
+                          return (
+                            <div key={feature.id}>
+                              <FeatureRow
+                                feature={feature}
+                                flagged={flaggedAbilities.includes(feature.name)}
+                                onToggleFlag={() => toggleFlag(feature.name)}
+                                anchorId={`feature-row-${feature.id}`}
+                                highlighted={highlightedFeatureId === feature.id}
+                                hideCharge={Boolean(children)}
+                              />
+                              {children && (
+                                // Same concretizations already listed in full
+                                // on the Actions tab — intentionally
+                                // duplicated here, not moved, so that tab
+                                // stays a complete lookup on its own.
+                                // Recursive: a child can have its own
+                                // children (e.g. a Battle Master maneuver
+                                // choice like "Trip Attack" nests its own
+                                // "Maneuver: Trip Attack (Str.)"/"(Dex.)"
+                                // concretizations one level deeper) — see
+                                // `NestedFeatureRows`'s own doc comment.
+                                <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-800 pl-2">
+                                  <NestedFeatureRows
+                                    features={children}
+                                    childrenByParentId={childrenByParentId}
+                                    flaggedAbilities={flaggedAbilities}
+                                    toggleFlag={toggleFlag}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
 
