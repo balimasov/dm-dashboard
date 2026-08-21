@@ -160,3 +160,15 @@ export const HINT_FACT_ROW_CLS = "flex flex-wrap items-center gap-x-3 gap-y-1.5"
  * the drift into this constant instead of removing it.
  */
 export const TRAILING_ROW_CLS = "flex shrink-0 items-center text-[13px]";
+
+/**
+ * Active/inactive color pair for a toggle pill (a condition toggle, a filter
+ * chip) — confirmed byte-for-byte duplicated across `StatusRail.tsx`'s two
+ * condition-pill variants (standard and custom/dashed) and `FilterChipRow.tsx`
+ * before being named here. Each caller still supplies its own shape (rounded
+ * sizing, dashed border, capitalize, transition) on top — this pair is only
+ * ever the color half of that recipe, the same granularity `HINT_PANEL_DIVIDER_CLS`
+ * and friends above use rather than naming a full className.
+ */
+export const TOGGLE_PILL_ACTIVE_CLS = "border-amber-500 bg-amber-500/10 text-amber-300";
+export const TOGGLE_PILL_INACTIVE_CLS = "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200";

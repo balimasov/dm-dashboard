@@ -10,7 +10,7 @@ import { CONDITION_INFO, getExhaustionEffect, EXHAUSTION_RULES_TEXT } from "@/li
 import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel } from "./conditionHints";
 import { inputCls } from "./Field";
 import { IconButton } from "./IconButton";
-import { POPOVER_SHELL_CLS } from "./containerStyles";
+import { POPOVER_SHELL_CLS, TOGGLE_PILL_ACTIVE_CLS, TOGGLE_PILL_INACTIVE_CLS } from "./containerStyles";
 import { ConcentrationIcon, ExhaustionIcon, PencilIcon, PlusIcon, StarIcon, TrashOutlineIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
@@ -389,9 +389,7 @@ function CustomConditionPill({ template, active, onToggle }: { template: CustomC
     <button
       type="button"
       onClick={onToggle}
-      className={`rounded-full border border-dashed px-2 py-0.5 text-xs ${
-        active ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
-      }`}
+      className={`rounded-full border border-dashed px-2 py-0.5 text-xs ${active ? TOGGLE_PILL_ACTIVE_CLS : TOGGLE_PILL_INACTIVE_CLS}`}
     >
       <InfoTooltip hoverOnly disableTap panel={<CustomConditionHintPanel name={template.name} description={template.description} />}>
         {template.name}
@@ -651,9 +649,7 @@ function StatusPopover({
                         type="button"
                         onClick={() => toggleCondition(name)}
                         className={`rounded-full border px-2 py-0.5 text-xs capitalize ${
-                          active
-                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                            : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                          active ? TOGGLE_PILL_ACTIVE_CLS : TOGGLE_PILL_INACTIVE_CLS
                         }`}
                       >
                         {name}

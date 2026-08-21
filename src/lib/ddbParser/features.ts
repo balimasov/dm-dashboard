@@ -79,14 +79,13 @@ export function computeFeatures(
   // wins over the generic "other" one describing the same thing).
   const seenDescriptions = new Set<string>();
 
-  // TEMPORARY diagnostic, added 2026-08-18 — names claimed specifically by
-  // an `actions.*` entry (the first loop below), so the later racialTraits/
-  // classFeatures/feats loops can tell "this name is taken by an action"
-  // (the "Action Surge" classFeature vs. the "Action Surge" action pattern
-  // the test duplicate below targets) apart from "this name is taken by
-  // some other classFeature/racialTrait/feat" (an unrelated collision that
-  // should keep silently deduping exactly as it always has). Remove
-  // alongside `isTestDuplicate` once a decision is made.
+  // Names claimed specifically by an `actions.*` entry (the first loop
+  // below), so the later racialTraits/classFeatures/feats loops can tell
+  // "this name is taken by an action" (e.g. the "Action Surge" classFeature
+  // vs. the "Action Surge" action — a real D&D Beyond duplicate, deliberately
+  // shown twice rather than deduped, see `isActionEcho` below) apart from
+  // "this name is taken by some other classFeature/racialTrait/feat" (an
+  // unrelated collision that keeps silently deduping as always).
   const actionDedupeKeys = new Set<string>();
 
   // Lets an `options.*`/`actions.*` entry (see below) report the *specific*
@@ -237,14 +236,15 @@ export function computeFeatures(
     const dedupeKey = trimmedName.toLowerCase();
     if (!dedupeKey) return;
     const isNameCollision = seen.has(dedupeKey);
-    // TEMPORARY diagnostic, added 2026-08-18 — only a collision against a
-    // name specifically claimed by an action (not against some other
-    // classFeature/racialTrait/feat, which keeps silently deduping as
-    // before) is let through, marked `isTestDuplicate: true`, instead of
-    // being dropped — see `actionDedupeKeys`'s own doc comment. Remove
-    // alongside that set once a decision is made.
-    const isTestDuplicate = isNameCollision && !extra?.isAction && actionDedupeKeys.has(dedupeKey);
-    if (isNameCollision && !isTestDuplicate) return;
+    // A real D&D Beyond duplicate: a classFeature/racialTrait/feat whose name
+    // was already claimed by an `actions.*` entry of the identical name
+    // (e.g. "Action Surge" the classFeature vs. "Action Surge" the action).
+    // Let through rather than dropped — the decision to keep showing these
+    // unmarked (not `isTestDuplicate`-flagged the way an earlier round did)
+    // was made in [1.125.6]; a collision against any other
+    // classFeature/racialTrait/feat still dedupes silently as always.
+    const isActionEcho = isNameCollision && !extra?.isAction && actionDedupeKeys.has(dedupeKey);
+    if (isNameCollision && !isActionEcho) return;
     if (!isNameCollision) {
       seen.add(dedupeKey);
       if (extra?.isAction) actionDedupeKeys.add(dedupeKey);
@@ -258,12 +258,12 @@ export function computeFeatures(
         ).trim()
       : undefined;
 
-    // Skipped for the forced test duplicate — its whole point is to
-    // surface even when the text is a near-identical paraphrase of the
-    // action's own description (true for "Action Surge"/"Tactical Mind",
-    // confirmed on real exports; "Second Wind" happens to differ enough in
-    // wording that this check would have let it through anyway).
-    if (description && !isTestDuplicate) {
+    // Skipped for an action echo — its whole point is to surface even when
+    // the text is a near-identical paraphrase of the action's own
+    // description (true for "Action Surge"/"Tactical Mind", confirmed on
+    // real exports; "Second Wind" happens to differ enough in wording that
+    // this check would have let it through anyway).
+    if (description && !isActionEcho) {
       if (seenDescriptions.has(description)) return;
       seenDescriptions.add(description);
     }
@@ -286,7 +286,6 @@ export function computeFeatures(
       ...(description ? { description } : {}),
       ...(charges ? { current: charges.current, max: charges.max, recovery: charges.recovery } : {}),
       ...(parentFeatureName ? { parentFeatureName } : {}),
-      ...(isTestDuplicate ? { isTestDuplicate: true } : {}),
       ...(extra?.featPrerequisite ? { featPrerequisite: extra.featPrerequisite } : {}),
     });
   }

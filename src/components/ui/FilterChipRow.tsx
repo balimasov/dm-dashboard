@@ -1,13 +1,14 @@
+import { TOGGLE_PILL_ACTIVE_CLS, TOGGLE_PILL_INACTIVE_CLS } from "./containerStyles";
+
 /**
  * A row of small toggle-pill filter chips sitting above a list, letting a
  * player narrow it down without hiding anything from the underlying data —
- * just from the current render. Same on/off recipe `StatusRail`'s condition
- * pills already use app-wide (`border-amber-500 bg-amber-500/10
- * text-amber-300` active, `border-slate-700 text-slate-400
- * hover:border-slate-500 hover:text-slate-200` inactive, confirmed as the
- * one settled "toggle pill" convention rather than reinvented here) —
- * without the dashed border, which is specifically `StatusRail`'s own
- * homebrew-content marker, not part of this recipe.
+ * just from the current render. Same on/off color pair `StatusRail`'s
+ * condition pills already use app-wide (`TOGGLE_PILL_ACTIVE_CLS`/
+ * `TOGGLE_PILL_INACTIVE_CLS`, confirmed as the one settled "toggle pill"
+ * convention rather than reinvented here) — without the dashed border, which
+ * is specifically `StatusRail`'s own homebrew-content marker, not part of
+ * this recipe.
  *
  * Fully generic on selection: `isActive`/`onClick` are the caller's own
  * logic rather than a built-in single/multi-select mode, so both real
@@ -39,9 +40,7 @@ export function FilterChipRow({
             aria-pressed={active}
             onClick={() => onClick(opt.value)}
             className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-              active
-                ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+              active ? TOGGLE_PILL_ACTIVE_CLS : TOGGLE_PILL_INACTIVE_CLS
             }`}
           >
             {opt.label}
