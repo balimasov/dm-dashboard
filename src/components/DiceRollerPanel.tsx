@@ -88,7 +88,7 @@ function DieButton({
         <button
           type="button"
           onClick={onAdd}
-          className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
+          className={`flex h-9 items-center justify-center rounded-lg border px-1.5 text-xs font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
             adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
           }`}
         >
@@ -138,7 +138,7 @@ function DieButton({
 
 function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; onRemove: () => void }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}>
+    <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-semibold ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}>
       {count}d{sides}
       <button type="button" onClick={onRemove} aria-label={`Remove ${count}d${sides}`} className="opacity-70 hover:opacity-100">
         ✕
@@ -157,7 +157,7 @@ function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides
       : nat1
         ? "border-red-600 bg-red-950/40 text-red-400"
         : CHIP_TONE_CLASSES[DIE_TONE[sides]];
-  return <span className={`rounded border px-1.5 text-[11px] font-semibold tabular-nums ${toneClass}`}>{value}</span>;
+  return <span className={`rounded border px-1.5 text-xs font-semibold tabular-nums ${toneClass}`}>{value}</span>;
 }
 
 function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: RolledDie[] }[] {
@@ -175,10 +175,10 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
   const groups = groupDiceBySides(entry.dice);
   const parts: ReactNode[] = [];
   groups.forEach((group, i) => {
-    if (i > 0) parts.push(<span key={`op-${i}`} className="text-[11px] text-slate-600"> + </span>);
+    if (i > 0) parts.push(<span key={`op-${i}`} className="text-xs text-slate-600"> + </span>);
     parts.push(
       <span key={`g-${group.sides}`} className="inline-flex items-baseline gap-1">
-        <span className={`text-[11px] font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
+        <span className={`text-xs font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
           {group.entries.length}d{group.sides}
         </span>
         {/* `flex flex-wrap`, not `inline-flex` — a single roll with many
@@ -202,13 +202,13 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
   });
   if (entry.modifier !== 0) {
     parts.push(
-      <span key="mod-op" className="text-[11px] text-slate-600">
+      <span key="mod-op" className="text-xs text-slate-600">
         {" "}
         {entry.modifier > 0 ? "+" : "−"}{" "}
       </span>
     );
     parts.push(
-      <span key="mod-val" className="rounded border border-dashed border-slate-700 px-1.5 text-[11px] font-semibold text-slate-300">
+      <span key="mod-val" className="rounded border border-dashed border-slate-700 px-1.5 text-xs font-semibold text-slate-300">
         {Math.abs(entry.modifier)}
       </span>
     );
