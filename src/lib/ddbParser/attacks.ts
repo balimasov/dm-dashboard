@@ -153,8 +153,19 @@ function isMonkWeapon(weapon: RawDdbAny, propertyNames: string[]): boolean {
  * "Enhanced Unarmed Strike" at 1d4+Str side by side). Silently showing the
  * better numbers under the plain name was misleading — it read as if the
  * character's *baseline* Unarmed Strike had that damage.
+ *
+ * The Unarmed Fighting feat (2024 PHB) is a third, different case: its
+ * `type: "set", subType: "unarmed-damage-die"` modifier (e.g. `1d6`)
+ * unconditionally replaces the flat "1 + Str" baseline die on this same
+ * "Unarmed Strike" row — confirmed on a real level-20 Fighter export whose
+ * D&D Beyond Actions tab shows "Unarmed Strike" at `1d6 +3`, not the flat
+ * baseline, despite having weapons equipped. This is still the *same* row
+ * (unlike Tavern Brawler's resolved action above), just with a better die —
+ * the feat's *other*, better-still `1d8` die (usable only with a hand free)
+ * is D&D Beyond's own separate resolved action, added as its own row by
+ * `computeUnarmedFightingAttack` below rather than folded in here.
  */
-function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack {
+function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack {
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
 
@@ -199,6 +210,22 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
     };
   }
 
+  const featDie = (mods.find((m) => m.type === "set" && m.subType === "unarmed-damage-die") as RawDdbAny)?.dice
+    ?.diceString;
+  if (featDie) {
+    return {
+      id: "attack-unarmed",
+      name: "Unarmed Strike",
+      attackType: "melee",
+      attackBonus: strMod + profBonus,
+      damage: `${featDie}${strMod !== 0 ? ` ${formatModifier(strMod)}` : ""}`,
+      damageType: "Bludgeoning",
+      properties: [],
+      range: "5 ft.",
+      proficient: true,
+    };
+  }
+
   return {
     id: "attack-unarmed",
     name: "Unarmed Strike",
@@ -213,19 +240,21 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
 }
 
 /**
- * The Unarmed Fighting feat (2024 PHB) grants an *optional* alternative to
- * the plain Unarmed Strike above ("you can deal 1d6 ... instead of the
- * normal amount") — not a replacement, so both stay on the Actions tab at
- * once, the same "second, separate row" treatment `computeUnarmedStrike`'s
- * own Tavern Brawler case already documents for a different feat's
- * resolved unarmed-strike action. D&D Beyond's own resolved action
- * ("Unarmed Fighting (no weapons/shield)", `dice: "1d8"`) is static per-feat
- * data — confirmed present in a real export's raw JSON with that exact
- * name/dice regardless of whether the character currently has a weapon or
- * Shield equipped — so it's shown as-is rather than re-derived from the
- * character's current gear. `attackTypeRange != null` excludes this feat's
- * *other* resolved action ("Unarmed Fighting (grapple)", a start-of-turn
- * damage tick with no attack roll of its own, not a second attack option).
+ * The Unarmed Fighting feat's *other* benefit — a better `1d8` unarmed-
+ * strike die usable only "if you aren't holding any weapons or a Shield" —
+ * D&D Beyond exposes this as its own separate resolved action ("Unarmed
+ * Fighting (no weapons/shield)") rather than folding it into the "Unarmed
+ * Strike" row `computeUnarmedStrike` already upgrades to `1d6` above, so it
+ * shows as a second, separate row alongside it, the same "second, separate
+ * row" treatment `computeUnarmedStrike`'s own Tavern Brawler case documents
+ * for a different feat's resolved unarmed-strike action. D&D Beyond's own
+ * resolved action is static per-feat data — confirmed present in a real
+ * export's raw JSON with that exact name/dice regardless of whether the
+ * character currently has a weapon or Shield equipped — so it's shown as-is
+ * rather than re-derived from the character's current gear.
+ * `attackTypeRange != null` excludes this feat's *other* resolved action
+ * ("Unarmed Fighting (grapple)", a start-of-turn damage tick with no attack
+ * roll of its own, not a second attack option).
  */
 function computeUnarmedFightingAttack(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack | undefined {
   const action = (["feat", "class", "race"] as const)
@@ -267,7 +296,7 @@ function computeUnarmedFightingAttack(data: RawDdbData, abilities: AbilityScores
 export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack[] {
   const profSubtypes = new Set(mods.filter((m) => m.type === "proficiency").map((m) => m.subType));
   const seen = new Set<string>();
-  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus)];
+  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus, mods)];
   const unarmedFightingAttack = computeUnarmedFightingAttack(data, abilities, profBonus);
   if (unarmedFightingAttack) attacks.push(unarmedFightingAttack);
   const monkDie = martialArtsDie(data);
