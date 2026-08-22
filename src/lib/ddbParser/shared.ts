@@ -34,19 +34,6 @@ export function isUnarmoredAndShieldless(data: RawDdbData): boolean {
   return !(data.inventory ?? []).some((i) => i.equipped && i.definition?.filterType === "Armor");
 }
 
-/**
- * The Unarmed Fighting feat's own "no weapons/shield" condition — distinct
- * from `isUnarmoredAndShieldless` above (which allows a held weapon, just
- * not worn body armor/a Shield): this one also excludes a held weapon,
- * matching the feat's actual wording ("If you aren't holding any weapons or
- * a Shield..."). Body armor being worn doesn't matter here.
- */
-export function isWeaponAndShieldFree(data: RawDdbData): boolean {
-  return !(data.inventory ?? []).some(
-    (i) => i.equipped && (i.definition?.filterType === "Weapon" || i.definition?.armorTypeId === 4)
-  );
-}
-
 export function titleCase(kebab: string): string {
   return kebab
     .split("-")

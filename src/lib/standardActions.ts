@@ -38,14 +38,14 @@ export const STANDARD_ACTIONS: StandardAction[] = [
   {
     name: "Dodge",
     description:
-      "Until the start of your next turn, attack rolls against you have **Disadvantage** (if you can see the attacker), and you make Dexterity saving throws with **Advantage**.\n\n" +
+      "Until the start of your next turn, attack rolls against you have **Disadvantage** (if you can see the attacker), and you make **Dexterity saving throws** with **Advantage**.\n\n" +
       "You lose these benefits if you have the **Incapacitated** condition or your Speed is 0.",
   },
   {
     name: "Grapple",
     description:
       "Use an Unarmed Strike to try to grab a creature.\n\n" +
-      "**Grapple.** The target makes a **Strength or Dexterity saving throw** (its choice) or gains the **Grappled** condition. DC = 8 + your Strength modifier + Proficiency Bonus. Only possible if the target is no more than one size larger than you and you have a hand free.\n\n" +
+      "**Grapple.** The target makes a **Strength or Dexterity saving throw** (its choice) or gains the **Grappled** condition. **DC = 8 + your Strength modifier + Proficiency Bonus.** Only possible if the target is no more than one size larger than you and you have a hand free.\n\n" +
       "**One Grapple per Hand.** Each hand (or grasping body part) can grapple only one creature at a time.\n\n" +
       "**Escaping a Grapple.** The target can use its action to make a **Strength (Athletics) or Dexterity (Acrobatics)** check against the grapple's escape DC, ending the condition on a success. It also ends if you're Incapacitated or the target moves beyond the grapple's range.",
   },
@@ -60,8 +60,8 @@ export const STANDARD_ACTIONS: StandardAction[] = [
     name: "Hide",
     description:
       "Make a **Dexterity (Stealth)** check to become Unseen.\n\n" +
-      "Requires being **Heavily Obscured** or behind **Three-Quarters/Total Cover**, and out of every enemy's line of sight. DC 15, unless a feature says otherwise.\n\n" +
-      "On a success, you gain the **Invisible** condition — your check's total becomes the DC for a creature trying to find you with a Wisdom (Perception) check.\n\n" +
+      "Requires being **Heavily Obscured** or behind **Three-Quarters/Total Cover**, and out of every enemy's line of sight. **DC 15**, unless a feature says otherwise.\n\n" +
+      "On a success, you gain the **Invisible** condition — your check's total becomes the DC for a creature trying to find you with a **Wisdom (Perception)** check.\n\n" +
       "Ends immediately if you make a sound louder than a whisper, an enemy finds you, you make an attack roll, or you cast a spell with a Verbal component.",
   },
   {
@@ -71,8 +71,11 @@ export const STANDARD_ACTIONS: StandardAction[] = [
   {
     name: "Influence",
     description:
-      "Make a Charisma or Wisdom check to alter a creature's attitude.\n\n" +
-      "Describe how you're communicating — deceiving, intimidating, amusing, or persuading. The DM judges the creature's reaction: **Willing** (no check, it complies), **Unwilling** (no check, it refuses), or **Hesitant** (you make a check; DC = 15 or the creature's Intelligence score, whichever is higher).\n\n" +
+      "Make a **Charisma or Wisdom check** to alter a creature's attitude.\n\n" +
+      "Describe how you're communicating — deceiving, intimidating, amusing, or persuading. The DM judges the creature's reaction:\n" +
+      "**Willing** — no check, it complies.\n" +
+      "**Unwilling** — no check, it refuses.\n" +
+      "**Hesitant** — you make a check; **DC = 15 or the creature's Intelligence score, whichever is higher.**\n\n" +
       "**Deception** (deceiving), **Intimidation** (intimidating), **Performance** (amusing), **Persuasion** (persuading), or **Animal Handling** (coaxing a Beast/Monstrosity) — as fits your approach.\n\n" +
       "On a failure, you must wait 24 hours (or as the DM sets) before trying the same request again.",
   },
@@ -92,20 +95,27 @@ export const STANDARD_ACTIONS: StandardAction[] = [
   {
     name: "Search",
     description:
-      "Make a Wisdom check to discern something that isn't obvious.\n\n" +
-      "**Insight** — a creature's state of mind. **Medicine** — an ailment or cause of death. **Perception** — a concealed creature or object. **Survival** — tracks or food.",
+      "Make a **Wisdom check** to discern something that isn't obvious.\n\n" +
+      "**Insight** — a creature's state of mind.\n" +
+      "**Medicine** — an ailment or cause of death.\n" +
+      "**Perception** — a concealed creature or object.\n" +
+      "**Survival** — tracks or food.",
   },
   {
     name: "Shove",
     description:
       "Use an Unarmed Strike to push a creature away or knock it down.\n\n" +
-      "The target makes a **Strength or Dexterity saving throw** (its choice); on a failure you push it 5 feet or give it the **Prone** condition. DC = 8 + your Strength modifier + Proficiency Bonus. Only possible if the target is no more than one size larger than you.",
+      "The target makes a **Strength or Dexterity saving throw** (its choice); on a failure you push it 5 feet or give it the **Prone** condition. **DC = 8 + your Strength modifier + Proficiency Bonus.** Only possible if the target is no more than one size larger than you.",
   },
   {
     name: "Study",
     description:
-      "Make an Intelligence check to recall or reason out lore.\n\n" +
-      "**Arcana** — spells, magic items, planes, related creatures. **History** — historic events, civilizations, related creatures. **Investigation** — traps, ciphers, gadgetry. **Nature** — terrain, flora, weather, related creatures. **Religion** — deities, rites, related creatures.",
+      "Make an **Intelligence check** to recall or reason out lore.\n\n" +
+      "**Arcana** — spells, magic items, planes, related creatures.\n" +
+      "**History** — historic events, civilizations, related creatures.\n" +
+      "**Investigation** — traps, ciphers, gadgetry.\n" +
+      "**Nature** — terrain, flora, weather, related creatures.\n" +
+      "**Religion** — deities, rites, related creatures.",
   },
   {
     name: "Utilize",

@@ -4,7 +4,6 @@ import {
   ABILITY_BY_ID,
   abilityModifier,
   isUnarmoredAndShieldless,
-  isWeaponAndShieldFree,
   rarityFromDdb,
   shortDescription,
   titleCase,
@@ -105,28 +104,6 @@ function martialArtsDie(data: RawDdbData): string | undefined {
   return undefined;
 }
 
-/**
- * The Unarmed Fighting feat (2024 PHB): a base 1d6 unarmed-strike die,
- * upgrading to 1d8 while the character isn't holding any weapon or Shield.
- * Confirmed on a real level-20 Paladin export: the base 1d6 is a `type:
- * "set", subType: "unarmed-damage-die"` modifier granted by the feat, and a
- * separate resolved action named "Unarmed Fighting (no weapons/shield)"
- * gives the 1d8 upgrade value. Both are static per-feat data — D&D Beyond
- * doesn't conditionally omit either based on the character's current
- * equipment — so which one currently applies is worked out here from the
- * character's own equipped inventory via `isWeaponAndShieldFree`, the same
- * way `isUnarmoredAndShieldless` already gates Monk eligibility above.
- */
-function unarmedFightingDice(data: RawDdbData, mods: RawDdbModifier[]): { withGear: string; freeHands: string } | undefined {
-  const withGear = (mods.find((m) => m.type === "set" && m.subType === "unarmed-damage-die") as RawDdbAny)?.dice
-    ?.diceString;
-  if (!withGear) return undefined;
-  const freeHandsAction = (["feat", "class", "race"] as const)
-    .flatMap((g) => (data.actions?.[g] ?? []) as RawDdbAny[])
-    .find((a) => /unarmed fighting/i.test(a.name ?? "") && a.dice?.diceString && a.attackTypeRange != null);
-  return { withGear, freeHands: freeHandsAction?.dice.diceString ?? withGear };
-}
-
 /** "1d12" -> 6.5, "2d6" -> 7 — lets a Monk's weapon/unarmed damage compare its own die against the Martial Arts die and keep whichever rolls higher on average, matching the RAW wording ("in place of the normal damage") rather than always preferring one over the other. */
 function diceStringAverage(diceString: string): number {
   const match = /^(\d+)d(\d+)$/.exec(diceString);
@@ -177,7 +154,7 @@ function isMonkWeapon(weapon: RawDdbAny, propertyNames: string[]): boolean {
  * better numbers under the plain name was misleading — it read as if the
  * character's *baseline* Unarmed Strike had that damage.
  */
-function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack {
+function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack {
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
 
@@ -222,23 +199,6 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
     };
   }
 
-  const unarmedFighting = unarmedFightingDice(data, mods);
-  if (unarmedFighting) {
-    const handsFree = isWeaponAndShieldFree(data);
-    const dieString = handsFree ? unarmedFighting.freeHands : unarmedFighting.withGear;
-    return {
-      id: "attack-unarmed",
-      name: handsFree ? "Unarmed Fighting (no weapons/shield)" : "Unarmed Strike",
-      attackType: "melee",
-      attackBonus: strMod + profBonus,
-      damage: `${dieString}${strMod !== 0 ? ` ${formatModifier(strMod)}` : ""}`,
-      damageType: "Bludgeoning",
-      properties: [],
-      range: "5 ft.",
-      proficient: true,
-    };
-  }
-
   return {
     id: "attack-unarmed",
     name: "Unarmed Strike",
@@ -249,6 +209,43 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
     properties: [],
     range: "5 ft.",
     proficient: true,
+  };
+}
+
+/**
+ * The Unarmed Fighting feat (2024 PHB) grants an *optional* alternative to
+ * the plain Unarmed Strike above ("you can deal 1d6 ... instead of the
+ * normal amount") — not a replacement, so both stay on the Actions tab at
+ * once, the same "second, separate row" treatment `computeUnarmedStrike`'s
+ * own Tavern Brawler case already documents for a different feat's
+ * resolved unarmed-strike action. D&D Beyond's own resolved action
+ * ("Unarmed Fighting (no weapons/shield)", `dice: "1d8"`) is static per-feat
+ * data — confirmed present in a real export's raw JSON with that exact
+ * name/dice regardless of whether the character currently has a weapon or
+ * Shield equipped — so it's shown as-is rather than re-derived from the
+ * character's current gear. `attackTypeRange != null` excludes this feat's
+ * *other* resolved action ("Unarmed Fighting (grapple)", a start-of-turn
+ * damage tick with no attack roll of its own, not a second attack option).
+ */
+function computeUnarmedFightingAttack(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack | undefined {
+  const action = (["feat", "class", "race"] as const)
+    .flatMap((g) => (data.actions?.[g] ?? []) as RawDdbAny[])
+    .find((a) => /unarmed fighting/i.test(a.name ?? "") && a.dice?.diceString && a.attackTypeRange != null);
+  if (!action) return undefined;
+
+  const abilityKey = ABILITY_BY_ID[action.abilityModifierStatId as number] ?? "str";
+  const abilityMod = abilityModifier(abilities[abilityKey]);
+  const proficient = action.isProficient !== false;
+  return {
+    id: "attack-unarmed-fighting",
+    name: action.name,
+    attackType: "melee",
+    attackBonus: abilityMod + (proficient ? profBonus : 0),
+    damage: `${action.dice.diceString}${abilityMod !== 0 ? ` ${formatModifier(abilityMod)}` : ""}`,
+    damageType: "Bludgeoning",
+    properties: [],
+    range: "5 ft.",
+    proficient,
   };
 }
 
@@ -270,7 +267,9 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
 export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack[] {
   const profSubtypes = new Set(mods.filter((m) => m.type === "proficiency").map((m) => m.subType));
   const seen = new Set<string>();
-  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus, mods)];
+  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus)];
+  const unarmedFightingAttack = computeUnarmedFightingAttack(data, abilities, profBonus);
+  if (unarmedFightingAttack) attacks.push(unarmedFightingAttack);
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
   // The Thrown Weapon Fighting style ("when you hit with a ranged attack
