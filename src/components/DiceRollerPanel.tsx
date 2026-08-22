@@ -10,7 +10,6 @@ import {
   DiceRoll,
   MAX_DICE_HISTORY,
   RolledDie,
-  poolHasD20,
   poolTotalDice,
   rollDicePool,
 } from "@/lib/diceRoller";
@@ -20,7 +19,7 @@ import { ROW_CARD_CLS } from "./ui/containerStyles";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
 import { TrashOutlineIcon } from "./ui/icons";
-import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS } from "./ui/typography";
+import { EMPTY_STATE_CLS } from "./ui/typography";
 
 /** A distinct hue per die size (drawn from the app's existing `ChipTone` palette, not new colors) so the tray reads at a glance instead of by label text alone — matched to a real physical dice set's own colors (green d4, orange d6, blue d8, black d10, yellow d12, red d20, white d100). `violet` stays reserved for Spell Slots/Concentration (see `chipTones.ts`), so it's skipped here like everywhere else. */
 const DIE_TONE: Record<DieSides, ChipTone> = { 4: "emerald", 6: "orange", 8: "cyan", 10: "neutral", 12: "yellow", 20: "rose", 100: "steel" };
@@ -34,18 +33,6 @@ const DIE_LABEL_TEXT_CLASS: Record<DieSides, string> = {
   12: "text-yellow-300",
   20: "text-rose-300",
   100: "text-[#d6e3ec]",
-};
-
-const ADV_OPTIONS: { value: AdvantageMode; label: string }[] = [
-  { value: "normal", label: "Normal" },
-  { value: "advantage", label: "Advantage" },
-  { value: "disadvantage", label: "Disadvantage" },
-];
-
-const ADV_ACTIVE_CLS: Record<AdvantageMode, string> = {
-  normal: "bg-amber-500/10 text-amber-300",
-  advantage: "bg-emerald-500/15 text-emerald-400",
-  disadvantage: "bg-red-500/15 text-red-400",
 };
 
 const HISTORY_STORAGE_PREFIX = "dice-roller-history:";
@@ -69,19 +56,78 @@ function saveHistory(campaignId: string, history: DiceRoll[]) {
   }
 }
 
-function DieButton({ sides, count, onAdd }: { sides: DieSides; count: number; onAdd: () => void }) {
+/**
+ * `adv`/`onToggleAdv` are only ever passed for the d20 button — every other
+ * size stays a plain add-to-pool button. Clicking the active direction again
+ * toggles back to "normal" (see `setAdvDirection` below); the currently
+ * selected direction also rings the die button itself so it reads at a
+ * glance without needing the spinner to be visible/hovered. Replaces an
+ * earlier design (a single tiny triangle badge that cycled through all 3
+ * states on tap, then a separate segmented row below the tray) — both were
+ * either too subtle to notice or shifted the composer's layout whenever a
+ * d20 was added/removed from the pool; this spinner lives glued to the d20
+ * button itself, inside the tray's own wrapping flow, so nothing below it
+ * ever moves.
+ */
+function DieButton({
+  sides,
+  count,
+  onAdd,
+  adv,
+  onToggleAdv,
+}: {
+  sides: DieSides;
+  count: number;
+  onAdd: () => void;
+  adv?: AdvantageMode;
+  onToggleAdv?: (direction: "advantage" | "disadvantage") => void;
+}) {
   return (
-    <span className="relative">
+    <span className="relative flex items-center">
       <button
         type="button"
         onClick={onAdd}
-        className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}
+        className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
+          adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
+        }`}
       >
         d{sides}
       </button>
       {count > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-slate-950">
           {count}
+        </span>
+      )}
+      {onToggleAdv && count > 0 && (
+        <span className="ml-0.5 flex h-9 w-4 flex-col overflow-hidden rounded border border-slate-700">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleAdv("advantage");
+            }}
+            aria-label="Advantage"
+            title="Advantage"
+            className={`flex flex-1 items-center justify-center text-[8px] leading-none transition ${
+              adv === "advantage" ? "bg-emerald-500/25 text-emerald-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+            }`}
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleAdv("disadvantage");
+            }}
+            aria-label="Disadvantage"
+            title="Disadvantage"
+            className={`flex flex-1 items-center justify-center border-t border-slate-700 text-[8px] leading-none transition ${
+              adv === "disadvantage" ? "bg-red-500/25 text-red-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+            }`}
+          >
+            ▼
+          </button>
         </span>
       )}
     </span>
@@ -133,7 +179,10 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
         <span className={`text-[11px] font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
           {group.entries.length}d{group.sides}
         </span>
-        <span className="inline-flex gap-0.5">
+        {/* `flex flex-wrap`, not `inline-flex` — a single roll with many
+            same-size dice (e.g. 15d6) used to overflow the history card's
+            width instead of wrapping onto more lines. */}
+        <span className="flex flex-wrap gap-0.5">
           {group.entries.map((d, j) =>
             d.rolls.length === 2 ? (
               <span key={j} className="inline-flex gap-0.5">
@@ -183,29 +232,6 @@ function HistoryEntryRow({ entry }: { entry: DiceRoll }) {
   );
 }
 
-/** Explicit "Звичайний / Advantage / Disadvantage" segmented control — replaces an earlier tiny triangle badge on the d20 button that turned out to be too subtle to notice or use. Rendered only while the pool holds at least one d20. */
-function AdvantageSegmented({ value, onChange }: { value: AdvantageMode; onChange: (v: AdvantageMode) => void }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className={MICRO_ITEM_LABEL_CLS}>d20 roll</span>
-      <div className="inline-flex overflow-hidden rounded-full border border-slate-700">
-        {ADV_OPTIONS.map((opt, i) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={`px-3 py-1.5 text-xs font-semibold transition ${i > 0 ? "border-l border-slate-700" : ""} ${
-              value === opt.value ? ADV_ACTIVE_CLS[opt.value] : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /**
  * Floating dice-roll utility opened from `DiceRollerFab` — same non-modal
  * `FloatingPanel` shell `AiAssistantModal` already uses (draggable/resizable,
@@ -233,7 +259,6 @@ export function DiceRollerPanel({
 
   const totalDice = poolTotalDice(pool);
   const canClear = totalDice > 0 || modifier !== 0 || adv !== "normal";
-  const hasD20 = poolHasD20(pool);
 
   const historyEndRef = useRef<HTMLDivElement>(null);
   // History renders oldest-first, newest-last (chat-log order, matching
@@ -249,6 +274,9 @@ export function DiceRollerPanel({
   }
   function removeDie(sides: DieSides) {
     setPool((p) => ({ ...p, [sides]: Math.max(0, (p[sides] ?? 0) - 1) }));
+  }
+  function setAdvDirection(direction: "advantage" | "disadvantage") {
+    setAdv((current) => (current === direction ? "normal" : direction));
   }
   function clearPool() {
     setPool({});
@@ -317,9 +345,16 @@ export function DiceRollerPanel({
         )}
 
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 flex-wrap gap-1">
+          <div className="flex flex-1 flex-wrap items-center gap-1">
             {DIE_SIDES.map((sides) => (
-              <DieButton key={sides} sides={sides} count={pool[sides] ?? 0} onAdd={() => addDie(sides)} />
+              <DieButton
+                key={sides}
+                sides={sides}
+                count={pool[sides] ?? 0}
+                onAdd={() => addDie(sides)}
+                adv={sides === 20 ? adv : undefined}
+                onToggleAdv={sides === 20 ? setAdvDirection : undefined}
+              />
             ))}
           </div>
           {/* Tightened vs. the die tray's own natural sizing (narrower stepper
@@ -347,14 +382,12 @@ export function DiceRollerPanel({
           </span>
         </div>
 
-        {hasD20 && <AdvantageSegmented value={adv} onChange={setAdv} />}
-
         <div className="flex gap-2">
           <button
             type="button"
             onClick={clearPool}
             disabled={!canClear}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700"
+            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-slate-700 px-5 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700"
           >
             Clear
           </button>
