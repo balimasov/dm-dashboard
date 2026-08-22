@@ -42,6 +42,8 @@ import { Modal } from "./ui/Modal";
 import { StatBox } from "./ui/StatBox";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
+import { StandardActionChip } from "./ui/StandardActionChip";
+import { STANDARD_ACTIONS } from "@/lib/standardActions";
 import { SubHeading } from "./ui/SubHeading";
 import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { FilterChipRow } from "./ui/FilterChipRow";
@@ -401,14 +403,21 @@ export function CharacterDetailsModal({
   const hasAttacks = sortedAttacks.length > 0;
 
   // Actions tab filter — a weapon attack counts as "Action" here (attacking
-  // always costs your action), so `showAttackSections` gates on the same
-  // "all or action" check the Action-type groups themselves use.
-  const showAttackSections = (actionFilter === "all" || actionFilter === "action") && hasAttacks;
+  // always costs your action, same as the 15 standard actions below), so
+  // both gate on the same "all or action" check the Action-type groups
+  // themselves use.
+  const isActionFilterVisible = actionFilter === "all" || actionFilter === "action";
+  const showAttackSections = isActionFilterVisible && hasAttacks;
+  // `STANDARD_ACTIONS` is a fixed rules-reference list, not derived from
+  // this character at all — it's "visible" whenever the Action-cost filter
+  // is, regardless of whether this character happens to have any attacks or
+  // Action-group features of their own.
+  const showStandardActions = isActionFilterVisible;
   const visibleActionGroups = actionTypeGroups
     .filter(([group]) => actionFilter === "all" || actionFilter === group)
     .map(([group, features]) => [group, features.filter((f) => !f.parentFeatureName?.startsWith("Weapon Mastery"))] as const)
     .filter(([, features]) => features.length > 0);
-  const actionsTabEmpty = !showAttackSections && visibleActionGroups.length === 0;
+  const actionsTabEmpty = !showAttackSections && !showStandardActions && visibleActionGroups.length === 0;
 
   // Features tab filter — `otherBucket` only ever has one real entry (the
   // "other" action-economy group, i.e. everything passive), so its own
@@ -667,27 +676,22 @@ export function CharacterDetailsModal({
                   isActive={(v) => actionFilter === v}
                   onClick={(v) => setActionFilter((current) => (v === current ? "all" : (v as typeof actionFilter)))}
                 />
-                {showAttackSections &&
-                  (["melee", "ranged"] as const).map((attackType) => {
-                    const attacks = sortedAttacks.filter((attack) => attack.attackType === attackType);
-                    if (attacks.length === 0) return null;
-                    return (
-                      <div key={attackType} className="space-y-1">
-                        <p className={MICRO_ITEM_LABEL_CLS}>{attackType === "melee" ? "Attack Melee" : "Attack Ranged"}</p>
-                        {attacks.map((attack) => (
-                          <AttackRow
-                            key={attack.id}
-                            attack={attack}
-                            flagged={flaggedAbilities.includes(attack.name)}
-                            onToggleFlag={() => toggleFlag(attack.name)}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })}
+                {showAttackSections && (
+                  <div className="space-y-1">
+                    <p className={MICRO_ITEM_LABEL_CLS}>Action · Attack</p>
+                    {sortedAttacks.map((attack) => (
+                      <AttackRow
+                        key={attack.id}
+                        attack={attack}
+                        flagged={flaggedAbilities.includes(attack.name)}
+                        onToggleFlag={() => toggleFlag(attack.name)}
+                      />
+                    ))}
+                  </div>
+                )}
                 {visibleActionGroups.map(([group, features]) => (
                   <div key={group} className="space-y-1">
-                    <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
+                    <p className={MICRO_ITEM_LABEL_CLS}>{group === "action" ? "Action · Features" : GROUP_LABELS[group]}</p>
                     {features.map((feature) => (
                       <FeatureRow
                         key={feature.id}
@@ -698,6 +702,16 @@ export function CharacterDetailsModal({
                     ))}
                   </div>
                 ))}
+                {showStandardActions && (
+                  <div className="space-y-1">
+                    <p className={MICRO_ITEM_LABEL_CLS}>Action · Standard</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {STANDARD_ACTIONS.map((action) => (
+                        <StandardActionChip key={action.name} action={action} />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {actionsTabEmpty && <p className={`py-2 text-center ${EMPTY_STATE_CLS}`}>Nothing in this category yet.</p>}
               </div>
             )}

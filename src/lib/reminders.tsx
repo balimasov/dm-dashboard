@@ -118,7 +118,14 @@ export function characterReminders(character: Character): ReminderGroup | null {
         name: f.name,
         label: f.name,
         panel: <FeatureHintPanel feature={f} emptyDescription="No description." />,
-        kind: "features" as const,
+        // An Action-group feature (a maneuver, Action Surge, a fighting-style
+        // action) costs the same resource as a weapon attack and now lives in
+        // the same "Action · Attack"/"Action · Features" cluster on the
+        // Actions tab — sharing the weapons icon here instead of the generic
+        // features one keeps a flagged reminder from that cluster visually
+        // consistent with the attacks sitting right next to it, instead of
+        // looking like it wandered in from the Features tab.
+        kind: (f.group === "action" ? "weapons" : "features") as ContentKind,
       })),
     ...character.knownSpells
       .filter((s) => flagged.includes(s.name))
