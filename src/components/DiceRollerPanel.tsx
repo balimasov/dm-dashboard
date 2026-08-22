@@ -13,6 +13,7 @@ import {
   poolTotalDice,
   rollDicePool,
 } from "@/lib/diceRoller";
+import { playDiceRollSound } from "@/lib/diceRollSound";
 import { formatModifier, formatSyncTimestamp } from "@/lib/format";
 import { ChipTone, CHIP_TONE_CLASSES } from "./ui/chipTones";
 import { ROW_CARD_CLS } from "./ui/containerStyles";
@@ -288,6 +289,7 @@ export function DiceRollerPanel({
   function roll() {
     const result = rollDicePool(pool, modifier, adv);
     if (!result) return;
+    playDiceRollSound();
     setHistory((prev) => {
       const next = [...prev, result].slice(-MAX_DICE_HISTORY);
       saveHistory(campaignId, next);
