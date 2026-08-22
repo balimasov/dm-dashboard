@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import {
   AdvantageMode,
@@ -10,6 +10,7 @@ import {
   DiceRoll,
   MAX_DICE_HISTORY,
   RolledDie,
+  poolHasD20,
   poolTotalDice,
   rollDicePool,
 } from "@/lib/diceRoller";
@@ -21,6 +22,29 @@ import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS } from "./ui/typography";
 
 /** A distinct hue per die size (drawn from the app's existing `ChipTone` palette, not new colors) so the tray reads at a glance instead of by label text alone. `violet` stays reserved for Spell Slots/Concentration (see `chipTones.ts`), so it's skipped here like everywhere else. */
 const DIE_TONE: Record<DieSides, ChipTone> = { 4: "lime", 6: "gold", 8: "fuchsia", 10: "cyan", 12: "orange", 20: "rose", 100: "pink" };
+
+/** Text-only half of each `DIE_TONE` entry, for the history equation's per-group "3d4" label — `CHIP_TONE_CLASSES` bundles border+bg+text into one string, but a label needs just the text color. */
+const DIE_LABEL_TEXT_CLASS: Record<DieSides, string> = {
+  4: "text-lime-300",
+  6: "text-sky-300",
+  8: "text-fuchsia-300",
+  10: "text-cyan-300",
+  12: "text-orange-300",
+  20: "text-rose-300",
+  100: "text-pink-300",
+};
+
+const ADV_OPTIONS: { value: AdvantageMode; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "advantage", label: "Advantage" },
+  { value: "disadvantage", label: "Disadvantage" },
+];
+
+const ADV_ACTIVE_CLS: Record<AdvantageMode, string> = {
+  normal: "bg-amber-500/10 text-amber-300",
+  advantage: "bg-emerald-500/15 text-emerald-400",
+  disadvantage: "bg-red-500/15 text-red-400",
+};
 
 const HISTORY_STORAGE_PREFIX = "dice-roller-history:";
 
@@ -43,20 +67,7 @@ function saveHistory(campaignId: string, history: DiceRoll[]) {
   }
 }
 
-function DieButton({
-  sides,
-  count,
-  adv,
-  onAdd,
-  onCycleAdv,
-}: {
-  sides: DieSides;
-  count: number;
-  /** Only d20 gets an advantage/disadvantage toggle — `undefined` for every other size. */
-  adv?: AdvantageMode;
-  onAdd: () => void;
-  onCycleAdv?: () => void;
-}) {
+function DieButton({ sides, count, onAdd }: { sides: DieSides; count: number; onAdd: () => void }) {
   return (
     <span className="relative">
       <button
@@ -71,25 +82,6 @@ function DieButton({
           {count}
         </span>
       )}
-      {onCycleAdv && count > 0 && (
-        // Same up/down-triangle + emerald/red convention `CharacterStatBlock.tsx`'s
-        // own skill pills already use for advantage/disadvantage, reused here
-        // as a tap target instead of a new "ADV"/"DIS" text badge.
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCycleAdv();
-          }}
-          aria-label="Advantage/Disadvantage"
-          title="Advantage/Disadvantage"
-          className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] leading-none ${
-            adv === "advantage" ? "text-emerald-400" : adv === "disadvantage" ? "text-red-400" : "text-slate-600 hover:text-slate-400"
-          }`}
-        >
-          {adv === "advantage" ? "▲" : adv === "disadvantage" ? "▼" : "●"}
-        </button>
-      )}
     </span>
   );
 }
@@ -98,48 +90,61 @@ function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; 
   return (
     <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}>
       {count}d{sides}
-      <button type="button" onClick={onRemove} aria-label={`Прибрати ${count}d${sides}`} className="opacity-70 hover:opacity-100">
+      <button type="button" onClick={onRemove} aria-label={`Remove ${count}d${sides}`} className="opacity-70 hover:opacity-100">
         ✕
       </button>
     </span>
   );
 }
 
-function ValueChip({ value, sides, discarded }: { value: number; sides: number; discarded?: boolean }) {
+function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides; discarded?: boolean }) {
   const nat20 = sides === 20 && value === 20;
   const nat1 = sides === 20 && value === 1;
-  return (
-    <span
-      className={`rounded border px-1.5 text-[11px] font-semibold tabular-nums ${
-        discarded
-          ? "border-dashed border-slate-700 text-slate-600 line-through"
-          : nat20
-            ? "border-emerald-600 text-emerald-400"
-            : nat1
-              ? "border-red-600 text-red-400"
-              : "border-slate-700 text-slate-300"
-      }`}
-    >
-      {value}
-    </span>
-  );
+  const toneClass = discarded
+    ? "border-dashed border-slate-700 text-slate-600 line-through"
+    : nat20
+      ? "border-emerald-600 bg-emerald-950/40 text-emerald-400"
+      : nat1
+        ? "border-red-600 bg-red-950/40 text-red-400"
+        : CHIP_TONE_CLASSES[DIE_TONE[sides]];
+  return <span className={`rounded border px-1.5 text-[11px] font-semibold tabular-nums ${toneClass}`}>{value}</span>;
 }
 
-/** Every rolled die's own value(s) — a d20 rolled with advantage/disadvantage shows both, the discarded one struck through — plus the modifier, so the DM can see the whole sum instead of just its final total. */
+function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: RolledDie[] }[] {
+  const bySides = new Map<DieSides, RolledDie[]>();
+  dice.forEach((d) => {
+    const group = bySides.get(d.sides) ?? [];
+    group.push(d);
+    bySides.set(d.sides, group);
+  });
+  return DIE_SIDES.filter((sides) => bySides.has(sides)).map((sides) => ({ sides, entries: bySides.get(sides)! }));
+}
+
+/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values, the discarded one struck through; the modifier (if any) trails as its own dashed chip. */
 function DiceEquation({ entry }: { entry: DiceRoll }) {
+  const groups = groupDiceBySides(entry.dice);
   const parts: ReactNode[] = [];
-  entry.dice.forEach((d: RolledDie, i: number) => {
+  groups.forEach((group, i) => {
     if (i > 0) parts.push(<span key={`op-${i}`} className="text-[11px] text-slate-600"> + </span>);
     parts.push(
-      d.rolls.length === 2 ? (
-        <span key={`d-${i}`} className="inline-flex gap-0.5">
-          {d.rolls.map((v, j) => (
-            <ValueChip key={j} value={v} sides={d.sides} discarded={j === d.discardedIndex} />
-          ))}
+      <span key={`g-${group.sides}`} className="inline-flex items-baseline gap-1">
+        <span className={`text-[11px] font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
+          {group.entries.length}d{group.sides}
         </span>
-      ) : (
-        <ValueChip key={`d-${i}`} value={d.kept} sides={d.sides} />
-      )
+        <span className="inline-flex gap-0.5">
+          {group.entries.map((d, j) =>
+            d.rolls.length === 2 ? (
+              <span key={j} className="inline-flex gap-0.5">
+                {d.rolls.map((v, k) => (
+                  <ValueChip key={k} value={v} sides={d.sides} discarded={k === d.discardedIndex} />
+                ))}
+              </span>
+            ) : (
+              <ValueChip key={j} value={d.kept} sides={d.sides} />
+            )
+          )}
+        </span>
+      </span>
     );
   });
   if (entry.modifier !== 0) {
@@ -155,23 +160,45 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
       </span>
     );
   }
-  return <span className="flex flex-wrap items-baseline gap-0.5">{parts}</span>;
+  return <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">{parts}</span>;
 }
 
 function HistoryEntryRow({ entry }: { entry: DiceRoll }) {
   const totalClass = entry.isCrit ? "text-emerald-400" : entry.isFumble ? "text-red-400" : "text-slate-100";
   return (
     <div className={`${ROW_CARD_CLS} p-2`}>
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[11px] text-slate-500">{entry.notation}</span>
-        <span className="text-[11px] text-slate-500">{formatSyncTimestamp(entry.createdAt)}</span>
-      </div>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <DiceEquation entry={entry} />
+        <span className="shrink-0 pt-0.5 text-[10px] text-slate-500">{formatSyncTimestamp(entry.createdAt)}</span>
+      </div>
+      <div className="mt-0.5 flex justify-end">
         <span className={`text-lg font-extrabold tabular-nums ${totalClass}`}>
           {entry.total}
           {entry.isCrit ? " ✨" : entry.isFumble ? " 💀" : ""}
         </span>
+      </div>
+    </div>
+  );
+}
+
+/** Explicit "Звичайний / Advantage / Disadvantage" segmented control — replaces an earlier tiny triangle badge on the d20 button that turned out to be too subtle to notice or use. Rendered only while the pool holds at least one d20. */
+function AdvantageSegmented({ value, onChange }: { value: AdvantageMode; onChange: (v: AdvantageMode) => void }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className={MICRO_ITEM_LABEL_CLS}>d20 roll</span>
+      <div className="inline-flex overflow-hidden rounded-full border border-slate-700">
+        {ADV_OPTIONS.map((opt, i) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`px-3 py-1.5 text-xs font-semibold transition ${i > 0 ? "border-l border-slate-700" : ""} ${
+              value === opt.value ? ADV_ACTIVE_CLS[opt.value] : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -204,6 +231,16 @@ export function DiceRollerPanel({
 
   const totalDice = poolTotalDice(pool);
   const canClear = totalDice > 0 || modifier !== 0 || adv !== "normal";
+  const hasD20 = poolHasD20(pool);
+
+  const historyEndRef = useRef<HTMLDivElement>(null);
+  // History renders oldest-first, newest-last (chat-log order, matching
+  // `AiAssistantModal`'s own feed) — reverse-chronological read top-to-bottom
+  // as "most recent first" but felt backwards while actively rolling, since
+  // each new entry appeared above what you'd just rolled instead of below it.
+  useEffect(() => {
+    historyEndRef.current?.scrollIntoView({ block: "end" });
+  }, [history.length]);
 
   function addDie(sides: DieSides) {
     setPool((p) => ({ ...p, [sides]: (p[sides] ?? 0) + 1 }));
@@ -216,17 +253,15 @@ export function DiceRollerPanel({
     setModifier(0);
     setAdv("normal");
   }
-  function cycleAdvantage() {
-    setAdv((a) => (a === "normal" ? "advantage" : a === "advantage" ? "disadvantage" : "normal"));
-  }
   function roll() {
     const result = rollDicePool(pool, modifier, adv);
     if (!result) return;
     setHistory((prev) => {
-      const next = [result, ...prev].slice(0, MAX_DICE_HISTORY);
+      const next = [...prev, result].slice(-MAX_DICE_HISTORY);
       saveHistory(campaignId, next);
       return next;
     });
+    setPool({});
   }
 
   return (
@@ -237,34 +272,24 @@ export function DiceRollerPanel({
       title={
         <span className="flex items-center gap-2">
           <span aria-hidden="true">🎲</span>
-          Кидки кубів
+          Dice Roller
         </span>
       }
     >
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {history.length === 0 ? (
           <div className="flex flex-1 items-center justify-center py-6 text-center">
-            <p className={EMPTY_STATE_CLS}>Історія порожня — зберіть пул кубів нижче й натисніть Roll.</p>
+            <p className={EMPTY_STATE_CLS}>No rolls yet — build a dice pool below and hit Roll.</p>
           </div>
         ) : (
-          history.map((entry) => <HistoryEntryRow key={entry.id} entry={entry} />)
+          <>
+            {history.map((entry) => <HistoryEntryRow key={entry.id} entry={entry} />)}
+            <div ref={historyEndRef} />
+          </>
         )}
       </div>
 
       <div className="flex shrink-0 flex-col gap-2.5 border-t border-slate-800 pt-3">
-        <div className="flex flex-wrap gap-1.5">
-          {DIE_SIDES.map((sides) => (
-            <DieButton
-              key={sides}
-              sides={sides}
-              count={pool[sides] ?? 0}
-              adv={sides === 20 ? adv : undefined}
-              onAdd={() => addDie(sides)}
-              onCycleAdv={sides === 20 ? cycleAdvantage : undefined}
-            />
-          ))}
-        </div>
-
         {totalDice > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             {DIE_SIDES.filter((sides) => (pool[sides] ?? 0) > 0).map((sides) => (
@@ -273,28 +298,34 @@ export function DiceRollerPanel({
           </div>
         )}
 
-        <div className="flex items-center gap-2.5">
-          <span className={MICRO_ITEM_LABEL_CLS}>Модифікатор</span>
-          <span className="flex shrink-0 items-center overflow-hidden rounded border border-slate-700">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 flex-wrap gap-1.5">
+            {DIE_SIDES.map((sides) => (
+              <DieButton key={sides} sides={sides} count={pool[sides] ?? 0} onAdd={() => addDie(sides)} />
+            ))}
+          </div>
+          <span className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-slate-700">
             <button
               type="button"
-              aria-label="Менший модифікатор"
+              aria-label="Decrease modifier"
               onClick={() => setModifier((m) => Math.max(-20, m - 1))}
-              className="flex h-5 w-5 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+              className="flex h-full w-7 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
             >
               −
             </button>
-            <span className="w-7 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
+            <span className="w-8 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
             <button
               type="button"
-              aria-label="Більший модифікатор"
+              aria-label="Increase modifier"
               onClick={() => setModifier((m) => Math.min(20, m + 1))}
-              className="flex h-5 w-5 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+              className="flex h-full w-7 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
             >
               +
             </button>
           </span>
         </div>
+
+        {hasD20 && <AdvantageSegmented value={adv} onChange={setAdv} />}
 
         <div className="flex gap-2">
           <button
@@ -303,7 +334,7 @@ export function DiceRollerPanel({
             disabled={!canClear}
             className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-700 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700"
           >
-            Очистити
+            Clear
           </button>
           <button
             type="button"
