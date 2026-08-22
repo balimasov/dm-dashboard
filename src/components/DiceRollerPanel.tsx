@@ -83,21 +83,23 @@ function DieButton({
   onToggleAdv?: (direction: "advantage" | "disadvantage") => void;
 }) {
   return (
-    <span className="relative flex items-center">
-      <button
-        type="button"
-        onClick={onAdd}
-        className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
-          adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
-        }`}
-      >
-        d{sides}
-      </button>
-      {count > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-slate-950">
-          {count}
-        </span>
-      )}
+    <span className="flex items-center">
+      <span className="relative">
+        <button
+          type="button"
+          onClick={onAdd}
+          className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
+            adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
+          }`}
+        >
+          d{sides}
+        </button>
+        {count > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-slate-950">
+            {count}
+          </span>
+        )}
+      </span>
       {onToggleAdv && count > 0 && (
         <span className="ml-0.5 flex h-9 w-4 flex-col overflow-hidden rounded border border-slate-700">
           <button
@@ -291,11 +293,9 @@ export function DiceRollerPanel({
       saveHistory(campaignId, next);
       return next;
     });
-    // Only the dice pool and modifier are one-shot inputs to this specific
-    // roll — Advantage/Disadvantage stays selected, since it describes how
-    // you're rolling d20s in general, not a setting tied to this one roll.
     setPool({});
     setModifier(0);
+    setAdv("normal");
   }
 
   function clearHistory() {
