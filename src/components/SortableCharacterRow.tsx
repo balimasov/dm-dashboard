@@ -5,6 +5,7 @@ import { characterInfoLine } from "@/lib/format";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { CharacterAvatar } from "./CharacterAvatar";
 import { RosterRow } from "./RosterRow";
+import { Toast } from "./Toast";
 import { DdbSyncStatus } from "./ui/DdbSyncStatus";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { CARD_META_CLS, CARD_SUBTITLE_CLS, CARD_TITLE_CLS } from "./ui/typography";
@@ -23,9 +24,10 @@ export function SortableCharacterRow({
   onRemove: (id: string) => void;
   onToggleHidden: (id: string) => void;
 }) {
-  const { syncing, sync } = useDdbSync(character, onUpdate);
+  const { syncing, sync, syncSummary, dismissSyncSummary } = useDdbSync(character, onUpdate);
 
   return (
+    <>
     <RosterRow
       id={character.id}
       dimmed={character.hidden}
@@ -69,5 +71,7 @@ export function SortableCharacterRow({
         </div>
       )}
     </RosterRow>
+    {syncSummary && <Toast message={syncSummary} onDismiss={dismissSyncSummary} />}
+    </>
   );
 }

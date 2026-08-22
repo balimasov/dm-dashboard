@@ -8,6 +8,7 @@ import { useCardSortable } from "@/hooks/useCardSortable";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterDetailsModal } from "./CharacterDetailsModal";
+import { Toast } from "./Toast";
 import { CharacterStatBlock } from "./CharacterStatBlock";
 import { CharacterStatusRail } from "./CharacterStatusRail";
 import { EditCharacterModal } from "./EditCharacterModal";
@@ -40,7 +41,7 @@ export function CharacterCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
-  const { syncing, sync } = useDdbSync(c, onUpdate);
+  const { syncing, sync, syncSummary, dismissSyncSummary } = useDdbSync(c, onUpdate);
   const syncIssue = characterSyncIssue(c);
   const { setNodeRef, style, dragHandleProps, isDragging } = useCardSortable(c.id, dragEnabled);
   // Advantage display is temporarily hidden (parsing/data model stays intact) — see c.advantages.
@@ -151,6 +152,8 @@ export function CharacterCard({
           onClose={() => setAiOpen(false)}
         />
       )}
+
+      {syncSummary && <Toast message={syncSummary} onDismiss={dismissSyncSummary} />}
     </div>
   );
 }

@@ -12,6 +12,18 @@ import { fetchAndParseDdbCharacter } from "@/lib/sync";
 export function useDdbSync(character: Character, onUpdate?: (id: string, updates: Partial<Character>) => void) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Same bottom-of-screen caption `DashboardClient`'s "Sync Party" already
+  // shows ("Synced 4 of 5.") after it finishes, just scoped to this one
+  // character by name — a single "Sync" here previously finished in total
+  // silence (only the persisted `lastSyncError` pill hinted at a failure,
+  // and nothing at all confirmed a success), unlike the party button which
+  // always had this same summary. Each caller (`CharacterCard`/
+  // `CharacterDetailsModal`/`SortableCharacterRow`) renders its own `Toast`
+  // off this, the same way `DashboardClient` renders its own off
+  // `syncSummary` — one hook instance per mounted sync trigger, so a sync
+  // started from the card and one started from its details modal never
+  // fight over the same message.
+  const [syncSummary, setSyncSummary] = useState<string | null>(null);
 
   async function sync() {
     if (!onUpdate) return;
@@ -24,6 +36,7 @@ export function useDdbSync(character: Character, onUpdate?: (id: string, updates
       // anymore, persisted (not just this component's own `error` state
       // below) so the card's own failure indicator clears too.
       await onUpdate(character.id, { ...synced, lastSyncError: "" });
+      setSyncSummary(`Synced ${character.name}.`);
     } catch (err) {
       const message = `Sync failed: ${err instanceof Error ? err.message : "Unknown error."}`;
       setError(message);
@@ -32,10 +45,11 @@ export function useDdbSync(character: Character, onUpdate?: (id: string, updates
       // page, unlike `error` above which resets the moment this hook
       // remounts. See `Character.lastSyncError`'s own doc comment.
       await onUpdate(character.id, { lastSyncError: message });
+      setSyncSummary(`Sync failed: ${character.name} — ${err instanceof Error ? err.message : "Unknown error."}`);
     } finally {
       setSyncing(false);
     }
   }
 
-  return { syncing, error, sync };
+  return { syncing, error, syncSummary, dismissSyncSummary: () => setSyncSummary(null), sync };
 }

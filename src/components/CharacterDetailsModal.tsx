@@ -19,6 +19,7 @@ import { characterReminders } from "@/lib/reminders";
 import { characterSyncIssue } from "@/lib/sync";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { CharacterHeader } from "./CharacterHeader";
+import { Toast } from "./Toast";
 import { CharacterStatBlock } from "./CharacterStatBlock";
 import { CharacterStatusRail } from "./CharacterStatusRail";
 import { EditCharacterModal } from "./EditCharacterModal";
@@ -358,7 +359,7 @@ export function CharacterDetailsModal({
   onCustomConditionLibraryChange?: (library: CustomConditionTemplate[]) => void;
 }) {
   const c = character;
-  const { syncing, sync } = useDdbSync(c, onUpdate);
+  const { syncing, sync, syncSummary, dismissSyncSummary } = useDdbSync(c, onUpdate);
   const syncIssue = characterSyncIssue(c);
   const [editOpen, setEditOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
@@ -912,6 +913,8 @@ export function CharacterDetailsModal({
         zIndexClassName="z-[60]"
       />
     )}
+
+    {syncSummary && <Toast message={syncSummary} onDismiss={dismissSyncSummary} />}
     </>
   );
 }
