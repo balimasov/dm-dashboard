@@ -40,9 +40,11 @@ const TOOL_SUBTYPES = new Set([
   "vehicles-air",
   // Musical instruments.
   "bagpipes",
+  "birdpipes",
   "drum",
   "dulcimer",
   "flute",
+  "glaur",
   "horn",
   "lute",
   "lyre",
@@ -96,8 +98,8 @@ export function computeArmorProficiencies(mods: RawDdbModifier[]): string[] {
 
 /**
  * Unlike tools/armor above, individual weapon proficiencies (Rapier, Hand
- * Crossbow, a setting-specific weapon like Glaur or Tocken that isn't in any
- * fixed PHB list) aren't a closed set worth enumerating one by one — so
+ * Crossbow, a setting-specific weapon that isn't in any fixed PHB list)
+ * aren't a closed set worth enumerating one by one — so
  * weapon proficiency is determined by exclusion instead: any `type:
  * "proficiency"` modifier whose `subType` isn't a skill, a saving throw, a
  * tool, an armor category, or an unresolved "choose a..." placeholder is

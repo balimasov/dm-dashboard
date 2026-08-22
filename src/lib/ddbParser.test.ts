@@ -696,6 +696,12 @@ describe("armor and weapon proficiencies", () => {
     );
     expect(c.armorProficiencies).toEqual(["Light Armor"]);
   });
+
+  test("Sorcerer (Draconic Sorcery 20) — Birdpipes/Glaur are Eberron musical instruments, not weapons, despite not being in any fixed PHB tool list", () => {
+    const c = load("sorcerer-draconic-sorcery-20");
+    expect(c.toolProficiencies).toEqual(expect.arrayContaining(["Birdpipes", "Glaur"]));
+    expect(c.weaponProficiencies).not.toEqual(expect.arrayContaining(["Birdpipes", "Glaur"]));
+  });
 });
 
 describe("inventory item type/weight/cost", () => {
