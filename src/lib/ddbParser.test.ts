@@ -295,6 +295,34 @@ describe("Unarmed Strike — always present, computed without needing weapon dat
   });
 });
 
+describe("Fighting Style feats — global attack/damage modifiers not tied to any single weapon", () => {
+  test("Fighter (fighting-styles 20, Str +3, Dex +2, all 5 weapon types equipped at once) — Archery's +2 lands only on the Crossbow's attack roll (a true Ranged weapon), Dueling's +2 damage lands on every one-handed melee weapon (Dagger/Javelin/Flail) but not the Two-Handed Greatsword, and Unarmed Fighting's 1d6 base die applies since she isn't hands-free", () => {
+    const c = load("fighter-fighting-styles-20");
+    expect(c.attacks.find((a) => a.name === "Crossbow, Light")).toMatchObject({ attackBonus: 10, damage: "1d8 +2" });
+    expect(c.attacks.find((a) => a.name === "Dagger")).toMatchObject({ attackBonus: 9, damage: "1d4 +5" });
+    expect(c.attacks.find((a) => a.name === "Javelin")).toMatchObject({ attackBonus: 9, damage: "1d6 +5" });
+    expect(c.attacks.find((a) => a.name === "Flail")).toMatchObject({ attackBonus: 9, damage: "1d8 +5" });
+    expect(c.attacks.find((a) => a.name === "Greatsword")).toMatchObject({ attackBonus: 9, damage: "2d6 +3" });
+    expect(c.attacks.find((a) => a.name === "Unarmed Strike")).toMatchObject({ attackBonus: 9, damage: "1d6 +3" });
+  });
+
+  test("same Fighter with every weapon/Shield unequipped — Unarmed Fighting upgrades to the 1d8 'no weapons/shield' die and takes on the feat's own action name, matching D&D Beyond's resolved 'Unarmed Fighting (no weapons/shield)' action", () => {
+    const raw = JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, "fighter-fighting-styles-20.json"), "utf8"));
+    for (const item of raw.data.inventory ?? []) {
+      if (item.definition?.filterType === "Weapon" || item.definition?.armorTypeId === 4) item.equipped = false;
+    }
+    const c = parseDdbCharacter(raw, blank);
+    expect(c.attacks.find((a) => a.name === "Unarmed Fighting (no weapons/shield)")).toMatchObject({
+      attackType: "melee",
+      attackBonus: 9,
+      damage: "1d8 +3",
+      damageType: "Bludgeoning",
+      proficient: true,
+    });
+    expect(c.attacks.find((a) => a.name === "Unarmed Strike")).toBeUndefined();
+  });
+});
+
 describe("spell tags/isAreaEffect/isReaction/isConcentration — Party Toolkit coverage categorization signals", () => {
   test("Fireball carries D&D Beyond's own Damage tag and is flagged area-effect (range.aoeType set)", () => {
     const c = load("yorun-all-immunities");

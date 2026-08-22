@@ -1,6 +1,14 @@
 import { AbilityScores, Attack, WEAPON_MASTERY_PROPERTIES } from "../types";
 import { formatModifier } from "../format";
-import { ABILITY_BY_ID, abilityModifier, isUnarmoredAndShieldless, rarityFromDdb, shortDescription, titleCase } from "./shared";
+import {
+  ABILITY_BY_ID,
+  abilityModifier,
+  isUnarmoredAndShieldless,
+  isWeaponAndShieldFree,
+  rarityFromDdb,
+  shortDescription,
+  titleCase,
+} from "./shared";
 import { RawDdbAny, RawDdbData, RawDdbModifier } from "./rawTypes";
 
 /** "150" + "600" -> "150/600 ft."; "150" + null/same -> "150 ft." */
@@ -97,6 +105,28 @@ function martialArtsDie(data: RawDdbData): string | undefined {
   return undefined;
 }
 
+/**
+ * The Unarmed Fighting feat (2024 PHB): a base 1d6 unarmed-strike die,
+ * upgrading to 1d8 while the character isn't holding any weapon or Shield.
+ * Confirmed on a real level-20 Paladin export: the base 1d6 is a `type:
+ * "set", subType: "unarmed-damage-die"` modifier granted by the feat, and a
+ * separate resolved action named "Unarmed Fighting (no weapons/shield)"
+ * gives the 1d8 upgrade value. Both are static per-feat data — D&D Beyond
+ * doesn't conditionally omit either based on the character's current
+ * equipment — so which one currently applies is worked out here from the
+ * character's own equipped inventory via `isWeaponAndShieldFree`, the same
+ * way `isUnarmoredAndShieldless` already gates Monk eligibility above.
+ */
+function unarmedFightingDice(data: RawDdbData, mods: RawDdbModifier[]): { withGear: string; freeHands: string } | undefined {
+  const withGear = (mods.find((m) => m.type === "set" && m.subType === "unarmed-damage-die") as RawDdbAny)?.dice
+    ?.diceString;
+  if (!withGear) return undefined;
+  const freeHandsAction = (["feat", "class", "race"] as const)
+    .flatMap((g) => (data.actions?.[g] ?? []) as RawDdbAny[])
+    .find((a) => /unarmed fighting/i.test(a.name ?? "") && a.dice?.diceString && a.attackTypeRange != null);
+  return { withGear, freeHands: freeHandsAction?.dice.diceString ?? withGear };
+}
+
 /** "1d12" -> 6.5, "2d6" -> 7 — lets a Monk's weapon/unarmed damage compare its own die against the Martial Arts die and keep whichever rolls higher on average, matching the RAW wording ("in place of the normal damage") rather than always preferring one over the other. */
 function diceStringAverage(diceString: string): number {
   const match = /^(\d+)d(\d+)$/.exec(diceString);
@@ -147,7 +177,7 @@ function isMonkWeapon(weapon: RawDdbAny, propertyNames: string[]): boolean {
  * better numbers under the plain name was misleading — it read as if the
  * character's *baseline* Unarmed Strike had that damage.
  */
-function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number): Attack {
+function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack {
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
 
@@ -192,6 +222,23 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
     };
   }
 
+  const unarmedFighting = unarmedFightingDice(data, mods);
+  if (unarmedFighting) {
+    const handsFree = isWeaponAndShieldFree(data);
+    const dieString = handsFree ? unarmedFighting.freeHands : unarmedFighting.withGear;
+    return {
+      id: "attack-unarmed",
+      name: handsFree ? "Unarmed Fighting (no weapons/shield)" : "Unarmed Strike",
+      attackType: "melee",
+      attackBonus: strMod + profBonus,
+      damage: `${dieString}${strMod !== 0 ? ` ${formatModifier(strMod)}` : ""}`,
+      damageType: "Bludgeoning",
+      properties: [],
+      range: "5 ft.",
+      proficient: true,
+    };
+  }
+
   return {
     id: "attack-unarmed",
     name: "Unarmed Strike",
@@ -216,16 +263,14 @@ function computeUnarmedStrike(data: RawDdbData, abilities: AbilityScores, profBo
  * entry — their computed stats are identical, so showing both adds
  * duplicate rows with no new information.
  *
- * Global attack-roll modifiers a Fighting Style could grant (e.g.
- * Archery's +2 to ranged attacks) aren't folded in — none of the real
- * fixtures this was built against exercise that case, and guessing at the
- * modifier shape without one to confirm against isn't worth the risk of a
- * silently wrong attack bonus.
+ * Global attack-roll/damage modifiers a Fighting Style grants are folded in
+ * below (Dueling, Thrown Weapon Fighting, Archery) — see each one's own
+ * comment for the confirmed real subType behind it.
  */
 export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profBonus: number, mods: RawDdbModifier[]): Attack[] {
   const profSubtypes = new Set(mods.filter((m) => m.type === "proficiency").map((m) => m.subType));
   const seen = new Set<string>();
-  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus)];
+  const attacks: Attack[] = [computeUnarmedStrike(data, abilities, profBonus, mods)];
   const monkDie = martialArtsDie(data);
   const martialArtsActive = monkDie !== undefined && isUnarmoredAndShieldless(data);
   // The Thrown Weapon Fighting style ("when you hit with a ranged attack
@@ -239,6 +284,28 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
   // Beyond's own single-row display for the same weapon.
   const thrownWeaponDamageBonus = mods
     .filter((m) => m.type === "damage" && m.subType === "thrown-weapon-attacks" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
+  // Dueling ("while holding a Melee weapon in one hand and no other
+  // weapons, +2 to damage rolls with that weapon") is modeled as `type:
+  // "damage", subType: "one-handed-melee-attacks"` — confirmed on a real
+  // level-20 Fighter (Eldritch Knight) export. There's no per-hand/stance
+  // tracking in this data (which weapon is "currently" held one-handed vs.
+  // just sitting equipped), so — same simplification `thrownWeaponDamageBonus`
+  // above already applies — it's granted to any equipped melee weapon that
+  // isn't Two-Handed, matching this file's one-row-per-weapon, static-
+  // eligibility approach rather than trying to track real-time stance.
+  const duelingDamageBonus = mods
+    .filter((m) => m.type === "damage" && m.subType === "one-handed-melee-attacks" && m.isGranted)
+    .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
+  // Archery ("+2 bonus to attack rolls you make with Ranged weapons") is
+  // modeled as `type: "bonus", subType: "ranged-weapon-attacks"` (matching
+  // this file's `damage`/`bonus` naming split elsewhere: a damage-roll
+  // grant vs. an attack-roll grant of the same shape). Gated on the
+  // weapon's own Ranged category (`attackType === 2`), not just "isThrown"
+  // — a thrown Melee weapon used at range doesn't qualify for Archery RAW,
+  // only an actual Ranged weapon (bow/crossbow/sling) does.
+  const archeryAttackBonus = mods
+    .filter((m) => m.type === "bonus" && m.subType === "ranged-weapon-attacks" && m.isGranted)
     .reduce((sum, m) => sum + (m.value ?? m.fixedValue ?? 0), 0);
 
   for (const item of (data.inventory ?? []) as RawDdbAny[]) {
@@ -264,6 +331,7 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
     const properties = propertyNames.filter((p) => p !== masteryCandidate);
     const isFinesse = propertyNames.includes("Finesse");
     const isThrown = propertyNames.includes("Thrown");
+    const isEligibleForDueling = !isRanged && !propertyNames.includes("Two-Handed");
     // Dexterous Attacks: a Monk's Martial Arts lets Dex stand in for Str on
     // an eligible weapon exactly like Finesse does — folded into the same
     // ternary rather than a separate branch, since both grants resolve the
@@ -293,8 +361,12 @@ export function computeAttacks(data: RawDdbData, abilities: AbilityScores, profB
         : undefined;
 
     const proficient = isProficientWithWeapon(weapon.type || weapon.name, weapon.categoryId, profSubtypes);
-    const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus;
-    const damageBonus = abilityMod + magicBonus + (isThrown ? thrownWeaponDamageBonus : 0);
+    const attackBonus = abilityMod + (proficient ? profBonus : 0) + magicBonus + (isRanged ? archeryAttackBonus : 0);
+    const damageBonus =
+      abilityMod +
+      magicBonus +
+      (isThrown ? thrownWeaponDamageBonus : 0) +
+      (isEligibleForDueling ? duelingDamageBonus : 0);
     // The RAW wording ("in place of the normal damage") lets the die roll
     // the Martial Arts die *or* the weapon's own — whichever is bigger —
     // rather than unconditionally overriding it, matching the same
