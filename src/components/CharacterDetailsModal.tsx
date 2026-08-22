@@ -730,7 +730,7 @@ export function CharacterDetailsModal({
                 {showStandardActions && (
                   <div className="space-y-1">
                     <p className={MICRO_ITEM_LABEL_CLS}>Action · Standard</p>
-                    <div className="flex flex-wrap gap-1.5 pl-8">
+                    <div className="flex flex-wrap gap-1.5">
                       {STANDARD_ACTIONS.map((action) => (
                         <StandardActionChip key={action.name} action={action} />
                       ))}
