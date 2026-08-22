@@ -4,102 +4,111 @@
  * fixed reference block under Actions (not derived from this character's
  * own data the way attacks/features are), so this is a static table rather
  * than something `ddbParser` computes. `description` uses the same `\n\n`
- * paragraph-break convention `RichText` already expects from parsed rules
- * text, so the hint panel renders identically to every other rules-text
- * hint in the app.
+ * paragraph-break and `**bold**` markdown-lite `RichText` already expects
+ * from parsed rules text, so the hint panel renders identically to every
+ * other rules-text hint in the app. Condensed from the 2024 PHB text (some
+ * multi-paragraph rules folded down, reference tables turned into a single
+ * bolded-term line) with the key checks/DCs/conditions bolded, rather than
+ * quoted in full — this is a quick-reference hint, not a rulebook reprint.
  */
 export interface StandardAction {
   name: string;
-  /** One-line summary, shown in italics above the divider — mirrors D&D Beyond's own reference-card layout for these same 15 actions. */
-  summary: string;
   description: string;
 }
 
 export const STANDARD_ACTIONS: StandardAction[] = [
   {
     name: "Attack",
-    summary: "Make one attack with a weapon or an Unarmed Strike.",
     description:
-      "The most common action in combat — you make one attack, whether with a weapon or an Unarmed Strike.\n\nSome features let you make more than one attack when you take this action.",
+      "Make one attack roll with a weapon or an Unarmed Strike.\n\n" +
+      "**Equipping and Unequipping Weapons.** You can equip or unequip one weapon as part of this action, before or after your attack — drawing, picking up, sheathing, stowing, or dropping it.\n\n" +
+      "**Moving between Attacks.** If a feature such as Extra Attack gives you more than one attack, you can split your movement between those attacks.",
   },
   {
     name: "Dash",
-    summary: "For the rest of the turn, give yourself extra movement equal to your Speed.",
     description:
-      "The increase equals your Speed after modifiers. With a Speed of 30 feet, you can move up to 60 feet this turn.\n\nIf you have a special speed, such as a Fly or Swim Speed, you can use that instead of your Speed — you choose which, each time.",
+      "Gain extra movement for the rest of the turn equal to your Speed.\n\n" +
+      "With a Speed of 30 feet, you can move up to 60 feet this turn.\n\n" +
+      "If you have a special speed, such as a **Fly** or **Swim** Speed, you can use that instead — you choose which, each time.",
   },
   {
     name: "Disengage",
-    summary: "Your movement doesn't provoke Opportunity Attacks for the rest of the turn.",
-    description: "Lets you back away from melee without giving an adjacent foe a free swing as you go.",
+    description: "Your movement doesn't provoke Opportunity Attacks for the rest of the turn.",
   },
   {
     name: "Dodge",
-    summary: "Attack rolls against you have Disadvantage, and your Dexterity saves have Advantage, until your next turn.",
-    description: "You lose this benefit if you're Incapacitated or if your Speed drops to 0.",
+    description:
+      "Until the start of your next turn, attack rolls against you have **Disadvantage** (if you can see the attacker), and you make Dexterity saving throws with **Advantage**.\n\n" +
+      "You lose these benefits if you have the **Incapacitated** condition or your Speed is 0.",
   },
   {
     name: "Grapple",
-    summary: "Use an Unarmed Strike to grab a creature instead of dealing damage.",
     description:
-      "A contested check: your Athletics vs. the target's Athletics or Acrobatics.\n\nOn a success, the target has the Grappled condition. A creature two sizes larger than you can't be grappled this way.",
+      "Use an Unarmed Strike to try to grab a creature.\n\n" +
+      "**Grapple.** The target makes a **Strength or Dexterity saving throw** (its choice) or gains the **Grappled** condition. DC = 8 + your Strength modifier + Proficiency Bonus. Only possible if the target is no more than one size larger than you and you have a hand free.\n\n" +
+      "**One Grapple per Hand.** Each hand (or grasping body part) can grapple only one creature at a time.\n\n" +
+      "**Escaping a Grapple.** The target can use its action to make a **Strength (Athletics) or Dexterity (Acrobatics)** check against the grapple's escape DC, ending the condition on a success. It also ends if you're Incapacitated or the target moves beyond the grapple's range.",
   },
   {
     name: "Help",
-    summary: "Aid another creature's task, or distract a foe so an ally hits more easily.",
     description:
-      "Help a creature you can see or reach make an ability check, or help an ally's attack — the next attack roll against a foe you're helping distract has Advantage.",
+      "Help an ally's ability check or attack roll.\n\n" +
+      "**Assist an Ability Check.** Choose a skill or tool you're proficient with and an ally near enough to assist. That ally has **Advantage** on their next check with it, until the start of your next turn.\n\n" +
+      "**Assist an Attack Roll.** Distract an enemy within 5 feet of you — the next attack roll against it by one of your allies has **Advantage**, until the start of your next turn.",
   },
   {
     name: "Hide",
-    summary: "Make a Dexterity (Stealth) check to become Unseen.",
     description:
-      "You can't hide from a creature that can already see you clearly, and hiding ends the moment you're spotted or do something that gives you away.",
+      "Make a **Dexterity (Stealth)** check to become Unseen.\n\n" +
+      "Requires being **Heavily Obscured** or behind **Three-Quarters/Total Cover**, and out of every enemy's line of sight. DC 15, unless a feature says otherwise.\n\n" +
+      "On a success, you gain the **Invisible** condition — your check's total becomes the DC for a creature trying to find you with a Wisdom (Perception) check.\n\n" +
+      "Ends immediately if you make a sound louder than a whisper, an enemy finds you, you make an attack roll, or you cast a spell with a Verbal component.",
   },
   {
     name: "Improvise",
-    summary: "Try something not covered by another action — the DM sets the DC and the effect.",
-    description: "Describe what you want to do; the DM decides whether an ability check is required and, if so, which one.",
+    description: "Try something not covered by another action — the DM decides what check, if any, is needed.",
   },
   {
     name: "Influence",
-    summary: "Make a Charisma check to persuade, deceive, or intimidate a creature.",
     description:
-      "Attempt to sway a creature's attitude or actions through words or gestures — Persuasion, Deception, or Intimidation, as fits your approach.",
+      "Make a Charisma or Wisdom check to alter a creature's attitude.\n\n" +
+      "Describe how you're communicating — deceiving, intimidating, amusing, or persuading. The DM judges the creature's reaction: **Willing** (no check, it complies), **Unwilling** (no check, it refuses), or **Hesitant** (you make a check; DC = 15 or the creature's Intelligence score, whichever is higher).\n\n" +
+      "**Deception** (deceiving), **Intimidation** (intimidating), **Performance** (amusing), **Persuasion** (persuading), or **Animal Handling** (coaxing a Beast/Monstrosity) — as fits your approach.\n\n" +
+      "On a failure, you must wait 24 hours (or as the DM sets) before trying the same request again.",
   },
   {
     name: "Magic",
-    summary: "Cast a spell, use a magic item, or activate a magical feature that requires an action.",
     description:
-      "Covers casting a spell with a casting time of an action, plus using a magic item or other magical effect that calls for this action.",
+      "Cast a spell, use a magic item, or activate a magical feature that requires this action.\n\n" +
+      "Casting a spell with a casting time of 1 minute or longer requires taking the Magic action on every turn of the casting while maintaining **Concentration** — if Concentration breaks, the spell fails but no slot is expended.",
   },
   {
     name: "Ready",
-    summary: "Prepare to act on a trigger you define, using your Reaction when it happens.",
     description:
-      "Choose the trigger and the action (or move) you'll take; you use your Reaction to carry it out the moment the trigger occurs before the start of your next turn.",
+      "Prepare to act on a trigger you define, using your Reaction when it happens.\n\n" +
+      "Choose the trigger, then the action (or a move up to your Speed) you'll take in response. When the trigger occurs, use your Reaction to act, or ignore it.\n\n" +
+      "**Readying a spell**: cast it as normal (expending its resources) but hold the energy with **Concentration** until you release it with your Reaction — lost Concentration means the spell dissipates with no effect.",
   },
   {
     name: "Search",
-    summary: "Make a Wisdom (Perception or Insight) check to find something.",
-    description: "Used to spot a hidden creature, find a hidden object, or discern whether a creature is telling the truth.",
+    description:
+      "Make a Wisdom check to discern something that isn't obvious.\n\n" +
+      "**Insight** — a creature's state of mind. **Medicine** — an ailment or cause of death. **Perception** — a concealed creature or object. **Survival** — tracks or food.",
   },
   {
     name: "Shove",
-    summary: "Use an Unarmed Strike to push a creature 5 feet or knock it Prone.",
     description:
-      "A contested check: your Athletics vs. the target's Athletics or Acrobatics.\n\nOn a success, choose to push the target 5 feet away or give it the Prone condition.",
+      "Use an Unarmed Strike to push a creature away or knock it down.\n\n" +
+      "The target makes a **Strength or Dexterity saving throw** (its choice); on a failure you push it 5 feet or give it the **Prone** condition. DC = 8 + your Strength modifier + Proficiency Bonus. Only possible if the target is no more than one size larger than you.",
   },
   {
     name: "Study",
-    summary: "Make an Intelligence check to recall or reason out lore.",
     description:
-      "Used to remember or logically work out information about history, nature, arcana, or another field of knowledge.",
+      "Make an Intelligence check to recall or reason out lore.\n\n" +
+      "**Arcana** — spells, magic items, planes, related creatures. **History** — historic events, civilizations, related creatures. **Investigation** — traps, ciphers, gadgetry. **Nature** — terrain, flora, weather, related creatures. **Religion** — deities, rites, related creatures.",
   },
   {
     name: "Utilize",
-    summary: "Use a nonmagical object in a way that requires an action, such as picking a lock.",
-    description:
-      "Covers using an object that isn't already covered by a more specific action — the DM determines what check, if any, is needed.",
+    description: "Use a nonmagical object in a way that requires an action, when no more specific action already applies.",
   },
 ];

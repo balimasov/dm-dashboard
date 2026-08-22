@@ -418,16 +418,24 @@ export function CharacterDetailsModal({
     .map(([group, features]) => [group, features.filter((f) => !f.parentFeatureName?.startsWith("Weapon Mastery"))] as const)
     .filter(([, features]) => features.length > 0);
   const actionsTabEmpty = !showAttackSections && !showStandardActions && visibleActionGroups.length === 0;
+  // Which of Bonus Action/Reaction/Special this character actually has at
+  // least one feature in — the filter-chip row only offers a chip when it
+  // would filter down to something, not a fixed "every possible category"
+  // list (same rule the Features tab's own origin chips follow below).
+  const presentActionGroups = new Set(actionTypeGroups.map(([group]) => group));
 
   // Features tab filter — `otherBucket` only ever has one real entry (the
   // "other" action-economy group, i.e. everything passive), so its own
   // features are what actually gets sub-grouped by origin and filtered.
-  const visibleOriginGroups = otherBucket.flatMap(([, features]) =>
-    groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id))).filter(
-      ([origin]) => featureFilter === "all" || origin === featureFilter
-    )
+  const allOriginGroups = otherBucket.flatMap(([, features]) =>
+    groupFeaturesByOrigin(features.filter((f) => !parentByChildId.has(f.id)))
   );
+  const visibleOriginGroups = allOriginGroups.filter(([origin]) => featureFilter === "all" || origin === featureFilter);
   const featuresTabEmpty = visibleOriginGroups.length === 0;
+  // Same "only offer a chip that actually matches something" rule the
+  // Actions tab's own filter chips follow — a character with no Background
+  // Feature shouldn't see a "Background" chip that filters down to nothing.
+  const presentOrigins = new Set(allOriginGroups.map(([origin]) => origin));
 
   // Spells tab filter — chips are built from this character's own actual
   // `spell.tags` values (D&D Beyond's raw classification), not a fixed
@@ -671,7 +679,17 @@ export function CharacterDetailsModal({
                 <FilterChipRow
                   options={[
                     { value: "all", label: "All" },
-                    ...(["action", "bonusAction", "reaction", "special"] as const).map((g) => ({ value: g, label: GROUP_LABELS[g] })),
+                    // "Action" is never actually empty — the 15 Action ·
+                    // Standard entries below always match it, even for a
+                    // character with no attacks or Action-group features of
+                    // their own — so it's the one entry here not gated on
+                    // `presentActionGroups`, unlike Bonus Action/Reaction/
+                    // Special, which really can be empty and shouldn't show
+                    // a chip that filters down to nothing.
+                    { value: "action", label: GROUP_LABELS.action },
+                    ...(["bonusAction", "reaction", "special"] as const)
+                      .filter((g) => presentActionGroups.has(g))
+                      .map((g) => ({ value: g, label: GROUP_LABELS[g] })),
                   ]}
                   isActive={(v) => actionFilter === v}
                   onClick={(v) => setActionFilter((current) => (v === current ? "all" : (v as typeof actionFilter)))}
@@ -689,19 +707,26 @@ export function CharacterDetailsModal({
                     ))}
                   </div>
                 )}
-                {visibleActionGroups.map(([group, features]) => (
-                  <div key={group} className="space-y-1">
-                    <p className={MICRO_ITEM_LABEL_CLS}>{group === "action" ? "Action · Features" : GROUP_LABELS[group]}</p>
-                    {features.map((feature) => (
-                      <FeatureRow
-                        key={feature.id}
-                        feature={feature}
-                        flagged={flaggedAbilities.includes(feature.name)}
-                        onToggleFlag={() => toggleFlag(feature.name)}
-                      />
-                    ))}
-                  </div>
-                ))}
+                {/* "Action · Features" and "Action · Standard" both live right
+                    after the weapon attacks, ahead of Bonus Action/Reaction/
+                    Special — everything that costs your Action stays grouped
+                    together instead of Standard drifting to the very bottom
+                    of the list, after every other action-economy group. */}
+                {visibleActionGroups
+                  .filter(([group]) => group === "action")
+                  .map(([group, features]) => (
+                    <div key={group} className="space-y-1">
+                      <p className={MICRO_ITEM_LABEL_CLS}>Action · Features</p>
+                      {features.map((feature) => (
+                        <FeatureRow
+                          key={feature.id}
+                          feature={feature}
+                          flagged={flaggedAbilities.includes(feature.name)}
+                          onToggleFlag={() => toggleFlag(feature.name)}
+                        />
+                      ))}
+                    </div>
+                  ))}
                 {showStandardActions && (
                   <div className="space-y-1">
                     <p className={MICRO_ITEM_LABEL_CLS}>Action · Standard</p>
@@ -712,6 +737,21 @@ export function CharacterDetailsModal({
                     </div>
                   </div>
                 )}
+                {visibleActionGroups
+                  .filter(([group]) => group !== "action")
+                  .map(([group, features]) => (
+                    <div key={group} className="space-y-1">
+                      <p className={MICRO_ITEM_LABEL_CLS}>{GROUP_LABELS[group]}</p>
+                      {features.map((feature) => (
+                        <FeatureRow
+                          key={feature.id}
+                          feature={feature}
+                          flagged={flaggedAbilities.includes(feature.name)}
+                          onToggleFlag={() => toggleFlag(feature.name)}
+                        />
+                      ))}
+                    </div>
+                  ))}
                 {actionsTabEmpty && <p className={`py-2 text-center ${EMPTY_STATE_CLS}`}>Nothing in this category yet.</p>}
               </div>
             )}
@@ -728,10 +768,9 @@ export function CharacterDetailsModal({
                 <FilterChipRow
                   options={[
                     { value: "all", label: "All" },
-                    ...(["background", "class", "feat", "species"] as const).map((origin) => ({
-                      value: origin,
-                      label: ORIGIN_FILTER_LABELS[origin],
-                    })),
+                    ...(["background", "class", "feat", "species"] as const)
+                      .filter((origin) => presentOrigins.has(origin))
+                      .map((origin) => ({ value: origin, label: ORIGIN_FILTER_LABELS[origin] })),
                   ]}
                   isActive={(v) => featureFilter === v}
                   onClick={(v) => setFeatureFilter((current) => (v === current ? "all" : (v as typeof featureFilter)))}
