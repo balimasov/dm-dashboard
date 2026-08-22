@@ -30,7 +30,7 @@ export function Toast({
     // z-[60] — above `CampaignFormModal`'s own z-50 overlay, since this can
     // now be triggered from inside that modal (creature add/import result)
     // and would otherwise render invisibly behind its backdrop.
-    <div className="fixed bottom-5 left-1/2 z-[60] flex max-w-[90vw] -translate-x-1/2 items-start gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm shadow-xl">
+    <div className="fixed bottom-5 left-1/2 z-[60] flex max-w-[90vw] -translate-x-1/2 items-center gap-3 rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm shadow-xl">
       <span className={VARIANT_TEXT_CLASS[variant]}>{message}</span>
       <IconButton onClick={onDismiss} aria-label="Close">
         ✕
