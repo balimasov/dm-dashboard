@@ -27,6 +27,7 @@ import { CreatureCard } from "@/components/CreatureCard";
 import { CoinsPanel, InventoryOverview } from "@/components/InventoryOverview";
 import { PartyToolkit } from "@/components/PartyToolkit";
 import { QuickLinksButton } from "@/components/QuickLinksButton";
+import { DiceRollerFab } from "@/components/DiceRollerFab";
 import { RemindersFab } from "@/components/RemindersFab";
 import { RemindersPanel } from "@/components/RemindersPanel";
 import { RosterManagerModal, type RosterTab } from "@/components/RosterManagerModal";
@@ -40,6 +41,7 @@ import { MORE_MENU_ITEM_CLASS, MoreMenu } from "@/components/ui/MoreMenu";
 import { DownloadIcon, GearIcon, LogOutIcon, NoteIcon, PencilIcon, PersonIcon } from "@/components/ui/icons";
 import { MUTED_BODY_CLS } from "@/components/ui/typography";
 import { logout } from "@/app/login/actions";
+import { characterReminders, creatureReminders } from "@/lib/reminders";
 import { fetchAndParseDdbCharacter } from "@/lib/sync";
 import { apiFetch } from "@/lib/apiClient";
 import { reorderSubset } from "@/lib/reorderSubset";
@@ -460,6 +462,14 @@ export function DashboardClient({
   const [journalOpen, setJournalOpen] = useState(false);
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
 
+  // Shared by `RemindersFab` (which slot to render its own popover into) and
+  // `DiceRollerFab` (how many FAB slots below it are already occupied) —
+  // computed once here instead of twice, since both need the same answer.
+  const hasQuickLinks = (campaignState.quickLinks ?? []).length > 0;
+  const hasReminders =
+    characters.some((c) => !c.hidden && characterReminders(c) !== null) ||
+    creatures.some((c) => !c.hidden && creatureReminders(c) !== null);
+
   // A player has no Settings modal to open at all — guarded here too (not
   // just by hiding every button that calls this), so nothing short of
   // editing this component's own source can pop it open for that role.
@@ -788,8 +798,10 @@ export function DashboardClient({
         creatures={creatures}
         onUpdateCharacter={updateCharacter}
         onUpdateCreature={updateCreature}
-        hasQuickLinks={(campaignState.quickLinks ?? []).length > 0}
+        hasQuickLinks={hasQuickLinks}
       />
+
+      <DiceRollerFab campaignId={campaign.id} hasQuickLinks={hasQuickLinks} hasReminders={hasReminders} />
 
       <div id="section-party-toolkit" className="scroll-mt-[130px]">
         <CollapsibleSection
