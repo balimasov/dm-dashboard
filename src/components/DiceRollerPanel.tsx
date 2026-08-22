@@ -18,20 +18,22 @@ import { formatModifier, formatSyncTimestamp } from "@/lib/format";
 import { ChipTone, CHIP_TONE_CLASSES } from "./ui/chipTones";
 import { ROW_CARD_CLS } from "./ui/containerStyles";
 import { FloatingPanel } from "./ui/FloatingPanel";
+import { IconButton } from "./ui/IconButton";
+import { TrashOutlineIcon } from "./ui/icons";
 import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS } from "./ui/typography";
 
-/** A distinct hue per die size (drawn from the app's existing `ChipTone` palette, not new colors) so the tray reads at a glance instead of by label text alone. `violet` stays reserved for Spell Slots/Concentration (see `chipTones.ts`), so it's skipped here like everywhere else. */
-const DIE_TONE: Record<DieSides, ChipTone> = { 4: "lime", 6: "gold", 8: "fuchsia", 10: "cyan", 12: "orange", 20: "rose", 100: "pink" };
+/** A distinct hue per die size (drawn from the app's existing `ChipTone` palette, not new colors) so the tray reads at a glance instead of by label text alone — matched to a real physical dice set's own colors (green d4, orange d6, blue d8, black d10, yellow d12, red d20, white d100). `violet` stays reserved for Spell Slots/Concentration (see `chipTones.ts`), so it's skipped here like everywhere else. */
+const DIE_TONE: Record<DieSides, ChipTone> = { 4: "emerald", 6: "orange", 8: "cyan", 10: "neutral", 12: "yellow", 20: "rose", 100: "steel" };
 
-/** Text-only half of each `DIE_TONE` entry, for the history equation's per-group "3d4" label — `CHIP_TONE_CLASSES` bundles border+bg+text into one string, but a label needs just the text color. */
+/** Text-only half of each `DIE_TONE` entry, for the history equation's per-group "3d4" label — `CHIP_TONE_CLASSES` bundles border+bg+text into one string, but a label needs just the text color. `neutral`/`steel` are the app's own hand-picked hex (see `chipTones.ts`), not a stock Tailwind hue, hence the arbitrary-value classes. */
 const DIE_LABEL_TEXT_CLASS: Record<DieSides, string> = {
-  4: "text-lime-300",
-  6: "text-sky-300",
-  8: "text-fuchsia-300",
-  10: "text-cyan-300",
-  12: "text-orange-300",
+  4: "text-emerald-300",
+  6: "text-orange-300",
+  8: "text-cyan-300",
+  10: "text-[#d6cebe]",
+  12: "text-yellow-300",
   20: "text-rose-300",
-  100: "text-pink-300",
+  100: "text-[#d6e3ec]",
 };
 
 const ADV_OPTIONS: { value: AdvantageMode; label: string }[] = [
@@ -73,7 +75,7 @@ function DieButton({ sides, count, onAdd }: { sides: DieSides; count: number; on
       <button
         type="button"
         onClick={onAdd}
-        className={`flex h-9 items-center justify-center rounded-lg border px-2.5 text-xs font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}
+        className={`flex h-9 items-center justify-center rounded-lg border px-2 text-[11px] font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}
       >
         d{sides}
       </button>
@@ -261,7 +263,18 @@ export function DiceRollerPanel({
       saveHistory(campaignId, next);
       return next;
     });
+    // Only the dice pool and modifier are one-shot inputs to this specific
+    // roll — Advantage/Disadvantage stays selected, since it describes how
+    // you're rolling d20s in general, not a setting tied to this one roll.
     setPool({});
+    setModifier(0);
+  }
+
+  function clearHistory() {
+    if (history.length === 0) return;
+    if (!window.confirm("Clear roll history? This can't be undone.")) return;
+    setHistory([]);
+    saveHistory(campaignId, []);
   }
 
   return (
@@ -274,6 +287,11 @@ export function DiceRollerPanel({
           <span aria-hidden="true">🎲</span>
           Dice Roller
         </span>
+      }
+      headerActions={
+        <IconButton tone="danger" onClick={clearHistory} disabled={history.length === 0} aria-label="Clear history" title="Clear history">
+          <TrashOutlineIcon className="h-4 w-4" />
+        </IconButton>
       }
     >
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
@@ -299,26 +317,30 @@ export function DiceRollerPanel({
         )}
 
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 flex-wrap gap-1.5">
+          <div className="flex flex-1 flex-wrap gap-1">
             {DIE_SIDES.map((sides) => (
               <DieButton key={sides} sides={sides} count={pool[sides] ?? 0} onAdd={() => addDie(sides)} />
             ))}
           </div>
+          {/* Tightened vs. the die tray's own natural sizing (narrower stepper
+              buttons/value) so the whole tray-row still fits on one line even
+              at `FloatingPanel`'s absolute MIN_WIDTH (440px), not just at its
+              default 480px. */}
           <span className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-slate-700">
             <button
               type="button"
               aria-label="Decrease modifier"
               onClick={() => setModifier((m) => Math.max(-20, m - 1))}
-              className="flex h-full w-7 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+              className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
             >
               −
             </button>
-            <span className="w-8 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
+            <span className="w-7 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
             <button
               type="button"
               aria-label="Increase modifier"
               onClick={() => setModifier((m) => Math.min(20, m + 1))}
-              className="flex h-full w-7 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+              className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
             >
               +
             </button>
