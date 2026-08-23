@@ -37,10 +37,13 @@ import { REMINDER_LINK_TITLE_CLS } from "./ui/typography";
  * other button would have been. `hasQuickLinks` (the caller already knows
  * whether `QuickLinksButton` will render, from the same `links` prop) drops
  * this one down to that now-vacant `bottom-5` spot instead. Same
- * self-anchoring `absolute bottom-full` popover pattern as `QuickLinksButton`
- * too, so it opens upward from *this* button specifically instead of a
+ * self-anchoring `absolute right-full` popover pattern as `QuickLinksButton`
+ * too, so it opens sideways from *this* button specifically instead of a
  * viewport-fixed offset that would need updating by hand if the stack order
- * ever changes again.
+ * ever changes again — opening sideways rather than upward is deliberate:
+ * this corner stacks up to three FABs 12px apart, and an upward-opening
+ * panel used to render right on top of whichever FAB sits above it,
+ * blocking it until this popover was dismissed first.
  */
 export function RemindersFab({
   characters,
@@ -143,7 +146,7 @@ export function RemindersFab({
             icon={<span aria-hidden="true">🔥</span>}
             title="Reminders"
             count={totalCount}
-            className="scrollbar-themed absolute bottom-full right-0 mb-2 max-h-[70vh] w-80 max-w-[calc(100vw-2.5rem)] overflow-y-auto overscroll-contain"
+            className="scrollbar-themed absolute bottom-0 right-full mr-2 max-h-[70vh] w-80 max-w-[calc(100vw-5.5rem)] overflow-y-auto overscroll-contain"
           >
             <div className="space-y-3">
               {groups.map((group) => (

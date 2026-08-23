@@ -15,6 +15,14 @@ import { PencilIcon } from "./ui/icons";
  * come from the shared `QuickMenuPanel` (same recipe as `RemindersFab`),
  * so the two float in the same corner of the screen and read as one
  * button family instead of two independently-styled ones.
+ *
+ * The popover opens *sideways* (`right-full`, growing left) rather than
+ * upward (`bottom-full`) — this corner also stacks `RemindersFab`/
+ * `DiceRollerFab` directly above this button with barely 12px between rows,
+ * so an upward-opening panel used to render right on top of them, making
+ * those FABs untappable until this one was dismissed first. Opening left
+ * instead keeps the whole vertical FAB column clear no matter which of the
+ * three is open.
  */
 export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onManage?: () => void }) {
   const { open, setOpen, containerRef } = useDismissiblePopover();
@@ -54,7 +62,7 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
               </IconButton>
             )
           }
-          className="scrollbar-themed absolute right-0 bottom-full mb-2 max-h-[70vh] w-64 overflow-y-auto"
+          className="scrollbar-themed absolute right-full bottom-0 mr-2 max-h-[70vh] w-64 max-w-[calc(100vw-5.5rem)] overflow-y-auto"
         >
           {/* Cancels the shell's own `p-3` on three sides so these rows can
               hover full-bleed edge-to-edge, same as before this shared
