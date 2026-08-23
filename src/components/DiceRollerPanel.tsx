@@ -112,7 +112,7 @@ function DieButton({
         </button>
         {count > 0 && (
           <span
-            className={`absolute -right-2 -top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-bold sm:-right-1.5 sm:-top-1.5 sm:h-4 sm:min-w-[1rem] sm:text-[10px] ${DIE_BADGE_CLASS[sides]}`}
+            className={`absolute -right-2 -top-2 z-10 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-bold sm:-right-1.5 sm:-top-1.5 sm:h-4 sm:min-w-[1rem] sm:text-[10px] ${DIE_BADGE_CLASS[sides]}`}
           >
             {count}
           </span>
@@ -366,7 +366,7 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
         <span className="flex flex-wrap gap-0.5">
           {group.entries.map((d, j) =>
             d.rolls.length === 2 ? (
-              <span key={j} className="inline-flex gap-0.5">
+              <span key={j} className="inline-flex items-center gap-0.5">
                 {d.rolls.map((v, k) => {
                   const isDiscardedSlot = k === d.discardedIndex;
                   const partner = d.rolls[1 - k];
