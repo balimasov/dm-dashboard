@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { Fragment, ReactNode, forwardRef, useEffect, useRef, useState } from "react";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import {
@@ -54,6 +54,11 @@ const ADV_OPTIONS: { value: AdvantageMode; label: string }[] = [
   { value: "disadvantage", label: "Disadvantage" },
 ];
 
+/** Tray gap (`gap-1`) in px, used by the pre-emptive d20-row-break measurement below. */
+const TRAY_GAP_PX = 4;
+/** The Advantage/Disadvantage widget's own rendered width (button + its `ml-*` margin), one value per breakpoint — matches `AdvSpinnerDesktop`'s `w-4 ml-0.5` and `AdvTriggerMenu`'s `w-11 ml-1` respectively. Hardcoded rather than measured because both widgets only ever mount once a d20 is already queued; the whole point of the pre-emptive check is to know this width *before* that happens. */
+const ADV_WIDGET_WIDTH_PX = { desktop: 16 + 2, mobile: 44 + 4 };
+
 const HISTORY_STORAGE_PREFIX = "dice-roller-history:";
 
 /** Same try/catch-per-call, silently-fall-back-to-default convention `FloatingPanel.tsx`'s own `loadSavedRect`/`saveRect` already use for its saved geometry — see that file's doc comment. */
@@ -83,23 +88,21 @@ function saveHistory(campaignId: string, history: DiceRoll[]) {
  * Sized responsively (mobile default, `sm:` restores the compact desktop
  * size already shipped) since a 34px die button is too small a touch
  * target on a phone but fits fine on a mouse-driven, resizable desktop
- * window.
+ * window. Forwards its outer `ref` so the tray can measure the d12/d20
+ * buttons specifically (see `DiceRollerPanel`'s own pre-emptive-wrap effect).
  */
-function DieButton({
-  sides,
-  count,
-  onAdd,
-  adv,
-  advWidget,
-}: {
-  sides: DieSides;
-  count: number;
-  onAdd: () => void;
-  adv?: AdvantageMode;
-  advWidget?: ReactNode;
-}) {
+const DieButton = forwardRef<
+  HTMLSpanElement,
+  {
+    sides: DieSides;
+    count: number;
+    onAdd: () => void;
+    adv?: AdvantageMode;
+    advWidget?: ReactNode;
+  }
+>(function DieButton({ sides, count, onAdd, adv, advWidget }, ref) {
   return (
-    <span className="flex items-center">
+    <span ref={ref} className="flex items-center">
       <span className="relative">
         <button
           type="button"
@@ -121,7 +124,7 @@ function DieButton({
       {advWidget}
     </span>
   );
-}
+});
 
 /** Desktop's existing twin-arrow spinner, glued to the d20 button — unchanged from what's already shipped. Only rendered on desktop; mobile gets `AdvTriggerMenu` instead (see that component's own doc comment for why). */
 function AdvSpinnerDesktop({ adv, onToggle }: { adv: AdvantageMode; onToggle: (direction: "advantage" | "disadvantage") => void }) {
@@ -453,6 +456,39 @@ export function DiceRollerPanel({
     historyEndRef.current?.scrollIntoView({ block: "end" });
   }, [history.length]);
 
+  // Pre-emptively breaks d20 onto a new tray row *before* its Advantage/
+  // Disadvantage widget ever mounts, so tapping d20 for the first time never
+  // visibly shoves it (plus the now-appearing widget) down to the next line.
+  // d12 is the die immediately before d20 in `DIE_SIDES`, and its own
+  // position never depends on whether d20 wraps -- using it as a stable
+  // anchor avoids a measure-render-remeasure feedback loop that measuring
+  // d20's own (possibly already-broken) position would cause. Neither d12's
+  // nor d20's own width depends on the pool (only badges change, and those
+  // are absolutely positioned), so this only needs to re-run on an actual
+  // resize, not on every pool change.
+  const trayRef = useRef<HTMLDivElement>(null);
+  const d12Ref = useRef<HTMLSpanElement>(null);
+  const d20Ref = useRef<HTMLSpanElement>(null);
+  const [needsAdvBreak, setNeedsAdvBreak] = useState(false);
+  useEffect(() => {
+    const trayEl = trayRef.current;
+    const d12El = d12Ref.current;
+    const d20El = d20Ref.current;
+    if (!trayEl || !d12El || !d20El) return;
+    function measure() {
+      const trayRight = trayEl!.getBoundingClientRect().right;
+      const d12Right = d12El!.getBoundingClientRect().right;
+      const d20Width = d20El!.getBoundingClientRect().width;
+      const widgetWidth = isDesktop ? ADV_WIDGET_WIDTH_PX.desktop : ADV_WIDGET_WIDTH_PX.mobile;
+      const availableAfterD12 = trayRight - d12Right - TRAY_GAP_PX;
+      setNeedsAdvBreak(d20Width + TRAY_GAP_PX + widgetWidth > availableAfterD12 + 0.5);
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(trayEl);
+    return () => ro.disconnect();
+  }, [isDesktop]);
+
   function addDie(sides: DieSides) {
     setPool((p) => ({ ...p, [sides]: (p[sides] ?? 0) + 1 }));
   }
@@ -535,24 +571,27 @@ export function DiceRollerPanel({
             fixed height, so stretch is a no-op there — this is purely a
             mobile-wrap concern. */}
         <div className="flex items-stretch gap-2">
-          <div className="flex flex-1 flex-wrap items-center gap-1">
+          <div ref={trayRef} className="flex flex-1 flex-wrap items-center gap-1">
             {DIE_SIDES.map((sides) => (
-              <DieButton
-                key={sides}
-                sides={sides}
-                count={pool[sides] ?? 0}
-                onAdd={() => addDie(sides)}
-                adv={sides === 20 ? adv : undefined}
-                advWidget={
-                  sides === 20 && (pool[20] ?? 0) > 0 ? (
-                    isDesktop ? (
-                      <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
-                    ) : (
-                      <AdvTriggerMenu adv={adv} onSelect={setAdv} />
-                    )
-                  ) : undefined
-                }
-              />
+              <Fragment key={sides}>
+                {sides === 20 && needsAdvBreak && <span aria-hidden="true" className="h-0 basis-full" />}
+                <DieButton
+                  ref={sides === 12 ? d12Ref : sides === 20 ? d20Ref : undefined}
+                  sides={sides}
+                  count={pool[sides] ?? 0}
+                  onAdd={() => addDie(sides)}
+                  adv={sides === 20 ? adv : undefined}
+                  advWidget={
+                    sides === 20 && (pool[20] ?? 0) > 0 ? (
+                      isDesktop ? (
+                        <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
+                      ) : (
+                        <AdvTriggerMenu adv={adv} onSelect={setAdv} />
+                      )
+                    ) : undefined
+                  }
+                />
+              </Fragment>
             ))}
           </div>
           {isDesktop ? (
