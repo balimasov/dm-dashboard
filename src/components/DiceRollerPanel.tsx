@@ -316,9 +316,10 @@ function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; 
  * un-struck — a strikethrough through a big number read as "this reduced
  * your result," which is backwards for what actually happened. Natural 1s
  * and 20s (only when actually kept, not when discarded — a discarded nat20
- * doesn't crit) get a bolder, larger chip plus a small ✨/💀 so they're
+ * doesn't crit) get a distinct border/fill plus a small ✨/💀 so they're
  * readable at a glance even inside a multi-die roll whose total isn't
- * itself a crit/fumble.
+ * itself a crit/fumble — same text size as every other chip, just a
+ * different color/border treatment, not a bigger font.
  */
 function ValueChip({ value, sides, discarded, crossed }: { value: number; sides: DieSides; discarded?: boolean; crossed?: boolean }) {
   const nat20 = !discarded && sides === 20 && value === 20;
@@ -330,9 +331,8 @@ function ValueChip({ value, sides, discarded, crossed }: { value: number; sides:
       : nat1
         ? "border-2 border-red-500 bg-red-950/50 text-red-300"
         : CHIP_TONE_CLASSES[DIE_TONE[sides]];
-  const sizeClass = nat20 || nat1 ? "px-2 text-sm font-extrabold" : "px-1.5 text-xs font-semibold";
   return (
-    <span className={`rounded border ${sizeClass} tabular-nums ${toneClass}`}>
+    <span className={`rounded border px-1.5 text-xs font-semibold tabular-nums ${toneClass}`}>
       {value}
       {nat20 ? " ✨" : nat1 ? " 💀" : ""}
     </span>
@@ -544,12 +544,18 @@ export function DiceRollerPanel({
                 onAdd={() => addDie(sides)}
                 adv={sides === 20 ? adv : undefined}
                 advWidget={
-                  sides === 20 && (pool[20] ?? 0) > 0 ? (
-                    isDesktop ? (
-                      <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
-                    ) : (
-                      <AdvTriggerMenu adv={adv} onSelect={setAdv} />
-                    )
+                  sides === 20 ? (
+                    // Space for this widget is reserved even before any d20 is
+                    // queued (just invisible, not unmounted) so tapping d20 for
+                    // the first time doesn't grow the row and shove d20 itself
+                    // onto the next line.
+                    <span className={(pool[20] ?? 0) > 0 ? "" : "invisible"}>
+                      {isDesktop ? (
+                        <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
+                      ) : (
+                        <AdvTriggerMenu adv={adv} onSelect={setAdv} />
+                      )}
+                    </span>
                   ) : undefined
                 }
               />
