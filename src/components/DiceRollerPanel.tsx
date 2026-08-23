@@ -544,18 +544,12 @@ export function DiceRollerPanel({
                 onAdd={() => addDie(sides)}
                 adv={sides === 20 ? adv : undefined}
                 advWidget={
-                  sides === 20 ? (
-                    // Space for this widget is reserved even before any d20 is
-                    // queued (just invisible, not unmounted) so tapping d20 for
-                    // the first time doesn't grow the row and shove d20 itself
-                    // onto the next line.
-                    <span className={(pool[20] ?? 0) > 0 ? "" : "invisible"}>
-                      {isDesktop ? (
-                        <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
-                      ) : (
-                        <AdvTriggerMenu adv={adv} onSelect={setAdv} />
-                      )}
-                    </span>
+                  sides === 20 && (pool[20] ?? 0) > 0 ? (
+                    isDesktop ? (
+                      <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
+                    ) : (
+                      <AdvTriggerMenu adv={adv} onSelect={setAdv} />
+                    )
                   ) : undefined
                 }
               />
