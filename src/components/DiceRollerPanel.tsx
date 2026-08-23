@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import {
   AdvantageMode,
@@ -36,6 +37,23 @@ const DIE_LABEL_TEXT_CLASS: Record<DieSides, string> = {
   100: "text-[#d6e3ec]",
 };
 
+/** Solid per-die fill for the pool-count badge — a middle ground between an earlier fully-hollow outline (border only) and the flat universal amber this replaces. Dark text reads fine against every one of these mid-tone hues. */
+const DIE_BADGE_CLASS: Record<DieSides, string> = {
+  4: "bg-emerald-600 text-slate-950",
+  6: "bg-orange-600 text-slate-950",
+  8: "bg-cyan-600 text-slate-950",
+  10: "bg-[#736550] text-slate-950",
+  12: "bg-yellow-600 text-slate-950",
+  20: "bg-rose-600 text-slate-950",
+  100: "bg-[#93aabb] text-slate-950",
+};
+
+const ADV_OPTIONS: { value: AdvantageMode; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "advantage", label: "Advantage" },
+  { value: "disadvantage", label: "Disadvantage" },
+];
+
 const HISTORY_STORAGE_PREFIX = "dice-roller-history:";
 
 /** Same try/catch-per-call, silently-fall-back-to-default convention `FloatingPanel.tsx`'s own `loadSavedRect`/`saveRect` already use for its saved geometry — see that file's doc comment. */
@@ -58,30 +76,27 @@ function saveHistory(campaignId: string, history: DiceRoll[]) {
 }
 
 /**
- * `adv`/`onToggleAdv` are only ever passed for the d20 button — every other
- * size stays a plain add-to-pool button. Clicking the active direction again
- * toggles back to "normal" (see `setAdvDirection` below); the currently
- * selected direction also rings the die button itself so it reads at a
- * glance without needing the spinner to be visible/hovered. Replaces an
- * earlier design (a single tiny triangle badge that cycled through all 3
- * states on tap, then a separate segmented row below the tray) — both were
- * either too subtle to notice or shifted the composer's layout whenever a
- * d20 was added/removed from the pool; this spinner lives glued to the d20
- * button itself, inside the tray's own wrapping flow, so nothing below it
- * ever moves.
+ * `adv`/`advWidget` are only ever passed for the d20 button — every other
+ * size stays a plain add-to-pool button. `advWidget` is pre-built by the
+ * caller (either the desktop twin-arrow spinner or the mobile trigger+menu
+ * below) so this component stays agnostic to which mechanism is active.
+ * Sized responsively (mobile default, `sm:` restores the compact desktop
+ * size already shipped) since a 34px die button is too small a touch
+ * target on a phone but fits fine on a mouse-driven, resizable desktop
+ * window.
  */
 function DieButton({
   sides,
   count,
   onAdd,
   adv,
-  onToggleAdv,
+  advWidget,
 }: {
   sides: DieSides;
   count: number;
   onAdd: () => void;
   adv?: AdvantageMode;
-  onToggleAdv?: (direction: "advantage" | "disadvantage") => void;
+  advWidget?: ReactNode;
 }) {
   return (
     <span className="flex items-center">
@@ -89,50 +104,195 @@ function DieButton({
         <button
           type="button"
           onClick={onAdd}
-          className={`flex h-9 items-center justify-center rounded-lg border px-1.5 text-xs font-bold transition hover:brightness-125 ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
+          className={`flex h-11 items-center justify-center rounded-lg border px-3 text-sm font-bold transition hover:brightness-125 sm:h-9 sm:px-1.5 sm:text-xs ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
             adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
           }`}
         >
           d{sides}
         </button>
         {count > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-slate-950">
+          <span
+            className={`absolute -right-2 -top-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-bold sm:-right-1.5 sm:-top-1.5 sm:h-4 sm:min-w-[1rem] sm:text-[10px] ${DIE_BADGE_CLASS[sides]}`}
+          >
             {count}
           </span>
         )}
       </span>
-      {onToggleAdv && count > 0 && (
-        <span className="ml-0.5 flex h-9 w-4 flex-col overflow-hidden rounded border border-slate-700">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleAdv("advantage");
-            }}
-            aria-label="Advantage"
-            title="Advantage"
-            className={`flex flex-1 items-center justify-center text-[8px] leading-none transition ${
-              adv === "advantage" ? "bg-emerald-500/25 text-emerald-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
-            }`}
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleAdv("disadvantage");
-            }}
-            aria-label="Disadvantage"
-            title="Disadvantage"
-            className={`flex flex-1 items-center justify-center border-t border-slate-700 text-[8px] leading-none transition ${
-              adv === "disadvantage" ? "bg-red-500/25 text-red-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
-            }`}
-          >
-            ▼
-          </button>
-        </span>
+      {advWidget}
+    </span>
+  );
+}
+
+/** Desktop's existing twin-arrow spinner, glued to the d20 button — unchanged from what's already shipped. Only rendered on desktop; mobile gets `AdvTriggerMenu` instead (see that component's own doc comment for why). */
+function AdvSpinnerDesktop({ adv, onToggle }: { adv: AdvantageMode; onToggle: (direction: "advantage" | "disadvantage") => void }) {
+  return (
+    <span className="ml-0.5 flex h-9 w-4 flex-col overflow-hidden rounded border border-slate-700">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle("advantage");
+        }}
+        aria-label="Advantage"
+        title="Advantage"
+        className={`flex flex-1 items-center justify-center text-[8px] leading-none transition ${
+          adv === "advantage" ? "bg-emerald-500/25 text-emerald-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+        }`}
+      >
+        ▲
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle("disadvantage");
+        }}
+        aria-label="Disadvantage"
+        title="Disadvantage"
+        className={`flex flex-1 items-center justify-center border-t border-slate-700 text-[8px] leading-none transition ${
+          adv === "disadvantage" ? "bg-red-500/25 text-red-400" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+        }`}
+      >
+        ▼
+      </button>
+    </span>
+  );
+}
+
+/**
+ * Mobile's Advantage/Disadvantage control — a single 44px trigger next to
+ * d20 that opens a menu of 3 full-size rows above it. Replaces the desktop
+ * spinner on mobile because two stacked arrows, even inside an already
+ * enlarged 44px die button, still only get ~22px of height each — too
+ * small a target to hit reliably with a thumb. Self-contained (own open
+ * state, outside-click/Escape close) — same click-outside pattern
+ * `MoreMenu` already uses, just not portaled, since this popover isn't
+ * inside anything that clips overflow.
+ */
+function AdvTriggerMenu({ adv, onSelect }: { adv: AdvantageMode; onSelect: (mode: AdvantageMode) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEscapeToClose(() => setOpen(false), open);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const icon = adv === "advantage" ? "▲" : adv === "disadvantage" ? "▼" : "±";
+
+  return (
+    <span ref={containerRef} className="relative ml-1 shrink-0">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        aria-label="Advantage/Disadvantage options"
+        title="Advantage/Disadvantage"
+        className={`flex h-11 w-11 items-center justify-center rounded-lg border text-lg transition ${
+          adv === "advantage"
+            ? "border-emerald-500 bg-emerald-500/15 text-emerald-400"
+            : adv === "disadvantage"
+              ? "border-red-500 bg-red-500/15 text-red-400"
+              : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+        }`}
+      >
+        {icon}
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-1/2 z-20 mb-2 flex w-48 -translate-x-1/2 flex-col gap-0.5 rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-lg shadow-black/40">
+          {ADV_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onSelect(opt.value);
+                setOpen(false);
+              }}
+              className={`flex h-11 items-center justify-between rounded-md px-3 text-sm font-semibold ${
+                adv !== opt.value
+                  ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                  : opt.value === "advantage"
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : opt.value === "disadvantage"
+                      ? "bg-red-500/15 text-red-400"
+                      : "bg-amber-500/10 text-amber-300"
+              }`}
+            >
+              {opt.label}
+              <span className={`h-1.5 w-1.5 rounded-full bg-current ${adv === opt.value ? "opacity-100" : "opacity-0"}`} />
+            </button>
+          ))}
+        </div>
       )}
+    </span>
+  );
+}
+
+/** Desktop's existing compact horizontal pill — unchanged. */
+function ModifierStepperDesktop({ modifier, onChange }: { modifier: number; onChange: (updater: (m: number) => number) => void }) {
+  return (
+    <span className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-slate-700">
+      <button
+        type="button"
+        aria-label="Decrease modifier"
+        onClick={() => onChange((m) => Math.max(-20, m - 1))}
+        className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+      >
+        −
+      </button>
+      <span className="w-7 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
+      <button
+        type="button"
+        aria-label="Increase modifier"
+        onClick={() => onChange((m) => Math.min(20, m + 1))}
+        className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+      >
+        +
+      </button>
+    </span>
+  );
+}
+
+/**
+ * Mobile's modifier — a genuine second column next to the die tray (not
+ * "one more tile" inside it, which read as randomly placed once the tray
+ * wrapped to 2+ rows on a narrow screen). `self-stretch` matches its height
+ * to however tall the die tray ends up (1 row or several), so it reads as
+ * a real right-hand column rather than floating at a fixed size next to a
+ * taller, unrelated block — hence the vertical +/value/− layout instead of
+ * the desktop's horizontal one.
+ */
+function ModifierStepperMobile({ modifier, onChange }: { modifier: number; onChange: (updater: (m: number) => number) => void }) {
+  return (
+    <span className="flex w-12 shrink-0 flex-col self-stretch overflow-hidden rounded-lg border border-slate-700">
+      <button
+        type="button"
+        aria-label="Increase modifier"
+        onClick={() => onChange((m) => Math.min(20, m + 1))}
+        className="flex flex-1 items-center justify-center text-base text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+      >
+        +
+      </button>
+      <span className="shrink-0 border-y border-slate-800 py-1.5 text-center text-sm font-semibold text-slate-200 tabular-nums">
+        {formatModifier(modifier)}
+      </span>
+      <button
+        type="button"
+        aria-label="Decrease modifier"
+        onClick={() => onChange((m) => Math.max(-20, m - 1))}
+        className="flex flex-1 items-center justify-center text-base text-slate-400 hover:bg-slate-700 hover:text-slate-100"
+      >
+        −
+      </button>
     </span>
   );
 }
@@ -148,17 +308,35 @@ function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; 
   );
 }
 
-function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides; discarded?: boolean }) {
-  const nat20 = sides === 20 && value === 20;
-  const nat1 = sides === 20 && value === 1;
+/**
+ * `discarded` dims a value that wasn't kept; `crossed` additionally strikes
+ * it through, used only for an Advantage discard (the lower of the pair —
+ * "didn't need it"). A Disadvantage discard (the *higher* value, thrown
+ * away because you were stuck with the lower one) stays dashed/dimmed but
+ * un-struck — a strikethrough through a big number read as "this reduced
+ * your result," which is backwards for what actually happened. Natural 1s
+ * and 20s (only when actually kept, not when discarded — a discarded nat20
+ * doesn't crit) get a bolder, larger chip plus a small ✨/💀 so they're
+ * readable at a glance even inside a multi-die roll whose total isn't
+ * itself a crit/fumble.
+ */
+function ValueChip({ value, sides, discarded, crossed }: { value: number; sides: DieSides; discarded?: boolean; crossed?: boolean }) {
+  const nat20 = !discarded && sides === 20 && value === 20;
+  const nat1 = !discarded && sides === 20 && value === 1;
   const toneClass = discarded
-    ? "border-dashed border-slate-700 text-slate-600 line-through"
+    ? `border-dashed border-slate-700 text-slate-600 ${crossed ? "line-through" : ""}`
     : nat20
-      ? "border-emerald-600 bg-emerald-950/40 text-emerald-400"
+      ? "border-2 border-emerald-500 bg-emerald-950/50 text-emerald-300"
       : nat1
-        ? "border-red-600 bg-red-950/40 text-red-400"
+        ? "border-2 border-red-500 bg-red-950/50 text-red-300"
         : CHIP_TONE_CLASSES[DIE_TONE[sides]];
-  return <span className={`rounded border px-1.5 text-xs font-semibold tabular-nums ${toneClass}`}>{value}</span>;
+  const sizeClass = nat20 || nat1 ? "px-2 text-sm font-extrabold" : "px-1.5 text-xs font-semibold";
+  return (
+    <span className={`rounded border ${sizeClass} tabular-nums ${toneClass}`}>
+      {value}
+      {nat20 ? " ✨" : nat1 ? " 💀" : ""}
+    </span>
+  );
 }
 
 function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: RolledDie[] }[] {
@@ -171,7 +349,7 @@ function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: Rolled
   return DIE_SIDES.filter((sides) => bySides.has(sides)).map((sides) => ({ sides, entries: bySides.get(sides)! }));
 }
 
-/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values, the discarded one struck through; the modifier (if any) trails as its own dashed chip. */
+/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values; the discarded one is dimmed, and struck through only for Advantage (see `ValueChip`'s own doc comment). The modifier (if any) trails as its own dashed chip. */
 function DiceEquation({ entry }: { entry: DiceRoll }) {
   const groups = groupDiceBySides(entry.dice);
   const parts: ReactNode[] = [];
@@ -189,9 +367,11 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
           {group.entries.map((d, j) =>
             d.rolls.length === 2 ? (
               <span key={j} className="inline-flex gap-0.5">
-                {d.rolls.map((v, k) => (
-                  <ValueChip key={k} value={v} sides={d.sides} discarded={k === d.discardedIndex} />
-                ))}
+                {d.rolls.map((v, k) => {
+                  const isDiscardedSlot = k === d.discardedIndex;
+                  const partner = d.rolls[1 - k];
+                  return <ValueChip key={k} value={v} sides={d.sides} discarded={isDiscardedSlot} crossed={isDiscardedSlot && v < partner} />;
+                })}
               </span>
             ) : (
               <ValueChip key={j} value={d.kept} sides={d.sides} />
@@ -255,6 +435,7 @@ export function DiceRollerPanel({
   zIndexClassName?: string;
 }) {
   useEscapeToClose(onClose);
+  const isDesktop = useDesktopViewport();
   const [pool, setPool] = useState<DicePool>({});
   const [modifier, setModifier] = useState(0);
   const [adv, setAdv] = useState<AdvantageMode>("normal");
@@ -346,7 +527,14 @@ export function DiceRollerPanel({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        {/* Two real columns: the die tray wraps on its own on the left,
+            the modifier is a separate column on the right — `items-stretch`
+            matches the modifier's height to however tall the tray ends up.
+            On desktop the tray never wraps (still fits one line at
+            `FloatingPanel`'s 440px MIN_WIDTH) and the modifier has its own
+            fixed height, so stretch is a no-op there — this is purely a
+            mobile-wrap concern. */}
+        <div className="flex items-stretch gap-2">
           <div className="flex flex-1 flex-wrap items-center gap-1">
             {DIE_SIDES.map((sides) => (
               <DieButton
@@ -355,33 +543,23 @@ export function DiceRollerPanel({
                 count={pool[sides] ?? 0}
                 onAdd={() => addDie(sides)}
                 adv={sides === 20 ? adv : undefined}
-                onToggleAdv={sides === 20 ? setAdvDirection : undefined}
+                advWidget={
+                  sides === 20 && (pool[20] ?? 0) > 0 ? (
+                    isDesktop ? (
+                      <AdvSpinnerDesktop adv={adv} onToggle={setAdvDirection} />
+                    ) : (
+                      <AdvTriggerMenu adv={adv} onSelect={setAdv} />
+                    )
+                  ) : undefined
+                }
               />
             ))}
           </div>
-          {/* Tightened vs. the die tray's own natural sizing (narrower stepper
-              buttons/value) so the whole tray-row still fits on one line even
-              at `FloatingPanel`'s absolute MIN_WIDTH (440px), not just at its
-              default 480px. */}
-          <span className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-slate-700">
-            <button
-              type="button"
-              aria-label="Decrease modifier"
-              onClick={() => setModifier((m) => Math.max(-20, m - 1))}
-              className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
-            >
-              −
-            </button>
-            <span className="w-7 text-center text-xs font-semibold text-slate-200 tabular-nums">{formatModifier(modifier)}</span>
-            <button
-              type="button"
-              aria-label="Increase modifier"
-              onClick={() => setModifier((m) => Math.min(20, m + 1))}
-              className="flex h-full w-6 items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-slate-100"
-            >
-              +
-            </button>
-          </span>
+          {isDesktop ? (
+            <ModifierStepperDesktop modifier={modifier} onChange={setModifier} />
+          ) : (
+            <ModifierStepperMobile modifier={modifier} onChange={setModifier} />
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -389,7 +567,7 @@ export function DiceRollerPanel({
             type="button"
             onClick={clearPool}
             disabled={!canClear}
-            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-slate-700 px-5 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700"
+            className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-slate-700 px-5 text-sm font-medium text-slate-200 hover:border-sky-600 hover:text-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:text-slate-600 disabled:hover:border-slate-700 sm:h-9"
           >
             Clear
           </button>
@@ -397,7 +575,7 @@ export function DiceRollerPanel({
             type="button"
             onClick={roll}
             disabled={totalDice === 0}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+            className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-sky-600 text-sm font-medium text-white hover:bg-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 sm:h-9"
           >
             <span aria-hidden="true">🎲</span> Roll
           </button>
