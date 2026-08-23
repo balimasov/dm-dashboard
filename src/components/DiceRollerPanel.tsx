@@ -312,23 +312,23 @@ function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; 
 }
 
 /**
- * `discarded` dims a value that wasn't kept; `crossed` additionally strikes
- * it through, used only for an Advantage discard (the lower of the pair —
- * "didn't need it"). A Disadvantage discard (the *higher* value, thrown
- * away because you were stuck with the lower one) stays dashed/dimmed but
- * un-struck — a strikethrough through a big number read as "this reduced
- * your result," which is backwards for what actually happened. Natural 1s
- * and 20s (only when actually kept, not when discarded — a discarded nat20
- * doesn't crit) get a distinct border/fill plus a small ✨/💀 so they're
- * readable at a glance even inside a multi-die roll whose total isn't
- * itself a crit/fumble — same text size as every other chip, just a
- * different color/border treatment, not a bigger font.
+ * `discarded` dims a value that wasn't kept (dashed border, muted text) —
+ * never struck through, for either Advantage or Disadvantage: a
+ * strikethrough through a big number read as "this reduced your result,"
+ * which is backwards or misleading either way (an Advantage discard was
+ * the lower, unneeded roll; a Disadvantage discard was the higher one you
+ * didn't get to keep). Natural 1s and 20s (only when actually kept, not
+ * when discarded — a discarded nat20 doesn't crit) get a distinct
+ * border/fill plus a small ✨/💀 so they're readable at a glance even
+ * inside a multi-die roll whose total isn't itself a crit/fumble — same
+ * text size as every other chip, just a different color/border treatment,
+ * not a bigger font.
  */
-function ValueChip({ value, sides, discarded, crossed }: { value: number; sides: DieSides; discarded?: boolean; crossed?: boolean }) {
+function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides; discarded?: boolean }) {
   const nat20 = !discarded && sides === 20 && value === 20;
   const nat1 = !discarded && sides === 20 && value === 1;
   const toneClass = discarded
-    ? `border-dashed border-slate-700 text-slate-600 ${crossed ? "line-through" : ""}`
+    ? "border-dashed border-slate-700 text-slate-600"
     : nat20
       ? "border-2 border-emerald-500 bg-emerald-950/50 text-emerald-300"
       : nat1
@@ -352,7 +352,7 @@ function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: Rolled
   return DIE_SIDES.filter((sides) => bySides.has(sides)).map((sides) => ({ sides, entries: bySides.get(sides)! }));
 }
 
-/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values; the discarded one is dimmed, and struck through only for Advantage (see `ValueChip`'s own doc comment). The modifier (if any) trails as its own dashed chip. */
+/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values; the discarded one is dimmed but never struck through (see `ValueChip`'s own doc comment). The modifier (if any) trails as its own dashed chip. */
 function DiceEquation({ entry }: { entry: DiceRoll }) {
   const groups = groupDiceBySides(entry.dice);
   const parts: ReactNode[] = [];
@@ -370,11 +370,9 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
           {group.entries.map((d, j) =>
             d.rolls.length === 2 ? (
               <span key={j} className="inline-flex items-center gap-0.5">
-                {d.rolls.map((v, k) => {
-                  const isDiscardedSlot = k === d.discardedIndex;
-                  const partner = d.rolls[1 - k];
-                  return <ValueChip key={k} value={v} sides={d.sides} discarded={isDiscardedSlot} crossed={isDiscardedSlot && v < partner} />;
-                })}
+                {d.rolls.map((v, k) => (
+                  <ValueChip key={k} value={v} sides={d.sides} discarded={k === d.discardedIndex} />
+                ))}
               </span>
             ) : (
               <ValueChip key={j} value={d.kept} sides={d.sides} />
