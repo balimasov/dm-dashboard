@@ -116,6 +116,7 @@ export async function POST(req: Request) {
   const experiencePoints = parseOptionalNumber(body?.experiencePoints);
   const spellcasting = parseSpellcasting(body?.spellcasting);
   const templateId = typeof body?.templateId === "string" ? body.templateId : undefined;
+  const notes = typeof body?.notes === "string" ? body.notes : undefined;
 
   const avatarUrl = typeof body?.avatarUrl === "string" ? body.avatarUrl : undefined;
 
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
     ownerCharacterId: typeof body?.ownerCharacterId === "string" ? body.ownerCharacterId : undefined,
     source: typeof body?.source === "string" ? body.source : undefined,
     referenceUrl: typeof body?.referenceUrl === "string" ? body.referenceUrl : undefined,
+    notes,
   });
 
   return NextResponse.json(creature, { status: 201 });

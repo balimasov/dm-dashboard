@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dateKeyForTimeZone, formatSessionTitle, htmlToMarkdown, plainTextToParagraphHtml } from "./journal";
+import { dateKeyForTimeZone, formatSessionTitle, htmlToMarkdown, markdownToHtml, plainTextToParagraphHtml } from "./journal";
 
 describe("dateKeyForTimeZone", () => {
   it("returns YYYY-MM-DD for UTC", () => {
@@ -104,5 +104,59 @@ describe("htmlToMarkdown", () => {
     expect(htmlToMarkdown(html)).toBe(
       "## Session recap\n\nThe party reached **Nightstone** under a *blood-red* moon.\n\n- Met the innkeeper\n- Found a [map](https://example.com/map)"
     );
+  });
+});
+
+describe("markdownToHtml", () => {
+  it("wraps a plain line in a paragraph", () => {
+    expect(markdownToHtml("Hello world")).toBe("<p>Hello world</p>");
+  });
+
+  it("splits blank-line-separated blocks into their own paragraphs", () => {
+    expect(markdownToHtml("First\n\nSecond")).toBe("<p>First</p><p>Second</p>");
+  });
+
+  it("joins a paragraph's own internal line breaks with <br>", () => {
+    expect(markdownToHtml("Line one\nLine two")).toBe("<p>Line one<br>Line two</p>");
+  });
+
+  it("converts '#'/'##'/'###' headings, but not a lone '#' line with no space", () => {
+    expect(markdownToHtml("# Title")).toBe("<h1>Title</h1>");
+    expect(markdownToHtml("### Subheading")).toBe("<h3>Subheading</h3>");
+    expect(markdownToHtml("#nope")).toBe("<p>#nope</p>");
+  });
+
+  it("only treats a heading marker as a heading when it's the block's only line", () => {
+    expect(markdownToHtml("# Title\nplus a second line")).toBe("<p># Title<br>plus a second line</p>");
+  });
+
+  it("converts **bold** and *italic*", () => {
+    expect(markdownToHtml("**bold** and *italic*")).toBe("<p><strong>bold</strong> and <em>italic</em></p>");
+  });
+
+  it("converts a '-'/'*' bullet list", () => {
+    expect(markdownToHtml("- One\n- Two")).toBe("<ul><li>One</li><li>Two</li></ul>");
+    expect(markdownToHtml("* One\n* Two")).toBe("<ul><li>One</li><li>Two</li></ul>");
+  });
+
+  it("converts a numbered list regardless of the actual digits used", () => {
+    expect(markdownToHtml("1. First\n2. Second")).toBe("<ol><li>First</li><li>Second</li></ol>");
+  });
+
+  it("escapes reserved HTML characters so injected markup can't survive into dangerouslySetInnerHTML", () => {
+    expect(markdownToHtml("<script>alert('hi')</script> & co")).toBe("<p>&lt;script&gt;alert('hi')&lt;/script&gt; &amp; co</p>");
+  });
+
+  it("round-trips a realistic multi-block note", () => {
+    const markdown =
+      "## Backstory\n\nFound near the **Silver Woods** during an *eclipse*.\n\n- Afraid of fire\n- Loves apples";
+    expect(markdownToHtml(markdown)).toBe(
+      "<h2>Backstory</h2><p>Found near the <strong>Silver Woods</strong> during an <em>eclipse</em>.</p><ul><li>Afraid of fire</li><li>Loves apples</li></ul>"
+    );
+  });
+
+  it("round-trips through htmlToMarkdown back to the same Markdown for a heading+bold+list document", () => {
+    const markdown = "## Backstory\n\nFound near the **Silver Woods**.\n\n- Afraid of fire\n- Loves apples";
+    expect(htmlToMarkdown(markdownToHtml(markdown))).toBe(markdown);
   });
 });

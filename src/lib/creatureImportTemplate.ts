@@ -70,15 +70,16 @@ const HEADER = `# ============================================================
 # ============================================================
 `;
 
-const FOOTER = `
-# ============================================================
-# Прив'язка до персонажа (необов'язково)
-# ============================================================
-# Ім'я персонажа з цієї кампанії, якому належить супутник —
-# застосунок сам знайде відповідного персонажа за іменем під час
-# імпорту. Залиш порожнім, якщо істота нікому не належить.
-ownerCharacter: ""
-`;
+/**
+ * `ownerCharacter` is a convenience field the importer resolves to
+ * `ownerCharacterId` by matching a character name in the campaign — it has
+ * no `CreatureFieldSpec` entry of its own (unlike `source`/`referenceUrl`,
+ * its sibling fields in the same "Прив'язка до персонажа" section), so it's
+ * appended by hand below rather than generated from the schema loop.
+ */
+const OWNER_CHARACTER_BLOCK = `${commentBlock(
+  "Ім'я персонажа з цієї кампанії, якому належить супутник — застосунок сам знайде відповідного персонажа за іменем під час імпорту. Залиш порожнім, якщо істота нікому не належить."
+)}\nownerCharacter: ""`;
 
 /**
  * Generates the downloadable/copyable YAML template — one section per block
@@ -96,15 +97,13 @@ export function buildCreatureImportTemplate(): string {
     bySection.get(field.section)!.push(field);
   }
 
-  const sections = CREATURE_IMPORT_SECTIONS.filter((s) => s !== "Прив'язка до персонажа")
-    .map((section) => {
-      const fields = bySection.get(section) ?? [];
-      if (fields.length === 0) return null;
-      const heading = `# ============================================================\n# ${section}\n# ============================================================`;
-      const body = fields.map(fieldBlock).join("\n\n");
-      return `${heading}\n${body}`;
-    })
-    .filter((s): s is string => s !== null);
+  const sections = CREATURE_IMPORT_SECTIONS.map((section) => {
+    const blocks = (bySection.get(section) ?? []).map(fieldBlock);
+    if (section === "Прив'язка до персонажа") blocks.push(OWNER_CHARACTER_BLOCK);
+    if (blocks.length === 0) return null;
+    const heading = `# ============================================================\n# ${section}\n# ============================================================`;
+    return `${heading}\n${blocks.join("\n\n")}`;
+  }).filter((s): s is string => s !== null);
 
-  return `${HEADER}\n${sections.join("\n\n")}\n${FOOTER}`;
+  return `${HEADER}\n${sections.join("\n\n")}\n`;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { parseCreatureImportYaml } from "./creatureImportParser";
 import { buildCreatureImportTemplate } from "./creatureImportTemplate";
+import { markdownToHtml } from "./journal";
 
 describe("creature import template round-trip", () => {
   test("the generated template parses back into the exact example values with no errors", () => {
@@ -27,7 +28,19 @@ describe("creature import template round-trip", () => {
           { label: "3/day each", spells: ["Charm Person", "Invisibility"] },
         ],
       },
+      source: "Find Steed",
+      referenceUrl: "https://www.dndbeyond.com/monsters/...",
     });
+    // The example's Markdown notes (heading, bold, a list, blank lines
+    // between paragraphs) must survive the YAML round-trip byte-for-byte
+    // (a literal block scalar `|-` is what that takes) and then convert
+    // into the exact HTML `NotesEditor`/`NotesSection` render.
+    const rawMarkdown =
+      "## Передісторія\n\nЗустрінута біля Срібного лісу під час затемнення — вважає це знаком.\n\n**Ставлення:** довіряє лише власнику, до інших насторожена.\n\n- Боїться вогню\n- Любить яблука\n- Розуміє Сильван, хоч і не розмовляє ним";
+    expect(outcome.result.input.notes).toBe(markdownToHtml(rawMarkdown));
+    expect(outcome.result.input.notes).toBe(
+      "<h2>Передісторія</h2><p>Зустрінута біля Срібного лісу під час затемнення — вважає це знаком.</p><p><strong>Ставлення:</strong> довіряє лише власнику, до інших насторожена.</p><ul><li>Боїться вогню</li><li>Любить яблука</li><li>Розуміє Сильван, хоч і не розмовляє ним</li></ul>"
+    );
     expect(outcome.result.input.traits).toHaveLength(7);
     expect(outcome.result.input.traits?.[1]).toMatchObject({
       name: "Hooves",

@@ -220,3 +220,54 @@ function renderBlocks(nodes: MdNode[]): string {
 export function htmlToMarkdown(html: string): string {
   return renderBlocks(parseHtmlFragment(html)).trim();
 }
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** A single line's inline markup — bold/italic only, matching `NotesEditor`'s own toolbar (no nesting, no links; a hand-authored notes field has no need for either). Escaped first so a literal `<`/`>`/`&` in the source text can never be mistaken for markup by the browser once this lands in `dangerouslySetInnerHTML`. */
+function renderMarkdownInline(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdownBlock(block: string): string {
+  const headingMatch = !block.includes("\n") && block.match(/^(#{1,3})\s+(.+)$/);
+  if (headingMatch) {
+    const level = headingMatch[1].length;
+    return `<h${level}>${renderMarkdownInline(headingMatch[2].trim())}</h${level}>`;
+  }
+
+  const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+  if (lines.every((line) => /^[-*]\s+/.test(line))) {
+    return `<ul>${lines.map((line) => `<li>${renderMarkdownInline(line.replace(/^[-*]\s+/, ""))}</li>`).join("")}</ul>`;
+  }
+  if (lines.every((line) => /^\d+\.\s+/.test(line))) {
+    return `<ol>${lines.map((line) => `<li>${renderMarkdownInline(line.replace(/^\d+\.\s+/, ""))}</li>`).join("")}</ol>`;
+  }
+  return `<p>${lines.map(renderMarkdownInline).join("<br>")}</p>`;
+}
+
+/**
+ * Markdown → HTML, the inverse of `htmlToMarkdown` above and over the same
+ * closed vocabulary `NotesEditor`'s toolbar can produce: `#`/`##`/`###`
+ * headings, `**bold**`/`*italic*`, `-`/`*` bullet lists, `1.` numbered
+ * lists, and blank-line-separated paragraphs (a lone `\n` inside one
+ * becomes a soft `<br>`, matching Shift+Enter in the real editor). No
+ * nesting, links, blockquotes, or code — a hand/AI-authored notes field
+ * (the creature YAML importer's own `notes` field is this function's one
+ * caller) has no occasion to need them, and skipping them keeps this a
+ * small regex pass rather than a real Markdown parser. A block that
+ * doesn't match a heading/list shape renders as an ordinary paragraph, so
+ * unsupported syntax degrades to plain (safely escaped) text instead of
+ * being dropped.
+ */
+export function markdownToHtml(markdown: string): string {
+  return markdown
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map(renderMarkdownBlock)
+    .join("");
+}

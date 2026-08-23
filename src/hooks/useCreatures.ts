@@ -39,6 +39,7 @@ export interface AddCreatureInput {
   ownerCharacterId?: string;
   source?: string;
   referenceUrl?: string;
+  notes?: string;
   templateId?: string;
 }
 

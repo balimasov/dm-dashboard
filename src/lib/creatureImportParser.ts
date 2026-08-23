@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { AddCreatureInput } from "@/hooks/useCreatures";
 import { CREATURE_IMPORT_FIELDS, CREATURE_STAT_KEYS } from "./creatureImportSchema";
+import { markdownToHtml } from "./journal";
 
 const TRAIT_GROUPS = new Set(["trait", "action", "bonusAction", "reaction", "legendary"]);
 const CREATURE_CATEGORIES = new Set(["companion", "enemy", "npc"]);
@@ -468,6 +469,14 @@ export function parseCreatureImportYaml(text: string): CreatureImportOutcome {
     traits: (values.traits as CreatureTrait[] | undefined) ?? [],
     spellcasting: values.spellcasting as CreatureSpellcasting | undefined,
     source: values.source as string | undefined,
+    referenceUrl: values.referenceUrl as string | undefined,
+    // `notes` is written as plain Markdown in the YAML (the natural format
+    // for hand/AI authoring) but `Creature.notes` is stored/rendered as
+    // Tiptap HTML like every other notes field in the app (see
+    // `NotesSection`'s own doc comment) -- converted here so the imported
+    // creature's Notes tab shows real headings/bold/lists instead of the
+    // literal "##"/"**" markup characters.
+    notes: values.notes === undefined ? undefined : markdownToHtml(values.notes as string),
   };
 
   const ownerCharacterName = isBlank(parsed.ownerCharacter) ? undefined : readString(parsed.ownerCharacter);
