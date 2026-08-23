@@ -452,9 +452,14 @@ export function DiceRollerPanel({
   // `AiAssistantModal`'s own feed) — reverse-chronological read top-to-bottom
   // as "most recent first" but felt backwards while actively rolling, since
   // each new entry appeared above what you'd just rolled instead of below it.
+  // Depends on `history` itself (a fresh array reference on every roll/clear
+  // via `setHistory`), not `history.length` — length stops changing once a
+  // roll pushes the list past `MAX_DICE_HISTORY` (the oldest entry drops as
+  // the newest one is added, net length unchanged), which silently stopped
+  // this effect from re-running for every roll after the 20th.
   useEffect(() => {
     historyEndRef.current?.scrollIntoView({ block: "end" });
-  }, [history.length]);
+  }, [history]);
 
   // Pre-emptively breaks d20 onto a new tray row *before* its Advantage/
   // Disadvantage widget ever mounts, so tapping d20 for the first time never
