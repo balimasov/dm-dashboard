@@ -323,6 +323,12 @@ function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; 
  * inside a multi-die roll whose total isn't itself a crit/fumble — same
  * text size as every other chip, just a different color/border treatment,
  * not a bigger font.
+ *
+ * `text-sm`/`px-2` (not `text-xs`/`px-1.5`) — the whole equation row (this
+ * chip, the group label, the modifier chip) was bumped up together from the
+ * prototyped "Variant 2": the discarded value in particular used to read as
+ * near-illegible next to how much empty space the row left above the much
+ * larger total.
  */
 function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides; discarded?: boolean }) {
   const nat20 = !discarded && sides === 20 && value === 20;
@@ -335,7 +341,7 @@ function ValueChip({ value, sides, discarded }: { value: number; sides: DieSides
         ? "border-2 border-red-500 bg-red-950/50 text-red-300"
         : CHIP_TONE_CLASSES[DIE_TONE[sides]];
   return (
-    <span className={`rounded border px-1.5 text-xs font-semibold tabular-nums ${toneClass}`}>
+    <span className={`rounded border px-2 text-sm font-semibold tabular-nums ${toneClass}`}>
       {value}
       {nat20 ? " ✨" : nat1 ? " 💀" : ""}
     </span>
@@ -352,15 +358,15 @@ function groupDiceBySides(dice: RolledDie[]): { sides: DieSides; entries: Rolled
   return DIE_SIDES.filter((sides) => bySides.has(sides)).map((sides) => ({ sides, entries: bySides.get(sides)! }));
 }
 
-/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values; the discarded one is dimmed but never struck through (see `ValueChip`'s own doc comment). The modifier (if any) trails as its own dashed chip. */
+/** Groups each rolled die by size — "3d4" immediately followed by its own 3 values, colored to match that die's tray color — so which values belong to which die type is a glance, not a count-along. A d20 rolled with advantage/disadvantage shows both values; the discarded one is dimmed but never struck through (see `ValueChip`'s own doc comment). The modifier (if any) trails as its own dashed chip. The whole row (label, chips, `+`s, modifier) shares one `text-sm` scale — see `ValueChip`'s own doc comment for why. */
 function DiceEquation({ entry }: { entry: DiceRoll }) {
   const groups = groupDiceBySides(entry.dice);
   const parts: ReactNode[] = [];
   groups.forEach((group, i) => {
-    if (i > 0) parts.push(<span key={`op-${i}`} className="text-xs text-slate-600"> + </span>);
+    if (i > 0) parts.push(<span key={`op-${i}`} className="text-sm text-slate-600"> + </span>);
     parts.push(
       <span key={`g-${group.sides}`} className="inline-flex items-baseline gap-1">
-        <span className={`text-xs font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
+        <span className={`text-sm font-bold ${DIE_LABEL_TEXT_CLASS[group.sides]}`}>
           {group.entries.length}d{group.sides}
         </span>
         {/* `flex flex-wrap`, not `inline-flex` — a single roll with many
@@ -384,13 +390,13 @@ function DiceEquation({ entry }: { entry: DiceRoll }) {
   });
   if (entry.modifier !== 0) {
     parts.push(
-      <span key="mod-op" className="text-xs text-slate-600">
+      <span key="mod-op" className="text-sm text-slate-600">
         {" "}
         {entry.modifier > 0 ? "+" : "−"}{" "}
       </span>
     );
     parts.push(
-      <span key="mod-val" className="rounded border border-dashed border-slate-700 px-1.5 text-xs font-semibold text-slate-300">
+      <span key="mod-val" className="rounded border border-dashed border-slate-700 px-2 text-sm font-semibold text-slate-300">
         {Math.abs(entry.modifier)}
       </span>
     );
@@ -406,7 +412,7 @@ function HistoryEntryRow({ entry }: { entry: DiceRoll }) {
         <DiceEquation entry={entry} />
         <span className="shrink-0 pt-0.5 text-[10px] text-slate-500">{formatSyncTimestamp(entry.createdAt)}</span>
       </div>
-      <div className="mt-0.5 flex justify-end">
+      <div className="mt-1 flex justify-end">
         <span className={`text-lg font-extrabold tabular-nums ${totalClass}`}>
           {entry.total}
           {entry.isCrit ? " ✨" : entry.isFumble ? " 💀" : ""}
