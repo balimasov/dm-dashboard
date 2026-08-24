@@ -21,8 +21,8 @@ import { DetailsTwoColumn } from "./ui/DetailsTwoColumn";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { FilterChipRow } from "./ui/FilterChipRow";
 import { FlaggableRow } from "./ui/FlaggableRow";
+import { FloatingPanel } from "./ui/FloatingPanel";
 import { IconButton } from "./ui/IconButton";
-import { Modal } from "./ui/Modal";
 import { NotesSection } from "./ui/NotesSection";
 import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { ReminderBadge } from "./ui/ReminderBadge";
@@ -31,15 +31,14 @@ import { TabStrip } from "./ui/TabStrip";
 import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { useScrollLock } from "@/hooks/useScrollLock";
 
 type CreatureDetailsTab = "features" | "spells" | "notes";
 
 /**
  * Same shape as `CharacterDetailsModal`, built the exact same way — opened
- * by clicking a creature's header, same shell (top-aligned scroll
- * container, Escape-to-close, backdrop-scroll lock, wide two-column
- * `DetailsTwoColumn` body), and its right column's `tabs`/`activeTab`/
+ * by clicking a creature's header, same shell (a draggable/resizable
+ * `FloatingPanel`, Escape-to-close, wide two-column `DetailsTwoColumn`
+ * body), and its right column's `tabs`/`activeTab`/
  * `TabStrip`/`{currentTab === "x" && ...}` structure is built inline here
  * exactly like `CharacterDetailsModal` builds its own — Features, Spells
  * (both conditional on actually having content, same as Character's
@@ -90,7 +89,6 @@ export function CreatureDetailsModal({
   const [aiOpen, setAiOpen] = useState(false);
 
   useEscapeToClose(onClose);
-  useScrollLock();
 
   const flaggedTraits = creature.flaggedTraits ?? [];
   function toggleFlag(name: string) {
@@ -128,15 +126,13 @@ export function CreatureDetailsModal({
 
   return (
     <>
-    <Modal
-      variant="scrollable"
+    <FloatingPanel
       onClose={onClose}
-      // Deliberately not `items-center` — see the same note in
-      // `CharacterDetailsModal`: a long stat block (many traits/legendary
-      // actions) would otherwise clip its top above the viewport with no way
-      // to scroll back up to it.
+      storageKey={`creature-details:${creature.id}`}
+      initialWidth={1040}
+      initialHeight={720}
       header={
-        <>
+        <div className="flex flex-col gap-3.5">
           <CreatureStatusRail
             creature={creature}
             onUpdate={onUpdate}
@@ -152,20 +148,21 @@ export function CreatureDetailsModal({
               ✕
             </IconButton>
           </div>
-        </>
+        </div>
       }
-      panelClassName={`relative my-4 w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 md:max-h-[85vh] ${
+      panelClassName={
         creature.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
-      }`}
+      }
     >
+      <div className="flex min-h-0 flex-1 flex-col gap-3.5">
         {/* Reminder badge (conditional) + AI pill + kebab — same bordered
             toolbar as `CreatureCard`'s equivalent row; the Reference link
             now lives inline on the header's own "CR N" line instead (see
             `CreatureHeader`). `-mb-2` trims the leftover gap — see
             `CharacterCard`'s own comment. */}
-        <div className={TOOLBAR_ROW_CLS}>
+        <div className={`shrink-0 ${TOOLBAR_ROW_CLS}`}>
           <AskAiPill onClick={() => setAiOpen(true)} />
           <ReminderBadge
             group={creatureReminders(creature)}
@@ -292,7 +289,8 @@ export function CreatureDetailsModal({
             </>
           }
         />
-    </Modal>
+      </div>
+    </FloatingPanel>
 
     {hpHistoryOpen && (
       <CreatureHpHistoryModal
@@ -318,8 +316,8 @@ export function CreatureDetailsModal({
         entity={creature}
         customConditionLibrary={customConditionLibrary}
         onClose={() => setAiOpen(false)}
-        // Opened from inside this already-open Modal (z-50) via the "Ask AI"
-        // pill above — needs to land above it, not behind it. See
+        // Opened from inside this already-open FloatingPanel via the
+        // "Ask AI" pill above — needs to land above it, not behind it. See
         // `FloatingPanel`'s own doc comment.
         zIndexClassName="z-[60]"
       />

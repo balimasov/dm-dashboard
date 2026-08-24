@@ -38,7 +38,7 @@ import { QuickNotesSection } from "./ui/QuickNotesSection";
 import { FeatureHintPanel, RecoveryBadge } from "./ui/RecoveryBadge";
 import { ReminderBadge } from "./ui/ReminderBadge";
 import { SectionDivider } from "./ui/SectionDivider";
-import { Modal } from "./ui/Modal";
+import { FloatingPanel } from "./ui/FloatingPanel";
 import { StatBox } from "./ui/StatBox";
 import { SyncIssuePill } from "./ui/SyncIssuePill";
 import { SyncStatusChip } from "./ui/SyncStatusChip";
@@ -49,7 +49,6 @@ import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typo
 import { FilterChipRow } from "./ui/FilterChipRow";
 import { useDdbSync } from "@/hooks/useDdbSync";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
-import { useScrollLock } from "@/hooks/useScrollLock";
 import { DotMeter } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
 import { InfoTooltip } from "./InfoTooltip";
@@ -385,8 +384,6 @@ export function CharacterDetailsModal({
 
   useEscapeToClose(onClose);
 
-  useScrollLock();
-
   const spellsByLevel = new Map<number, KnownSpell[]>();
   for (const spell of c.knownSpells) {
     const list = spellsByLevel.get(spell.level) ?? [];
@@ -475,19 +472,13 @@ export function CharacterDetailsModal({
 
   return (
     <>
-    {/* Deliberately not `items-center`: a flex container that centers an
-        overflowing child clips the excess at the *start* with no way to
-        scroll to it (scrollTop can't go negative) — confirmed on a real
-        Sorcerer with 22 spells/18 features, where this hid the header and
-        close button above the viewport with no way to reach them. Top
-        alignment always keeps the start of the content reachable at
-        scrollTop 0, at the cost of short modals sitting near the top
-        instead of dead center. */}
-    <Modal
-      variant="scrollable"
+    <FloatingPanel
       onClose={onClose}
+      storageKey={`character-details:${c.id}`}
+      initialWidth={1040}
+      initialHeight={720}
       header={
-        <>
+        <div className="flex flex-col gap-3.5">
           <CharacterStatusRail
             character={c}
             onUpdate={onUpdate}
@@ -503,14 +494,15 @@ export function CharacterDetailsModal({
               ✕
             </IconButton>
           </div>
-        </>
+        </div>
       }
-      panelClassName={`relative my-4 w-full max-w-[1040px] gap-3.5 p-3.5 shadow-2xl shadow-black/40 md:max-h-[85vh] ${
+      panelClassName={
         c.concentrating
           ? "concentrating-ring border-violet-500 bg-slate-950 bg-gradient-to-b from-violet-950/60 to-slate-950"
           : "border-slate-800 bg-slate-950"
-      }`}
+      }
     >
+      <div className="flex min-h-0 flex-1 flex-col gap-3.5">
         {/* D&D Beyond link lives inline on the header's "Lvl N" line now (see
             `CharacterHeader`), and any sync problem shows as the toolbar's
             own `SyncIssuePill` below plus the header's avatar-corner dot —
@@ -522,7 +514,7 @@ export function CharacterDetailsModal({
             superset of the card, not a different view of the same actions.
             `-mb-2` trims the leftover gap the same way — see that file's
             own comment. */}
-        <div className={TOOLBAR_ROW_CLS}>
+        <div className={`shrink-0 ${TOOLBAR_ROW_CLS}`}>
           <AskAiPill onClick={() => setAiOpen(true)} />
           <SyncStatusChip
             dndBeyondUrl={c.dndBeyondUrl}
@@ -947,7 +939,8 @@ export function CharacterDetailsModal({
             </>
           }
         />
-    </Modal>
+      </div>
+    </FloatingPanel>
 
     {editOpen && onUpdate && (
       <EditCharacterModal character={c} onClose={() => setEditOpen(false)} onUpdate={onUpdate} />
@@ -960,8 +953,8 @@ export function CharacterDetailsModal({
         entity={c}
         customConditionLibrary={customConditionLibrary}
         onClose={() => setAiOpen(false)}
-        // Opened from inside this already-open Modal (z-50) via the "Ask AI"
-        // pill above — needs to land above it, not behind it. See
+        // Opened from inside this already-open FloatingPanel via the
+        // "Ask AI" pill above — needs to land above it, not behind it. See
         // `FloatingPanel`'s own doc comment.
         zIndexClassName="z-[60]"
       />

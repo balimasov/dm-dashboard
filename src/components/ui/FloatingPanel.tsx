@@ -72,6 +72,10 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * Built for `AiAssistantModal`, whose whole point is comparing the model's
  * suggestion against other characters/creatures still on screen — a
  * centered `Modal` with its full-viewport backdrop made that impossible.
+ * `CharacterDetailsModal`/`CreatureDetailsModal` moved here for the same
+ * "keep it open, keep working elsewhere" reason, plus dragging/resizing and
+ * several open side by side — the whole point of turning them into panels
+ * rather than staying `Modal`s.
  *
  * Size/position math (parsing a saved rect, clamping a drag/resize) lives in
  * `lib/floatingPanelGeometry.ts`, not here — see that file's own doc comment
@@ -137,6 +141,7 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  */
 export function FloatingPanel({
   title,
+  header,
   headerActions,
   onClose,
   children,
@@ -144,9 +149,13 @@ export function FloatingPanel({
   initialWidth = 480,
   initialHeight = 560,
   zIndexClassName = "z-[45]",
+  panelClassName = "border-slate-800 bg-slate-950",
 }: {
-  title: ReactNode;
-  /** Optional extra icon buttons (e.g. a "clear conversation" trash icon) rendered between the title and the close button — `AiAssistantModal` is this component's only caller so far, but the slot itself is generic. */
+  /** Ignored when `header` is given. */
+  title?: ReactNode;
+  /** Full custom header content, replacing the default title row entirely — same escape hatch `Modal`'s own `header` prop is, for the same reason: a call site whose header is richer than a plain heading (`CharacterDetailsModal`'s status rail + name row) owns the whole thing, including its own close button. Still sits inside the same draggable/bordered header region (dragging still works from anywhere in it that isn't a `<button>`), it just isn't forced into the default row's `items-center justify-between` layout. */
+  header?: ReactNode;
+  /** Optional extra icon buttons (e.g. a "clear conversation" trash icon) rendered between the title and the close button — ignored when `header` is given. */
   headerActions?: ReactNode;
   onClose: () => void;
   children: ReactNode;
@@ -155,6 +164,8 @@ export function FloatingPanel({
   initialHeight?: number;
   /** Overrides the panel's stacking order — see the component doc comment above for when a caller needs `z-[60]` instead of the default. */
   zIndexClassName?: string;
+  /** Replaces the panel's border color and background — same "shape stays fixed, color is a full replacement" split `Modal`'s own `panelClassName` uses (see that file's doc comment for why two conflicting color utilities can't safely coexist in one class string). `CharacterDetailsModal`/`CreatureDetailsModal` swap this for their violet concentrating-ring treatment. */
+  panelClassName?: string;
 }) {
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
@@ -200,16 +211,22 @@ export function FloatingPanel({
     return (
       <div
         role="dialog"
-        aria-labelledby={titleId}
+        aria-labelledby={header ? undefined : titleId}
         onPointerDownCapture={bringToFront}
         style={{ ...mobileStyle, zIndex }}
-        className="fixed flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+        className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
-          <h2 id={titleId} className={MODAL_TITLE_CLS}>
-            {title}
-          </h2>
-          <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+        <div
+          className={`shrink-0 border-b border-slate-800 px-4 py-3 ${header ? "" : "flex items-center justify-between gap-3"}`}
+        >
+          {header ?? (
+            <>
+              <h2 id={titleId} className={MODAL_TITLE_CLS}>
+                {title}
+              </h2>
+              <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+            </>
+          )}
         </div>
         {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
@@ -281,21 +298,25 @@ export function FloatingPanel({
   return (
     <div
       role="dialog"
-      aria-labelledby={titleId}
+      aria-labelledby={header ? undefined : titleId}
       onPointerDownCapture={bringToFront}
       style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height, zIndex }}
-      className="fixed flex flex-col rounded-xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40"
+      className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
     >
       <div
         onPointerDown={onHeaderPointerDown}
         onPointerMove={onHeaderPointerMove}
         onPointerUp={onHeaderPointerUp}
-        className="flex shrink-0 cursor-grab items-center justify-between gap-3 border-b border-slate-800 px-4 py-3 select-none active:cursor-grabbing"
+        className={`shrink-0 cursor-grab select-none border-b border-slate-800 px-4 py-3 active:cursor-grabbing ${header ? "" : "flex items-center justify-between gap-3"}`}
       >
-        <h2 id={titleId} className={MODAL_TITLE_CLS}>
-          {title}
-        </h2>
-        <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+        {header ?? (
+          <>
+            <h2 id={titleId} className={MODAL_TITLE_CLS}>
+              {title}
+            </h2>
+            <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+          </>
+        )}
       </div>
       {/* `overscroll-contain` — without it, scrolling this content past its
           own top/bottom edge fell through to the dashboard page underneath
