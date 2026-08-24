@@ -3,6 +3,7 @@
 import { Fragment, ReactNode, forwardRef, useEffect, useRef, useState } from "react";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useLongPress } from "@/hooks/useLongPress";
 import {
   AdvantageMode,
   DIE_SIDES,
@@ -90,6 +91,10 @@ function saveHistory(campaignId: string, history: DiceRoll[]) {
  * target on a phone but fits fine on a mouse-driven, resizable desktop
  * window. Forwards its outer `ref` so the tray can measure the d12/d20
  * buttons specifically (see `DiceRollerPanel`'s own pre-emptive-wrap effect).
+ *
+ * Decrementing reuses this same button rather than a separate control —
+ * right-click on desktop, long-press on touch (see `useLongPress`) — since
+ * there's no room at this size for a second visible target per die.
  */
 const DieButton = forwardRef<
   HTMLSpanElement,
@@ -97,16 +102,20 @@ const DieButton = forwardRef<
     sides: DieSides;
     count: number;
     onAdd: () => void;
+    onRemove: () => void;
     adv?: AdvantageMode;
     advWidget?: ReactNode;
   }
->(function DieButton({ sides, count, onAdd, adv, advWidget }, ref) {
+>(function DieButton({ sides, count, onAdd, onRemove, adv, advWidget }, ref) {
+  const longPress = useLongPress(onRemove);
   return (
     <span ref={ref} className="flex items-center">
       <span className="relative">
         <button
           type="button"
           onClick={onAdd}
+          {...longPress}
+          title="Click to add · right-click (long-press on mobile) to remove one"
           className={`flex h-11 items-center justify-center rounded-lg border px-3 text-sm font-bold transition hover:brightness-125 sm:h-9 sm:px-1.5 sm:text-xs ${CHIP_TONE_CLASSES[DIE_TONE[sides]]} ${
             adv === "advantage" ? "ring-2 ring-inset ring-emerald-400" : adv === "disadvantage" ? "ring-2 ring-inset ring-red-400" : ""
           }`}
@@ -520,6 +529,18 @@ export function DiceRollerPanel({
   function addDie(sides: DieSides) {
     setPool((p) => ({ ...p, [sides]: (p[sides] ?? 0) + 1 }));
   }
+  function removeDie(sides: DieSides) {
+    setPool((p) => {
+      const next = { ...p };
+      const remaining = (next[sides] ?? 0) - 1;
+      if (remaining <= 0) {
+        delete next[sides];
+      } else {
+        next[sides] = remaining;
+      }
+      return next;
+    });
+  }
   function setAdvDirection(direction: "advantage" | "disadvantage") {
     setAdv((current) => (current === direction ? "normal" : direction));
   }
@@ -597,6 +618,7 @@ export function DiceRollerPanel({
                   sides={sides}
                   count={pool[sides] ?? 0}
                   onAdd={() => addDie(sides)}
+                  onRemove={() => removeDie(sides)}
                   adv={sides === 20 ? adv : undefined}
                   advWidget={
                     sides === 20 && (pool[20] ?? 0) > 0 ? (
