@@ -300,17 +300,6 @@ function ModifierStepperMobile({ modifier, onChange }: { modifier: number; onCha
   );
 }
 
-function PoolChip({ sides, count, onRemove }: { sides: DieSides; count: number; onRemove: () => void }) {
-  return (
-    <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-semibold ${CHIP_TONE_CLASSES[DIE_TONE[sides]]}`}>
-      {count}d{sides}
-      <button type="button" onClick={onRemove} aria-label={`Remove ${count}d${sides}`} className="opacity-70 hover:opacity-100">
-        ✕
-      </button>
-    </span>
-  );
-}
-
 /**
  * `discarded` dims a value that wasn't kept (dashed border, muted text) —
  * never struck through, for either Advantage or Disadvantage: a
@@ -466,8 +455,8 @@ export function DiceRollerPanel({
   }, [history]);
 
   // Re-pins the scroll position to the bottom whenever this list's own
-  // available height shrinks -- e.g. the pool-chips row (or the Adv/Dis
-  // menu, or a wrapped die tray) appearing below it eats into the height a
+  // available height shrinks -- e.g. the die tray wrapping onto a second
+  // row (see the pre-emptive d20 break below) eating into the height a
   // fixed-height `FloatingPanel` had been giving this flex-1 area. Without
   // this, `scrollTop` stays the same pixel value it already was, but the
   // container is now shorter, so whatever was fully visible right at the
@@ -475,7 +464,7 @@ export function DiceRollerPanel({
   // its tail end clipped off there instead of the view sliding up to keep
   // it in frame. Only re-pins when already at (or very near) the bottom —
   // someone scrolled up reviewing older rolls shouldn't get yanked back
-  // down just because the pool row appeared.
+  // down just because the die tray wrapped.
   const historyScrollRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottomRef = useRef(true);
   useEffect(() => {
@@ -530,9 +519,6 @@ export function DiceRollerPanel({
 
   function addDie(sides: DieSides) {
     setPool((p) => ({ ...p, [sides]: (p[sides] ?? 0) + 1 }));
-  }
-  function removeDie(sides: DieSides) {
-    setPool((p) => ({ ...p, [sides]: Math.max(0, (p[sides] ?? 0) - 1) }));
   }
   function setAdvDirection(direction: "advantage" | "disadvantage") {
     setAdv((current) => (current === direction ? "normal" : direction));
@@ -594,14 +580,6 @@ export function DiceRollerPanel({
       </div>
 
       <div className="flex shrink-0 flex-col gap-2.5 border-t border-slate-800 pt-3">
-        {totalDice > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {DIE_SIDES.filter((sides) => (pool[sides] ?? 0) > 0).map((sides) => (
-              <PoolChip key={sides} sides={sides} count={pool[sides]!} onRemove={() => removeDie(sides)} />
-            ))}
-          </div>
-        )}
-
         {/* Two real columns: the die tray wraps on its own on the left,
             the modifier is a separate column on the right — `items-stretch`
             matches the modifier's height to however tall the tray ends up.

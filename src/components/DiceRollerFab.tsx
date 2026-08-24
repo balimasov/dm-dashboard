@@ -50,7 +50,7 @@ export function DiceRollerFab({
           onClick={() => setOpen((o) => !o)}
           aria-label="Dice Roller"
           title="Dice Roller"
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-rose-500/40 bg-slate-900 text-xl shadow-lg shadow-black/40 hover:bg-slate-800"
         >
           <span aria-hidden="true">🎲</span>
         </button>
