@@ -71,7 +71,7 @@ export function SortableCharacterRow({
         </div>
       )}
     </RosterRow>
-    {syncSummary && <Toast message={syncSummary} onDismiss={dismissSyncSummary} />}
+    {syncSummary && <Toast message={syncSummary.message} variant={syncSummary.variant} onDismiss={dismissSyncSummary} />}
     </>
   );
 }

@@ -455,7 +455,13 @@ export function DashboardClient({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
   const [syncingAll, setSyncingAll] = useState(false);
-  const [syncSummary, setSyncSummary] = useState<string | null>(null);
+  // `{ message, variant }` — same shape `useDdbSync`'s own `syncSummary`
+  // uses, for the same reason: a bare string always fell back to `Toast`'s
+  // default amber "info" look regardless of outcome. "info" (amber) still
+  // gets a real job here, unlike the single-character case — a partial
+  // result (some synced, some didn't) is genuinely a third, in-between
+  // outcome, not a clean success/error.
+  const [syncSummary, setSyncSummary] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null);
   const [campaignState, setCampaignState] = useState(campaign);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rosterTab, setRosterTab] = useState<RosterTab | null>(null);
@@ -585,13 +591,15 @@ export function DashboardClient({
       .filter((x): x is { name: string; reason: unknown } => x !== null);
     const succeededCount = results.length - failed.length;
 
-    setSyncSummary(
-      failed.length === 0
-        ? `Synced ${succeededCount} of ${linkedCharacters.length}.`
-        : `Synced ${succeededCount} of ${linkedCharacters.length}. Failed: ${failed
-            .map((f) => `${f.name} (${f.reason instanceof Error ? f.reason.message : "error"})`)
-            .join(", ")}`
-    );
+    // The per-character reason for each failure isn't repeated here — it's
+    // already persisted to that character's own `lastSyncError` above,
+    // surfaced via its card's `SyncIssuePill` tooltip, the same "toast is
+    // the transient headline, the pill is the detailed persistent why"
+    // split a single character's own sync failure follows too.
+    setSyncSummary({
+      message: `Synced ${succeededCount} of ${linkedCharacters.length}.`,
+      variant: failed.length === 0 ? "success" : succeededCount === 0 ? "error" : "info",
+    });
     setSyncingAll(false);
   }
 
@@ -848,7 +856,9 @@ export function DashboardClient({
         >
           <p className={`mb-4 px-3 ${MUTED_BODY_CLS}`}>Combat stats, resources, and notes for each character.</p>
 
-          {syncSummary && <Toast message={syncSummary} onDismiss={() => setSyncSummary(null)} />}
+          {syncSummary && (
+            <Toast message={syncSummary.message} variant={syncSummary.variant} onDismiss={() => setSyncSummary(null)} />
+          )}
 
           {visibleCharacters.length === 0 ? (
             <EmptyRosterState
