@@ -13,16 +13,20 @@ const MIN_WIDTH = 440;
 const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
 /**
- * Mobile sheet's own bottom inset — bigger than `EDGE_MARGIN` on purpose.
- * The old top-aligned `Modal` this replaced sized itself to its own content
- * (`md:max-h-[85vh]`), so its bottom edge rarely sat right at the screen's
- * true bottom; this sheet is always full-height instead, so its bottom
- * border — and the last scrolled-to row of content just inside it — sit
- * right where a phone's own gesture/nav bar lives unless there's real room
- * reserved for it (confirmed via screenshot: `EDGE_MARGIN`'s 8px reads as
- * "content clipped by the edge," not "close to it").
+ * Mobile sheet's own top inset — bigger than `EDGE_MARGIN` on purpose.
+ * `CharacterDetailsModal`/`CreatureDetailsModal`'s status-rail badges
+ * straddle the *top border of their nearest positioned ancestor* (see
+ * `StatusRail.tsx`'s own comment) — normally the panel itself, since
+ * neither modal's `header` content is `position`ed on its own — so half of
+ * each badge (16px, for the 32px badge circle) renders *above* this panel's
+ * own top edge. At `EDGE_MARGIN`'s plain 8px that overflow clipped against
+ * the real top of the screen (confirmed via screenshot); this reserves
+ * enough room above the panel itself for that peek to stay fully visible,
+ * the same way it already is on desktop (where `defaultTop: 88` gives it
+ * plenty of room) — this is a property of the *panel's position*, not
+ * something to fix by changing where the badges themselves anchor.
  */
-const MOBILE_BOTTOM_MARGIN = 20;
+const MOBILE_TOP_MARGIN = 24;
 const STORAGE_PREFIX = "floating-panel:";
 /** Default base tier — see `zIndexClassName`'s own doc comment for what it sits between. Used as the fallback when a caller's class doesn't parse (should never happen with the only two literal values this prop is ever given). */
 const DEFAULT_BASE_Z = 45;
@@ -229,12 +233,12 @@ export function FloatingPanel({
     // `visualViewport` support at all.
     const mobileStyle = visualViewport
       ? {
-          top: visualViewport.offsetTop + EDGE_MARGIN,
+          top: visualViewport.offsetTop + MOBILE_TOP_MARGIN,
           left: EDGE_MARGIN,
           right: EDGE_MARGIN,
-          height: visualViewport.height - EDGE_MARGIN - MOBILE_BOTTOM_MARGIN,
+          height: visualViewport.height - MOBILE_TOP_MARGIN - EDGE_MARGIN,
         }
-      : { top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: MOBILE_BOTTOM_MARGIN };
+      : { top: MOBILE_TOP_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN };
     return (
       <div
         role="dialog"
@@ -263,11 +267,14 @@ export function FloatingPanel({
           The whole point of this panel not locking body scroll (see the
           component doc comment) is that the *page* stays scrollable on its
           own — not that scrolling *inside* the panel should leak into it.
-          `pb-6` (not the plain `p-4` the desktop branch below keeps) pairs
-          with `MOBILE_BOTTOM_MARGIN` above — scrolled all the way down, the
-          last row gets its own breathing room from the sheet's border, on
-          top of that border's own distance from the screen edge. */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-6">{children}</div>
+          `pb-8` (not the plain `p-4` the desktop branch below keeps) — the
+          sheet's own bottom edge stays at the standard `EDGE_MARGIN`, but
+          scrolled all the way down, the last row still read as flush
+          against the sheet's own border with only `p-4`'s implicit 16px
+          under it (confirmed via screenshot); this doubles that specifically
+          for the last row's own breathing room, independent of the sheet's
+          outer position. */}
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-8">{children}</div>
       </div>
     );
   }

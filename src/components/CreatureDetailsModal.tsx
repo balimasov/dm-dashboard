@@ -135,12 +135,7 @@ export function CreatureDetailsModal({
       initialWidth={1040}
       initialHeight={720}
       header={
-        // See `CharacterDetailsModal`'s identical wrapper for the full
-        // reasoning — `relative mt-3` gives `CreatureStatusRail`'s
-        // straddling-the-top-border badges a positioned ancestor with real
-        // room above it, instead of anchoring to this panel's own outer
-        // edge (which clips them on a mobile-width sheet).
-        <div className="relative mt-3 flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3.5">
           <CreatureStatusRail
             creature={creature}
             onUpdate={onUpdate}
