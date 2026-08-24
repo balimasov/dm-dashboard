@@ -93,10 +93,10 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * accidentally collide with this one's saved geometry via a shared default.
  *
  * `zIndexClassName` defaults to `z-[45]` — above `SectionNavRail`'s `z-30`
- * and `RemindersFab`'s `z-40` (both ambient chrome the panel's default
- * top-right spawn spot and drag range can genuinely overlap; a resize/drag
- * handle silently eaten by one of those was a real bug here, not a
- * hypothetical), but still below `Modal`'s default `z-50`: a real modal
+ * (ambient chrome the panel's default top-right spawn spot and drag range
+ * can genuinely overlap; a resize/drag handle silently eaten by it was a
+ * real bug here, not a hypothetical), but still below `Modal`'s default
+ * `z-50`: a real modal
  * opened *afterward*, while this panel is already up (e.g. editing a
  * different character), should still land on top of it, backdrop and all —
  * this panel losing focus underneath that backdrop is the same behavior a

@@ -44,6 +44,12 @@ import { REMINDER_LINK_TITLE_CLS } from "./ui/typography";
  * this corner stacks up to three FABs 12px apart, and an upward-opening
  * panel used to render right on top of whichever FAB sits above it,
  * blocking it until this popover was dismissed first.
+ *
+ * `z-[60]` — `Modal`'s own `z-50` convention plus one tier, the same value
+ * `Toast.tsx`/a nested modal (and `QuickLinksButton`/`DiceRollerFab`, the
+ * other two FABs in this corner) already use to float above an open `Modal`
+ * — so this stays reachable, and its popover renders on top rather than
+ * behind, while a character/creature Details modal is already open.
  */
 export function RemindersFab({
   characters,
@@ -121,7 +127,7 @@ export function RemindersFab({
         />
       )}
 
-      <div ref={containerRef} className={`fixed right-5 z-40 ${hasQuickLinks ? "bottom-20" : "bottom-5"}`}>
+      <div ref={containerRef} className={`fixed right-5 z-[60] ${hasQuickLinks ? "bottom-20" : "bottom-5"}`}>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
