@@ -134,6 +134,7 @@ export function CreatureDetailsModal({
       align="center"
       initialWidth={1040}
       initialHeight={720}
+      mobileVariant="modal"
       header={
         <div className="flex flex-col gap-3.5">
           <CreatureStatusRail

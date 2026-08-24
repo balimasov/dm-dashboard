@@ -39,7 +39,7 @@ export function TabStrip<T extends string>({
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isFirstRender = useRef(true);
+  const previousCurrent = useRef(current);
 
   // Switching tabs can swap a tall tab's content for a short one (or back) —
   // without this, whatever scroll position the previous tab had left the
@@ -47,17 +47,27 @@ export function TabStrip<T extends string>({
   // viewport looking at empty space, or the sudden height change yanks the
   // scroll position around as the browser clamps it to the new (shorter)
   // scrollable range. Scrolling this strip back into view on every switch
-  // (not on mount, hence the `isFirstRender` guard) always lands the reader
-  // at the top of whatever they just picked instead — `scrollIntoView` finds
-  // whichever ancestor actually scrolls on its own (the modal's own overlay
-  // on a phone's single-column layout, this column's own `overflow-y-auto`
-  // at `md:`+), so one mechanism covers both breakpoints.
+  // (not on mount) always lands the reader at the top of whatever they just
+  // picked instead — `scrollIntoView` finds whichever ancestor actually
+  // scrolls on its own (the modal's own overlay on a phone's single-column
+  // layout, this column's own `overflow-y-auto` at `md:`+), so one mechanism
+  // covers both breakpoints.
+  //
+  // Compares against the *previous actual value*, not a one-shot "have I
+  // run before" flag — a plain `isFirstRender` ref looked equivalent but
+  // wasn't: React's Strict Mode (dev only) mounts every effect twice
+  // (mount → cleanup → mount again) without recreating the component's
+  // refs, so a boolean flag got consumed by the first of those two runs and
+  // then incorrectly let the *second* one (still logically "mount", not a
+  // real tab switch) fire the scroll — confirmed by tracing the animated
+  // scroll it caused all the way to the very bottom of a freshly opened,
+  // tall modal, right as it mounted. Comparing values instead is idempotent
+  // across any number of same-value re-invocations, mount-time or not.
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    if (previousCurrent.current !== current) {
+      containerRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
     }
-    containerRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    previousCurrent.current = current;
   }, [current]);
 
   if (tabs.length <= 1) return null;

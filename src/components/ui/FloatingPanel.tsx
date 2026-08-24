@@ -173,6 +173,7 @@ export function FloatingPanel({
   zIndexClassName = "z-[45]",
   panelClassName = "border-slate-800 bg-slate-950",
   align = "right",
+  mobileVariant = "sheet",
 }: {
   /** Ignored when `header` is given. */
   title?: ReactNode;
@@ -191,6 +192,26 @@ export function FloatingPanel({
   panelClassName?: string;
   /** Where the panel spawns horizontally when there's no saved position yet — see `resolveInitialRect`'s own doc comment. Only affects the very first open (or after a viewport shrink discards the saved rect); a dragged position always wins once one exists. */
   align?: "right" | "center";
+  /**
+   * Below `useDesktopViewport`'s breakpoint only — desktop always drags/
+   * resizes regardless of this prop. `"sheet"` (default) is this component's
+   * own original mobile shape: a fixed, full-height inset sheet, its own
+   * internal scroll, no backdrop — built for `AiAssistantModal`/
+   * `DiceRollerFab`'s "stays reachable, keep working elsewhere" panels, which
+   * want a fixed reachable spot even on a phone. `"modal"` is the exact
+   * shape `CharacterDetailsModal`/`CreatureDetailsModal` had *before* either
+   * became a `FloatingPanel` — a dimmed backdrop, content-sized (not pinned
+   * to fixed geometry) panel, one shared scroll (header included, same as
+   * `Modal`'s own `scrollable` variant) — brought back for those two
+   * specifically after the `"sheet"` shape needed increasingly specific
+   * margin tuning to avoid clipping their status-rail badges (which straddle
+   * the panel's own top border, see `StatusRail.tsx`) and still read as
+   * "not enough space" at the bottom even after that tuning: a natural-
+   * height backdrop overlay doesn't have either problem in the first place,
+   * since it's the same real page-level padding the old `Modal` always had,
+   * not a fixed sheet's geometry standing in for it.
+   */
+  mobileVariant?: "sheet" | "modal";
 }) {
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
@@ -222,6 +243,39 @@ export function FloatingPanel({
 
   const dragStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const resizeStart = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  if (!isDesktop && mobileVariant === "modal") {
+    // The exact shape `Modal`'s own `scrollable` variant already uses —
+    // dimmed backdrop, panel sized to its own content (no fixed height,
+    // no internal scroll of its own), the *backdrop* is what scrolls when
+    // content runs taller than the screen, header included, same as before
+    // `CharacterDetailsModal`/`CreatureDetailsModal` ever became
+    // `FloatingPanel`s. No drag handlers wired here at all (not just
+    // visually hidden) — there's nothing to drag on a phone-width screen.
+    return (
+      <div
+        className="scrollbar-themed fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
+        style={{ zIndex }}
+        onPointerDownCapture={bringToFront}
+      >
+        <div
+          role="dialog"
+          aria-labelledby={header ? undefined : titleId}
+          className={`flex w-full flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${panelClassName}`}
+        >
+          {header ?? (
+            <div className="flex items-center justify-between gap-3">
+              <h2 id={titleId} className={MODAL_TITLE_CLS}>
+                {title}
+              </h2>
+              <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+            </div>
+          )}
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   if (!isDesktop) {
     // Sized against `visualViewport` (the real visible area) rather than
