@@ -12,6 +12,17 @@ import { MODAL_TITLE_CLS } from "./typography";
 const MIN_WIDTH = 440;
 const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
+/**
+ * Mobile sheet's own bottom inset — bigger than `EDGE_MARGIN` on purpose.
+ * The old top-aligned `Modal` this replaced sized itself to its own content
+ * (`md:max-h-[85vh]`), so its bottom edge rarely sat right at the screen's
+ * true bottom; this sheet is always full-height instead, so its bottom
+ * border — and the last scrolled-to row of content just inside it — sit
+ * right where a phone's own gesture/nav bar lives unless there's real room
+ * reserved for it (confirmed via screenshot: `EDGE_MARGIN`'s 8px reads as
+ * "content clipped by the edge," not "close to it").
+ */
+const MOBILE_BOTTOM_MARGIN = 20;
 const STORAGE_PREFIX = "floating-panel:";
 /** Default base tier — see `zIndexClassName`'s own doc comment for what it sits between. Used as the fallback when a caller's class doesn't parse (should never happen with the only two literal values this prop is ever given). */
 const DEFAULT_BASE_Z = 45;
@@ -217,8 +228,13 @@ export function FloatingPanel({
     // inset before the effect's first run and on a browser with no
     // `visualViewport` support at all.
     const mobileStyle = visualViewport
-      ? { top: visualViewport.offsetTop + EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, height: visualViewport.height - 2 * EDGE_MARGIN }
-      : { top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN };
+      ? {
+          top: visualViewport.offsetTop + EDGE_MARGIN,
+          left: EDGE_MARGIN,
+          right: EDGE_MARGIN,
+          height: visualViewport.height - EDGE_MARGIN - MOBILE_BOTTOM_MARGIN,
+        }
+      : { top: EDGE_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: MOBILE_BOTTOM_MARGIN };
     return (
       <div
         role="dialog"
@@ -246,8 +262,12 @@ export function FloatingPanel({
           the same fix `RemindersFab.tsx`'s dropdown list already needed).
           The whole point of this panel not locking body scroll (see the
           component doc comment) is that the *page* stays scrollable on its
-          own — not that scrolling *inside* the panel should leak into it. */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">{children}</div>
+          own — not that scrolling *inside* the panel should leak into it.
+          `pb-6` (not the plain `p-4` the desktop branch below keeps) pairs
+          with `MOBILE_BOTTOM_MARGIN` above — scrolled all the way down, the
+          last row gets its own breathing room from the sheet's border, on
+          top of that border's own distance from the screen edge. */}
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-6">{children}</div>
       </div>
     );
   }

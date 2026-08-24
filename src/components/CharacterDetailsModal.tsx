@@ -48,6 +48,7 @@ import { SubHeading } from "./ui/SubHeading";
 import { EMPTY_STATE_CLS, MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { FilterChipRow } from "./ui/FilterChipRow";
 import { useDdbSync } from "@/hooks/useDdbSync";
+import { useMarkEntityDetailsOpen } from "@/hooks/useEntityDetailsOpen";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { DotMeter } from "./ResourceMeter";
 import { EntityActionsMenu } from "./ui/EntityActionsMenu";
@@ -383,6 +384,7 @@ export function CharacterDetailsModal({
   }
 
   useEscapeToClose(onClose);
+  useMarkEntityDetailsOpen();
 
   const spellsByLevel = new Map<number, KnownSpell[]>();
   for (const spell of c.knownSpells) {
@@ -479,7 +481,20 @@ export function CharacterDetailsModal({
       initialWidth={1040}
       initialHeight={720}
       header={
-        <div className="flex flex-col gap-3.5">
+        // `relative mt-3` gives `CharacterStatusRail`'s badges (which
+        // straddle the *top border of their nearest positioned ancestor* —
+        // see `StatusRail.tsx`'s own comment) something to straddle that
+        // isn't this panel's own outer edge. Without it, the badges anchor
+        // to the `FloatingPanel` itself (its `role="dialog"` wrapper is the
+        // nearest `position`ed element otherwise), the same way they anchor
+        // to `CharacterCard`'s own border — that works fine on desktop,
+        // where the panel spawns with real room above it, but on mobile the
+        // panel sits right under the browser's own chrome (`FloatingPanel`'s
+        // `EDGE_MARGIN`-only inset), so half the badge rendered off the top
+        // of the visible screen entirely (confirmed via screenshot). `mt-3`
+        // (12px) added to this row's own header padding (`py-3`, another
+        // 12px) covers the badge's 16px half-height with a few px to spare.
+        <div className="relative mt-3 flex flex-col gap-3.5">
           <CharacterStatusRail
             character={c}
             onUpdate={onUpdate}

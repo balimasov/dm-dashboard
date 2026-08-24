@@ -30,6 +30,7 @@ import { StatBox } from "./ui/StatBox";
 import { TabStrip } from "./ui/TabStrip";
 import { MICRO_ITEM_LABEL_CLS, MUTED_BODY_CLS } from "./ui/typography";
 import { InfoTooltip } from "./InfoTooltip";
+import { useMarkEntityDetailsOpen } from "@/hooks/useEntityDetailsOpen";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 
 type CreatureDetailsTab = "features" | "spells" | "notes";
@@ -89,6 +90,7 @@ export function CreatureDetailsModal({
   const [aiOpen, setAiOpen] = useState(false);
 
   useEscapeToClose(onClose);
+  useMarkEntityDetailsOpen();
 
   const flaggedTraits = creature.flaggedTraits ?? [];
   function toggleFlag(name: string) {
@@ -133,7 +135,12 @@ export function CreatureDetailsModal({
       initialWidth={1040}
       initialHeight={720}
       header={
-        <div className="flex flex-col gap-3.5">
+        // See `CharacterDetailsModal`'s identical wrapper for the full
+        // reasoning — `relative mt-3` gives `CreatureStatusRail`'s
+        // straddling-the-top-border badges a positioned ancestor with real
+        // room above it, instead of anchoring to this panel's own outer
+        // edge (which clips them on a mobile-width sheet).
+        <div className="relative mt-3 flex flex-col gap-3.5">
           <CreatureStatusRail
             creature={creature}
             onUpdate={onUpdate}

@@ -14,6 +14,7 @@ import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordin
 import { useCharacters } from "@/hooks/useCharacters";
 import { useCreatures } from "@/hooks/useCreatures";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
+import { useIsEntityDetailsOpen } from "@/hooks/useEntityDetailsOpen";
 import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import { useScrollPositionMemory } from "@/hooks/useScrollPositionMemory";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
@@ -436,6 +437,16 @@ export function DashboardClient({
   // affordance for a feature that's DM-desk tooling in the first place.
   const isDesktop = useDesktopViewport();
   const dragEnabled = isDm && isDesktop;
+  // The desktop-only "float above an open details panel" behavior
+  // (`FloatingPanel`'s `z-[60]` escape hatch) doesn't have a mobile
+  // equivalent worth keeping: the details panel is a full-screen sheet
+  // below the desktop breakpoint, so there's no "beside it" left for these
+  // to sit in — they'd just cover its own content instead. Hidden only
+  // while a details panel is actually open, not on mobile unconditionally,
+  // so rolling dice/checking reminders/opening a quick link still works
+  // normally otherwise.
+  const entityDetailsOpen = useIsEntityDetailsOpen();
+  const hideFabsForDetails = !isDesktop && entityDetailsOpen;
   useScrollPositionMemory(`dashboard-scroll:${campaign.id}`);
   const charactersState = useCharacters(initialCharacters);
   const creaturesState = useCreatures(campaign.id, initialCreatures);
@@ -751,7 +762,7 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pt-4 pb-8">
-      <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />
+      {!hideFabsForDetails && <QuickLinksButton links={campaignState.quickLinks ?? []} onManage={() => openSettings()} />}
       {toolbar}
       {/* Sibling of the toolbar above, not nested inside it — the header it
           overlays has its own `backdrop-blur`, which creates a containing
@@ -801,15 +812,19 @@ export function DashboardClient({
           data, reachable without scrolling back to this section. Kept
           alongside the block (not replacing it) while this round of
           reminders UX changes is still being tried out. */}
-      <RemindersFab
-        characters={characters}
-        creatures={creatures}
-        onUpdateCharacter={updateCharacter}
-        onUpdateCreature={updateCreature}
-        hasQuickLinks={hasQuickLinks}
-      />
+      {!hideFabsForDetails && (
+        <RemindersFab
+          characters={characters}
+          creatures={creatures}
+          onUpdateCharacter={updateCharacter}
+          onUpdateCreature={updateCreature}
+          hasQuickLinks={hasQuickLinks}
+        />
+      )}
 
-      <DiceRollerFab campaignId={campaign.id} hasQuickLinks={hasQuickLinks} hasReminders={hasReminders} />
+      {!hideFabsForDetails && (
+        <DiceRollerFab campaignId={campaign.id} hasQuickLinks={hasQuickLinks} hasReminders={hasReminders} />
+      )}
 
       <div id="section-party-toolkit" className="scroll-mt-[130px]">
         <CollapsibleSection
