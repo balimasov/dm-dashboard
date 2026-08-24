@@ -465,6 +465,36 @@ export function DiceRollerPanel({
     historyEndRef.current?.scrollIntoView({ block: "end" });
   }, [history]);
 
+  // Re-pins the scroll position to the bottom whenever this list's own
+  // available height shrinks -- e.g. the pool-chips row (or the Adv/Dis
+  // menu, or a wrapped die tray) appearing below it eats into the height a
+  // fixed-height `FloatingPanel` had been giving this flex-1 area. Without
+  // this, `scrollTop` stays the same pixel value it already was, but the
+  // container is now shorter, so whatever was fully visible right at the
+  // bottom (the newest roll, if already scrolled all the way down) gets
+  // its tail end clipped off there instead of the view sliding up to keep
+  // it in frame. Only re-pins when already at (or very near) the bottom —
+  // someone scrolled up reviewing older rolls shouldn't get yanked back
+  // down just because the pool row appeared.
+  const historyScrollRef = useRef<HTMLDivElement>(null);
+  const isScrolledToBottomRef = useRef(true);
+  useEffect(() => {
+    const el = historyScrollRef.current;
+    if (!el) return;
+    function handleScroll() {
+      isScrolledToBottomRef.current = el!.scrollHeight - el!.scrollTop - el!.clientHeight < 24;
+    }
+    el.addEventListener("scroll", handleScroll);
+    const ro = new ResizeObserver(() => {
+      if (isScrolledToBottomRef.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      ro.disconnect();
+    };
+  }, []);
+
   // Pre-emptively breaks d20 onto a new tray row *before* its Advantage/
   // Disadvantage widget ever mounts, so tapping d20 for the first time never
   // visibly shoves it (plus the now-appearing widget) down to the next line.
@@ -550,7 +580,7 @@ export function DiceRollerPanel({
         </IconButton>
       }
     >
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+      <div ref={historyScrollRef} className="flex flex-1 flex-col gap-2 overflow-y-auto">
         {history.length === 0 ? (
           <div className="flex flex-1 items-center justify-center py-6 text-center">
             <p className={EMPTY_STATE_CLS}>No rolls yet — build a dice pool below and hit Roll.</p>
