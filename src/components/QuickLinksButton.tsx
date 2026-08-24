@@ -23,6 +23,12 @@ import { PencilIcon } from "./ui/icons";
  * those FABs untappable until this one was dismissed first. Opening left
  * instead keeps the whole vertical FAB column clear no matter which of the
  * three is open.
+ *
+ * `z-[60]` — `Modal`'s own `z-50` convention plus one tier, the same value
+ * `Toast.tsx`/a nested modal already use to float above an open `Modal` —
+ * so this stays reachable (and its popover renders on top, not behind) while
+ * a character/creature Details modal is open, since looking something up
+ * mid-lookup at one is a real table moment, not an edge case worth ignoring.
  */
 export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onManage?: () => void }) {
   const { open, setOpen, containerRef } = useDismissiblePopover();
@@ -30,7 +36,7 @@ export function QuickLinksButton({ links, onManage }: { links: QuickLink[]; onMa
   if (links.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="fixed bottom-5 right-5 z-40">
+    <div ref={containerRef} className="fixed bottom-5 right-5 z-[60]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

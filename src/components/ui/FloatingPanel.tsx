@@ -93,22 +93,26 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * accidentally collide with this one's saved geometry via a shared default.
  *
  * `zIndexClassName` defaults to `z-[45]` — above `SectionNavRail`'s `z-30`
- * and the bottom-corner FABs' `z-40` (both ambient chrome the panel's
- * default top-right spawn spot and drag range can genuinely overlap; a
- * resize/drag handle silently eaten by one of those was a real bug here, not
- * a hypothetical), but still below `Modal`'s default `z-50`: a real modal
+ * and `RemindersFab`'s `z-40` (both ambient chrome the panel's default
+ * top-right spawn spot and drag range can genuinely overlap; a resize/drag
+ * handle silently eaten by one of those was a real bug here, not a
+ * hypothetical), but still below `Modal`'s default `z-50`: a real modal
  * opened *afterward*, while this panel is already up (e.g. editing a
  * different character), should still land on top of it, backdrop and all —
  * this panel losing focus underneath that backdrop is the same behavior a
  * docked/pinned tool window would have against an app's own dialogs.
  *
- * A caller that opens this panel from *inside* an already-open `Modal` (e.g.
- * `CharacterDetailsModal`'s own "Ask AI" pill) needs the opposite ordering —
- * the panel is the newer, just-opened thing there, so it must render above
- * that enclosing modal's `z-50` backdrop, not disappear behind it. Such a
- * caller passes `zIndexClassName="z-[60]"`, the same nested-above-a-modal
- * value `Modal`'s own `zIndexClassName` escape hatch and `Toast.tsx` already
- * use for exactly this "stacked on top of an open modal" case.
+ * A caller that wants this panel to always float above an open `Modal` —
+ * regardless of which one opened first — passes `zIndexClassName="z-[60]"`,
+ * the same nested-above-a-modal value `Modal`'s own `zIndexClassName` escape
+ * hatch and `Toast.tsx` already use for exactly this "stacked on top of an
+ * open modal" case. `DiceRollerFab` opts into this unconditionally (rolling
+ * dice mid-lookup at a character/creature's Details modal is a common table
+ * moment, not an edge case), and any caller that opens this panel from
+ * *inside* an already-open `Modal` (e.g. `CharacterDetailsModal`'s own
+ * "Ask AI" pill) needs it for the same reason — the panel is the newer,
+ * just-opened thing there, so it must render above that enclosing modal's
+ * `z-50` backdrop, not disappear behind it.
  *
  * `zIndexClassName`'s number is only the *floor* for this instance's actual
  * z-index — `useFrontZIndex` adds a small per-instance offset on top so

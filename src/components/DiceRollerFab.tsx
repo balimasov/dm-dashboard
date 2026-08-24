@@ -5,7 +5,7 @@ import { DiceRollerPanel } from "./DiceRollerPanel";
 
 /**
  * Stacks above `QuickLinksButton`/`RemindersFab` in the same fixed
- * bottom-right corner column — same `right-5`/`z-40`/button-height-plus-gap
+ * bottom-right corner column — same `right-5`/button-height-plus-gap
  * rhythm those two already use (`bottom-5`/`bottom-20`), one more tier up
  * (`bottom-[8.75rem]`, the same 60px step as the existing 5→20 jump) since
  * this FAB, unlike those two, always renders regardless of campaign data.
@@ -17,6 +17,14 @@ import { DiceRollerPanel } from "./DiceRollerPanel";
  * `DiceRollerPanel` directly, the same "trigger toggles a floating panel"
  * shape `AskAiPill`/`AiAssistantModal` already use, since rolling dice (not
  * a quick glance list) is the whole point of clicking this button.
+ *
+ * Trigger and panel both sit at `z-[60]` — `Modal`'s own `z-50` convention
+ * plus one tier, the same value `Toast.tsx`/a nested modal already use to
+ * float above an open `Modal` — deliberately, not `FloatingPanel`'s default
+ * `z-[45]`: rolling dice mid-lookup at a character/creature's Details modal
+ * is a common table moment, and that trigger needs to stay tappable (and the
+ * panel itself needs to render above the modal's backdrop) the whole time
+ * one is open, not just before/after it.
  */
 export function DiceRollerFab({
   campaignId,
@@ -36,7 +44,7 @@ export function DiceRollerFab({
 
   return (
     <>
-      <div className={`fixed right-5 z-40 ${bottomClass}`}>
+      <div className={`fixed right-5 z-[60] ${bottomClass}`}>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -48,7 +56,7 @@ export function DiceRollerFab({
         </button>
       </div>
 
-      {open && <DiceRollerPanel campaignId={campaignId} onClose={() => setOpen(false)} />}
+      {open && <DiceRollerPanel campaignId={campaignId} onClose={() => setOpen(false)} zIndexClassName="z-[60]" />}
     </>
   );
 }
