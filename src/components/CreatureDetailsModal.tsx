@@ -128,7 +128,8 @@ export function CreatureDetailsModal({
     <>
     <FloatingPanel
       onClose={onClose}
-      storageKey={`creature-details:${creature.id}`}
+      storageKey="entity-details"
+      align="center"
       initialWidth={1040}
       initialHeight={720}
       header={

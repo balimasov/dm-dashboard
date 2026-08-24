@@ -41,6 +41,16 @@ export function parseSavedRect(raw: string | null): FloatingPanelRect | null {
  * default anchor, rather than force-fitting a wrong-feeling squeezed size;
  * one that does fit is still clamped to `minWidth`/`minHeight`/`edgeMargin`
  * in case those minimums changed since the save.
+ *
+ * `align` picks how the *no-saved-rect* default horizontal position is
+ * computed — `"right"` (the original, still the default) anchors
+ * `defaultRightGap` in from the right edge, matching where `DiceRollerFab`/
+ * the "Ask AI" pill sit so the panel opens right next to its own trigger.
+ * `"center"` instead centers the panel horizontally, for
+ * `CharacterDetailsModal`/`CreatureDetailsModal` — these replaced a `Modal`
+ * that always opened centered/top-aligned, and their trigger (clicking a
+ * card anywhere in the roster) has no fixed on-screen spot to open next to
+ * the way the two FAB-launched panels do.
  */
 export function resolveInitialRect(params: {
   saved: FloatingPanelRect | null;
@@ -53,9 +63,21 @@ export function resolveInitialRect(params: {
   defaultHeight: number;
   defaultTop: number;
   defaultRightGap: number;
+  align?: "right" | "center";
 }): FloatingPanelRect {
-  const { saved, viewportWidth, viewportHeight, minWidth, minHeight, edgeMargin, defaultWidth, defaultHeight, defaultTop, defaultRightGap } =
-    params;
+  const {
+    saved,
+    viewportWidth,
+    viewportHeight,
+    minWidth,
+    minHeight,
+    edgeMargin,
+    defaultWidth,
+    defaultHeight,
+    defaultTop,
+    defaultRightGap,
+    align = "right",
+  } = params;
   const maxWidth = viewportWidth - edgeMargin * 2;
   const maxHeight = viewportHeight - edgeMargin * 2;
   if (saved && saved.width <= maxWidth && saved.height <= maxHeight) {
@@ -66,11 +88,13 @@ export function resolveInitialRect(params: {
       left: Math.min(Math.max(edgeMargin, saved.left), viewportWidth - minWidth),
     };
   }
+  const defaultLeft =
+    align === "center" ? (viewportWidth - defaultWidth) / 2 : viewportWidth - defaultWidth - defaultRightGap;
   return {
     width: defaultWidth,
     height: defaultHeight,
     top: defaultTop,
-    left: Math.max(edgeMargin, viewportWidth - defaultWidth - defaultRightGap),
+    left: Math.max(edgeMargin, defaultLeft),
   };
 }
 

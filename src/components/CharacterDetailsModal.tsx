@@ -474,7 +474,8 @@ export function CharacterDetailsModal({
     <>
     <FloatingPanel
       onClose={onClose}
-      storageKey={`character-details:${c.id}`}
+      storageKey="entity-details"
+      align="center"
       initialWidth={1040}
       initialHeight={720}
       header={

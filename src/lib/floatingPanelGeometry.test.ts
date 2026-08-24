@@ -74,6 +74,20 @@ describe("resolveInitialRect", () => {
     expect(result.top).toBe(1000 - 360);
     expect(result.left).toBe(1400 - 440);
   });
+
+  test("align: 'center' horizontally centers the default anchor instead of hugging the right edge", () => {
+    expect(resolveInitialRect({ saved: null, ...baseParams, align: "center" })).toEqual({
+      width: 480,
+      height: 560,
+      top: 88,
+      left: (1400 - 480) / 2,
+    });
+  });
+
+  test("align: 'center' still respects a saved rect exactly like the default 'right' alignment", () => {
+    const saved = { width: 660, height: 540, top: 97, left: 63 };
+    expect(resolveInitialRect({ saved, ...baseParams, align: "center" })).toEqual(saved);
+  });
 });
 
 describe("clampPosition", () => {

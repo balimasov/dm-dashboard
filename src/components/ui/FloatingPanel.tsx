@@ -95,6 +95,13 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
  * was left instead of resetting to the default top-right spot every time —
  * required, not optional, so a second caller down the line can't
  * accidentally collide with this one's saved geometry via a shared default.
+ * `CharacterDetailsModal`/`CreatureDetailsModal` deliberately break that
+ * rule the other way — both pass the literal `"entity-details"`, on
+ * purpose, so *every* character/creature panel remembers one shared
+ * position rather than a different one per entity (which one instance last
+ * moved it to is what every other instance opens at, same as
+ * `DiceRollerFab`'s single `"dice-roller"` key and `AiAssistantModal`'s
+ * single `"ai-assistant"` key already do).
  *
  * `zIndexClassName` defaults to `z-[45]` — above `SectionNavRail`'s `z-30`
  * (ambient chrome the panel's default top-right spawn spot and drag range
@@ -150,6 +157,7 @@ export function FloatingPanel({
   initialHeight = 560,
   zIndexClassName = "z-[45]",
   panelClassName = "border-slate-800 bg-slate-950",
+  align = "right",
 }: {
   /** Ignored when `header` is given. */
   title?: ReactNode;
@@ -166,6 +174,8 @@ export function FloatingPanel({
   zIndexClassName?: string;
   /** Replaces the panel's border color and background — same "shape stays fixed, color is a full replacement" split `Modal`'s own `panelClassName` uses (see that file's doc comment for why two conflicting color utilities can't safely coexist in one class string). `CharacterDetailsModal`/`CreatureDetailsModal` swap this for their violet concentrating-ring treatment. */
   panelClassName?: string;
+  /** Where the panel spawns horizontally when there's no saved position yet — see `resolveInitialRect`'s own doc comment. Only affects the very first open (or after a viewport shrink discards the saved rect); a dragged position always wins once one exists. */
+  align?: "right" | "center";
 }) {
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
@@ -186,6 +196,7 @@ export function FloatingPanel({
       defaultHeight: initialHeight,
       defaultTop: 88,
       defaultRightGap: 32,
+      align,
     })
   );
   // Mirrors `rect` synchronously (set inside the same `setRect` updater, so
