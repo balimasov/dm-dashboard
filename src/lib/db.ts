@@ -568,7 +568,15 @@ export function getCharacter(id: string): Character | null {
 export function createBlankCharacter(url: string, campaignId: string): Character {
   const ddbId = extractDndBeyondCharacterId(url);
   return {
-    id: `char-${ddbId ?? Date.now()}`,
+    // `freshId`, not `char-${ddbId}` — that derived id was global (not
+    // scoped to this campaign), so adding the *same* D&D Beyond character
+    // to a second campaign generated the exact same `id` as the row
+    // already sitting in the first one, and `addCharacterFromUrl`'s plain
+    // `INSERT` (not `INSERT OR REPLACE`) threw on the primary-key
+    // collision. The actual "already added" guard (POST /api/characters)
+    // already checks `dndBeyondUrl` within the target campaign specifically
+    // — it never needed the id itself to encode the ddbId.
+    id: freshId("char"),
     campaignId,
     name: ddbId ? `Character #${ddbId}` : "New Character",
     race: "",
