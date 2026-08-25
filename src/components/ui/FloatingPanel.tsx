@@ -3,6 +3,7 @@
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useFrontZIndex } from "@/hooks/useFrontZIndex";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
@@ -244,6 +245,15 @@ export function FloatingPanel({
   const dragStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const resizeStart = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
+  // Only the `"modal"` mobile variant gets this — matches the real `Modal`'s
+  // own `useScrollLock()` call, which `CharacterDetailsModal`/
+  // `CreatureDetailsModal` always had before either became a `FloatingPanel`
+  // (confirmed by re-reading that pre-conversion version). Desktop and the
+  // `"sheet"` mobile variant stay exactly as documented above: no backdrop,
+  // nothing behind either is inert, so the page underneath must stay
+  // scrollable — locking it there would be a regression, not a fix.
+  useScrollLock(!isDesktop && mobileVariant === "modal");
+
   if (!isDesktop && mobileVariant === "modal") {
     // The exact shape `Modal`'s own `scrollable` variant already uses —
     // dimmed backdrop, panel sized to its own content (no fixed height,
@@ -284,7 +294,16 @@ export function FloatingPanel({
           // a few px off. Desktop/the `"sheet"` mobile variant never had this
           // bug — both give their own panel `fixed` positioning directly, so
           // it's always its own nearest positioned ancestor.
-          className={`relative flex w-full flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${panelClassName}`}
+          //
+          // `my-4` on top of the backdrop's own `p-4` — not redundant: the
+          // backdrop's padding alone left the peeking badge's top edge
+          // exactly flush with the visible area's own top edge, zero margin
+          // for error (confirmed clipped a few px on a real device). The
+          // pre-`FloatingPanel` version of this same panel had this exact
+          // `my-4` for the same reason (re-read from before that
+          // conversion) — restored verbatim rather than re-deriving a new
+          // margin value.
+          className={`relative my-4 flex w-full max-w-[1040px] flex-col gap-3.5 rounded-xl border p-3.5 shadow-2xl shadow-black/40 ${panelClassName}`}
         >
           {header ?? (
             <div className="flex items-center justify-between gap-3">
