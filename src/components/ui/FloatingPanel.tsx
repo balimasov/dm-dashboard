@@ -272,7 +272,19 @@ export function FloatingPanel({
         <div
           role="dialog"
           aria-labelledby={header ? undefined : titleId}
-          className={`flex w-full flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${panelClassName}`}
+          // `relative` — without it, this div isn't a positioned element at
+          // all, so `CharacterStatusRail`'s badges (`position: absolute; top:
+          // 0`, see `StatusRail.tsx`) skip straight past it to the *backdrop*
+          // above (the nearest actually-positioned ancestor, since it's
+          // `fixed`) and anchor to that instead — which sits at the literal
+          // top of the whole scrollable overlay, not this panel's own
+          // border. That's what made the badges visually detach from the
+          // panel entirely (confirmed via screenshot: floating well above
+          // it with a gap, not straddling its border) rather than just being
+          // a few px off. Desktop/the `"sheet"` mobile variant never had this
+          // bug — both give their own panel `fixed` positioning directly, so
+          // it's always its own nearest positioned ancestor.
+          className={`relative flex w-full flex-col gap-4 rounded-xl border p-4 shadow-2xl shadow-black/40 ${panelClassName}`}
         >
           {header ?? (
             <div className="flex items-center justify-between gap-3">

@@ -1,6 +1,6 @@
 {
   "name": "dm-dashboard",
-  "version": "1.138.4",
+  "version": "1.138.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
