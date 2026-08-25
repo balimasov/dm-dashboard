@@ -616,7 +616,7 @@ function StatusPopover({
         onClick={() => setOpen((o) => !o)}
         aria-label="Manage states and concentration"
         aria-expanded={open}
-        className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
+        className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-600 bg-slate-950 text-slate-500 hover:border-slate-400 hover:text-slate-300"
       >
         {/* `disableTap` — this button already has its own onClick (toggling
             the popover); without it, a tap on a touch screen would fight
