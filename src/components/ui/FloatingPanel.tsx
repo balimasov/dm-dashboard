@@ -83,15 +83,20 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
 }
 
 /**
- * A non-modal, draggable, resizable window — `Modal`'s opposite in one
- * specific way: no backdrop, no scroll lock, nothing behind it is inert.
- * Built for `AiAssistantModal`, whose whole point is comparing the model's
- * suggestion against other characters/creatures still on screen — a
+ * A non-modal, draggable, resizable window on desktop — `Modal`'s opposite
+ * in one specific way there: no backdrop, no scroll lock, nothing behind it
+ * is inert. Built for `AiAssistantModal`, whose whole point is comparing the
+ * model's suggestion against other characters/creatures still on screen — a
  * centered `Modal` with its full-viewport backdrop made that impossible.
  * `CharacterDetailsModal`/`CreatureDetailsModal` moved here for the same
  * "keep it open, keep working elsewhere" reason, plus dragging/resizing and
  * several open side by side — the whole point of turning them into panels
- * rather than staying `Modal`s.
+ * rather than staying `Modal`s. Below the desktop breakpoint this
+ * non-modal-ness goes away entirely — dragging/resizing has nowhere to go on
+ * a phone-width screen, and the "compare side by side while it's open"
+ * use case doesn't really exist there either — so every mobile shape (both
+ * `mobileVariant`s) dims the page behind it and locks its scroll, same as a
+ * real `Modal` always does.
  *
  * Size/position math (parsing a saved rect, clamping a drag/resize) lives in
  * `lib/floatingPanelGeometry.ts`, not here — see that file's own doc comment
@@ -248,14 +253,13 @@ export function FloatingPanel({
   const dragStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const resizeStart = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
-  // Only the `"modal"` mobile variant gets this — matches the real `Modal`'s
-  // own `useScrollLock()` call, which `CharacterDetailsModal`/
-  // `CreatureDetailsModal` always had before either became a `FloatingPanel`
-  // (confirmed by re-reading that pre-conversion version). Desktop and the
-  // `"sheet"` mobile variant stay exactly as documented above: no backdrop,
-  // nothing behind either is inert, so the page underneath must stay
-  // scrollable — locking it there would be a regression, not a fix.
-  useScrollLock(!isDesktop && mobileVariant === "modal");
+  // Every mobile panel locks the page behind it now, not just
+  // `mobileVariant="modal"` — see the shared backdrop below, added to the
+  // `"sheet"` variant too so `DiceRollerFab`/`AiAssistantModal` get the same
+  // "can't accidentally scroll/tap the party row underneath" behavior on a
+  // phone. Desktop never locks: nothing behind a draggable panel there is
+  // dimmed or inert, by design (see the component doc comment).
+  useScrollLock(!isDesktop);
 
   if (!isDesktop && mobileVariant === "modal") {
     // The exact shape `Modal`'s own `scrollable` variant already uses —
@@ -267,7 +271,18 @@ export function FloatingPanel({
     // visually hidden) — there's nothing to drag on a phone-width screen.
     return (
       <div
-        className="scrollbar-themed fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
+        // `overscroll-contain` — without it, scrolling past this backdrop's
+        // own top/bottom edge chained into the page underneath (or, on iOS,
+        // into the browser's own rubber-band bounce/toolbar-collapse
+        // gesture) even with `useScrollLock`'s `position: fixed` body pin in
+        // place — confirmed live: pull past the bottom of a long character's
+        // content and the dimmed party row visibly nudges, the whole panel
+        // appearing to "lift." This bug predates this panel becoming a
+        // `FloatingPanel` at all (the pre-conversion `Modal` component never
+        // had `overscroll-contain` on its own `scrollable` overlay either)
+        // — not a regression from this file, but fixed here since this is
+        // the only backdrop-scrolling overlay left in the app missing it.
+        className="scrollbar-themed fixed inset-0 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/60 p-4 [scrollbar-gutter:stable]"
         // Plain `inset-0`'s `top: 0` is the *layout* viewport's top, which a
         // mobile browser's own address bar can sit right on top of — its own
         // chrome doesn't shrink the layout viewport, only the true *visual*
@@ -340,42 +355,58 @@ export function FloatingPanel({
         }
       : { top: MOBILE_TOP_MARGIN, left: EDGE_MARGIN, right: EDGE_MARGIN, bottom: EDGE_MARGIN };
     return (
-      <div
-        role="dialog"
-        aria-labelledby={header ? undefined : titleId}
-        onPointerDownCapture={bringToFront}
-        style={{ ...mobileStyle, zIndex }}
-        className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
-      >
+      <>
+        {/* Dimmed backdrop, same `bg-black/60` the `"modal"` variant and the
+            real `Modal` component both use — added so `DiceRollerFab`/
+            `AiAssistantModal` read as a real modal on mobile too (can't
+            accidentally scroll or tap the party row underneath), matching
+            `useScrollLock` above now firing for this variant as well. Not
+            itself the scroll container (this variant keeps its own fixed-
+            height, header/content-scroll/footer split below, unlike the
+            `"modal"` variant's single flowing scroll) — just a dimmed panel
+            sitting behind. `zIndex` (not `zIndex + 1`, see the panel below)
+            so it stacks directly under this instance's own panel while
+            still moving as one unit with it through `useFrontZIndex`'s
+            per-tier ordering. */}
+        <div className="fixed inset-0 bg-black/60" style={{ zIndex }} onPointerDownCapture={bringToFront} />
         <div
-          className={`shrink-0 border-b border-slate-800 px-4 py-3 ${header ? "" : "flex items-center justify-between gap-3"}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={header ? undefined : titleId}
+          onPointerDownCapture={bringToFront}
+          style={{ ...mobileStyle, zIndex: zIndex + 1 }}
+          className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
         >
-          {header ?? (
-            <>
-              <h2 id={titleId} className={MODAL_TITLE_CLS}>
-                {title}
-              </h2>
-              <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
-            </>
-          )}
+          <div
+            className={`shrink-0 border-b border-slate-800 px-4 py-3 ${header ? "" : "flex items-center justify-between gap-3"}`}
+          >
+            {header ?? (
+              <>
+                <h2 id={titleId} className={MODAL_TITLE_CLS}>
+                  {title}
+                </h2>
+                <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+              </>
+            )}
+          </div>
+          {/* `overscroll-contain` — without it, scrolling this content past its
+            own top/bottom edge fell through to the dashboard page underneath
+            and started scrolling *that* instead (a nested scroller's "no more
+            room" bounce chains to the next scrollable ancestor by default —
+            the same fix `RemindersFab.tsx`'s dropdown list already needed).
+            `useScrollLock` above stops the page itself from actually moving,
+            but this still matters for the *gesture* not visibly chaining/
+            rubber-banding past this panel's own edge first.
+            `pb-8` (not the plain `p-4` the desktop branch below keeps) — the
+            sheet's own bottom edge stays at the standard `EDGE_MARGIN`, but
+            scrolled all the way down, the last row still read as flush
+            against the sheet's own border with only `p-4`'s implicit 16px
+            under it (confirmed via screenshot); this doubles that specifically
+            for the last row's own breathing room, independent of the sheet's
+            outer position. */}
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-8">{children}</div>
         </div>
-        {/* `overscroll-contain` — without it, scrolling this content past its
-          own top/bottom edge fell through to the dashboard page underneath
-          and started scrolling *that* instead (a nested scroller's "no more
-          room" bounce chains to the next scrollable ancestor by default —
-          the same fix `RemindersFab.tsx`'s dropdown list already needed).
-          The whole point of this panel not locking body scroll (see the
-          component doc comment) is that the *page* stays scrollable on its
-          own — not that scrolling *inside* the panel should leak into it.
-          `pb-8` (not the plain `p-4` the desktop branch below keeps) — the
-          sheet's own bottom edge stays at the standard `EDGE_MARGIN`, but
-          scrolled all the way down, the last row still read as flush
-          against the sheet's own border with only `p-4`'s implicit 16px
-          under it (confirmed via screenshot); this doubles that specifically
-          for the last row's own breathing room, independent of the sheet's
-          outer position. */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 pb-8">{children}</div>
-      </div>
+      </>
     );
   }
 
