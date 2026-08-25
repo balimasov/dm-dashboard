@@ -255,7 +255,18 @@ export function FloatingPanel({
     return (
       <div
         className="scrollbar-themed fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/60 p-4 [scrollbar-gutter:stable]"
-        style={{ zIndex }}
+        // Plain `inset-0`'s `top: 0` is the *layout* viewport's top, which a
+        // mobile browser's own address bar can sit right on top of — its own
+        // chrome doesn't shrink the layout viewport, only the true *visual*
+        // one, so a badge (or anything else) placed right at this backdrop's
+        // literal top edge rendered underneath that chrome instead of below
+        // it (confirmed via screenshot: the status-rail badges "flew off"
+        // above the panel). `visualViewport.offsetTop` — see
+        // `useVisualViewport`'s own doc comment — is how far down the real
+        // visible area actually starts; falls back to the plain `inset-0`
+        // top (0) before that hook's first read and on a browser with no
+        // `visualViewport` support at all.
+        style={{ top: visualViewport ? visualViewport.offsetTop : undefined, zIndex }}
         onPointerDownCapture={bringToFront}
       >
         <div
