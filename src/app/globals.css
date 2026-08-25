@@ -160,6 +160,28 @@ html,
   }
 }
 
+/* Touch-only devices (anything that doesn't match the `pointer: fine` block
+   above) never got our themed scrollbar, but were still left to whatever
+   their own browser/OS draws by default for an overflowing container.
+   Explicitly hidden here instead — `scrollbar-width: none` +
+   `::-webkit-scrollbar { display: none }` is the standard "no scrollbar,
+   ever" idiom. This can't reach every platform's own native affordance:
+   Android Chrome in particular renders its short-lived "this can scroll"
+   hint through a separate compositor layer that ignores scrollbar CSS
+   entirely (confirmed neither this rule nor the themed one above ever
+   touched it) — if a scroll indicator is still visible after this, that's
+   the OS/browser's own overlay, not anything left for CSS to control. */
+@media (hover: none) {
+  html,
+  .scrollbar-themed {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar,
+  .scrollbar-themed::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* One pulsing box-shadow keyframe shared by every glowing ring in the app
    (the concentrating-card border, and the Exhaustion/overflow/per-condition
    status badges) — each `.status-ring-*`/`.concentrating-ring` class just
