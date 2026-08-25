@@ -11,7 +11,7 @@ import { ConditionHintPanel, ConditionsListHintPanel, CustomConditionHintPanel }
 import { inputCls } from "./Field";
 import { IconButton } from "./IconButton";
 import { POPOVER_SHELL_CLS, TOGGLE_PILL_ACTIVE_CLS, TOGGLE_PILL_INACTIVE_CLS } from "./containerStyles";
-import { ConcentrationIcon, ExhaustionIcon, PencilIcon, PlusIcon, StarIcon, TrashOutlineIcon } from "./icons";
+import { ConcentrationIcon, ExhaustionIcon, GearIcon, PencilIcon, StarIcon, TrashOutlineIcon } from "./icons";
 import { MICRO_LABEL_CLS } from "./typography";
 
 /** Screen-edge buffer for `StatusPopover`'s clamped position — same value/purpose as `InfoTooltip`'s own `EDGE_MARGIN`, kept local rather than imported since that constant isn't exported and the two components' positioning logic isn't shared. */
@@ -376,7 +376,15 @@ function CustomConditionLibraryRow({
     <div className="flex items-start gap-1.5 rounded-md border border-dashed border-slate-700 bg-slate-950 p-2">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-slate-200">{template.name}</p>
-        {template.description && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{template.description}</p>}
+        {/* Clamped to 2 lines here — a long homebrew description (a full
+            paragraph of rules text) used to render in full, making the
+            library list scroll for ages with just a couple of entries. The
+            full text is still one click away: opening `editing` above shows
+            it unclamped in a real `textarea`, so nothing here is lossy,
+            just collapsed until you actually need to read/change it. */}
+        {template.description && (
+          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">{template.description}</p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <IconButton tone="muted" onClick={() => setEditing(true)} aria-label={`Edit ${template.name}`} title="Edit">
@@ -617,12 +625,19 @@ function StatusPopover({
           panel={<p>Concentration, exhaustion, and conditions — standard and custom.</p>}
           className={BADGE_HINT_TRIGGER_CLS}
         >
-          {/* SVG, not a plain "+" glyph — a text character's optical center
-              depends on the font actually rendering it, which drifted
-              visibly off `justify-center`'s true center on desktop (fine on
-              mobile, different font stack) since nothing here pins its
+          {/* Was a plain PlusIcon, but "+" reads as "add a condition" —
+              misleading for a button that opens the whole states/
+              concentration popover, not just the custom-conditions adder
+              inside it. `GearIcon` already carries "manage/configure"
+              elsewhere in the app (e.g. the "⚙ Manage Custom Conditions"
+              link inside this same popover), so this now matches that
+              existing meaning instead of introducing a new one. Still an
+              SVG rather than a text glyph — a text character's optical
+              center depends on the font actually rendering it, which
+              drifted visibly off `justify-center`'s true center on desktop
+              (fine on mobile, different font stack) since nothing pins its
               glyph metrics. */}
-          <PlusIcon className="h-3 w-3" />
+          <GearIcon className="h-3 w-3" />
         </InfoTooltip>
       </button>
       {open &&
