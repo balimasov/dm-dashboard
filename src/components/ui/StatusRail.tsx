@@ -489,7 +489,20 @@ function CustomConditionsSection({
 
   return (
     <div className="space-y-1.5">
-      <p className={MICRO_LABEL_CLS}>Custom Conditions</p>
+      {/* `items-start` (not `-center`) — the gear `IconButton` is taller than
+          the `MICRO_LABEL_CLS` label next to it (its own `p-1` padding),
+          same reasoning `NotesSection`'s own header row documents for the
+          identical shape. Replaces the old standalone "⚙ Manage Custom
+          Conditions" text link that used to sit below the pill row — folding
+          the entry point into the header it manages instead of leaving it
+          as an extra sentence after the content read as one control too
+          many for what it does. */}
+      <div className="flex items-start justify-between gap-2">
+        <p className={MICRO_LABEL_CLS}>Custom Conditions</p>
+        <IconButton tone="muted" onClick={() => setManaging(true)} aria-label="Manage Custom Conditions" title="Manage Custom Conditions">
+          <GearIcon className="h-3.5 w-3.5" />
+        </IconButton>
+      </div>
       {library.length === 0 ? (
         <p className="text-xs italic text-slate-500">No custom conditions in this campaign yet.</p>
       ) : (
@@ -499,9 +512,6 @@ function CustomConditionsSection({
           ))}
         </div>
       )}
-      <button type="button" onClick={() => setManaging(true)} className="text-xs font-semibold text-sky-400 hover:underline">
-        ⚙ Manage Custom Conditions
-      </button>
     </div>
   );
 }
@@ -622,16 +632,16 @@ function StatusPopover({
           hoverOnly
           disableTap
           desktopOnly
-          panel={<p>Concentration, exhaustion, and conditions — standard and custom.</p>}
+          panel={<p>Manage states</p>}
           className={BADGE_HINT_TRIGGER_CLS}
         >
           {/* Was a plain PlusIcon, but "+" reads as "add a condition" —
               misleading for a button that opens the whole states/
               concentration popover, not just the custom-conditions adder
               inside it. `GearIcon` already carries "manage/configure"
-              elsewhere in the app (e.g. the "⚙ Manage Custom Conditions"
-              link inside this same popover), so this now matches that
-              existing meaning instead of introducing a new one. Still an
+              elsewhere in the app (e.g. `CustomConditionsSection`'s own
+              gear button inside this same popover), so this now matches
+              that existing meaning instead of introducing a new one. Still an
               SVG rather than a text glyph — a text character's optical
               center depends on the font actually rendering it, which
               drifted visibly off `justify-center`'s true center on desktop
