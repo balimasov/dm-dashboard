@@ -12,7 +12,7 @@ import { inputCls } from "./Field";
 import { IconButton } from "./IconButton";
 import { POPOVER_SHELL_CLS, TOGGLE_PILL_ACTIVE_CLS, TOGGLE_PILL_INACTIVE_CLS } from "./containerStyles";
 import { ConcentrationIcon, ExhaustionIcon, GearIcon, PencilIcon, StarIcon, TrashOutlineIcon } from "./icons";
-import { MICRO_LABEL_CLS } from "./typography";
+import { MICRO_LABEL_CLS, MICRO_LABEL_STRONG_CLS } from "./typography";
 
 /** Screen-edge buffer for `StatusPopover`'s clamped position — same value/purpose as `InfoTooltip`'s own `EDGE_MARGIN`, kept local rather than imported since that constant isn't exported and the two components' positioning logic isn't shared. */
 const EDGE_MARGIN = 8;
@@ -223,47 +223,57 @@ function OverflowBadge({ conditions, customConditions = [] }: { conditions: stri
  * `concentrating-ring` border tint (set directly from `concentrating` at
  * `CharacterCard`/`CreatureCard`'s root, entirely independent of this rail)
  * still tells every viewer at a glance whether it's active, so moving the
- * *toggle* control off the rail doesn't lose that passive signal. Wraps the
- * label in the same `CONCENTRATION_HINT_TEXT` hover hint the old badge used
- * — `disableTap` since the label sits inside this row's own click target
- * (the whole row toggles, not just the switch), same reasoning as every
- * other `InfoTooltip` nested inside its own clickable parent.
+ * *toggle* control off the rail doesn't lose that passive signal.
+ *
+ * Unboxed — a `MICRO_LABEL_STRONG_CLS` label above plain content, same shape
+ * as the Exhaustion/Conditions/Custom Conditions sections below it, not its
+ * own bordered/tinted button. The bordered look (an earlier version of this
+ * row) was a genuinely different visual weight from every section next to
+ * it — it read as a standalone control that had wandered into the popover
+ * from somewhere else, rather than "just another section" — reusing the
+ * same unboxed shape those sections already established, per a
+ * conventions-checker pass rather than inventing a new one, fixes that.
+ * Wraps the label in the same `CONCENTRATION_HINT_TEXT` hover hint the old
+ * badge used — `disableTap` since the label sits inside this row's own
+ * click target (the whole row toggles, not just the switch), same reasoning
+ * as every other `InfoTooltip` nested inside its own clickable parent.
  */
 function ConcentrationToggleRow({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
   return (
-    <button
-      type="button"
-      disabled={!onToggle}
-      onClick={onToggle}
-      aria-pressed={active}
-      aria-label="Toggle Concentration"
-      className={`flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-        active
-          ? "border-violet-500 bg-violet-500/10 text-violet-300"
-          : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
-      }`}
-    >
-      <InfoTooltip hoverOnly disableTap panel={CONCENTRATION_HINT_TEXT}>
-        <span className="flex items-center gap-1.5">
-          <ConcentrationIcon className="h-3.5 w-3.5 shrink-0" />
-          Concentration
+    <div>
+      <p className={`mb-1.5 ${MICRO_LABEL_STRONG_CLS}`}>Concentration</p>
+      <button
+        type="button"
+        disabled={!onToggle}
+        onClick={onToggle}
+        aria-pressed={active}
+        aria-label="Toggle Concentration"
+        className={`flex w-full items-center justify-between gap-2 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+          active ? "text-violet-300" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <InfoTooltip hoverOnly disableTap panel={CONCENTRATION_HINT_TEXT}>
+          <span className="flex items-center gap-1.5">
+            <ConcentrationIcon className="h-3.5 w-3.5 shrink-0" />
+            {active ? "Active" : "Inactive"}
+          </span>
+        </InfoTooltip>
+        <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${active ? "bg-violet-500" : "bg-slate-700"}`}>
+          {/* `left-0.5` is an explicit base position, not left implicit/auto —
+              an absolutely positioned element with no `left` set falls back to
+              its "static position", which measured out 2px further right than
+              intended here, leaving the "on" knob flush against the track's
+              own right edge with zero margin (clipped into the rounded curve)
+              instead of the same 2px inset the "off" state has on the left.
+              Pinning an explicit base removes that ambiguity; `translate-x-3`
+              (12px) now covers exactly the track's remaining travel distance
+              (28px track − 2px left inset − 2px right inset − 12px knob). */}
+          <span
+            className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${active ? "translate-x-3" : "translate-x-0"}`}
+          />
         </span>
-      </InfoTooltip>
-      <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${active ? "bg-violet-500" : "bg-slate-700"}`}>
-        {/* `left-0.5` is an explicit base position, not left implicit/auto —
-            an absolutely positioned element with no `left` set falls back to
-            its "static position", which measured out 2px further right than
-            intended here, leaving the "on" knob flush against the track's
-            own right edge with zero margin (clipped into the rounded curve)
-            instead of the same 2px inset the "off" state has on the left.
-            Pinning an explicit base removes that ambiguity; `translate-x-3`
-            (12px) now covers exactly the track's remaining travel distance
-            (28px track − 2px left inset − 2px right inset − 12px knob). */}
-        <span
-          className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${active ? "translate-x-3" : "translate-x-0"}`}
-        />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -498,7 +508,7 @@ function CustomConditionsSection({
           as an extra sentence after the content read as one control too
           many for what it does. */}
       <div className="flex items-start justify-between gap-2">
-        <p className={MICRO_LABEL_CLS}>Custom Conditions</p>
+        <p className={MICRO_LABEL_STRONG_CLS}>Custom Conditions</p>
         <IconButton tone="muted" onClick={() => setManaging(true)} aria-label="Manage Custom Conditions" title="Manage Custom Conditions">
           <GearIcon className="h-3.5 w-3.5" />
         </IconButton>
@@ -665,13 +675,13 @@ function StatusPopover({
             {onToggleConcentration && <ConcentrationToggleRow active={Boolean(concentrating)} onToggle={onToggleConcentration} />}
             {onExhaustionChange && (
               <div>
-                <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Exhaustion</p>
+                <p className={`mb-1.5 ${MICRO_LABEL_STRONG_CLS}`}>Exhaustion</p>
                 <DotMeter current={exhaustion} max={6} colorClass="bg-red-500" onSetCount={onExhaustionChange} />
               </div>
             )}
             {onConditionsChange && (
               <div>
-                <p className={`mb-1.5 ${MICRO_LABEL_CLS}`}>Conditions</p>
+                <p className={`mb-1.5 ${MICRO_LABEL_STRONG_CLS}`}>Conditions</p>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.keys(CONDITION_INFO).map((name) => {
                     const active = conditions.includes(name);
