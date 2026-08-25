@@ -77,15 +77,21 @@ const BADGE_HINT_TRIGGER_CLS = "absolute inset-0 flex! items-center justify-cent
 export const CONDITION_HUES = [16, 48, 80, 112, 144, 176, 208, 320];
 
 /**
- * One fixed hue for every custom/homebrew condition badge — deliberately NOT
- * cycled like `CONDITION_HUES`, since there's no risk of two *different*
- * custom conditions needing to be told apart from each other the same way
- * simultaneous standard conditions do (the dashed border plus the hover name
- * already does that). Chosen clear of every other badge color already in
- * use: every value in `CONDITION_HUES`, violet (concentration's card ring),
- * and red (exhaustion).
+ * Custom/homebrew condition badges cycle through their own small hue set by
+ * position among the entity's currently-active custom conditions — same
+ * `index % length` convention as `CONDITION_HUES` above, so two custom
+ * conditions active on the same card are actually distinguishable by color,
+ * not just by the shared dashed border + hover name. A single fixed hue
+ * (190, kept here as the first/default entry) was the original design, but
+ * that made every custom condition on a card look identical at a glance —
+ * exactly the collision the dashed border alone was supposed to make
+ * unnecessary to worry about, and doesn't hold once a card has 2+ custom
+ * conditions active simultaneously. Picked clear of every `CONDITION_HUES`
+ * value, violet ~240-280 (concentration's card ring), and red ~350-30
+ * (exhaustion) — same exclusion bands, just a different set of gaps between
+ * them so customs never collide with a standard condition's own hue either.
  */
-const CUSTOM_CONDITION_HUE = 190;
+const CUSTOM_CONDITION_HUES = [190, 224, 300];
 
 function ConditionBadge({ condition, index }: { condition: string; index: number }) {
   const hue = CONDITION_HUES[index % CONDITION_HUES.length];
@@ -110,19 +116,20 @@ function ConditionBadge({ condition, index }: { condition: string; index: number
   );
 }
 
-/** Same pulsing-glow badge shape as `ConditionBadge`, plus a dashed border — the second, always-on signal (color alone isn't enough at a glance) that this is a homebrew state, not one of the 14 standard D&D conditions. */
-function CustomConditionBadge({ condition }: { condition: CustomConditionTemplate }) {
+/** Same pulsing-glow badge shape as `ConditionBadge`, plus a dashed border — the second, always-on signal (color alone isn't enough at a glance) that this is a homebrew state, not one of the 14 standard D&D conditions. `index` is this custom condition's position among the entity's own currently-active custom conditions (same convention `ConditionBadge` uses for `CONDITION_HUES`), so two active at once actually read as different colors. */
+function CustomConditionBadge({ condition, index }: { condition: CustomConditionTemplate; index: number }) {
+  const hue = CUSTOM_CONDITION_HUES[index % CUSTOM_CONDITION_HUES.length];
   return (
     <span
       className={`${STATUS_BADGE_SIZE} status-ring-dynamic border-dashed text-[10px] font-bold`}
       style={
         {
-          borderColor: `hsl(${CUSTOM_CONDITION_HUE}, 70%, 55%)`,
-          color: `hsl(${CUSTOM_CONDITION_HUE}, 80%, 78%)`,
-          "--glow-1": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 55%, 0.55)`,
-          "--glow-2": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 50%, 0.3)`,
-          "--glow-3": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 55%, 0.95)`,
-          "--glow-4": `hsla(${CUSTOM_CONDITION_HUE}, 70%, 50%, 0.6)`,
+          borderColor: `hsl(${hue}, 70%, 55%)`,
+          color: `hsl(${hue}, 80%, 78%)`,
+          "--glow-1": `hsla(${hue}, 70%, 55%, 0.55)`,
+          "--glow-2": `hsla(${hue}, 70%, 50%, 0.3)`,
+          "--glow-3": `hsla(${hue}, 70%, 55%, 0.95)`,
+          "--glow-4": `hsla(${hue}, 70%, 50%, 0.6)`,
         } as React.CSSProperties
       }
     >
@@ -745,8 +752,8 @@ function StatusBadges({
       )}
       {heroicInspiration && <InspirationBadge />}
       {exhaustion > 0 && <ExhaustionBadge level={exhaustion} />}
-      {visibleCustom.map((c) => (
-        <CustomConditionBadge key={c.id} condition={c} />
+      {visibleCustom.map((c, index) => (
+        <CustomConditionBadge key={c.id} condition={c} index={index} />
       ))}
       {visibleStandard.map((condition, index) => (
         <ConditionBadge key={condition} condition={condition} index={index} />
