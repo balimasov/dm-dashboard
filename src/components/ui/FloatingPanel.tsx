@@ -153,7 +153,10 @@ function saveRect(storageKey: string, rect: FloatingPanelRect) {
 
  * No `aria-modal` (defaults to non-modal) since, unlike `Modal`, this
  * doesn't make the rest of the page inert — a screen reader user can still
- * reach content behind it.
+ * reach content behind it. Except `mobileVariant="modal"` below the desktop
+ * breakpoint: that shape genuinely does lock the page behind it (backdrop,
+ * `useScrollLock`), so it sets `aria-modal="true"` for the same reason
+ * `Modal` itself always does.
  *
  * Below `useDesktopViewport`'s breakpoint, drag/resize are dropped entirely
  * in favor of a fixed sheet inset from every edge by `EDGE_MARGIN`: on a
@@ -281,6 +284,7 @@ export function FloatingPanel({
       >
         <div
           role="dialog"
+          aria-modal="true"
           aria-labelledby={header ? undefined : titleId}
           // `relative` — without it, this div isn't a positioned element at
           // all, so `CharacterStatusRail`'s badges (`position: absolute; top:
