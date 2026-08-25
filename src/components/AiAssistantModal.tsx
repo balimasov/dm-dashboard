@@ -342,7 +342,7 @@ export function AiAssistantModal({
   entity,
   customConditionLibrary = [],
   onClose,
-  zIndexClassName,
+  zIndexClassName = "z-[60]",
 }: {
   name: string;
   target: Target;
@@ -350,7 +350,21 @@ export function AiAssistantModal({
   /** The campaign's shared custom-conditions library — needed to resolve `entity`'s `customConditionIds` into real name+description hover hints (see `buildAiGlossary`). */
   customConditionLibrary?: CustomConditionTemplate[];
   onClose: () => void;
-  /** Forwarded to `FloatingPanel` — see its own doc comment. Callers opening this from inside an already-open `Modal` (the details modals' own "Ask AI" pill) pass `"z-[60]"` so the panel lands above that modal's backdrop instead of behind it. */
+  /**
+   * Forwarded to `FloatingPanel` — see its own doc comment. Defaults to
+   * `"z-[60]"` (not `FloatingPanel`'s own `"z-[45]"` default) because every
+   * real call site wants it, not just the details modals' nested "Ask AI"
+   * pill: `DiceRollerFab`/`QuickLinksButton`/`RemindersFab` are hardcoded to
+   * `z-[60]` themselves so they stay reachable over an open modal — but
+   * that only works if this panel's own dimmed backdrop (see
+   * `FloatingPanel`'s mobile branches) is *also* at `z-[60]`, or its
+   * lower default backdrop paints *behind* those buttons instead of
+   * covering them. Confirmed exactly this gap: `CharacterCard`/
+   * `CreatureCard`'s own standalone "Ask AI" pill (opened without ever
+   * going through a details modal) never passed an override, so on mobile
+   * its backdrop dimmed everything except the three still-clickable corner
+   * buttons floating on top of it.
+   */
   zIndexClassName?: string;
 }) {
   useEscapeToClose(onClose);
