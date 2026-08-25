@@ -499,17 +499,30 @@ function CustomConditionsSection({
 
   return (
     <div className="space-y-1.5">
-      {/* `items-start` (not `-center`) — the gear `IconButton` is taller than
-          the `MICRO_LABEL_CLS` label next to it (its own `p-1` padding),
-          same reasoning `NotesSection`'s own header row documents for the
-          identical shape. Replaces the old standalone "⚙ Manage Custom
-          Conditions" text link that used to sit below the pill row — folding
-          the entry point into the header it manages instead of leaving it
-          as an extra sentence after the content read as one control too
-          many for what it does. */}
-      <div className="flex items-start justify-between gap-2">
+      {/* The gear `IconButton` (22px, its own `p-1` padding around a 14px
+          icon) is taller than the label's own ~16.5px line height — flowing
+          both in a `flex items-start` row (an earlier version of this)
+          makes the ROW 22px tall, so the label's own text sits 5.5px above
+          the row's true bottom edge before `space-y-1.5` below even starts,
+          landing the label almost twice as far from the pill grid (11.5px)
+          as `Conditions`' plain `<p className="mb-1.5">` gets (a clean
+          6px, confirmed by direct measurement) — the exact "uneven spacing"
+          this was supposed to fix. Absolutely positioning the button instead
+          keeps it a real 22px tap target without letting it participate in
+          this row's own layout height at all: the label `<p>` alone decides
+          the row's height here, so the gap below it now matches `Conditions`
+          exactly. `relative` on the wrapper, not `MICRO_LABEL_STRONG_CLS`'s
+          own `<p>`, since the button needs to center against the row as a
+          whole, not just the label's box. */}
+      <div className="relative">
         <p className={MICRO_LABEL_STRONG_CLS}>Custom Conditions</p>
-        <IconButton tone="muted" onClick={() => setManaging(true)} aria-label="Manage Custom Conditions" title="Manage Custom Conditions">
+        <IconButton
+          tone="muted"
+          onClick={() => setManaging(true)}
+          aria-label="Manage Custom Conditions"
+          title="Manage Custom Conditions"
+          className="absolute right-0 top-1/2 -translate-y-1/2"
+        >
           <GearIcon className="h-3.5 w-3.5" />
         </IconButton>
       </div>
