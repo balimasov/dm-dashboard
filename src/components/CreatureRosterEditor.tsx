@@ -31,13 +31,14 @@ import { creatureInfoLine } from "@/lib/format";
 import { emptyCreatureFormValue } from "@/components/CreatureFormFields";
 import { formValueToAddCreatureInput, templateToFormValue } from "@/lib/creatureForm";
 import { buildCreatureImportTemplate } from "@/lib/creatureImportTemplate";
-import { parseCreatureImportYaml } from "@/lib/creatureImportParser";
+import { CreatureImportOutcome, parseCreatureImportYaml } from "@/lib/creatureImportParser";
 import { Avatar } from "@/components/Avatar";
 import { CreatureHpHistoryModal } from "@/components/CreatureHpHistoryModal";
 import { EditCreatureModal } from "@/components/EditCreatureModal";
 import { RosterRow } from "@/components/RosterRow";
 import { Toast } from "@/components/Toast";
 import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/ui/Spinner";
 import { CreatureCategoryChip } from "@/components/ui/CreatureCategoryChip";
 import { EntityActionsMenu } from "@/components/ui/EntityActionsMenu";
 import { OwnerBadge } from "@/components/ui/OwnerBadge";
@@ -61,7 +62,7 @@ type CreatureAddMode = "search" | "import" | "manual";
 
 const ADD_MODE_OPTIONS: Array<{ mode: CreatureAddMode; icon: string; label: string; sub: string }> = [
   { mode: "search", icon: "🔍", label: "Search SRD", sub: "Free bestiary" },
-  { mode: "import", icon: "📄", label: "Import File", sub: ".yaml stat block" },
+  { mode: "import", icon: "📄", label: "Import File", sub: ".yaml stat block(s)" },
   { mode: "manual", icon: "✏️", label: "Add Manually", sub: "Blank stat block" },
 ];
 
@@ -318,6 +319,76 @@ function downloadTemplate() {
  * template is generated from the same schema the parser validates against
  * (`creatureImportSchema.ts`), so the two can never silently drift apart.
  */
+type BatchEntryStatus = "parsing" | "ready" | "parse-error" | "importing" | "imported" | "import-error";
+
+interface BatchEntry {
+  id: string;
+  file: File;
+  status: BatchEntryStatus;
+  outcome?: CreatureImportOutcome;
+  createdName?: string;
+}
+
+let batchEntryUid = 0;
+/** Same throwaway-unique-enough convention as `StatusRail.tsx`'s own `nextCustomConditionTemplateId` — never persisted, only a React key and the id `ImportCreaturePanel`'s state updates match against. */
+function nextBatchEntryId(): string {
+  batchEntryUid += 1;
+  return `batch-${Date.now()}-${batchEntryUid}`;
+}
+
+/** `ready`/`imported`/`import-error` badge colors — the red recipe is `SyncIssuePill`'s own "this failed" pill verbatim; the emerald one is its unclaimed success counterpart, same shape, following the emerald `Toast.tsx` already uses for its own success text. */
+const BATCH_STATUS_CLS: Record<"ready" | "parse-error" | "imported" | "import-error", string> = {
+  ready: "border-slate-700 bg-slate-950/40 text-slate-400",
+  "parse-error": "border-red-500/40 bg-red-500/10 text-red-300",
+  imported: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  "import-error": "border-red-500/40 bg-red-500/10 text-red-300",
+};
+
+function BatchEntryStatusBadge({ status }: { status: BatchEntryStatus }) {
+  if (status === "parsing" || status === "importing") {
+    return <Spinner className="h-3.5 w-3.5 shrink-0" />;
+  }
+  const label = { ready: "Ready", "parse-error": "Error", imported: "Added", "import-error": "Failed" }[status];
+  return <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${BATCH_STATUS_CLS[status]}`}>{label}</span>;
+}
+
+/**
+ * One row in the multi-file import batch list — filename (or, once parsed,
+ * the template's own name), a status badge/spinner, and inline detail once
+ * there's something to say (parse errors, "Added as ..."). Deliberately a
+ * *solid* border, not this app's usual `border-dashed` — that dashed style
+ * means "homebrew/custom content" everywhere else it appears (custom
+ * condition badges/pills), and this row is a transient import-progress
+ * item, not custom campaign data, so reusing it here would misapply that
+ * signal. Same row shape (`flex items-start gap-1.5 rounded-md border
+ * bg-slate-950 p-2`, name in a `min-w-0 flex-1` block) as
+ * `CustomConditionLibraryRow` — the app's canonical "list of homogeneous
+ * rows" recipe, just without the dashed border and without that row's own
+ * edit/delete actions (nothing here is editable, only watched).
+ */
+function BatchEntryRow({ entry }: { entry: BatchEntry }) {
+  const name = entry.outcome?.ok ? entry.outcome.result.input.templateName : entry.file.name;
+  return (
+    <div className="flex items-start gap-1.5 rounded-md border border-slate-700 bg-slate-950 p-2">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-slate-200">{name}</p>
+        {entry.status === "parse-error" && entry.outcome && !entry.outcome.ok && (
+          <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-red-300">
+            {entry.outcome.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        )}
+        {entry.status === "import-error" && <p className="mt-0.5 text-[11px] text-red-300">Failed to import.</p>}
+        {entry.status === "imported" && entry.createdName && (
+          <p className="mt-0.5 text-[11px] text-emerald-300">Added as &quot;{entry.createdName}&quot;.</p>
+        )}
+      </div>
+      <BatchEntryStatusBadge status={entry.status} />
+    </div>
+  );
+}
+
 function ImportCreaturePanel({
   onAdd,
   characters,
@@ -339,6 +410,8 @@ function ImportCreaturePanel({
   const [warnings, setWarnings] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [batchEntries, setBatchEntries] = useState<BatchEntry[]>([]);
+  const [batchImporting, setBatchImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateText(next: string) {
@@ -349,6 +422,80 @@ function ImportCreaturePanel({
     const reader = new FileReader();
     reader.onload = () => updateText(String(reader.result ?? ""));
     reader.readAsText(file);
+  }
+
+  function readFileAsOutcome(file: File): Promise<CreatureImportOutcome> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(parseCreatureImportYaml(String(reader.result ?? "")));
+      reader.onerror = () => resolve({ ok: false, errors: ["Не вдалося прочитати файл."], warnings: [] });
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * A single dropped/selected file keeps the original review-before-import
+   * flow (fills the textarea below; `handleImport` parses on click) — that
+   * lets a DM glance over or tweak the YAML first. Two or more at once skip
+   * straight to parsing: reviewing N files inline one at a time isn't
+   * practical, so each gets its own status row instead (parsed/error, then
+   * imported/failed once "Import N creatures" runs). Once a batch is
+   * already showing, any further drop joins it rather than falling back to
+   * the single-file textarea, so the two views are never both live at once.
+   */
+  function handleFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+    if (files.length === 1 && batchEntries.length === 0) {
+      handleFile(files[0]);
+      return;
+    }
+    const newEntries: BatchEntry[] = files.map((file) => ({ id: nextBatchEntryId(), file, status: "parsing" }));
+    setBatchEntries((prev) => [...prev, ...newEntries]);
+    newEntries.forEach((entry) => {
+      readFileAsOutcome(entry.file).then((outcome) => {
+        setBatchEntries((prev) =>
+          prev.map((e) => (e.id === entry.id ? { ...e, status: outcome.ok ? "ready" : "parse-error", outcome } : e))
+        );
+      });
+    });
+  }
+
+  async function handleImportAll() {
+    const toImport = batchEntries.filter((e) => e.status === "ready");
+    if (toImport.length === 0) return;
+    setBatchImporting(true);
+    let succeeded = 0;
+    for (const entry of toImport) {
+      setBatchEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: "importing" } : e)));
+      if (!entry.outcome?.ok) continue; // never true here (pre-filtered to "ready"), keeps TS happy
+      const { input, ownerCharacterName } = entry.outcome.result;
+      let ownerCharacterId: string | undefined;
+      if (ownerCharacterName) {
+        const match = characters.find((c) => c.name.toLowerCase() === ownerCharacterName.toLowerCase());
+        ownerCharacterId = match?.id;
+      }
+      try {
+        const created = await onAdd({ ...input, ownerCharacterId, category });
+        succeeded += 1;
+        setBatchEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: "imported", createdName: created.name } : e)));
+      } catch {
+        setBatchEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, status: "import-error" } : e)));
+      }
+    }
+    setBatchImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    onResult(
+      succeeded === toImport.length
+        ? `Imported ${succeeded} creature${succeeded === 1 ? "" : "s"} as ${CREATURE_CATEGORY_SINGULAR_LABELS[category]}.`
+        : `Imported ${succeeded} of ${toImport.length} creatures — see the list for what failed.`,
+      succeeded === toImport.length ? "success" : "error"
+    );
+  }
+
+  function clearBatch() {
+    setBatchEntries([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleImport() {
@@ -388,13 +535,18 @@ function ImportCreaturePanel({
     }
   }
 
+  const readyCount = batchEntries.filter((e) => e.status === "ready").length;
+  const hasBatch = batchEntries.length > 0;
+
   return (
     <div className="space-y-3">
       {/* One bordered box instead of an "Upload file..." button sitting
           above a separate textarea — those read as two competing ways in,
           when they're really just two ways to fill this one box (typed/
           pasted text, a click-to-browse file, or a dropped file all land
-          in the same place). */}
+          in the same place). Once 2+ files are involved, the same box shows
+          the batch list instead of the textarea — see `handleFiles`' own
+          doc comment for why the two never show at once. */}
       <div
         className={`overflow-hidden rounded-lg border transition-colors ${
           dragOver ? "border-sky-600 bg-sky-950/20" : "border-slate-800 bg-slate-900"
@@ -407,36 +559,50 @@ function ImportCreaturePanel({
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file) handleFile(file);
+          if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
         }}
       >
-        <textarea
-          value={text}
-          onChange={(e) => updateText(e.target.value)}
-          placeholder="Встав заповнений YAML-шаблон сюди..."
-          rows={7}
-          className="scrollbar-themed w-full resize-none bg-transparent px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none"
-        />
+        {hasBatch ? (
+          <div className="scrollbar-themed max-h-64 space-y-1.5 overflow-y-auto p-2">
+            {batchEntries.map((entry) => (
+              <BatchEntryRow key={entry.id} entry={entry} />
+            ))}
+          </div>
+        ) : (
+          <textarea
+            value={text}
+            onChange={(e) => updateText(e.target.value)}
+            placeholder="Встав заповнений YAML-шаблон сюди..."
+            rows={7}
+            className="scrollbar-themed w-full resize-none bg-transparent px-3 py-2 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none"
+          />
+        )}
         <div className={`flex items-center justify-between gap-2 border-t border-slate-800 bg-slate-950/40 px-3 py-1.5 ${MUTED_LABEL_CLS}`}>
-          <span>Drag &amp; drop a .yaml file here</span>
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-sky-400 hover:underline">
-            or upload...
-          </button>
+          <span>{hasBatch ? `${batchEntries.length} file${batchEntries.length === 1 ? "" : "s"}` : "Drag & drop one or more .yaml files here"}</span>
+          <div className="flex shrink-0 items-center gap-3">
+            {hasBatch && (
+              <button type="button" onClick={clearBatch} className="text-slate-400 hover:text-slate-200 hover:underline">
+                Clear
+              </button>
+            )}
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sky-400 hover:underline">
+              or upload...
+            </button>
+          </div>
         </div>
       </div>
       <input
         ref={fileInputRef}
         type="file"
         accept=".yaml,.yml,.txt"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          if (e.target.files?.length) handleFiles(e.target.files);
         }}
       />
 
-      {errors.length > 0 && (
+      {!hasBatch && errors.length > 0 && (
         <div className="rounded-lg border border-red-900/60 bg-red-950/30 p-3">
           <p className="mb-1 text-sm font-medium text-red-400">Не вдалося імпортувати — виправ і спробуй ще раз:</p>
           <ul className="list-disc space-y-0.5 pl-4 text-xs text-red-300">
@@ -446,7 +612,7 @@ function ImportCreaturePanel({
           </ul>
         </div>
       )}
-      {warnings.length > 0 && (
+      {!hasBatch && warnings.length > 0 && (
         <ul className="list-disc space-y-0.5 pl-4 text-xs text-amber-400">
           {warnings.map((w, i) => (
             <li key={i}>{w}</li>
@@ -462,9 +628,15 @@ function ImportCreaturePanel({
         <button type="button" onClick={downloadTemplate} className="text-sm text-sky-400 hover:underline">
           Download template (.yaml)
         </button>
-        <Button type="button" onClick={handleImport} disabled={!text.trim() || importing || busy}>
-          {importing ? "Importing..." : "Import"}
-        </Button>
+        {hasBatch ? (
+          <Button type="button" onClick={handleImportAll} disabled={readyCount === 0 || batchImporting || busy}>
+            {batchImporting ? "Importing..." : `Import ${readyCount} creature${readyCount === 1 ? "" : "s"}`}
+          </Button>
+        ) : (
+          <Button type="button" onClick={handleImport} disabled={!text.trim() || importing || busy}>
+            {importing ? "Importing..." : "Import"}
+          </Button>
+        )}
       </div>
     </div>
   );
