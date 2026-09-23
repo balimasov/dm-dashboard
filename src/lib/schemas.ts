@@ -277,6 +277,7 @@ export const campaignUpdateSchema = z
     logoUrl: z.string().optional(),
     quickLinks: z.array(quickLinkSchema).optional(),
     customConditionLibrary: z.array(customConditionTemplateSchema).optional(),
+    archived: z.boolean().optional(),
   })
   .partial();
 

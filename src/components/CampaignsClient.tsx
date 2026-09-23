@@ -7,8 +7,9 @@ import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { ImportCampaignModal } from "@/components/ImportCampaignModal";
 import { Hero } from "@/components/Hero";
 import { Toast } from "@/components/Toast";
-import { CopyIcon, DownloadIcon, PencilIcon, TrashIcon, UploadIcon } from "@/components/ui/icons";
+import { ArchiveIcon, CopyIcon, DownloadIcon, PencilIcon, TrashIcon, UploadIcon } from "@/components/ui/icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "@/components/ui/MoreMenu";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { POPOVER_SHELL_CLS, ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import {
   EMPTY_STATE_CLS,
@@ -112,11 +113,13 @@ function CampaignRow({
   campaign,
   onEdit,
   onDuplicate,
+  onArchive,
   onRemove,
 }: {
   campaign: CampaignSummary;
   onEdit?: (campaign: CampaignSummary) => void;
   onDuplicate?: (campaign: CampaignSummary) => void;
+  onArchive?: (campaign: CampaignSummary) => void;
   onRemove?: (id: string) => void;
 }) {
   return (
@@ -142,7 +145,7 @@ function CampaignRow({
           {campaign.creatureCount} {campaign.creatureCount === 1 ? "creature" : "creatures"}
         </p>
       </div>
-      {(onEdit || onRemove) && (
+      {(onEdit || onArchive || onRemove) && (
         <div className="relative z-10 shrink-0">
           {/* `whitespace-nowrap` on every item (not just the longest one) so
               they all size consistently against the popover's own
@@ -175,6 +178,12 @@ function CampaignRow({
               <button type="button" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`} onClick={() => onDuplicate(campaign)}>
                 <CopyIcon className="h-4 w-4 shrink-0" />
                 Duplicate
+              </button>
+            )}
+            {onArchive && (
+              <button type="button" className={`${MORE_MENU_ITEM_CLASS} whitespace-nowrap`} onClick={() => onArchive(campaign)}>
+                <ArchiveIcon className="h-4 w-4 shrink-0" />
+                {campaign.archived ? "Unarchive" : "Archive"}
               </button>
             )}
             {onRemove && (
@@ -211,6 +220,11 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
   const [loadingEdit, setLoadingEdit] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
+  const [visibility, setVisibility] = useState<"active" | "archived">("active");
+
+  const activeCampaigns = campaigns.filter((c) => !c.archived);
+  const archivedCampaigns = campaigns.filter((c) => c.archived);
+  const visibleCampaigns = visibility === "active" ? activeCampaigns : archivedCampaigns;
 
   async function openEdit(campaign: CampaignSummary) {
     setLoadingEdit(campaign.id);
@@ -246,7 +260,7 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
       <Hero />
 
       <div className="mb-3 flex items-center justify-between">
-        <h2 className={`min-w-0 truncate ${FORM_SECTION_HEADING_CLS}`}>Your Campaigns ({campaigns.length})</h2>
+        <h2 className={`min-w-0 truncate ${FORM_SECTION_HEADING_CLS}`}>Your Campaigns ({activeCampaigns.length})</h2>
         {isDm && (
           <NewCampaignSplitButton
             onNew={() => setModalState({ campaign: null, characters: [], creatures: [] })}
@@ -255,16 +269,32 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
         )}
       </div>
 
-      {campaigns.length === 0 ? (
-        <p className={EMPTY_STATE_CLS}>No campaigns yet — create one above.</p>
+      {isDm && (
+        <div className="mb-3">
+          <SegmentedControl
+            value={visibility}
+            onChange={setVisibility}
+            options={[
+              { value: "active", label: `Active (${activeCampaigns.length})` },
+              { value: "archived", label: `Archived (${archivedCampaigns.length})` },
+            ]}
+          />
+        </div>
+      )}
+
+      {visibleCampaigns.length === 0 ? (
+        <p className={EMPTY_STATE_CLS}>
+          {visibility === "archived" ? "No archived campaigns." : "No campaigns yet — create one above."}
+        </p>
       ) : (
         <ul className="space-y-2">
-          {campaigns.map((c) => (
+          {visibleCampaigns.map((c) => (
             <CampaignRow
               key={c.id}
               campaign={c}
               onEdit={isDm ? () => openEdit(c) : undefined}
               onDuplicate={isDm ? handleDuplicate : undefined}
+              onArchive={isDm ? (campaign) => updateCampaign(campaign.id, { archived: !campaign.archived }) : undefined}
               onRemove={isDm ? removeCampaign : undefined}
             />
           ))}

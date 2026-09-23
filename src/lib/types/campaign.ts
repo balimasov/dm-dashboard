@@ -12,6 +12,8 @@ export interface Campaign {
   quickLinks?: QuickLink[];
   /** Homebrew conditions/states the DM has defined for this campaign — see `CustomConditionTemplate`'s own doc comment. Characters/creatures reference entries here by id rather than holding their own copy, so defining one once makes it pickable on every character/creature in the campaign. */
   customConditionLibrary?: CustomConditionTemplate[];
+  /** Archived campaigns drop out of the main "Your Campaigns" list into a separate Archived tab, without being deleted — same reversible pattern as `JournalSession.archived`. */
+  archived?: boolean;
 }
 
 export interface QuickLink {
