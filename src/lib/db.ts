@@ -344,6 +344,15 @@ export function updateCampaign(id: string, updates: Partial<Campaign>): Campaign
   return updated;
 }
 
+export function reorderCampaigns(orderedIds: string[]): void {
+  const db = getDb();
+  const update = db.prepare("UPDATE campaigns SET position = ? WHERE id = ?");
+  const transaction = db.transaction((ids: string[]) => {
+    ids.forEach((id, index) => update.run(index, id));
+  });
+  transaction(orderedIds);
+}
+
 /** Cascades: a campaign's characters, creatures, journal, and assistant-query history all have nowhere else to belong, so removing it takes all of that with it. */
 export function deleteCampaign(id: string): void {
   const db = getDb();

@@ -2,6 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { CampaignFormModal } from "@/components/CampaignFormModal";
 import { ImportCampaignModal } from "@/components/ImportCampaignModal";
@@ -9,7 +20,6 @@ import { Hero } from "@/components/Hero";
 import { Toast } from "@/components/Toast";
 import { ArchiveIcon, CopyIcon, DownloadIcon, PencilIcon, TrashIcon, UploadIcon } from "@/components/ui/icons";
 import { MoreMenu, MORE_MENU_ITEM_CLASS } from "@/components/ui/MoreMenu";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { POPOVER_SHELL_CLS, ROW_CARD_CLS } from "@/components/ui/containerStyles";
 import {
   EMPTY_STATE_CLS,
@@ -20,6 +30,7 @@ import {
 import { apiFetch } from "@/lib/apiClient";
 import { UserRole } from "@/lib/auth";
 import { CampaignSummary, Character, Creature } from "@/lib/types";
+import { reorderSubset } from "@/lib/reorderSubset";
 
 /**
  * Split button (main click = open the existing New Campaign form, caret =
@@ -111,19 +122,40 @@ function CampaignLogo({ campaign }: { campaign: CampaignSummary }) {
  */
 function CampaignRow({
   campaign,
+  draggable,
   onEdit,
   onDuplicate,
   onArchive,
   onRemove,
 }: {
   campaign: CampaignSummary;
+  /** Only the DM can reorder — same reasoning as `onEdit`/`onRemove`/`onDuplicate` below: a player never sees the handle at all. */
+  draggable?: boolean;
   onEdit?: (campaign: CampaignSummary) => void;
   onDuplicate?: (campaign: CampaignSummary) => void;
   onArchive?: (campaign: CampaignSummary) => void;
   onRemove?: (id: string) => void;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: campaign.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
   return (
-    <li className={`relative flex items-center gap-3 ${ROW_CARD_CLS} px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-900`}>
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`relative flex items-center gap-3 ${ROW_CARD_CLS} px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-900 ${isDragging ? "opacity-50" : ""}`}
+    >
+      {draggable && (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="relative z-10 shrink-0 cursor-grab touch-none px-1 text-slate-600 hover:text-slate-300 active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          ⠿
+        </button>
+      )}
       <CampaignLogo campaign={campaign} />
       <div className="min-w-0 flex-1">
         {/* `after:absolute after:inset-0` stretches the link's hit area to
@@ -210,8 +242,16 @@ function CampaignRow({
 
 export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: CampaignSummary[]; role: UserRole }) {
   const isDm = role === "dm";
-  const { campaigns, addCampaign, updateCampaign, removeCampaign, duplicateCampaign, importCampaign, setCampaignSummary } =
-    useCampaigns(initialCampaigns);
+  const {
+    campaigns,
+    addCampaign,
+    updateCampaign,
+    reorderCampaigns,
+    removeCampaign,
+    duplicateCampaign,
+    importCampaign,
+    setCampaignSummary,
+  } = useCampaigns(initialCampaigns);
   const [modalState, setModalState] = useState<{
     campaign: CampaignSummary | null;
     characters: Character[];
@@ -225,6 +265,19 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
   const activeCampaigns = campaigns.filter((c) => !c.archived);
   const archivedCampaigns = campaigns.filter((c) => c.archived);
   const visibleCampaigns = visibility === "active" ? activeCampaigns : archivedCampaigns;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    reorderCampaigns(
+      reorderSubset(campaigns, (c) => Boolean(c.archived) === (visibility === "archived"), String(active.id), String(over.id))
+    );
+  }
 
   async function openEdit(campaign: CampaignSummary) {
     setLoadingEdit(campaign.id);
@@ -259,46 +312,58 @@ export function CampaignsClient({ initialCampaigns, role }: { initialCampaigns: 
     <div className="mx-auto max-w-3xl px-4 py-8">
       <Hero />
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className={`min-w-0 truncate ${FORM_SECTION_HEADING_CLS}`}>Your Campaigns ({activeCampaigns.length})</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className={`min-w-0 truncate ${FORM_SECTION_HEADING_CLS}`}>
+          {visibility === "active"
+            ? `Your Campaigns (${activeCampaigns.length})`
+            : `Archived Campaigns (${archivedCampaigns.length})`}
+        </h2>
         {isDm && (
-          <NewCampaignSplitButton
-            onNew={() => setModalState({ campaign: null, characters: [], creatures: [] })}
-            onImport={() => setImportOpen(true)}
-          />
+          <div className="flex shrink-0 items-center gap-3">
+            {/* Compact text toggle instead of a full-width segmented control
+                — same shape `CampaignJournalModal`'s own "Show archived"/"Hide
+                archived" link uses for the closest existing archive-a-
+                top-level-entity precedent. Always rendered (not gated behind
+                `archivedCampaigns.length > 0`) so switching back to Active
+                after unarchiving the last archived campaign doesn't strand
+                the DM on an empty "Archived" view with no way back. */}
+            <button
+              type="button"
+              onClick={() => setVisibility((v) => (v === "active" ? "archived" : "active"))}
+              className="whitespace-nowrap text-xs text-slate-500 hover:text-slate-300"
+            >
+              {visibility === "active" ? `Archived (${archivedCampaigns.length})` : "← Active"}
+            </button>
+            <NewCampaignSplitButton
+              onNew={() => setModalState({ campaign: null, characters: [], creatures: [] })}
+              onImport={() => setImportOpen(true)}
+            />
+          </div>
         )}
       </div>
-
-      {isDm && (
-        <div className="mb-3">
-          <SegmentedControl
-            value={visibility}
-            onChange={setVisibility}
-            options={[
-              { value: "active", label: `Active (${activeCampaigns.length})` },
-              { value: "archived", label: `Archived (${archivedCampaigns.length})` },
-            ]}
-          />
-        </div>
-      )}
 
       {visibleCampaigns.length === 0 ? (
         <p className={EMPTY_STATE_CLS}>
           {visibility === "archived" ? "No archived campaigns." : "No campaigns yet — create one above."}
         </p>
       ) : (
-        <ul className="space-y-2">
-          {visibleCampaigns.map((c) => (
-            <CampaignRow
-              key={c.id}
-              campaign={c}
-              onEdit={isDm ? () => openEdit(c) : undefined}
-              onDuplicate={isDm ? handleDuplicate : undefined}
-              onArchive={isDm ? (campaign) => updateCampaign(campaign.id, { archived: !campaign.archived }) : undefined}
-              onRemove={isDm ? removeCampaign : undefined}
-            />
-          ))}
-        </ul>
+        <DndContext id="campaigns-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={visibleCampaigns.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-2">
+              {visibleCampaigns.map((c) => (
+                <CampaignRow
+                  key={c.id}
+                  campaign={c}
+                  draggable={isDm}
+                  onEdit={isDm ? () => openEdit(c) : undefined}
+                  onDuplicate={isDm ? handleDuplicate : undefined}
+                  onArchive={isDm ? (campaign) => updateCampaign(campaign.id, { archived: !campaign.archived }) : undefined}
+                  onRemove={isDm ? removeCampaign : undefined}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
       {loadingEdit && <p className={`mt-3 ${EMPTY_STATE_CLS}`}>Loading...</p>}
 

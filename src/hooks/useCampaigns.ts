@@ -34,6 +34,18 @@ export function useCampaigns(initialCampaigns: CampaignSummary[]) {
     await parseJsonOrThrow(res, "Failed to update campaign.");
   }, []);
 
+  const reorderCampaigns = useCallback(async (orderedIds: string[]) => {
+    setCampaigns((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]));
+      return orderedIds.map((id) => byId.get(id)).filter((c): c is CampaignSummary => Boolean(c));
+    });
+    await apiFetch("/api/campaigns/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds }),
+    });
+  }, []);
+
   const removeCampaign = useCallback(async (id: string) => {
     setCampaigns((prev) => prev.filter((c) => c.id !== id));
     await apiFetch(`/api/campaigns/${id}`, { method: "DELETE" });
@@ -63,5 +75,14 @@ export function useCampaigns(initialCampaigns: CampaignSummary[]) {
     setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   }, []);
 
-  return { campaigns, addCampaign, updateCampaign, removeCampaign, duplicateCampaign, importCampaign, setCampaignSummary };
+  return {
+    campaigns,
+    addCampaign,
+    updateCampaign,
+    reorderCampaigns,
+    removeCampaign,
+    duplicateCampaign,
+    importCampaign,
+    setCampaignSummary,
+  };
 }
