@@ -30,7 +30,10 @@ export function CreatureHeader({
   return (
     <ClickableCardHeader onClick={onClick} dragHandleProps={dragHandleProps}>
       <div className="relative shrink-0">
-        <Avatar src={creature.avatarUrl} label={creature.name} size="md" />
+        {/* Zoomable only when this header isn't itself the click target —
+            same reasoning as `CharacterHeader`'s own avatar, see `Avatar`'s
+            doc comment. */}
+        <Avatar src={creature.avatarUrl} label={creature.name} size="md" zoomable={!onClick} />
         {/* Half-overlaps the avatar's bottom edge (same "floating marker"
             convention as `StatusRail`'s own badges) instead of sitting inline
             with the name — that read as clutter competing with the name for

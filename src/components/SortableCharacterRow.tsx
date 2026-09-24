@@ -32,7 +32,7 @@ export function SortableCharacterRow({
       id={character.id}
       dimmed={character.hidden}
       singleRow
-      avatar={<CharacterAvatar character={character} />}
+      avatar={<CharacterAvatar character={character} zoomable />}
       actions={
         <EntityActionsMenu
           onEdit={() => onEdit(character)}

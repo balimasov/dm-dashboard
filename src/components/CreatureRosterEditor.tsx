@@ -669,7 +669,7 @@ function CreatureRow({
       singleRow
       avatar={
         <div className="relative shrink-0">
-          <Avatar src={creature.avatarUrl} label={creature.name} />
+          <Avatar src={creature.avatarUrl} label={creature.name} zoomable />
           <div className="absolute inset-x-0 bottom-0 flex translate-y-1/2 justify-center">
             <CreatureCategoryChip category={creature.category} size="sm" />
           </div>

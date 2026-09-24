@@ -99,7 +99,7 @@ export function AvatarPicker({
   return (
     <div>
       <div className="relative inline-flex h-16 w-16 shrink-0">
-        <Avatar src={imageUrl} label={label} size="md" />
+        <Avatar src={imageUrl} label={label} size="md" zoomable />
         {imageUrl && (
           <button
             type="button"

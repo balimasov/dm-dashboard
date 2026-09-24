@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Modal } from "@/components/ui/Modal";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const SIZE_CLASSES = {
   xs: "h-6 w-6 text-[10px]",
@@ -19,23 +22,52 @@ export function Avatar({
   src,
   label,
   size = "sm",
+  zoomable = false,
 }: {
   src?: string;
   label: string;
   size?: keyof typeof SIZE_CLASSES;
+  /**
+   * Click-to-enlarge, opening `src` full-size in a lightbox. Off by default
+   * — a caller only turns this on where the avatar isn't already nested
+   * inside its own bigger click target. `CharacterHeader`/`CreatureHeader`
+   * wrap this in `ClickableCardHeader`'s own `<button>` when they're given
+   * an `onClick` (the compact card, which opens the details modal on any
+   * header click) — a zoomable `<button>` nested inside that one would be
+   * invalid HTML and fight the outer click, so those two only pass
+   * `zoomable` through when they *aren't* wrapped in that outer button
+   * (i.e. inside the details modal itself, where the avatar has nothing
+   * else to click).
+   */
+  zoomable?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const sizeClass = SIZE_CLASSES[size];
 
   if (src && !failed) {
-    return (
+    const img = (
       // eslint-disable-next-line @next/next/no-img-element -- external/base64 sources, not worth configuring next/image for a small thumbnail
       <img
         src={src}
         alt=""
         onError={() => setFailed(true)}
-        className={`${sizeClass} shrink-0 rounded-md border border-slate-800 object-cover`}
+        className={zoomable ? "h-full w-full object-cover" : `${sizeClass} shrink-0 rounded-md border border-slate-800 object-cover`}
       />
+    );
+    if (!zoomable) return img;
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          aria-label={`View larger image of ${label}`}
+          className={`${sizeClass} block shrink-0 cursor-zoom-in overflow-hidden rounded-md border border-slate-800 transition hover:brightness-110`}
+        >
+          {img}
+        </button>
+        {lightboxOpen && <AvatarLightbox src={src} label={label} onClose={() => setLightboxOpen(false)} />}
+      </>
     );
   }
   return (
@@ -44,5 +76,21 @@ export function Avatar({
     >
       {label.trim().charAt(0).toUpperCase() || "?"}
     </div>
+  );
+}
+
+function AvatarLightbox({ src, label, onClose }: { src: string; label: string; onClose: () => void }) {
+  useScrollLock();
+  useEscapeToClose(onClose);
+  return (
+    <Modal
+      onClose={onClose}
+      zIndexClassName="z-[60]"
+      title={label}
+      panelClassName="max-h-[90vh] w-auto max-w-[90vw] gap-3 border-slate-800 bg-slate-950 p-4"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- same external/base64 source as the thumbnail above, just shown at full size */}
+      <img src={src} alt={label} className="max-h-[75vh] max-w-[80vw] rounded-md object-contain" />
+    </Modal>
   );
 }

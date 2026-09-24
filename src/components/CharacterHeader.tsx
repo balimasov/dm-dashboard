@@ -34,7 +34,11 @@ export function CharacterHeader({
   return (
     <ClickableCardHeader onClick={onClick} dragHandleProps={dragHandleProps}>
       <div className="relative shrink-0">
-        <CharacterAvatar character={c} size="md" />
+        {/* Zoomable only when this header isn't itself the click target
+            (no `onClick` means `ClickableCardHeader` renders a plain `div`,
+            not a `button`) — see `Avatar`'s own doc comment for why a
+            zoomable avatar can't be nested inside the card's header button. */}
+        <CharacterAvatar character={c} size="md" zoomable={!onClick} />
         {/* Same "unmissable at a glance across a full roster" reasoning as
             the status rail's own badges is why this lives on the avatar
             itself rather than only in the toolbar pill below: a DM
