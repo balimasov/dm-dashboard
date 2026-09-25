@@ -7,7 +7,8 @@ import { Avatar } from "./Avatar";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 
-const OUTPUT_SIZE = 200;
+/** Doubled from the original 200px — the lightbox (`Avatar`'s own zoomed-in view) now displays this at up to ~80% of the viewport, where the old 200px crop read as visibly soft once scaled up that far. Still JPEG-compressed at 0.85 quality, so the ~4x pixel count costs a few tens of KB per stored data URI, not a multiple of it. */
+const OUTPUT_SIZE = 400;
 
 function PencilIcon({ className }: { className?: string }) {
   return (

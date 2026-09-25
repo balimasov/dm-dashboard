@@ -51,6 +51,7 @@ export function Avatar({
       <img
         src={src}
         alt=""
+        draggable={false}
         onError={() => setFailed(true)}
         className={zoomable ? "h-full w-full object-cover" : `${sizeClass} shrink-0 rounded-md border border-slate-800 object-cover`}
       />
@@ -101,7 +102,12 @@ function AvatarLightbox({ src, label, onClose }: { src: string; label: string; o
         its source resolution.
       */}
       {/* eslint-disable-next-line @next/next/no-img-element -- same external/base64 source as the thumbnail above, just shown at full size */}
-      <img src={src} alt={label} className="min-h-0 w-full flex-1 rounded-md object-contain" />
+      <img
+        src={src}
+        alt={label}
+        draggable={false}
+        className="min-h-0 w-full flex-1 select-none rounded-md object-contain"
+      />
     </Modal>
   );
 }
