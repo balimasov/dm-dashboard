@@ -87,10 +87,21 @@ function AvatarLightbox({ src, label, onClose }: { src: string; label: string; o
       onClose={onClose}
       zIndexClassName="z-[60]"
       title={label}
-      panelClassName="max-h-[90vh] w-auto max-w-[90vw] gap-3 border-slate-800 bg-slate-950 p-4"
+      panelClassName="h-[80vh] w-[80vw] max-h-[80vh] max-w-[80vw] gap-3 border-slate-800 bg-slate-950 p-4"
     >
+      {/*
+        `flex-1` + `min-h-0` (not `max-h-*`/`max-w-*` alone) is what makes
+        this actually fill the panel: a plain `<img>` with only a max-size
+        cap renders at its own intrinsic pixel size up to that cap, so a
+        small source (a creature's 200×200 `AvatarPicker` crop) stayed tiny
+        while a large one (a character's full-res D&D Beyond portrait) filled
+        the same cap — same lightbox, wildly different apparent size. Giving
+        the image a real flexed box plus `object-contain` scales BOTH up or
+        down to fill it, so every avatar opens equally large regardless of
+        its source resolution.
+      */}
       {/* eslint-disable-next-line @next/next/no-img-element -- same external/base64 source as the thumbnail above, just shown at full size */}
-      <img src={src} alt={label} className="max-h-[75vh] max-w-[80vw] rounded-md object-contain" />
+      <img src={src} alt={label} className="min-h-0 w-full flex-1 rounded-md object-contain" />
     </Modal>
   );
 }
