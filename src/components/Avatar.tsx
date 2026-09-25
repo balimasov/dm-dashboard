@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Modal } from "@/components/ui/Modal";
 import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -80,34 +81,66 @@ export function Avatar({
   );
 }
 
+/**
+ * Portaled straight to `document.body` — a zoomable avatar can be nested
+ * arbitrarily deep (e.g. `CharacterHeader`/`CreatureHeader` inside
+ * `FloatingPanel`'s own draggable `header`), and `FloatingPanel`'s header
+ * starts dragging the whole panel on any `pointerdown` whose target isn't a
+ * `<button>` (see that file's `onHeaderPointerDown`). React's synthetic
+ * events bubble along the *component* tree, not the DOM's visual/`position:
+ * fixed` layout, so without a portal a pointer-drag started on this
+ * lightbox's own full-size `<img>` (not a button) bubbled straight up
+ * through `Avatar` → `CharacterHeader` → `FloatingPanel`'s header and
+ * dragged the panel underneath instead — confirmed bug: grabbing the
+ * enlarged picture visibly moved the details window behind it, scrolling
+ * didn't (no pointerdown involved). Rendering outside that component
+ * subtree entirely removes the bubble path — same fix, same reasoning as
+ * `MoreMenu`'s own `portal` option.
+ */
 function AvatarLightbox({ src, label, onClose }: { src: string; label: string; onClose: () => void }) {
   useScrollLock();
   useEscapeToClose(onClose);
-  return (
-    <Modal
-      onClose={onClose}
-      zIndexClassName="z-[60]"
-      title={label}
-      panelClassName="h-[80vh] w-[80vw] max-h-[80vh] max-w-[80vw] gap-3 border-slate-800 bg-slate-950 p-4"
-    >
-      {/*
-        `flex-1` + `min-h-0` (not `max-h-*`/`max-w-*` alone) is what makes
-        this actually fill the panel: a plain `<img>` with only a max-size
-        cap renders at its own intrinsic pixel size up to that cap, so a
-        small source (a creature's 200×200 `AvatarPicker` crop) stayed tiny
-        while a large one (a character's full-res D&D Beyond portrait) filled
-        the same cap — same lightbox, wildly different apparent size. Giving
-        the image a real flexed box plus `object-contain` scales BOTH up or
-        down to fill it, so every avatar opens equally large regardless of
-        its source resolution.
-      */}
-      {/* eslint-disable-next-line @next/next/no-img-element -- same external/base64 source as the thumbnail above, just shown at full size */}
-      <img
-        src={src}
-        alt={label}
-        draggable={false}
-        className="min-h-0 w-full flex-1 select-none rounded-md object-contain"
-      />
-    </Modal>
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    // `onPointerDown` stops the gesture from reaching `FloatingPanel`'s own
+    // header handler — `createPortal` only moves *where this renders in the
+    // DOM*, not the path React's synthetic events bubble along, which
+    // follows the *component* tree regardless of the portal (documented
+    // React behavior). `Avatar` → `CharacterHeader` → `FloatingPanel`'s
+    // `header` prop is still the real ancestry here, so a pointerdown
+    // starting on the enlarged image below (not a `<button>`, so not
+    // already excluded by that header's own `closest("button")` check)
+    // still reached `onHeaderPointerDown` and dragged the panel underneath
+    // — confirmed still reproducing after the portal alone. Stopping it
+    // right here, before it can bubble past this point at all, is what
+    // actually fixes it.
+    <div onPointerDown={(e) => e.stopPropagation()}>
+      <Modal
+        onClose={onClose}
+        zIndexClassName="z-[60]"
+        title={label}
+        panelClassName="h-[80vh] w-[80vw] max-h-[80vh] max-w-[80vw] gap-3 border-slate-800 bg-slate-950 p-4"
+      >
+        {/*
+          `flex-1` + `min-h-0` (not `max-h-*`/`max-w-*` alone) is what makes
+          this actually fill the panel: a plain `<img>` with only a max-size
+          cap renders at its own intrinsic pixel size up to that cap, so a
+          small source (a creature's 200×200 `AvatarPicker` crop) stayed tiny
+          while a large one (a character's full-res D&D Beyond portrait) filled
+          the same cap — same lightbox, wildly different apparent size. Giving
+          the image a real flexed box plus `object-contain` scales BOTH up or
+          down to fill it, so every avatar opens equally large regardless of
+          its source resolution.
+        */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- same external/base64 source as the thumbnail above, just shown at full size */}
+        <img
+          src={src}
+          alt={label}
+          draggable={false}
+          className="min-h-0 w-full flex-1 select-none rounded-md object-contain"
+        />
+      </Modal>
+    </div>,
+    document.body
   );
 }

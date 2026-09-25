@@ -481,6 +481,7 @@ export function CharacterDetailsModal({
       initialWidth={1040}
       initialHeight={720}
       mobileVariant="modal"
+      dimBackdrop
       header={
         <div className="flex flex-col gap-3.5">
           <CharacterStatusRail

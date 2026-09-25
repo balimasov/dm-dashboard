@@ -1,9 +1,11 @@
 "use client";
 
 import { PointerEvent as ReactPointerEvent, ReactNode, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDesktopViewport } from "@/hooks/useDesktopViewport";
 import { useFrontZIndex } from "@/hooks/useFrontZIndex";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useSharedDim } from "@/hooks/useSharedDim";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { clampPosition, clampSize, FloatingPanelRect, parseSavedRect, resolveInitialRect } from "@/lib/floatingPanelGeometry";
 import { IconButton } from "./IconButton";
@@ -13,6 +15,8 @@ import { MODAL_TITLE_CLS } from "./typography";
 const MIN_WIDTH = 440;
 const MIN_HEIGHT = 360;
 const EDGE_MARGIN = 8;
+/** Below every `FloatingPanel` tier's `DEFAULT_BASE_Z` (45) so the shared dim layer (see `dimBackdrop` below) always sits behind every open panel, above ordinary page content (`SectionNavRail`'s `z-30`, the dashboard's own cards). */
+const DIM_Z = 40;
 /**
  * Mobile sheet's own top inset — bigger than `EDGE_MARGIN` on purpose.
  * `CharacterDetailsModal`/`CreatureDetailsModal`'s status-rail badges
@@ -183,6 +187,7 @@ export function FloatingPanel({
   panelClassName = "border-slate-800 bg-slate-950",
   align = "right",
   mobileVariant = "sheet",
+  dimBackdrop = false,
 }: {
   /** Ignored when `header` is given. */
   title?: ReactNode;
@@ -221,6 +226,22 @@ export function FloatingPanel({
    * not a fixed sheet's geometry standing in for it.
    */
   mobileVariant?: "sheet" | "modal";
+  /**
+   * Desktop only (mobile already dims unconditionally, see `mobileVariant`
+   * above) — a faint, non-blocking full-viewport dim layer behind the panel,
+   * for callers whose panel can be hard to spot against a busy/contrasty
+   * background (`CharacterDetailsModal`/`CreatureDetailsModal`). Off by
+   * default: `AiAssistantModal`/`DiceRollerFab` are built around comparing
+   * the open panel against other cards still on screen (see the component
+   * doc comment above), and even a faint dim works against that. Shared
+   * across every simultaneously-open `dimBackdrop` panel via `useSharedDim`
+   * rather than one layer per panel — two or three independently-rendered
+   * dim layers stacked on top of each other would visibly compound into
+   * something much darker than the single faint dim any one of them asks
+   * for. `pointer-events-none` — this never blocks clicking/dragging
+   * whatever's behind it, only changes how it looks.
+   */
+  dimBackdrop?: boolean;
 }) {
   const isDesktop = useDesktopViewport();
   const visualViewport = useVisualViewport();
@@ -260,6 +281,7 @@ export function FloatingPanel({
   // phone. Desktop never locks: nothing behind a draggable panel there is
   // dimmed or inert, by design (see the component doc comment).
   useScrollLock(!isDesktop);
+  const isDimOwner = useSharedDim(dimBackdrop && isDesktop);
 
   if (!isDesktop && mobileVariant === "modal") {
     // The exact shape `Modal`'s own `scrollable` variant already uses —
@@ -465,47 +487,55 @@ export function FloatingPanel({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-labelledby={header ? undefined : titleId}
-      onPointerDownCapture={bringToFront}
-      style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height, zIndex }}
-      className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
-    >
-      <div
-        onPointerDown={onHeaderPointerDown}
-        onPointerMove={onHeaderPointerMove}
-        onPointerUp={onHeaderPointerUp}
-        className={`shrink-0 cursor-grab select-none border-b border-slate-800 px-4 py-3 active:cursor-grabbing ${header ? "" : "flex items-center justify-between gap-3"}`}
-      >
-        {header ?? (
-          <>
-            <h2 id={titleId} className={MODAL_TITLE_CLS}>
-              {title}
-            </h2>
-            <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
-          </>
+    <>
+      {isDimOwner &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/40 pointer-events-none" style={{ zIndex: DIM_Z }} aria-hidden="true" />,
+          document.body
         )}
-      </div>
-      {/* `overscroll-contain` — without it, scrolling this content past its
-          own top/bottom edge fell through to the dashboard page underneath
-          and started scrolling *that* instead (a nested scroller's "no more
-          room" bounce chains to the next scrollable ancestor by default —
-          the same fix `RemindersFab.tsx`'s dropdown list already needed).
-          The whole point of this panel not locking body scroll (see the
-          component doc comment) is that the *page* stays scrollable on its
-          own — not that scrolling *inside* the panel should leak into it. */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">{children}</div>
       <div
-        onPointerDown={onResizePointerDown}
-        onPointerMove={onResizePointerMove}
-        onPointerUp={onResizePointerUp}
-        aria-hidden
-        className="absolute bottom-0 right-0 flex h-5 w-5 touch-none items-end justify-end p-1 text-slate-600 hover:text-slate-400"
-        style={{ cursor: "nwse-resize" }}
+        role="dialog"
+        aria-labelledby={header ? undefined : titleId}
+        onPointerDownCapture={bringToFront}
+        style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height, zIndex }}
+        className={`fixed flex flex-col rounded-xl border shadow-2xl shadow-black/40 ${panelClassName}`}
       >
-        <ResizeGripIcon className="h-2.5 w-2.5" />
+        <div
+          onPointerDown={onHeaderPointerDown}
+          onPointerMove={onHeaderPointerMove}
+          onPointerUp={onHeaderPointerUp}
+          className={`shrink-0 cursor-grab select-none border-b border-slate-800 px-4 py-3 active:cursor-grabbing ${header ? "" : "flex items-center justify-between gap-3"}`}
+        >
+          {header ?? (
+            <>
+              <h2 id={titleId} className={MODAL_TITLE_CLS}>
+                {title}
+              </h2>
+              <HeaderActionsRow headerActions={headerActions} onClose={onClose} />
+            </>
+          )}
+        </div>
+        {/* `overscroll-contain` — without it, scrolling this content past its
+            own top/bottom edge fell through to the dashboard page underneath
+            and started scrolling *that* instead (a nested scroller's "no more
+            room" bounce chains to the next scrollable ancestor by default —
+            the same fix `RemindersFab.tsx`'s dropdown list already needed).
+            The whole point of this panel not locking body scroll (see the
+            component doc comment) is that the *page* stays scrollable on its
+            own — not that scrolling *inside* the panel should leak into it. */}
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">{children}</div>
+        <div
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          aria-hidden
+          className="absolute bottom-0 right-0 flex h-5 w-5 touch-none items-end justify-end p-1 text-slate-600 hover:text-slate-400"
+          style={{ cursor: "nwse-resize" }}
+        >
+          <ResizeGripIcon className="h-2.5 w-2.5" />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
